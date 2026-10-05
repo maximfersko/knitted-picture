@@ -17,13 +17,13 @@ Hybrid-casual головоломка: игрок отправляет клубк
 
 ## Запуск в Unity (Mac на M1)
 
-1. Unity Hub → Installs → Unity 6 LTS с модулями Android Build Support и iOS Build Support.
-2. New project → шаблон **Universal 2D** → создать во временной папке.
-3. Скопировать из неё в корень репозитория папки `Packages/` и `ProjectSettings/`.
-4. Unity Hub → Add → Add project from disk → папка репозитория.
-5. Открыть любую сцену (например, `Assets/Scenes/SampleScene` из шаблона) и нажать Play. Игра создаёт себя сама — префабы и сцены настраивать не нужно.
+1. Unity Hub → Installs → Unity 6 LTS (модули Android/iOS можно поставить позже).
+2. Unity Hub → Projects → **Add** → **Add project from disk** → выбрать папку репозитория (ту, где лежит `Assets`).
+3. Если Hub пишет, что версия редактора другая, — выбрать установленную Unity 6.
+4. При первом открытии Unity скачает пакеты и создаст остальные настройки. Если спросит про новую систему ввода (Input System) — согласиться, редактор перезапустится.
+5. Нажать **Play** — игра создаёт себя сама в любой сцене, даже в пустой.
 6. В Game view выбрать размер телефона (например, 1170×2532 портрет) или включить Simulator.
-7. Unity создаст `.meta`-файлы для скриптов и уровней — их нужно закоммитить.
+7. Закоммитить файлы, которые создаст Unity (`.meta`, `ProjectSettings/*`, `Packages/packages-lock.json`).
 
 Для сборки на телефон: Player Settings → Default Orientation = Portrait.
 
