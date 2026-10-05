@@ -1,15 +1,21 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace KnittedPicture.Core
 {
-    /// <summary>Проверка уровня до игры: размеры, цвета и что петель в клубках ровно столько, сколько в картинке.</summary>
+    /// <summary>
+    /// Проверка уровня до игры: размеры, цвета, что петель в клубках ровно столько,
+    /// сколько в картинке, и что особые клубки не создают тупиков.
+    /// </summary>
     public static class LevelValidator
     {
         public const int MaxColors = 10;
         public const int MaxSide = 32;
-        public const int MaxSlots = 8;
+        public const int MaxColumns = 6;
+        public const int MaxKnots = 3;
+        public const int MaxTimeLimit = 900;
 
         public static List<string> Validate(LevelData? level)
         {
@@ -33,9 +39,14 @@ namespace KnittedPicture.Core
                 return errors;
             }
 
-            if (level.slots < 1 || level.slots > MaxSlots)
+            if (level.slots < 1 || level.slots > LoomGame.MaxSlots)
             {
-                errors.Add($"слотов {level.slots}, нужно 1..{MaxSlots}");
+                errors.Add($"слотов {level.slots}, нужно 1..{LoomGame.MaxSlots}");
+            }
+
+            if (level.timeLimit < 0 || level.timeLimit > MaxTimeLimit)
+            {
+                errors.Add($"таймер {level.timeLimit} с вне 0..{MaxTimeLimit}");
             }
 
             var stitchesByColor = new int[colorCount];
@@ -79,9 +90,9 @@ namespace KnittedPicture.Core
             var maxColumn = -1;
             foreach (var s in spools)
             {
-                if (s.column < 0)
+                if (s.column < 0 || s.column >= MaxColumns)
                 {
-                    errors.Add($"клубок в колонке {s.column}");
+                    errors.Add($"клубок в колонке {s.column}, нужно 0..{MaxColumns - 1}");
                     continue;
                 }
 
@@ -97,6 +108,11 @@ namespace KnittedPicture.Core
                     continue;
                 }
 
+                if (s.knots < 0 || s.knots > MaxKnots)
+                {
+                    errors.Add($"клубок цвета {s.color}: узелков {s.knots}, нужно 0..{MaxKnots}");
+                }
+
                 loopsByColor[s.color] += s.loops;
                 if (s.column > maxColumn)
                 {
@@ -104,18 +120,9 @@ namespace KnittedPicture.Core
                 }
             }
 
-            var usedColumns = new bool[maxColumn + 1];
-            foreach (var s in spools)
+            for (var i = 0; i <= maxColumn; i++)
             {
-                if (s.column >= 0)
-                {
-                    usedColumns[s.column] = true;
-                }
-            }
-
-            for (var i = 0; i < usedColumns.Length; i++)
-            {
-                if (!usedColumns[i])
+                if (!spools.Any(s => s.column == i))
                 {
                     errors.Add($"колонка {i} пустая");
                 }
@@ -129,7 +136,58 @@ namespace KnittedPicture.Core
                 }
             }
 
+            ValidateLinks(spools, errors);
+            ValidateLocks(spools, errors);
             return errors;
+        }
+
+        private static void ValidateLinks(SpoolData[] spools, List<string> errors)
+        {
+            foreach (var group in spools.Where(s => s.link != 0).GroupBy(s => s.link))
+            {
+                var pair = group.ToList();
+                if (pair.Count != 2)
+                {
+                    errors.Add($"связка {group.Key}: клубков {pair.Count}, нужно 2");
+                    continue;
+                }
+
+                if (pair[0].column == pair[1].column)
+                {
+                    errors.Add($"связка {group.Key}: оба клубка в одной колонке");
+                }
+
+                if (pair.Any(s => s.locked || s.knots > 0 || s.key))
+                {
+                    errors.Add($"связка {group.Key}: связанный клубок не может быть с замком, ключом или узелком");
+                }
+            }
+        }
+
+        private static void ValidateLocks(SpoolData[] spools, List<string> errors)
+        {
+            var hasLocks = spools.Any(s => s.locked);
+            var keys = spools.Where(s => s.key).ToList();
+            if (hasLocks && keys.Count == 0)
+            {
+                errors.Add("есть замки, но нет ключа");
+            }
+
+            if (keys.Any(s => s.locked))
+            {
+                errors.Add("клубок с ключом не может быть под замком");
+            }
+
+            // Ключ за замком в своей колонке — тупик: до ключа не добраться.
+            foreach (var key in keys)
+            {
+                var column = spools.Where(s => s.column == key.column).ToList();
+                var keyDepth = column.IndexOf(key);
+                if (column.Take(keyDepth).Any(s => s.locked))
+                {
+                    errors.Add($"ключ в колонке {key.column} стоит за замком");
+                }
+            }
         }
     }
 }

@@ -1,0 +1,48 @@
+{
+  "id": 7,
+  "name": "Бабочка",
+  "tip": "Клубок с «?» покажет свой цвет, когда окажется впереди",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "m",
+      "hex": "#BFF0D4"
+    },
+    {
+      "key": "p",
+      "hex": "#FF6FA5"
+    },
+    {
+      "key": "v",
+      "hex": "#8B5CF6"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    }
+  ],
+  "picture": [
+    "mmmkmmkmmm",
+    "mppmkkmppm",
+    "ppvvkkvvpp",
+    "pppvkkvppp",
+    "mppvkkvppm",
+    "mmvvkkvvmm",
+    "mvvpkkpvvm",
+    "mvppkkppvm",
+    "mmvvmmvvmm",
+    "mmmmmmmmmm"
+  ],
+  "slots": 5,
+  "columns": 5,
+  "spools": 14,
+  "swaps": 3,
+  "hidden": 4,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "minWin": 0.5,
+  "maxWin": 0.85,
+  "seed": 71
+}

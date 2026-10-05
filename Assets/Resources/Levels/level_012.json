@@ -1,0 +1,130 @@
+{
+  "id": 12,
+  "name": "Лисёнок",
+  "tip": "Новый бустер — «Отменить»: вернёт последний ход",
+  "width": 14,
+  "height": 14,
+  "colors": [
+    "#BFE6FF",
+    "#FF7A2F",
+    "#FF9FB0",
+    "#2B2350",
+    "#FFFFFF",
+    "#2EBD7E"
+  ],
+  "picture": [
+    "00000000000000",
+    "00110000001100",
+    "01221000012210",
+    "01111111111110",
+    "01111111111110",
+    "01131111113110",
+    "01111444411110",
+    "01144433444110",
+    "01114444441110",
+    "00111144111100",
+    "00011111111000",
+    "00001111110000",
+    "55555555555555",
+    "55555555555555"
+  ],
+  "slots": 5,
+  "spools": [
+    {
+      "color": 1,
+      "loops": 16
+    },
+    {
+      "color": 1,
+      "loops": 11,
+      "knots": 1
+    },
+    {
+      "loops": 8,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 10
+    },
+    {
+      "column": 1,
+      "color": 4,
+      "loops": 8
+    },
+    {
+      "column": 1,
+      "color": 4,
+      "loops": 10,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 13
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 4
+    },
+    {
+      "column": 2,
+      "color": 5,
+      "loops": 10
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 4
+    },
+    {
+      "column": 2,
+      "loops": 9
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 8
+    },
+    {
+      "column": 2,
+      "loops": 9,
+      "knots": 1
+    },
+    {
+      "column": 3,
+      "loops": 12
+    },
+    {
+      "column": 3,
+      "loops": 9
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 13,
+      "hidden": true
+    },
+    {
+      "column": 3,
+      "loops": 13
+    },
+    {
+      "column": 4,
+      "color": 5,
+      "loops": 8
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 12
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 9
+    }
+  ]
+}

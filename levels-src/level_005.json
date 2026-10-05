@@ -1,0 +1,42 @@
+{
+  "id": 5,
+  "name": "Мордочка котика",
+  "tip": "Сложный уровень: на станке всего 4 слота",
+  "hard": true,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "b",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "o",
+      "hex": "#FF9A3C"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    }
+  ],
+  "picture": [
+    "obbbbbbo",
+    "oobbbboo",
+    "oooooooo",
+    "okooooko",
+    "oooooooo",
+    "oookkooo",
+    "boooooob",
+    "bboooobb"
+  ],
+  "slots": 4,
+  "columns": 4,
+  "spools": 10,
+  "swaps": 4,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "minWin": 0.25,
+  "maxWin": 0.55,
+  "seed": 51
+}

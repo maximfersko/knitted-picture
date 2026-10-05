@@ -1,0 +1,60 @@
+{
+  "id": 14,
+  "name": "Лягушонок",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "b",
+      "hex": "#7CC4FF"
+    },
+    {
+      "key": "g",
+      "hex": "#2EBD7E"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "p",
+      "hex": "#FF8FB1"
+    },
+    {
+      "key": "h",
+      "hex": "#9BE0B4"
+    }
+  ],
+  "picture": [
+    "bbbbbbbbbbbbbb",
+    "bbgggbbbbgggbb",
+    "bgwwwgbbgwwwgb",
+    "bgwkwggggwkwgb",
+    "bgwwwggggwwwgb",
+    "gggggggggggggg",
+    "gpggggggggggpg",
+    "ggkkkkkkkkkkgg",
+    "gggggggggggggg",
+    "bghhhhhhhhhhgb",
+    "bghhhhhhhhhhgb",
+    "bbghhhhhhhhgbb",
+    "bgggbbbbbbgggb",
+    "bbbbbbbbbbbbbb"
+  ],
+  "slots": 5,
+  "columns": 5,
+  "spools": 22,
+  "swaps": 6,
+  "hidden": 3,
+  "knots": 2,
+  "links": 1,
+  "locks": 2,
+  "minWin": 0.35,
+  "maxWin": 0.75,
+  "seed": 141
+}

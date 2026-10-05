@@ -1,0 +1,54 @@
+{
+  "id": 9,
+  "name": "Подсолнух",
+  "tip": "Связанные клубки едут на станок только вместе — нужно 2 свободных слота",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "s",
+      "hex": "#A8DCFF"
+    },
+    {
+      "key": "y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "b",
+      "hex": "#8A5A3C"
+    },
+    {
+      "key": "o",
+      "hex": "#FF9A3C"
+    },
+    {
+      "key": "g",
+      "hex": "#2EBD7E"
+    }
+  ],
+  "picture": [
+    "ssssssssssss",
+    "sssyyyyyysss",
+    "ssyybbbbyyss",
+    "syybbbbbbyys",
+    "syobbbbbboys",
+    "syybbbbbbyys",
+    "ssyybbbbyyss",
+    "sssyyooyysss",
+    "sssssggsssss",
+    "sgggsggsssss",
+    "sssssggggsss",
+    "sssssggsssss"
+  ],
+  "slots": 5,
+  "columns": 5,
+  "spools": 16,
+  "swaps": 3,
+  "hidden": 0,
+  "knots": 0,
+  "links": 2,
+  "locks": 0,
+  "minWin": 0.45,
+  "maxWin": 0.8,
+  "seed": 91
+}

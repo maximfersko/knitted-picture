@@ -12,6 +12,19 @@ namespace KnittedPicture.Core
     public sealed class LevelData
     {
         public int id;
+
+        /// <summary>Название картинки для альбома: «Сердечко», «Котик».</summary>
+        public string name = string.Empty;
+
+        /// <summary>Подсказка на старте уровня; пустая — без подсказки.</summary>
+        public string tip = string.Empty;
+
+        /// <summary>Сложный уровень: плашка на старте и двойная награда.</summary>
+        public bool hard;
+
+        /// <summary>Секунды до того, как моль доберётся до картинки; 0 — без таймера.</summary>
+        public int timeLimit;
+
         public int width;
         public int height;
 
@@ -34,5 +47,20 @@ namespace KnittedPicture.Core
         public int column;
         public int color;
         public int loops;
+
+        /// <summary>Цвет скрыт («?»), пока клубок не окажется впереди.</summary>
+        public bool hidden;
+
+        /// <summary>Номер связки: два клубка с одинаковым номером едут на станок только вместе. 0 — без связки.</summary>
+        public int link;
+
+        /// <summary>Узелки: каждый тап развязывает один, клубок едет, когда узелков не осталось.</summary>
+        public int knots;
+
+        /// <summary>Под замком: не тапается, пока на станок не встанет клубок с ключом.</summary>
+        public bool locked;
+
+        /// <summary>Клубок с ключом: когда встаёт на станок, открывает все замки.</summary>
+        public bool key;
     }
 }

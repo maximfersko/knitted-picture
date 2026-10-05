@@ -1,0 +1,144 @@
+{
+  "id": 14,
+  "name": "Лягушонок",
+  "tip": "",
+  "width": 14,
+  "height": 14,
+  "colors": [
+    "#7CC4FF",
+    "#2EBD7E",
+    "#FFFFFF",
+    "#2B2350",
+    "#FF8FB1",
+    "#9BE0B4"
+  ],
+  "picture": [
+    "00000000000000",
+    "00111000011100",
+    "01222100122210",
+    "01232111123210",
+    "01222111122210",
+    "11111111111111",
+    "14111111111141",
+    "11333333333311",
+    "11111111111111",
+    "01555555555510",
+    "01555555555510",
+    "00155555555100",
+    "01110000001110",
+    "00000000000000"
+  ],
+  "slots": 5,
+  "spools": [
+    {
+      "color": 1,
+      "loops": 9
+    },
+    {
+      "loops": 11
+    },
+    {
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "column": 1,
+      "loops": 11
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 9,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 8
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 8
+    },
+    {
+      "column": 1,
+      "loops": 9
+    },
+    {
+      "column": 2,
+      "color": 5,
+      "loops": 9
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 10
+    },
+    {
+      "column": 3,
+      "loops": 8
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 9,
+      "key": true
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 12,
+      "hidden": true,
+      "link": 1
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 12,
+      "locked": true
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 12
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 9,
+      "knots": 2
+    },
+    {
+      "column": 4,
+      "loops": 5
+    },
+    {
+      "column": 4,
+      "color": 5,
+      "loops": 10
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 8,
+      "link": 1
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 9,
+      "hidden": true,
+      "knots": 1
+    },
+    {
+      "column": 4,
+      "loops": 10
+    },
+    {
+      "column": 4,
+      "loops": 6,
+      "locked": true
+    }
+  ]
+}

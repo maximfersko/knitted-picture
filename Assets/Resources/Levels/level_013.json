@@ -1,0 +1,134 @@
+{
+  "id": 13,
+  "name": "Пингвин",
+  "tip": "Замок откроется, когда клубок с ключом встанет на станок",
+  "width": 14,
+  "height": 14,
+  "colors": [
+    "#CDEBFF",
+    "#2B2350",
+    "#FFFFFF",
+    "#FFB23C",
+    "#FF4F5E",
+    "#FF7A2F"
+  ],
+  "picture": [
+    "00000000000000",
+    "00000111100000",
+    "00001111110000",
+    "00011211211000",
+    "00011133111000",
+    "00014444441000",
+    "00112222221100",
+    "01122222222110",
+    "01122222222110",
+    "00122222222100",
+    "00112222221100",
+    "00011111111000",
+    "00005500550000",
+    "00000000000000"
+  ],
+  "slots": 5,
+  "spools": [
+    {
+      "color": 5,
+      "loops": 4
+    },
+    {
+      "color": 1,
+      "loops": 10
+    },
+    {
+      "loops": 9
+    },
+    {
+      "color": 1,
+      "loops": 7
+    },
+    {
+      "loops": 13
+    },
+    {
+      "column": 1,
+      "loops": 12
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 11
+    },
+    {
+      "column": 1,
+      "loops": 6
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 7
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 9
+    },
+    {
+      "column": 2,
+      "loops": 12
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 10
+    },
+    {
+      "column": 3,
+      "loops": 12,
+      "key": true
+    },
+    {
+      "column": 3,
+      "loops": 8
+    },
+    {
+      "column": 3,
+      "color": 2,
+      "loops": 9,
+      "locked": true
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 2
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 6
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 10
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 9
+    },
+    {
+      "column": 4,
+      "color": 4,
+      "loops": 6,
+      "locked": true
+    },
+    {
+      "column": 4,
+      "loops": 12,
+      "locked": true
+    },
+    {
+      "column": 4,
+      "loops": 12
+    }
+  ]
+}

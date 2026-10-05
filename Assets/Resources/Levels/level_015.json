@@ -1,0 +1,150 @@
+{
+  "id": 15,
+  "name": "Сова",
+  "tip": "Финал коллекции: моль, узелки и скрытые клубки. Удачи!",
+  "hard": true,
+  "timeLimit": 240,
+  "width": 16,
+  "height": 16,
+  "colors": [
+    "#3D4AA8",
+    "#A0673C",
+    "#FFFFFF",
+    "#2B2350",
+    "#FFC23C",
+    "#F2D3A8"
+  ],
+  "picture": [
+    "0000000000000000",
+    "0001000000001000",
+    "0001100000011000",
+    "0001111111111000",
+    "0011222112221100",
+    "0011232112321100",
+    "0011222442221100",
+    "0011111441111100",
+    "0111555555551110",
+    "0115555555555110",
+    "0115515555155110",
+    "0015555555555100",
+    "0001111111111000",
+    "0000440000440000",
+    "1111111111111111",
+    "0000000000000000"
+  ],
+  "slots": 5,
+  "spools": [
+    {
+      "loops": 9
+    },
+    {
+      "color": 5,
+      "loops": 10
+    },
+    {
+      "color": 5,
+      "loops": 11
+    },
+    {
+      "color": 2,
+      "loops": 7
+    },
+    {
+      "color": 3,
+      "loops": 2,
+      "hidden": true,
+      "link": 1
+    },
+    {
+      "loops": 14
+    },
+    {
+      "column": 1,
+      "color": 4,
+      "loops": 8
+    },
+    {
+      "column": 1,
+      "loops": 10
+    },
+    {
+      "column": 1,
+      "loops": 16
+    },
+    {
+      "column": 1,
+      "loops": 10,
+      "hidden": true,
+      "knots": 2
+    },
+    {
+      "column": 2,
+      "loops": 14
+    },
+    {
+      "column": 2,
+      "loops": 9
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 8
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 11,
+      "knots": 1
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 13
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 15,
+      "hidden": true
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 11
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 10
+    },
+    {
+      "column": 4,
+      "color": 5,
+      "loops": 15
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 7
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 11
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 9,
+      "link": 1
+    },
+    {
+      "column": 4,
+      "loops": 11
+    },
+    {
+      "column": 4,
+      "loops": 15
+    }
+  ]
+}

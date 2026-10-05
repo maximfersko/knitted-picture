@@ -1,0 +1,36 @@
+{
+  "id": 1,
+  "name": "Сердечко",
+  "tip": "Тапни клубок — он поедет на станок и начнёт вязать картинку",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "b",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "p",
+      "hex": "#FF5C93"
+    }
+  ],
+  "picture": [
+    "ppbbpp",
+    "pppppp",
+    "pppppp",
+    "bppppb",
+    "bbppbb",
+    "bbbbbb"
+  ],
+  "slots": 5,
+  "columns": 4,
+  "spools": 4,
+  "swaps": 0,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "minWin": 0.9,
+  "maxWin": 1.0,
+  "seed": 11
+}

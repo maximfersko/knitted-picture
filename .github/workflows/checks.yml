@@ -1,0 +1,25 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Core tests (rules, economy, every level solvable)
+        run: dotnet test dotnet/KnittedPicture.Core.Tests
+
+      - name: Game code compiles against Unity reference assemblies
+        run: dotnet build dotnet/KnittedPicture.Game.Check
+
+      - name: Levels are up to date with levels-src
+        run: |
+          dotnet run --project dotnet/KnittedPicture.LevelTool
+          git diff --exit-code -- Assets/Resources/Levels

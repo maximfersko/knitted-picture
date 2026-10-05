@@ -1,0 +1,48 @@
+{
+  "id": 6,
+  "name": "Тюльпан",
+  "tip": "Число на клубке — сколько в нём петель",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "s",
+      "hex": "#A8DCFF"
+    },
+    {
+      "key": "r",
+      "hex": "#FF5A4E"
+    },
+    {
+      "key": "y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "g",
+      "hex": "#2EBD7E"
+    }
+  ],
+  "picture": [
+    "ssssssssss",
+    "ssrsrrsrss",
+    "ssrrrrrrss",
+    "ssrryyrrss",
+    "sssrrrrsss",
+    "ssssggssss",
+    "sgggggssss",
+    "ssssgggggs",
+    "ssssggssss",
+    "ssssssssss"
+  ],
+  "slots": 5,
+  "columns": 4,
+  "spools": 12,
+  "swaps": 3,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "minWin": 0.55,
+  "maxWin": 0.9,
+  "seed": 61
+}

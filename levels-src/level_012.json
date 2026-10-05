@@ -1,0 +1,60 @@
+{
+  "id": 12,
+  "name": "Лисёнок",
+  "tip": "Новый бустер — «Отменить»: вернёт последний ход",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "s",
+      "hex": "#BFE6FF"
+    },
+    {
+      "key": "o",
+      "hex": "#FF7A2F"
+    },
+    {
+      "key": "p",
+      "hex": "#FF9FB0"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "g",
+      "hex": "#2EBD7E"
+    }
+  ],
+  "picture": [
+    "ssssssssssssss",
+    "ssoossssssooss",
+    "soppossssoppos",
+    "soooooooooooos",
+    "soooooooooooos",
+    "sookooooookoos",
+    "soooowwwwoooos",
+    "soowwwkkwwwoos",
+    "sooowwwwwwooos",
+    "ssoooowwooooss",
+    "sssoooooooosss",
+    "ssssoooooossss",
+    "gggggggggggggg",
+    "gggggggggggggg"
+  ],
+  "slots": 5,
+  "columns": 5,
+  "spools": 20,
+  "swaps": 5,
+  "hidden": 3,
+  "knots": 2,
+  "links": 0,
+  "locks": 0,
+  "minWin": 0.4,
+  "maxWin": 0.8,
+  "seed": 121
+}

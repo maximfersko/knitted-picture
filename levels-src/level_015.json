@@ -1,0 +1,62 @@
+{
+  "id": 15,
+  "name": "Сова",
+  "tip": "Финал коллекции: моль, узелки и скрытые клубки. Удачи!",
+  "hard": true,
+  "timeLimit": 240,
+  "palette": [
+    {
+      "key": "n",
+      "hex": "#3D4AA8"
+    },
+    {
+      "key": "o",
+      "hex": "#A0673C"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "c",
+      "hex": "#F2D3A8"
+    }
+  ],
+  "picture": [
+    "nnnnnnnnnnnnnnnn",
+    "nnnonnnnnnnnonnn",
+    "nnnoonnnnnnoonnn",
+    "nnnoooooooooonnn",
+    "nnoowwwoowwwoonn",
+    "nnoowkwoowkwoonn",
+    "nnoowwwyywwwoonn",
+    "nnoooooyyooooonn",
+    "noooccccccccooon",
+    "nooccccccccccoon",
+    "nooccoccccoccoon",
+    "nnocccccccccconn",
+    "nnnoooooooooonnn",
+    "nnnnyynnnnyynnnn",
+    "oooooooooooooooo",
+    "nnnnnnnnnnnnnnnn"
+  ],
+  "slots": 5,
+  "columns": 5,
+  "spools": 24,
+  "swaps": 6,
+  "hidden": 3,
+  "knots": 2,
+  "links": 1,
+  "locks": 0,
+  "minWin": 0.15,
+  "maxWin": 0.5,
+  "seed": 151
+}

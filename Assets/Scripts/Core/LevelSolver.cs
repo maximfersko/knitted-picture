@@ -5,8 +5,8 @@ using System.Collections.Generic;
 namespace KnittedPicture.Core
 {
     /// <summary>
-    /// Поиск решения перебором тапов. Нужен для проверки уровней:
-    /// каждый уровень в игре должен проходиться без бустеров.
+    /// Поиск решения перебором тапов (без бустеров). Нужен для проверки уровней
+    /// и для подсказки на первых уровнях.
     /// </summary>
     public static class LevelSolver
     {
@@ -14,12 +14,23 @@ namespace KnittedPicture.Core
         /// Последовательность колонок для тапа, которая проходит уровень,
         /// или null, если решения нет (или перебор упёрся в maxStates).
         /// </summary>
-        public static IReadOnlyList<int>? Solve(LevelData level, int maxStates = 200_000)
+        public static IReadOnlyList<int>? Solve(LevelData level, int maxStates = 300_000) =>
+            Solve(new LoomGame(level), maxStates);
+
+        /// <summary>Решение из текущего состояния игры; сама игра не меняется.</summary>
+        public static IReadOnlyList<int>? Solve(LoomGame game, int maxStates = 300_000)
         {
-            var game = new LoomGame(level);
+            var copy = game.Clone();
             var visited = new HashSet<string>();
             var path = new List<int>();
-            return Search(game, visited, path, maxStates) ? path : null;
+            return Search(copy, visited, path, maxStates) ? path : null;
+        }
+
+        /// <summary>Колонка для следующего тапа по пути к победе или -1, если пути нет.</summary>
+        public static int Hint(LoomGame game, int maxStates = 20_000)
+        {
+            var path = Solve(game, maxStates);
+            return path != null && path.Count > 0 ? path[0] : -1;
         }
 
         private static bool Search(LoomGame game, HashSet<string> visited, List<int> path, int maxStates)
@@ -34,21 +45,28 @@ namespace KnittedPicture.Core
                 return false;
             }
 
-            for (var column = 0; column < game.ColumnCount; column++)
+            // Сначала колонки с нужным сейчас цветом: решение находится быстрее.
+            var needed = game.NeededColor;
+            for (var pass = 0; pass < 2; pass++)
             {
-                if (!game.TapColumn(column).Accepted)
+                for (var column = 0; column < game.ColumnCount; column++)
                 {
-                    continue;
-                }
+                    var front = game.Column(column).Count > 0 ? game.Column(column)[0] : null;
+                    var preferred = front != null && front.Color == needed;
+                    if (preferred != (pass == 0) || !game.TapColumn(column).Accepted)
+                    {
+                        continue;
+                    }
 
-                path.Add(column);
-                if (Search(game, visited, path, maxStates))
-                {
-                    return true;
-                }
+                    path.Add(column);
+                    if (Search(game, visited, path, maxStates))
+                    {
+                        return true;
+                    }
 
-                path.RemoveAt(path.Count - 1);
-                game.Undo();
+                    path.RemoveAt(path.Count - 1);
+                    game.Undo();
+                }
             }
 
             return false;

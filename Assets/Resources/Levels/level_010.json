@@ -1,0 +1,117 @@
+{
+  "id": 10,
+  "name": "Божья коровка",
+  "tip": "Сложный уровень: моль ползёт к картинке — успей довязать",
+  "hard": true,
+  "timeLimit": 150,
+  "width": 12,
+  "height": 12,
+  "colors": [
+    "#9BE0B4",
+    "#2B2350",
+    "#FFFFFF",
+    "#FF4F5E",
+    "#2EBD7E"
+  ],
+  "picture": [
+    "000000000000",
+    "000011110000",
+    "000121121000",
+    "003331133300",
+    "033131131330",
+    "033331133330",
+    "031131131130",
+    "033331133330",
+    "003131131300",
+    "000331133000",
+    "400000000004",
+    "440000000044"
+  ],
+  "slots": 5,
+  "spools": [
+    {
+      "color": 4,
+      "loops": 6
+    },
+    {
+      "color": 1,
+      "loops": 6
+    },
+    {
+      "color": 1,
+      "loops": 7
+    },
+    {
+      "loops": 11,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "loops": 10
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 10,
+      "link": 1
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 9
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 7
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 9,
+      "link": 1
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 7
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 7
+    },
+    {
+      "column": 2,
+      "loops": 11
+    },
+    {
+      "column": 3,
+      "loops": 7
+    },
+    {
+      "column": 3,
+      "color": 2,
+      "loops": 2
+    },
+    {
+      "column": 3,
+      "loops": 7,
+      "hidden": true
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 8
+    },
+    {
+      "column": 4,
+      "loops": 10
+    },
+    {
+      "column": 4,
+      "loops": 10,
+      "hidden": true
+    }
+  ]
+}

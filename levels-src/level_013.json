@@ -1,0 +1,60 @@
+{
+  "id": 13,
+  "name": "Пингвин",
+  "tip": "Замок откроется, когда клубок с ключом встанет на станок",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "i",
+      "hex": "#CDEBFF"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "y",
+      "hex": "#FFB23C"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    },
+    {
+      "key": "o",
+      "hex": "#FF7A2F"
+    }
+  ],
+  "picture": [
+    "iiiiiiiiiiiiii",
+    "iiiiikkkkiiiii",
+    "iiiikkkkkkiiii",
+    "iiikkwkkwkkiii",
+    "iiikkkyykkkiii",
+    "iiikrrrrrrkiii",
+    "iikkwwwwwwkkii",
+    "ikkwwwwwwwwkki",
+    "ikkwwwwwwwwkki",
+    "iikwwwwwwwwkii",
+    "iikkwwwwwwkkii",
+    "iiikkkkkkkkiii",
+    "iiiiooiiooiiii",
+    "iiiiiiiiiiiiii"
+  ],
+  "slots": 5,
+  "columns": 5,
+  "spools": 22,
+  "swaps": 5,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 3,
+  "minWin": 0.4,
+  "maxWin": 0.8,
+  "seed": 131
+}

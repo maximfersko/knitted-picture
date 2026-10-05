@@ -1,0 +1,93 @@
+{
+  "id": 8,
+  "name": "Клубничка",
+  "tip": "Новый бустер — ножницы: достают любой клубок, даже из глубины",
+  "width": 10,
+  "height": 10,
+  "colors": [
+    "#FFF4D6",
+    "#FF4F5E",
+    "#FFE08A",
+    "#2EBD7E"
+  ],
+  "picture": [
+    "0000330000",
+    "0003333000",
+    "0011331100",
+    "0111111110",
+    "0112112110",
+    "0111111110",
+    "0012112100",
+    "0011111100",
+    "0001111000",
+    "0000110000"
+  ],
+  "slots": 5,
+  "spools": [
+    {
+      "loops": 5
+    },
+    {
+      "loops": 7
+    },
+    {
+      "color": 2,
+      "loops": 4,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 6,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 9
+    },
+    {
+      "column": 1,
+      "loops": 7,
+      "hidden": true
+    },
+    {
+      "column": 2,
+      "loops": 8
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 7
+    },
+    {
+      "column": 3,
+      "loops": 10
+    },
+    {
+      "column": 3,
+      "loops": 9
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 8
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 8
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 7,
+      "hidden": true
+    }
+  ]
+}

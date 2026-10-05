@@ -1,0 +1,42 @@
+{
+  "id": 4,
+  "name": "Кружка какао",
+  "tip": "Задний клубок не достать, пока не заберёшь передний",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "l",
+      "hex": "#C9B8FF"
+    },
+    {
+      "key": "o",
+      "hex": "#FF9A3C"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    }
+  ],
+  "picture": [
+    "llwllwll",
+    "lwllwlll",
+    "loooooll",
+    "looooool",
+    "looooool",
+    "loooooll",
+    "llooolll",
+    "llllllll"
+  ],
+  "slots": 5,
+  "columns": 4,
+  "spools": 10,
+  "swaps": 2,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "minWin": 0.7,
+  "maxWin": 0.95,
+  "seed": 41
+}

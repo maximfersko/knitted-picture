@@ -1,8 +1,14 @@
 {
   "id": 3,
+  "name": "Мухомор",
+  "tip": "Три цвета! Не занимай станок клубками, которые нужны нескоро",
   "width": 8,
   "height": 8,
-  "colors": ["#9BE0B4", "#FF5A4E", "#FFFFFF"],
+  "colors": [
+    "#9BE0B4",
+    "#FF5A4E",
+    "#FFFFFF"
+  ],
   "picture": [
     "00000000",
     "00111100",
@@ -15,13 +21,38 @@
   ],
   "slots": 5,
   "spools": [
-    { "column": 0, "color": 0, "loops": 13 },
-    { "column": 0, "color": 2, "loops": 4 },
-    { "column": 1, "color": 1, "loops": 8 },
-    { "column": 1, "color": 0, "loops": 13 },
-    { "column": 2, "color": 2, "loops": 3 },
-    { "column": 2, "color": 1, "loops": 8 },
-    { "column": 3, "color": 0, "loops": 12 },
-    { "column": 3, "color": 2, "loops": 3 }
+    {
+      "loops": 10
+    },
+    {
+      "loops": 6
+    },
+    {
+      "column": 1,
+      "loops": 9
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 10
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 10
+    },
+    {
+      "column": 3,
+      "loops": 6
+    },
+    {
+      "column": 3,
+      "loops": 7
+    }
   ]
 }

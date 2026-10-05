@@ -1,0 +1,48 @@
+{
+  "id": 8,
+  "name": "Клубничка",
+  "tip": "Новый бустер — ножницы: достают любой клубок, даже из глубины",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": "c",
+      "hex": "#FFF4D6"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    },
+    {
+      "key": "y",
+      "hex": "#FFE08A"
+    },
+    {
+      "key": "g",
+      "hex": "#2EBD7E"
+    }
+  ],
+  "picture": [
+    "ccccggcccc",
+    "cccggggccc",
+    "ccrrggrrcc",
+    "crrrrrrrrc",
+    "crryrryrrc",
+    "crrrrrrrrc",
+    "ccryrryrcc",
+    "ccrrrrrrcc",
+    "cccrrrrccc",
+    "ccccrrcccc"
+  ],
+  "slots": 5,
+  "columns": 5,
+  "spools": 14,
+  "swaps": 4,
+  "hidden": 4,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "minWin": 0.45,
+  "maxWin": 0.8,
+  "seed": 81
+}

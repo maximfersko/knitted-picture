@@ -7,7 +7,7 @@ namespace KnittedPicture.Core.Tests
     {
         // 2×2, петли идут снизу вверх, слева направо: 1, 0, 0, 1.
         // Колонка 0 — клубок цвета 0 (2 петли), колонка 1 — цвета 1 (2 петли).
-        private static LevelData TwoByTwo(int slots) => new LevelData
+        internal static LevelData TwoByTwo(int slots) => new LevelData
         {
             id = 99,
             width = 2,
@@ -31,6 +31,7 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(2, game.Slots.Count);
             Assert.All(game.Slots, s => Assert.Null(s));
             Assert.Equal(1, game.NeededColor);
+            Assert.Equal((0, 1), game.CurrentStitch);
             Assert.Equal(0, game.KnittedCount);
         }
 
@@ -41,9 +42,10 @@ namespace KnittedPicture.Core.Tests
 
             var result = game.TapColumn(1);
 
-            Assert.True(result.Accepted);
-            Assert.Equal(0, result.Slot);
-            Assert.Equal(1, result.Spool!.Color);
+            Assert.Equal(MoveKind.Placed, result.Kind);
+            var placed = Assert.Single(result.Placed);
+            Assert.Equal(0, placed.Slot);
+            Assert.Equal(1, placed.Spool.Color);
             var stitch = Assert.Single(result.Knitted);
             Assert.Equal((0, 1), (stitch.X, stitch.Y));
             Assert.Equal(1, game.Slots[0]!.Loops);
@@ -64,6 +66,7 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(GameStatus.Won, result.Status);
             Assert.All(game.Slots, s => Assert.Null(s));
             Assert.Equal(-1, game.NeededColor);
+            Assert.False(game.CanUndo);
         }
 
         [Fact]
@@ -76,7 +79,7 @@ namespace KnittedPicture.Core.Tests
             Assert.True(result.Accepted);
             Assert.Empty(result.Knitted);
             Assert.Equal(GameStatus.Jammed, game.Status);
-            Assert.False(game.TapColumn(1).Accepted);
+            Assert.Equal(RejectReason.GameOver, game.TapColumn(1).Reason);
         }
 
         [Fact]
@@ -90,6 +93,15 @@ namespace KnittedPicture.Core.Tests
 
             var result = game.TapColumn(1);
             Assert.Equal(GameStatus.Won, result.Status);
+        }
+
+        [Fact]
+        public void Slots_stop_at_the_maximum()
+        {
+            var game = new LoomGame(TwoByTwo(slots: LoomGame.MaxSlots));
+
+            Assert.False(game.AddSlot());
+            Assert.Equal(LoomGame.MaxSlots, game.Slots.Count);
         }
 
         [Fact]
@@ -110,7 +122,7 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Undo_keeps_a_bought_slot()
+        public void Undo_leaves_a_jam_and_keeps_a_bought_slot()
         {
             var game = new LoomGame(TwoByTwo(slots: 1));
             game.TapColumn(0);
@@ -124,35 +136,37 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Scissors_pull_a_buried_spool()
-        {
-            var level = TwoByTwo(slots: 2);
-            level.spools = new[]
-            {
-                new SpoolData { column = 0, color = 0, loops = 2 },
-                new SpoolData { column = 0, color = 1, loops = 2 },
-            };
-            var game = new LoomGame(level);
-
-            var result = game.PullSpool(column: 0, depth: 1);
-
-            Assert.True(result.Accepted);
-            Assert.Equal(1, result.Spool!.Color);
-            Assert.Single(result.Knitted);
-            Assert.Equal(0, game.Column(0)[0].Color);
-        }
-
-        [Fact]
-        public void Tap_on_empty_column_is_rejected_without_history()
+        public void Rejected_tap_leaves_no_history()
         {
             var game = new LoomGame(TwoByTwo(slots: 2));
             game.TapColumn(1);
 
             var result = game.TapColumn(1);
 
-            Assert.False(result.Accepted);
+            Assert.Equal(RejectReason.EmptyColumn, result.Reason);
             Assert.True(game.Undo());
             Assert.False(game.CanUndo);
+        }
+
+        [Fact]
+        public void Clone_is_independent()
+        {
+            var game = new LoomGame(TwoByTwo(slots: 2));
+            var copy = game.Clone();
+
+            copy.TapColumn(1);
+
+            Assert.Equal(0, game.KnittedCount);
+            Assert.Single(game.Column(1));
+            Assert.Equal(1, copy.KnittedCount);
+        }
+
+        [Fact]
+        public void Upcoming_colors_skip_repeats()
+        {
+            var game = new LoomGame(TwoByTwo(slots: 2));
+
+            Assert.Equal(new[] { 1, 0, 1 }, game.UpcomingColors(4));
         }
 
         [Fact]
