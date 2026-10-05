@@ -1,0 +1,21 @@
+{
+  "id": 1,
+  "width": 6,
+  "height": 6,
+  "colors": ["#6CB8FF", "#FF6FA5"],
+  "picture": [
+    "010010",
+    "111111",
+    "111111",
+    "011110",
+    "001100",
+    "000000"
+  ],
+  "slots": 5,
+  "spools": [
+    { "column": 0, "color": 0, "loops": 8 },
+    { "column": 1, "color": 1, "loops": 10 },
+    { "column": 2, "color": 0, "loops": 8 },
+    { "column": 3, "color": 1, "loops": 10 }
+  ]
+}

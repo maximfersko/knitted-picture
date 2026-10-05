@@ -1,0 +1,23 @@
+{
+  "id": 2,
+  "width": 6,
+  "height": 6,
+  "colors": ["#FFE08A", "#2EBD7E"],
+  "picture": [
+    "001100",
+    "011110",
+    "111111",
+    "001100",
+    "001100",
+    "000000"
+  ],
+  "slots": 5,
+  "spools": [
+    { "column": 0, "color": 0, "loops": 7 },
+    { "column": 0, "color": 1, "loops": 6 },
+    { "column": 1, "color": 1, "loops": 5 },
+    { "column": 1, "color": 0, "loops": 7 },
+    { "column": 2, "color": 0, "loops": 6 },
+    { "column": 2, "color": 1, "loops": 5 }
+  ]
+}

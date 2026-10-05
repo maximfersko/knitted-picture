@@ -107,3 +107,8 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# .NET-проекты для тестов ядра вне Unity: их пишем руками и храним в git
+!/dotnet/**/*.csproj
+/dotnet/**/bin/
+/dotnet/**/obj/

@@ -1,0 +1,27 @@
+{
+  "id": 3,
+  "width": 8,
+  "height": 8,
+  "colors": ["#9BE0B4", "#FF5A4E", "#FFFFFF"],
+  "picture": [
+    "00000000",
+    "00111100",
+    "01211210",
+    "11111111",
+    "00022000",
+    "00022000",
+    "00222200",
+    "00000000"
+  ],
+  "slots": 5,
+  "spools": [
+    { "column": 0, "color": 0, "loops": 13 },
+    { "column": 0, "color": 2, "loops": 4 },
+    { "column": 1, "color": 1, "loops": 8 },
+    { "column": 1, "color": 0, "loops": 13 },
+    { "column": 2, "color": 2, "loops": 3 },
+    { "column": 2, "color": 1, "loops": 8 },
+    { "column": 3, "color": 0, "loops": 12 },
+    { "column": 3, "color": 2, "loops": 3 }
+  ]
+}
