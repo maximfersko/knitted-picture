@@ -28,6 +28,7 @@ namespace KnittedPicture.Game
         Clock,
         Check,
         Settings,
+        Star,
     }
 
     /// <summary>
@@ -62,6 +63,45 @@ namespace KnittedPicture.Game
         public static Sprite PlainCell => Cached("cell", () => BuildCell(false));
 
         public static Sprite Icon(Icon icon) => Cached("icon" + icon, () => BuildIcon(icon));
+
+        private static Texture2D? _knitPattern;
+
+        /// <summary>Едва заметная вязаная фактура для фона: плитка 48×48, повторяется.</summary>
+        public static Texture2D KnitPattern
+        {
+            get
+            {
+                if (_knitPattern != null)
+                {
+                    return _knitPattern;
+                }
+
+                const int size = 48;
+                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Repeat,
+                    filterMode = FilterMode.Bilinear,
+                };
+                var pixels = new Color32[size * size];
+                for (var py = 0; py < size; py++)
+                {
+                    for (var px = 0; px < size; px++)
+                    {
+                        var x = (px + 0.5f) % 24f;
+                        var y = (size - py - 0.5f) % 24f;
+                        var left = DistanceToSegment(x, y, 4f, 5f, 12f, 19f);
+                        var right = DistanceToSegment(x, y, 20f, 5f, 12f, 19f);
+                        var alpha = Mathf.Clamp01(2.2f - Mathf.Min(left, right) + 0.5f) * 0.05f;
+                        pixels[py * size + px] = new Color32(43, 35, 80, (byte)(alpha * 255));
+                    }
+                }
+
+                texture.SetPixels32(pixels);
+                texture.Apply();
+                _knitPattern = texture;
+                return texture;
+            }
+        }
 
         /// <summary>Картинка уровня в маленькую текстуру: для альбома и экрана победы.</summary>
         public static Texture2D PictureTexture(LevelData level, int knitted = int.MaxValue)
@@ -319,6 +359,17 @@ namespace KnittedPicture.Game
                     break;
                 case KnittedPicture.Game.Icon.Settings:
                     p.Line(20, 7, 11, 7).Line(13, 17, 4, 17).Circle(17, 17, 3).Circle(7, 7, 3);
+                    break;
+                case KnittedPicture.Game.Icon.Star:
+                    for (var i = 0; i < 10; i++)
+                    {
+                        var a0 = (-90f + i * 36f) * Mathf.Deg2Rad;
+                        var a1 = (-90f + (i + 1) * 36f) * Mathf.Deg2Rad;
+                        var r0 = i % 2 == 0 ? 10.5f : 4.6f;
+                        var r1 = i % 2 == 0 ? 4.6f : 10.5f;
+                        p.Triangle(12, 12.6f, 12 + r0 * Mathf.Cos(a0), 12.6f + r0 * Mathf.Sin(a0), 12 + r1 * Mathf.Cos(a1), 12.6f + r1 * Mathf.Sin(a1));
+                    }
+
                     break;
             }
 

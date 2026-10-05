@@ -44,8 +44,8 @@ namespace KnittedPicture.Game
                     var level = app.Levels.Get(id);
                     var state = app.Progress.IsCompleted(id) ? TileState.Done : app.Progress.IsAvailable(id) ? TileState.Current : TileState.Locked;
                     var x = 16 + i * (tile + gap);
-                    MiniPicture.Tile(Root, level, state, x, y, tile).OnClick(() => app.StartLevel(id));
-                    var name = Ui.Label(Root, state == TileState.Locked ? "???" : level.name, 11, Palette.Ink2, x - 4, y + tile + 4, tile + 8, 28, false, TextAnchor.UpperCenter);
+                    MiniPicture.Tile(Root, level, state, x, y, tile, app.Progress.StarsOf(id)).OnClick(() => app.StartLevel(id));
+                    var name = Ui.Label(Root, state == TileState.Locked ? "???" : level.name, 11, Palette.Ink2, x - 4, y + tile + 7, tile + 8, 28, false, TextAnchor.UpperCenter);
                     name.lineSpacing = 0.85f;
                 }
 

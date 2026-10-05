@@ -40,7 +40,17 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Плитка альбома: готовая картинка, текущая (бледная, в рамке) или замок.</summary>
-        public static Tap Tile(RectTransform parent, LevelData level, TileState state, float x, float y, float size)
+        /// <summary>Три маленькие звезды: заработанные — золотые.</summary>
+        public static void Stars(RectTransform parent, float cx, float cy, int stars, float size)
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                var star = Ui.Image(parent, "Star", Art.Icon(Icon.Star), i < stars ? Palette.Coin : Palette.Track);
+                Ui.PlaceCenter(star.rectTransform, cx + (i - 1) * size * 0.95f, cy, size, size);
+            }
+        }
+
+        public static Tap Tile(RectTransform parent, LevelData level, TileState state, float x, float y, float size, int stars = 0)
         {
             var root = Ui.Card(parent, "Tile" + level.id, x, y, size, size, 14,
                 state == TileState.Locked ? Palette.Track : Palette.Card, Palette.CardShadow, state == TileState.Locked ? 0f : 2f, true);
@@ -60,6 +70,11 @@ namespace KnittedPicture.Game
                 default:
                     Ui.IconImage(root, Icon.Lock, Palette.Ink3, size / 2f, size / 2f, size * 0.32f);
                     break;
+            }
+
+            if (state == TileState.Done && stars > 0)
+            {
+                Stars(root, size / 2f, size - 2f, stars, Mathf.Max(11f, size * 0.2f));
             }
 
             var tap = root.gameObject.AddComponent<Tap>();

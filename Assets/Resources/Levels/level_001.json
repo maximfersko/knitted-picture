@@ -19,21 +19,25 @@
   "slots": 5,
   "spools": [
     {
-      "loops": 6
+      "color": 1,
+      "loops": 12
     },
     {
       "column": 1,
-      "color": 1,
-      "loops": 11
+      "loops": 7
     },
     {
       "column": 2,
       "color": 1,
-      "loops": 11
+      "loops": 10
+    },
+    {
+      "column": 2,
+      "loops": 2
     },
     {
       "column": 3,
-      "loops": 8
+      "loops": 5
     }
   ]
 }

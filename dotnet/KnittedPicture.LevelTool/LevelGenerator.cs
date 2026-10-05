@@ -34,45 +34,57 @@ namespace KnittedPicture.LevelTool
 
             var width = picture[0].Length;
             var height = picture.Length;
-            var colorCount = keys.Count;
 
-            var sequence = new List<int>(width * height);
-            for (var y = height - 1; y >= 0; y--)
+            // Нарезаем клубки, вяжя картинку по правилам игры: берём цвет с фронта
+            // и вяжем им, пока клубок не наберёт свою длину или цвет не кончится на фронте.
+            // Полученный порядок клубков проходим даже с одним слотом.
+            var heights = new int[width];
+            var total = width * height;
+            var knitted = 0;
+            var order = new List<Draft>();
+            while (knitted < total)
             {
+                var front = new List<int>();
                 for (var x = 0; x < width; x++)
                 {
-                    sequence.Add(picture[y][x] - '0');
+                    if (heights[x] < height)
+                    {
+                        var c = picture[height - 1 - heights[x]][x] - '0';
+                        if (!front.Contains(c))
+                        {
+                            front.Add(c);
+                        }
+                    }
                 }
-            }
 
-            var counts = new int[colorCount];
-            foreach (var c in sequence)
-            {
-                counts[c]++;
-            }
-
-            var perColor = SpoolsPerColor(counts, design.spools);
-            var queues = new List<Queue<Draft>>();
-            for (var c = 0; c < colorCount; c++)
-            {
-                var lengths = Split(counts[c], perColor[c], rng);
-                queues.Add(new Queue<Draft>(lengths.Select(l => new Draft { Color = c, Loops = l })));
-            }
-
-            // Порядок, в котором станок потребует клубки.
-            var order = new List<Draft>();
-            var remaining = new int[colorCount];
-            foreach (var c in sequence)
-            {
-                if (remaining[c] == 0)
+                var color = front[rng.Next(front.Count)];
+                var spoolsLeft = Math.Max(1, design.spools - order.Count);
+                var average = (double)(total - knitted) / spoolsLeft;
+                var target = Math.Max(1, (int)Math.Round(average * (0.7 + rng.NextDouble() * 0.6)));
+                var loops = 0;
+                while (loops < target)
                 {
-                    var next = queues[c].Dequeue();
-                    next.Order = order.Count;
-                    order.Add(next);
-                    remaining[c] = next.Loops;
+                    var best = -1;
+                    for (var x = 0; x < width; x++)
+                    {
+                        if (heights[x] < height && picture[height - 1 - heights[x]][x] - '0' == color &&
+                            (best < 0 || heights[x] < heights[best]))
+                        {
+                            best = x;
+                        }
+                    }
+
+                    if (best < 0)
+                    {
+                        break;
+                    }
+
+                    heights[best]++;
+                    loops++;
+                    knitted++;
                 }
 
-                remaining[c]--;
+                order.Add(new Draft { Color = color, Loops = loops, Order = order.Count });
             }
 
             var columns = Enumerable.Range(0, design.columns).Select(_ => new List<Draft>()).ToList();
@@ -144,78 +156,6 @@ namespace KnittedPicture.LevelTool
             }
 
             return (char)('0' + index);
-        }
-
-        private static int[] SpoolsPerColor(int[] counts, int target)
-        {
-            var total = counts.Sum();
-            var result = counts.Select(n => n == 0 ? 0 : Math.Max(1, Math.Min(n, (int)Math.Round((double)target * n / total)))).ToArray();
-            while (result.Sum() > target && result.Any(k => k > 1))
-            {
-                var i = Array.IndexOf(result, result.Max());
-                result[i]--;
-            }
-
-            while (result.Sum() < target)
-            {
-                var best = -1;
-                var bestLoad = 0.0;
-                for (var c = 0; c < counts.Length; c++)
-                {
-                    if (result[c] == 0 || result[c] >= counts[c])
-                    {
-                        continue;
-                    }
-
-                    var load = (double)counts[c] / result[c];
-                    if (load > bestLoad)
-                    {
-                        best = c;
-                        bestLoad = load;
-                    }
-                }
-
-                if (best < 0)
-                {
-                    break;
-                }
-
-                result[best]++;
-            }
-
-            return result;
-        }
-
-        private static List<int> Split(int total, int parts, Random rng)
-        {
-            if (parts <= 0)
-            {
-                return new List<int>();
-            }
-
-            var weights = Enumerable.Range(0, parts).Select(_ => 0.65 + rng.NextDouble() * 0.7).ToList();
-            var sum = weights.Sum();
-            var result = weights.Select(w => Math.Max(1, (int)Math.Round(total * w / sum))).ToList();
-            var diff = total - result.Sum();
-            var i = 0;
-            while (diff != 0)
-            {
-                var index = i % parts;
-                if (diff > 0)
-                {
-                    result[index]++;
-                    diff--;
-                }
-                else if (result[index] > 1)
-                {
-                    result[index]--;
-                    diff++;
-                }
-
-                i++;
-            }
-
-            return result.OrderBy(_ => rng.Next()).ToList();
         }
 
         private static int Pick(List<double> weights, Random rng)

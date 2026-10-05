@@ -28,15 +28,15 @@
     "llooolll",
     "llllllll"
   ],
-  "slots": 5,
+  "slots": 4,
   "columns": 4,
   "spools": 10,
-  "swaps": 2,
+  "swaps": 3,
   "hidden": 0,
   "knots": 0,
   "links": 0,
   "locks": 0,
-  "minWin": 0.7,
-  "maxWin": 0.95,
+  "minWin": 0.55,
+  "maxWin": 0.85,
   "seed": 41
 }

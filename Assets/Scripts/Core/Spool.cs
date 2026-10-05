@@ -42,6 +42,17 @@ namespace KnittedPicture.Core
 
         public bool IsKey { get; }
 
-        internal Spool Clone() => new Spool(Id, Color, Loops, Hidden, Link, Knots, Locked, IsKey) { Revealed = Revealed };
+        /// <summary>Шаги до начала вязки после того, как клубок встал на станок (пока он «летит»).</summary>
+        public int Warmup { get; internal set; }
+
+        /// <summary>Клубок хоть раз простаивал на станке без работы — значит, он не «идеальный».</summary>
+        public bool Stalled { get; internal set; }
+
+        internal Spool Clone() => new Spool(Id, Color, Loops, Hidden, Link, Knots, Locked, IsKey)
+        {
+            Revealed = Revealed,
+            Warmup = Warmup,
+            Stalled = Stalled,
+        };
     }
 }

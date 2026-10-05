@@ -24,7 +24,7 @@ namespace KnittedPicture.Core.Tests
 
             var reward = progress.CompleteLevel(1, hard: false);
 
-            Assert.Equal(Economy.WinReward, reward);
+            Assert.Equal(Economy.WinReward, reward.Total);
             Assert.Equal(Economy.StartCoins + Economy.WinReward, progress.Coins);
             Assert.Equal(2, progress.CurrentLevel);
             Assert.True(progress.IsCompleted(1));
@@ -35,8 +35,8 @@ namespace KnittedPicture.Core.Tests
         {
             var progress = Fresh();
 
-            Assert.Equal(Economy.HardWinReward, progress.CompleteLevel(5, hard: true));
-            Assert.Equal(Economy.ReplayReward, progress.CompleteLevel(5, hard: true));
+            Assert.Equal(Economy.HardWinReward, progress.CompleteLevel(5, hard: true).BaseCoins);
+            Assert.Equal(Economy.ReplayReward, progress.CompleteLevel(5, hard: true).BaseCoins);
         }
 
         [Fact]
@@ -103,6 +103,47 @@ namespace KnittedPicture.Core.Tests
 
             progress.CompleteLevel(12, false);
             Assert.True(progress.TakeInterstitialSlot(12));
+        }
+
+        [Fact]
+        public void Best_stars_are_kept_and_an_improvement_is_a_record()
+        {
+            var progress = Fresh();
+
+            progress.CompleteLevel(3, false, stars: 2);
+            Assert.Equal(2, progress.StarsOf(3));
+            Assert.Equal(0, progress.StarsOf(2));
+
+            Assert.False(progress.CompleteLevel(3, false, stars: 1).NewRecord);
+            Assert.Equal(2, progress.StarsOf(3));
+            Assert.True(progress.CompleteLevel(3, false, stars: 3).NewRecord);
+            Assert.Equal(3, progress.StarsOf(3));
+        }
+
+        [Fact]
+        public void Win_streak_grows_pays_a_capped_bonus_and_breaks_on_restart()
+        {
+            var progress = Fresh();
+
+            Assert.Equal(0, progress.CompleteLevel(1, false).StreakCoins);
+            Assert.Equal(Economy.StreakStep, progress.CompleteLevel(2, false).StreakCoins);
+            progress.CompleteLevel(3, false);
+            progress.CompleteLevel(4, false);
+            var fifth = progress.CompleteLevel(5, true, comboCoins: 4);
+            Assert.Equal(Economy.StreakMax, fifth.StreakCoins);
+            Assert.Equal(Economy.HardWinReward + 4 + Economy.StreakMax, fifth.Total);
+            Assert.Equal(5, progress.Streak);
+
+            progress.BreakStreak();
+            Assert.Equal(0, progress.CompleteLevel(6, false).StreakCoins);
+        }
+
+        [Fact]
+        public void Stars_depend_on_help_used()
+        {
+            Assert.Equal(3, Economy.Stars(boostersUsed: 0, rescues: 0));
+            Assert.Equal(2, Economy.Stars(boostersUsed: 1, rescues: 0));
+            Assert.Equal(1, Economy.Stars(boostersUsed: 0, rescues: 1));
         }
 
         [Fact]

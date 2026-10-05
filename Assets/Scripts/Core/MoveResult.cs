@@ -10,7 +10,7 @@ namespace KnittedPicture.Core
         Playing,
         Won,
 
-        /// <summary>Ходов нет: слоты заняты, а нужного цвета на станке нет.</summary>
+        /// <summary>Ходов нет: слоты заняты, а нужных цветов на фронте вязки нет.</summary>
         Jammed,
 
         /// <summary>Моль добралась до картинки: время вышло.</summary>
@@ -42,15 +42,16 @@ namespace KnittedPicture.Core
         LinkNotReady,
     }
 
-    /// <summary>Одна связанная петля: где, каким цветом и из какого слота.</summary>
+    /// <summary>Одна связанная петля: где, каким цветом, из какого слота и каким клубком.</summary>
     public readonly struct Stitch
     {
-        public Stitch(int x, int y, int color, int slot)
+        public Stitch(int x, int y, int color, int slot, int spoolId)
         {
             X = x;
             Y = y;
             Color = color;
             Slot = slot;
+            SpoolId = spoolId;
         }
 
         /// <summary>Колонка картинки, 0 — слева.</summary>
@@ -62,6 +63,26 @@ namespace KnittedPicture.Core
         public int Color { get; }
 
         public int Slot { get; }
+
+        public int SpoolId { get; }
+    }
+
+    /// <summary>Клубок довязал все петли и освободил слот.</summary>
+    public readonly struct Completion
+    {
+        public Completion(int spoolId, int slot, bool perfect)
+        {
+            SpoolId = spoolId;
+            Slot = slot;
+            Perfect = perfect;
+        }
+
+        public int SpoolId { get; }
+
+        public int Slot { get; }
+
+        /// <summary>Клубок работал без простоя от начала до конца — повод для комбо.</summary>
+        public bool Perfect { get; }
     }
 
     /// <summary>Клубок переехал с поля на станок.</summary>
@@ -84,18 +105,39 @@ namespace KnittedPicture.Core
         public int Slot { get; }
     }
 
+    /// <summary>Результат одного шага вязки: каждый клубок на станке сделал не больше одной петли.</summary>
+    public sealed class StepResult
+    {
+        public static readonly StepResult Idle = new StepResult(Array.Empty<Stitch>(), Array.Empty<Completion>(), false, GameStatus.Playing);
+
+        internal StepResult(IReadOnlyList<Stitch> stitches, IReadOnlyList<Completion> completed, bool progress, GameStatus status)
+        {
+            Stitches = stitches;
+            Completed = completed;
+            Progress = progress;
+            Status = status;
+        }
+
+        public IReadOnlyList<Stitch> Stitches { get; }
+
+        public IReadOnlyList<Completion> Completed { get; }
+
+        /// <summary>Что-то изменилось: связана петля или клубок «долетел». false — станок стоит.</summary>
+        public bool Progress { get; }
+
+        public GameStatus Status { get; }
+    }
+
     /// <summary>Что случилось после действия игрока: всё нужное виду для анимации.</summary>
     public sealed class MoveResult
     {
         private static readonly IReadOnlyList<Placement> NoPlacements = Array.Empty<Placement>();
-        private static readonly IReadOnlyList<Stitch> NoStitches = Array.Empty<Stitch>();
         private static readonly IReadOnlyList<int> NoIds = Array.Empty<int>();
 
         private MoveResult(
             MoveKind kind,
             RejectReason reason,
             IReadOnlyList<Placement> placed,
-            IReadOnlyList<Stitch> knitted,
             Spool? knotted,
             IReadOnlyList<int> unlocked,
             IReadOnlyList<int> revealed,
@@ -104,7 +146,6 @@ namespace KnittedPicture.Core
             Kind = kind;
             Reason = reason;
             Placed = placed;
-            Knitted = knitted;
             Knotted = knotted;
             Unlocked = unlocked;
             Revealed = revealed;
@@ -112,18 +153,13 @@ namespace KnittedPicture.Core
         }
 
         internal static MoveResult Rejected(RejectReason reason, GameStatus status) =>
-            new MoveResult(MoveKind.Rejected, reason, NoPlacements, NoStitches, null, NoIds, NoIds, status);
+            new MoveResult(MoveKind.Rejected, reason, NoPlacements, null, NoIds, NoIds, status);
 
         internal static MoveResult Knot(Spool spool, GameStatus status) =>
-            new MoveResult(MoveKind.KnotUntied, RejectReason.None, NoPlacements, NoStitches, spool, NoIds, NoIds, status);
+            new MoveResult(MoveKind.KnotUntied, RejectReason.None, NoPlacements, spool, NoIds, NoIds, status);
 
-        internal static MoveResult Place(
-            IReadOnlyList<Placement> placed,
-            IReadOnlyList<Stitch> knitted,
-            IReadOnlyList<int> unlocked,
-            IReadOnlyList<int> revealed,
-            GameStatus status) =>
-            new MoveResult(MoveKind.Placed, RejectReason.None, placed, knitted, null, unlocked, revealed, status);
+        internal static MoveResult Place(IReadOnlyList<Placement> placed, IReadOnlyList<int> unlocked, IReadOnlyList<int> revealed, GameStatus status) =>
+            new MoveResult(MoveKind.Placed, RejectReason.None, placed, null, unlocked, revealed, status);
 
         public MoveKind Kind { get; }
 
@@ -133,9 +169,6 @@ namespace KnittedPicture.Core
 
         /// <summary>Клубки, уехавшие на станок: один или пара связанных.</summary>
         public IReadOnlyList<Placement> Placed { get; }
-
-        /// <summary>Петли, связанные сразу после хода, по порядку.</summary>
-        public IReadOnlyList<Stitch> Knitted { get; }
 
         /// <summary>Клубок, у которого развязался узелок.</summary>
         public Spool? Knotted { get; }

@@ -31,7 +31,8 @@ namespace KnittedPicture.LevelTool
             var game = new LoomGame(level);
             for (var step = 0; step < 1000 && game.Status == GameStatus.Playing; step++)
             {
-                var upcoming = game.UpcomingColors(game.Width * 2).Take(3).ToList();
+                var front = game.FrontColors();
+                var soon = game.SoonColors(2);
                 var options = new List<int>();
                 var weights = new List<double>();
                 for (var c = 0; c < game.ColumnCount; c++)
@@ -41,21 +42,21 @@ namespace KnittedPicture.LevelTool
                         continue;
                     }
 
-                    var front = game.Column(c)[0];
+                    var spool = game.Column(c)[0];
                     double weight;
-                    if (front.Knots > 0)
+                    if (spool.Knots > 0)
                     {
                         weight = 2;
                     }
-                    else if (!front.IsColorVisible)
+                    else if (!spool.IsColorVisible)
                     {
                         weight = 1.5;
                     }
-                    else if (upcoming.Count > 0 && front.Color == upcoming[0])
+                    else if (front.Contains(spool.Color))
                     {
                         weight = 8;
                     }
-                    else if (upcoming.Contains(front.Color))
+                    else if (soon.Contains(spool.Color))
                     {
                         weight = 3;
                     }
@@ -86,6 +87,7 @@ namespace KnittedPicture.LevelTool
                 }
 
                 game.TapColumn(pick);
+                game.Settle();
             }
 
             return game.Status == GameStatus.Won;

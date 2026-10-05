@@ -43,6 +43,6 @@
   "links": 0,
   "locks": 0,
   "minWin": 0.5,
-  "maxWin": 0.85,
+  "maxWin": 0.75,
   "seed": 71
 }

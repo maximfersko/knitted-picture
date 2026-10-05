@@ -25,6 +25,12 @@ namespace KnittedPicture.Core
         /// <summary>Бустеры, для которых уже показали окно «Новый бустер».</summary>
         public List<int> introsShown = new List<int>();
 
+        /// <summary>Лучшие звёзды по уровням: индекс — id уровня минус 1.</summary>
+        public List<int> stars = new List<int>();
+
+        /// <summary>Побед подряд без перезапуска уровня.</summary>
+        public int streak;
+
         public bool soundOn = true;
         public int totalWins;
         public int winsSinceInterstitial;

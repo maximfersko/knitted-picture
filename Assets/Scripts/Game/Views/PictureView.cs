@@ -1,5 +1,7 @@
 #nullable enable
 
+using System;
+using System.Collections.Generic;
 using KnittedPicture.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,15 +9,20 @@ using UnityEngine.UI;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Картинка на станке. Связанные петли — с фактурой вязки, следующие два ряда
-    /// подсвечены подсказкой, остальное — бледный эскиз. Текущая петля в рамке.
+    /// Картинка на станке. Связанные петли — с фактурой вязки; фронт каждого столбца
+    /// (что вяжется следующим) яркий, клетка за ним — бледнее, остальное — едва видный эскиз.
+    /// Петля становится вязаной, когда к ней долетает нитка (до этого она «в пути»).
     /// </summary>
     public sealed class PictureView
     {
+        private const float FrontAlpha = 0.62f;
+        private const float NextAlpha = 0.3f;
+        private const float SketchAlpha = 0.12f;
+
         private readonly LoomGame _game;
         private readonly Color[] _colors;
         private readonly Image[] _cells;
-        private readonly RectTransform _cursor;
+        private readonly HashSet<int> _pending = new HashSet<int>();
         private readonly float _cell;
         private readonly float _step;
 
@@ -39,15 +46,6 @@ namespace KnittedPicture.Game
                 }
             }
 
-            _cursor = Ui.Node(Root, "Cursor");
-            var halo = Ui.Image(_cursor, "Halo", Art.RoundRectOutline(6, 3), Color.white);
-            halo.type = UnityEngine.UI.Image.Type.Sliced;
-            halo.pixelsPerUnitMultiplier = Art.Density;
-            Ui.Place(halo.rectTransform, -4, -4, cell + 8, cell + 8);
-            var ring = Ui.Image(_cursor, "Ring", Art.RoundRectOutline(5, 2.5f), Palette.Ink);
-            ring.type = UnityEngine.UI.Image.Type.Sliced;
-            ring.pixelsPerUnitMultiplier = Art.Density;
-            Ui.Place(ring.rectTransform, -3, -3, cell + 6, cell + 6);
             Refresh();
         }
 
@@ -57,62 +55,104 @@ namespace KnittedPicture.Game
 
         public float Height => _game.Height * _step - (_step - _cell);
 
-        /// <summary>Перерисовать все клетки по состоянию игры.</summary>
+        /// <summary>Связано и показано на экране (без петель «в пути»).</summary>
+        public int LandedCount => _game.KnittedCount - _pending.Count;
+
         public void Refresh()
         {
-            var preview = _game.KnittedCount + _game.Width * 2;
-            for (var y = 0; y < _game.Height; y++)
+            _pending.Clear();
+            for (var x = 0; x < _game.Width; x++)
             {
-                for (var x = 0; x < _game.Width; x++)
-                {
-                    var stitch = _game.StitchIndex(x, y);
-                    var color = _colors[_game.ColorAt(x, y)];
-                    var image = _cells[y * _game.Width + x];
-                    image.rectTransform.localScale = Vector3.one;
-                    if (stitch < _game.KnittedCount)
-                    {
-                        image.sprite = Art.StitchCell;
-                        image.color = color;
-                    }
-                    else
-                    {
-                        image.sprite = Art.PlainCell;
-                        image.color = Palette.WithAlpha(color, stitch < preview ? 0.38f : 0.14f);
-                    }
-                }
+                RefreshColumn(x);
             }
-
-            MoveCursor();
         }
 
-        /// <summary>Петля связалась: клетка «впрыгивает» с фактурой вязки.</summary>
-        public void Knit(int x, int y)
+        public void RefreshColumn(int x)
         {
+            var front = _game.FrontY(x);
+            for (var y = 0; y < _game.Height; y++)
+            {
+                var image = _cells[y * _game.Width + x];
+                var color = _colors[_game.ColorAt(x, y)];
+                image.rectTransform.localScale = Vector3.one;
+                if (_game.IsKnitted(x, y) && !_pending.Contains(Key(x, y)))
+                {
+                    image.sprite = Art.StitchCell;
+                    image.color = color;
+                    continue;
+                }
+
+                image.sprite = Art.PlainCell;
+                if (_pending.Contains(Key(x, y)) || y == front)
+                {
+                    image.color = Palette.WithAlpha(color, FrontAlpha);
+                }
+                else if (y == front - 1)
+                {
+                    image.color = Palette.WithAlpha(color, NextAlpha);
+                }
+                else
+                {
+                    image.color = Palette.WithAlpha(color, SketchAlpha);
+                }
+            }
+        }
+
+        /// <summary>Петля связана в модели, нитка летит — клетка пока «в пути».</summary>
+        public void MarkPending(int x, int y)
+        {
+            _pending.Add(Key(x, y));
+            RefreshColumn(x);
+        }
+
+        /// <summary>Нитка долетела: петля «впрыгивает» с фактурой вязки.</summary>
+        public bool Land(int x, int y)
+        {
+            if (!_pending.Remove(Key(x, y)))
+            {
+                return false;
+            }
+
+            if (!_game.IsKnitted(x, y))
+            {
+                RefreshColumn(x);
+                return false;
+            }
+
             var image = _cells[y * _game.Width + x];
             image.sprite = Art.StitchCell;
             image.color = _colors[_game.ColorAt(x, y)];
-            Tweens.Scale(image.rectTransform, 0.55f, 1f, 0.18f);
+            Tweens.Run(image.rectTransform, 0.22f, t =>
+                image.rectTransform.localScale = Vector3.one * (t < 0.5f ? Mathf.Lerp(0.5f, 1.18f, t * 2f) : Mathf.Lerp(1.18f, 1f, (t - 0.5f) * 2f)));
+            return true;
         }
 
-        public void MoveCursor()
+        public Vector3 CellWorld(int x, int y) => Ui.WorldCenter(_cells[y * _game.Width + x].rectTransform);
+
+        /// <summary>Победная волна: ряды снизу вверх вспыхивают белым и возвращаются.</summary>
+        public void Wave(Action done)
         {
-            var (cx, cy) = _game.CurrentStitch;
-            _cursor.gameObject.SetActive(cx >= 0);
-            if (cx >= 0)
+            const float perRow = 0.045f;
+            for (var y = _game.Height - 1; y >= 0; y--)
             {
-                Ui.Place(_cursor, cx * _step, cy * _step, _cell, _cell);
-                _cursor.SetSiblingIndex(_cursor.parent.childCount - 1);
+                var row = _game.Height - 1 - y;
+                for (var x = 0; x < _game.Width; x++)
+                {
+                    var image = _cells[y * _game.Width + x];
+                    var color = _colors[_game.ColorAt(x, y)];
+                    image.sprite = Art.StitchCell;
+                    Tweens.Run(image.rectTransform, 0.32f, t =>
+                    {
+                        var bump = Ease.Bump(t);
+                        image.color = Color.Lerp(color, Color.white, 0.75f * bump);
+                        image.rectTransform.localScale = Vector3.one * (1f + 0.22f * bump);
+                    }, null, () => image.color = color, row * perRow);
+                }
             }
+
+            Tweens.Delay(Root, _game.Height * perRow + 0.35f, done);
         }
 
-        public void ShowCursorAt(int x, int y)
-        {
-            Ui.Place(_cursor, x * _step, y * _step, _cell, _cell);
-        }
-
-        public void HideCursor()
-        {
-            _cursor.gameObject.SetActive(false);
-        }
+        private int Key(int x, int y) => y * _game.Width + x;
     }
 }

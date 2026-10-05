@@ -186,12 +186,19 @@ namespace KnittedPicture.Game
     /// </summary>
     public sealed class FailPopup : Popup
     {
-        public FailPopup(App app, FailKind kind, bool canRescue, Action rescue, Action restart)
+        public FailPopup(App app, FailKind kind, bool canRescue, int percent, Action rescue, Action restart)
             : base(app, bottomSheet: true)
         {
             var type = kind == FailKind.Jam ? BoosterType.Slot : BoosterType.Time;
             AddIcon(kind == FailKind.Jam ? KnittedPicture.Game.Icon.Knot : KnittedPicture.Game.Icon.Moth, Palette.Danger, Palette.DangerSoft, 64);
             AddTitle(kind == FailKind.Jam ? "Станок застрял" : "Моль добралась до картинки", 24);
+            if (percent >= 50)
+            {
+                // «Почти!» мотивирует попробовать ещё раз сильнее лёгкой победы.
+                var near = AddText($"Довязано {percent}% — почти!", 18, 1);
+                near.color = Palette.Danger;
+            }
+
             AddText(kind == FailKind.Jam
                 ? canRescue ? "Слоты заняты, а нужного цвета на станке нет" : "Станок заполнен до предела — попробуй ещё раз"
                 : "Время вышло. Отгони моль и довяжи картинку", 16, 1.6f);
@@ -226,7 +233,7 @@ namespace KnittedPicture.Game
                         }
                         else
                         {
-                            app.ShowPopup(new FailPopup(app, kind, canRescue, rescue, restart));
+                            app.ShowPopup(new FailPopup(app, kind, canRescue, percent, rescue, restart));
                         }
                     });
                 });

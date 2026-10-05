@@ -1,7 +1,7 @@
 {
   "id": 3,
   "name": "Мухомор",
-  "tip": "Три цвета! Не занимай станок клубками, которые нужны нескоро",
+  "tip": "Клубки на станке вяжут вместе и открывают друг другу новые клетки",
   "hard": false,
   "timeLimit": 0,
   "palette": [
@@ -28,15 +28,15 @@
     "ggwwwwgg",
     "gggggggg"
   ],
-  "slots": 5,
+  "slots": 4,
   "columns": 4,
   "spools": 8,
-  "swaps": 1,
+  "swaps": 2,
   "hidden": 0,
   "knots": 0,
   "links": 0,
   "locks": 0,
-  "minWin": 0.8,
-  "maxWin": 1.0,
+  "minWin": 0.65,
+  "maxWin": 0.9,
   "seed": 31
 }

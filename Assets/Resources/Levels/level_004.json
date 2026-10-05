@@ -19,50 +19,69 @@
     "00111000",
     "00000000"
   ],
-  "slots": 5,
+  "slots": 4,
   "spools": [
     {
+      "color": 1,
       "loops": 6
     },
     {
-      "loops": 5
-    },
-    {
-      "column": 1,
-      "loops": 10
-    },
-    {
-      "column": 1,
-      "color": 1,
-      "loops": 5
-    },
-    {
-      "column": 2,
-      "loops": 8
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 5
-    },
-    {
-      "column": 2,
-      "loops": 6
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 8
-    },
-    {
-      "column": 3,
-      "color": 2,
-      "loops": 4
-    },
-    {
-      "column": 3,
       "color": 1,
       "loops": 7
+    },
+    {
+      "color": 1,
+      "loops": 1
+    },
+    {
+      "loops": 1
+    },
+    {
+      "color": 2,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "loops": 6
+    },
+    {
+      "column": 1,
+      "loops": 8
+    },
+    {
+      "column": 1,
+      "loops": 2
+    },
+    {
+      "column": 2,
+      "loops": 7
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 2,
+      "loops": 5
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 3
+    },
+    {
+      "column": 3,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "loops": 5
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 6
     }
   ]
 }

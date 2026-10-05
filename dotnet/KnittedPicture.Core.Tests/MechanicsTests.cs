@@ -3,10 +3,10 @@ using Xunit;
 
 namespace KnittedPicture.Core.Tests
 {
-    /// <summary>Особые клубки, ножницы и моль.</summary>
+    /// <summary>Особые клубки, ножницы, моль и подсказка.</summary>
     public class MechanicsTests
     {
-        // 4×1: все петли цвета 0, нужны два клубка по 2 петли.
+        // 4×2: нижний ряд цвета 0, верхний цвета 1.
         private static LevelData Strip(params SpoolData[] spools) => new LevelData
         {
             id = 1,
@@ -55,9 +55,9 @@ namespace KnittedPicture.Core.Tests
             Assert.Single(game.Column(0));
             Assert.Equal(0, game.Column(0)[0].Knots);
 
-            var second = game.TapColumn(0);
-            Assert.Equal(MoveKind.Placed, second.Kind);
-            Assert.Equal(4, second.Knitted.Count);
+            Assert.Equal(MoveKind.Placed, game.TapColumn(0).Kind);
+            game.Settle();
+            Assert.Equal(4, game.KnittedCount);
         }
 
         [Fact]
@@ -68,9 +68,10 @@ namespace KnittedPicture.Core.Tests
                 new SpoolData { column = 1, color = 1, loops = 4, link = 1 }));
 
             var result = game.TapColumn(1);
+            game.Settle();
 
             Assert.Equal(2, result.Placed.Count);
-            Assert.Equal(GameStatus.Won, result.Status);
+            Assert.Equal(GameStatus.Won, game.Status);
         }
 
         [Fact]
@@ -83,6 +84,7 @@ namespace KnittedPicture.Core.Tests
 
             Assert.Equal(RejectReason.LinkNotReady, game.TapColumn(0).Reason);
             game.TapColumn(1);
+            game.Settle();
             Assert.Equal(MoveKind.Placed, game.TapColumn(0).Kind);
         }
 
@@ -90,15 +92,14 @@ namespace KnittedPicture.Core.Tests
         public void Linked_pair_needs_two_free_slots_or_the_loom_jams()
         {
             var level = Strip(
-                new SpoolData { column = 0, color = 0, loops = 2 },
+                new SpoolData { column = 0, color = 1, loops = 4 },
                 new SpoolData { column = 1, color = 0, loops = 2, link = 1 },
-                new SpoolData { column = 2, color = 1, loops = 4, link = 1 });
+                new SpoolData { column = 2, color = 0, loops = 2, link = 1 });
             level.slots = 2;
-            level.picture = new[] { "1111", "1000" };
-            level.spools[1].loops = 1;
-            level.spools[2].loops = 5;
             var game = new LoomGame(level);
+
             game.TapColumn(0);
+            game.Settle();
 
             Assert.Equal(1, game.FreeSlots);
             Assert.Equal(GameStatus.Jammed, game.Status);
@@ -106,6 +107,8 @@ namespace KnittedPicture.Core.Tests
             game.AddSlot();
             Assert.Equal(GameStatus.Playing, game.Status);
             Assert.Equal(2, game.TapColumn(1).Placed.Count);
+            game.Settle();
+            Assert.Equal(GameStatus.Won, game.Status);
         }
 
         [Fact]
@@ -136,7 +139,6 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(1, placed.Spool.Color);
             Assert.Equal(0, placed.Spool.Knots);
             Assert.True(placed.Spool.IsColorVisible);
-            Assert.Empty(result.Knitted);
             Assert.Single(game.Column(0));
         }
 
@@ -174,10 +176,13 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(GameStatus.TimeUp, game.Status);
             Assert.False(game.CanUndo);
             Assert.Equal(RejectReason.GameOver, game.TapColumn(1).Reason);
+            Assert.Empty(game.Step().Stitches);
 
             game.AddTime(Economy.TimeBonusSeconds);
             Assert.Equal(GameStatus.Playing, game.Status);
-            Assert.Equal(GameStatus.Won, game.TapColumn(1).Status);
+            game.TapColumn(1);
+            game.Settle();
+            Assert.Equal(GameStatus.Won, game.Status);
         }
 
         [Fact]
@@ -195,20 +200,20 @@ namespace KnittedPicture.Core.Tests
             foreach (var column in path!)
             {
                 Assert.True(game.TapColumn(column).Accepted);
+                game.Settle();
             }
 
             Assert.Equal(GameStatus.Won, game.Status);
         }
 
-        [Theory]
-        [InlineData("ключа")]
-        public void Validator_rejects_locks_without_key(string expected)
+        [Fact]
+        public void Validator_rejects_locks_without_key()
         {
             var level = Strip(
                 new SpoolData { column = 0, color = 1, loops = 4, locked = true },
                 new SpoolData { column = 1, color = 0, loops = 4 });
 
-            Assert.Contains(LevelValidator.Validate(level), e => e.Contains(expected));
+            Assert.Contains(LevelValidator.Validate(level), e => e.Contains("ключа"));
         }
 
         [Fact]

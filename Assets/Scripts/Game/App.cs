@@ -43,6 +43,7 @@ namespace KnittedPicture.Game
         private RectTransform? _frame;
         private RectTransform? _popupLayer;
         private ScreenView? _screen;
+        private RawImage? _pattern;
         private Func<ScreenView>? _route;
         private Vector2Int _screenSize;
         private Rect _safeArea;
@@ -136,8 +137,14 @@ namespace KnittedPicture.Game
 
         public void ShowAlbum() => Show(() => new AlbumScreen(this));
 
-        public void StartLevel(int levelId)
+        /// <summary>Начать уровень. restart — игрок перезапускает после неудачи: серия побед обрывается.</summary>
+        public void StartLevel(int levelId, bool restart = false)
         {
+            if (restart)
+            {
+                Progress.BreakStreak();
+            }
+
             if (!Levels.Has(levelId))
             {
                 ShowHome();
@@ -155,9 +162,9 @@ namespace KnittedPicture.Game
             }
         }
 
-        public void OnLevelWon(LevelData level)
+        public void OnLevelWon(LevelData level, int stars, int comboCoins)
         {
-            var reward = Progress.CompleteLevel(level.id, level.hard);
+            var reward = Progress.CompleteLevel(level.id, level.hard, stars, comboCoins);
             Save();
             Show(() => new WinScreen(this, level, reward));
         }
@@ -347,6 +354,11 @@ namespace KnittedPicture.Game
 
             var background = Ui.Image(_canvas, "Background", null, Palette.Ground);
             Ui.Stretch(background.rectTransform);
+            var pattern = Ui.Node(_canvas, "Pattern").gameObject.AddComponent<RawImage>();
+            pattern.texture = Art.KnitPattern;
+            pattern.raycastTarget = false;
+            Ui.Stretch(pattern.rectTransform);
+            _pattern = pattern;
             _frame = Ui.Node(_canvas, "Frame");
             _popupLayer = Ui.Stretch(Ui.Node(_canvas, "Popups"));
             ApplyLayout();
@@ -378,6 +390,11 @@ namespace KnittedPicture.Game
             frame.pivot = Vector2.zero;
             frame.anchoredPosition = new Vector2(left + (safeWidth - Width) / 2f, bottom);
             frame.sizeDelta = new Vector2(Width, Height);
+
+            if (_pattern != null)
+            {
+                _pattern.uvRect = new Rect(0, 0, CanvasWidth / 40f, Screen.height / scale / 40f);
+            }
         }
 
         private void Rebuild()

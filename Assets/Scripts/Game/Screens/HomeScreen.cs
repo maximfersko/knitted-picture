@@ -85,7 +85,18 @@ namespace KnittedPicture.Game
 
                 var state = progress.IsCompleted(id) ? TileState.Done : progress.IsAvailable(id) ? TileState.Current : TileState.Locked;
                 var levelId = id;
-                MiniPicture.Tile(card, App.Levels.Get(id), state, 16 + i * (tile + gap), 50, tile).OnClick(() => App.StartLevel(levelId));
+                MiniPicture.Tile(card, App.Levels.Get(id), state, 16 + i * (tile + gap), 50, tile, progress.StarsOf(id))
+                    .OnClick(() => App.StartLevel(levelId));
+            }
+
+            // Серия побед подряд: чем длиннее, тем больше монет — повод не перезапускать.
+            if (progress.Streak >= 2)
+            {
+                var chipW = Mathf.Min(W - 32f, 300f);
+                var chip = Ui.Card(Root, "Streak", (W - chipW) / 2f, y + cardH + 14f, chipW, 36, 18, Palette.CoinSoft, Palette.CoinSoft, 0f);
+                Ui.IconImage(chip, Icon.Star, Palette.CoinShadow, 22, 18, 18);
+                var bonus = Economy.StreakBonus(progress.Streak + 1);
+                Ui.Label(chip, $"Серия побед: {progress.Streak} · +{bonus} за следующую", 14, Palette.Ink, 36, 0, chipW - 44, 36, true, TextAnchor.MiddleLeft);
             }
         }
     }

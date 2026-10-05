@@ -31,57 +31,58 @@
   "slots": 5,
   "spools": [
     {
-      "color": 1,
-      "loops": 16
-    },
-    {
-      "color": 1,
-      "loops": 11,
-      "knots": 1
-    },
-    {
-      "loops": 8,
-      "hidden": true
-    },
-    {
-      "column": 1,
-      "color": 5,
-      "loops": 10
-    },
-    {
-      "column": 1,
-      "color": 4,
       "loops": 8
     },
     {
-      "column": 1,
-      "color": 4,
-      "loops": 10,
-      "hidden": true
-    },
-    {
-      "column": 1,
-      "color": 1,
-      "loops": 13
-    },
-    {
-      "column": 1,
-      "color": 2,
-      "loops": 4
-    },
-    {
-      "column": 2,
-      "color": 5,
       "loops": 10
     },
     {
-      "column": 2,
       "color": 3,
-      "loops": 4
+      "loops": 1
     },
     {
-      "column": 2,
-      "loops": 9
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "color": 3,
+      "loops": 1,
+      "hidden": true
+    },
+    {
+      "color": 4,
+      "loops": 3,
+      "hidden": true
+    },
+    {
+      "loops": 2,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 11
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 14
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 19,
+      "knots": 1
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 15
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 2
     },
     {
       "column": 2,
@@ -90,41 +91,60 @@
     },
     {
       "column": 2,
-      "loops": 9,
+      "color": 5,
+      "loops": 12
+    },
+    {
+      "column": 2,
+      "loops": 21,
       "knots": 1
     },
     {
       "column": 3,
-      "loops": 12
+      "color": 5,
+      "loops": 5
     },
     {
       "column": 3,
-      "loops": 9
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 13,
-      "hidden": true
-    },
-    {
-      "column": 3,
+      "color": 4,
       "loops": 13
     },
     {
+      "column": 3,
+      "loops": 7
+    },
+    {
+      "column": 3,
+      "loops": 1
+    },
+    {
       "column": 4,
-      "color": 5,
-      "loops": 8
+      "loops": 11
     },
     {
       "column": 4,
       "color": 1,
-      "loops": 12
+      "loops": 10
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 2
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 2
     },
     {
       "column": 4,
       "color": 1,
-      "loops": 9
+      "loops": 14
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 2
     }
   ]
 }

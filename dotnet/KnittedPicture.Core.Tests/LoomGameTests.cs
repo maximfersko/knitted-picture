@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -5,8 +6,8 @@ namespace KnittedPicture.Core.Tests
 {
     public class LoomGameTests
     {
-        // 2×2, петли идут снизу вверх, слева направо: 1, 0, 0, 1.
-        // Колонка 0 — клубок цвета 0 (2 петли), колонка 1 — цвета 1 (2 петли).
+        // 2×2. Столбец 0 снизу вверх: 1, 0. Столбец 1 снизу вверх: 0, 1.
+        // Колонка поля 0 — клубок цвета 0 (2 петли), колонка 1 — цвета 1 (2 петли).
         internal static LevelData TwoByTwo(int slots) => new LevelData
         {
             id = 99,
@@ -22,21 +23,52 @@ namespace KnittedPicture.Core.Tests
             },
         };
 
+        // 2×4: в каждом столбце цвета чередуются — один клубок без другого застрянет.
+        private static LevelData Zebra(int slots) => new LevelData
+        {
+            id = 98,
+            width = 2,
+            height = 4,
+            colors = new[] { "#000000", "#FFFFFF" },
+            picture = new[] { "10", "01", "10", "01" },
+            slots = slots,
+            spools = new[]
+            {
+                new SpoolData { column = 0, color = 0, loops = 4 },
+                new SpoolData { column = 1, color = 1, loops = 4 },
+            },
+        };
+
+        private static List<Completion> SettleCollecting(LoomGame game)
+        {
+            var completions = new List<Completion>();
+            while (game.Status == GameStatus.Playing)
+            {
+                var step = game.Step();
+                completions.AddRange(step.Completed);
+                if (!step.Progress)
+                {
+                    break;
+                }
+            }
+
+            return completions;
+        }
+
         [Fact]
-        public void Starts_with_empty_loom_and_bottom_left_stitch_needed()
+        public void Starts_with_empty_loom_and_every_column_front_open()
         {
             var game = new LoomGame(TwoByTwo(slots: 2));
 
             Assert.Equal(GameStatus.Playing, game.Status);
-            Assert.Equal(2, game.Slots.Count);
             Assert.All(game.Slots, s => Assert.Null(s));
-            Assert.Equal(1, game.NeededColor);
-            Assert.Equal((0, 1), game.CurrentStitch);
+            Assert.Equal(new HashSet<int> { 0, 1 }, game.FrontColors());
+            Assert.Equal(1, game.FrontY(0));
             Assert.Equal(0, game.KnittedCount);
         }
 
         [Fact]
-        public void Tap_moves_front_spool_to_first_free_slot_and_knits_matching_stitches()
+        public void Tap_places_spool_which_starts_knitting_after_warmup()
         {
             var game = new LoomGame(TwoByTwo(slots: 2));
 
@@ -45,39 +77,76 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(MoveKind.Placed, result.Kind);
             var placed = Assert.Single(result.Placed);
             Assert.Equal(0, placed.Slot);
-            Assert.Equal(1, placed.Spool.Color);
-            var stitch = Assert.Single(result.Knitted);
-            Assert.Equal((0, 1), (stitch.X, stitch.Y));
-            Assert.Equal(1, game.Slots[0]!.Loops);
-            Assert.Empty(game.Column(1));
+            Assert.Equal(0, game.KnittedCount);
+            for (var i = 0; i < LoomGame.WarmupSteps; i++)
+            {
+                var warm = game.Step();
+                Assert.True(warm.Progress);
+                Assert.Empty(warm.Stitches);
+            }
+
+            var stitch = Assert.Single(game.Step().Stitches);
+            Assert.Equal((0, 1, 1), (stitch.X, stitch.Y, stitch.Color));
             Assert.True(game.IsKnitted(0, 1));
-            Assert.False(game.IsKnitted(1, 1));
         }
 
         [Fact]
-        public void Empty_spool_frees_its_slot_and_finished_picture_wins()
+        public void Spools_on_the_loom_knit_in_parallel()
         {
             var game = new LoomGame(TwoByTwo(slots: 2));
             game.TapColumn(1);
+            game.TapColumn(0);
+            for (var i = 0; i < LoomGame.WarmupSteps; i++)
+            {
+                game.Step();
+            }
 
-            var result = game.TapColumn(0);
+            var step = game.Step();
 
-            Assert.Equal(new[] { (1, 1), (0, 0), (1, 0) }, result.Knitted.Select(s => (s.X, s.Y)));
-            Assert.Equal(GameStatus.Won, result.Status);
-            Assert.All(game.Slots, s => Assert.Null(s));
-            Assert.Equal(-1, game.NeededColor);
-            Assert.False(game.CanUndo);
+            Assert.Equal(2, step.Stitches.Count);
         }
 
         [Fact]
-        public void Full_loom_without_needed_color_jams()
+        public void Spools_open_cells_for_each_other()
+        {
+            var alone = new LoomGame(Zebra(slots: 2));
+            alone.TapColumn(0);
+            alone.Settle();
+            Assert.Equal(1, alone.KnittedCount);
+            Assert.True(alone.Slots[0]!.Stalled);
+
+            var together = new LoomGame(Zebra(slots: 2));
+            together.TapColumn(0);
+            together.TapColumn(1);
+            together.Settle();
+            Assert.Equal(GameStatus.Won, together.Status);
+        }
+
+        [Fact]
+        public void Perfect_spool_is_one_that_never_waited()
+        {
+            var game = new LoomGame(TwoByTwo(slots: 2));
+            game.TapColumn(1);
+            var first = SettleCollecting(game);
+            Assert.Empty(first);
+
+            game.TapColumn(0);
+            var completions = SettleCollecting(game);
+
+            Assert.Equal(GameStatus.Won, game.Status);
+            Assert.Contains(completions, c => c.Perfect);
+            Assert.Contains(completions, c => !c.Perfect);
+        }
+
+        [Fact]
+        public void Full_loom_without_front_colors_jams()
         {
             var game = new LoomGame(TwoByTwo(slots: 1));
 
-            var result = game.TapColumn(0);
+            game.TapColumn(0);
+            game.Settle();
 
-            Assert.True(result.Accepted);
-            Assert.Empty(result.Knitted);
+            Assert.Equal(1, game.KnittedCount);
             Assert.Equal(GameStatus.Jammed, game.Status);
             Assert.Equal(RejectReason.GameOver, game.TapColumn(1).Reason);
         }
@@ -87,12 +156,14 @@ namespace KnittedPicture.Core.Tests
         {
             var game = new LoomGame(TwoByTwo(slots: 1));
             game.TapColumn(0);
+            game.Settle();
 
             Assert.True(game.AddSlot());
             Assert.Equal(GameStatus.Playing, game.Status);
 
-            var result = game.TapColumn(1);
-            Assert.Equal(GameStatus.Won, result.Status);
+            game.TapColumn(1);
+            game.Settle();
+            Assert.Equal(GameStatus.Won, game.Status);
         }
 
         [Fact]
@@ -105,11 +176,13 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Undo_restores_field_loom_and_progress()
+        public void Undo_rewinds_the_move_and_everything_knitted_after_it()
         {
             var game = new LoomGame(TwoByTwo(slots: 2));
             var spoolId = game.Column(1)[0].Id;
             game.TapColumn(1);
+            game.Settle();
+            Assert.Equal(1, game.KnittedCount);
 
             Assert.True(game.Undo());
 
@@ -126,6 +199,7 @@ namespace KnittedPicture.Core.Tests
         {
             var game = new LoomGame(TwoByTwo(slots: 1));
             game.TapColumn(0);
+            game.Settle();
             game.AddSlot();
 
             game.Undo();
@@ -155,18 +229,11 @@ namespace KnittedPicture.Core.Tests
             var copy = game.Clone();
 
             copy.TapColumn(1);
+            copy.Settle();
 
             Assert.Equal(0, game.KnittedCount);
             Assert.Single(game.Column(1));
             Assert.Equal(1, copy.KnittedCount);
-        }
-
-        [Fact]
-        public void Upcoming_colors_skip_repeats()
-        {
-            var game = new LoomGame(TwoByTwo(slots: 2));
-
-            Assert.Equal(new[] { 1, 0, 1 }, game.UpcomingColors(4));
         }
 
         [Fact]

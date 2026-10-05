@@ -17,6 +17,8 @@ namespace KnittedPicture.Game
         Win,
         Jam,
         Coin,
+        Combo,
+        Star,
     }
 
     /// <summary>
@@ -63,6 +65,8 @@ namespace KnittedPicture.Game
             _clips[Sound.Win] = Tone("win", new[] { 523f, 659f, 784f, 1046f }, 0.6f, 0.35f);
             _clips[Sound.Jam] = Tone("jam", new[] { 392f, 330f, 262f }, 0.45f, 0.3f);
             _clips[Sound.Coin] = Tone("coin", new[] { 988f, 1319f }, 0.16f, 0.28f);
+            _clips[Sound.Combo] = Tone("combo", new[] { 784f, 988f, 1175f, 1568f }, 0.28f, 0.3f);
+            _clips[Sound.Star] = Tone("star", new[] { 1319f, 1760f }, 0.22f, 0.32f);
         }
 
         private void PlayInternal(Sound sound, float volume)

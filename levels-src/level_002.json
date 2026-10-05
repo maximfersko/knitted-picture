@@ -1,7 +1,7 @@
 {
   "id": 2,
   "name": "Ёлочка",
-  "tip": "Подсвеченные ряды показывают, какие цвета понадобятся дальше",
+  "tip": "Яркие клетки — фронт вязки: клубки этих цветов начнут работать сразу",
   "hard": false,
   "timeLimit": 0,
   "palette": [
@@ -22,15 +22,15 @@
     "yyggyy",
     "yyyyyy"
   ],
-  "slots": 5,
+  "slots": 3,
   "columns": 3,
   "spools": 6,
-  "swaps": 0,
+  "swaps": 2,
   "hidden": 0,
   "knots": 0,
   "links": 0,
   "locks": 0,
-  "minWin": 0.85,
-  "maxWin": 1.0,
+  "minWin": 0.75,
+  "maxWin": 0.95,
   "seed": 21
 }

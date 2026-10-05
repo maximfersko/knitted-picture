@@ -10,19 +10,26 @@ namespace KnittedPicture.Game
 {
     /// <summary>
     /// Экран уровня: картинка сверху, станок посередине, поле клубков и бустеры внизу.
-    /// Модель (LoomGame) меняется мгновенно, экран догоняет её анимациями;
-    /// пока анимация идёт, новые тапы не принимаются.
+    /// Время идёт непрерывно: станок вяжет шагами, клубки работают параллельно, а тапать
+    /// можно в любой момент — быстрые и точные цепочки и есть удовольствие от игры.
     /// </summary>
     public sealed class GameScreen : ScreenView
     {
         private const float Pad = 16f;
         private const int VisibleRows = 3;
 
+        /// <summary>Секунд на шаг вязки: каждый клубок делает ~15 петель в секунду.</summary>
+        private const float StepInterval = 0.065f;
+
+        /// <summary>Полёт нитки от клубка к петле.</summary>
+        private const float BeadFlight = 0.2f;
+
         private readonly LevelData _level;
         private readonly LoomGame _game;
         private readonly Color[] _colors;
         private readonly List<FieldSpool> _field = new List<FieldSpool>();
         private readonly Dictionary<BoosterType, BoosterButton> _boosters = new Dictionary<BoosterType, BoosterButton>();
+        private readonly HashSet<int> _arriving = new HashSet<int>();
 
         private PictureView _picture = null!;
         private RectTransform _pictureCard = null!;
@@ -31,10 +38,11 @@ namespace KnittedPicture.Game
         private float _progressWidth;
 
         private RectTransform _loomBg = null!;
+        private Image _loomAlert = null!;
         private Text _loomLabel = null!;
         private RectTransform[] _slotFrames = new RectTransform[0];
         private Image[] _slotOutlines = new Image[0];
-        private SpoolView?[] _slotViews = new SpoolView?[0];
+        private SlotSpool?[] _slotViews = new SlotSpool?[0];
         private float _slotSpool;
 
         private RectTransform _fieldContent = null!;
@@ -53,11 +61,17 @@ namespace KnittedPicture.Game
         private float _colW;
         private float _spoolSize;
 
-        private int _busy;
+        private float _stepClock;
+        private float _hitStop;
+        private float _alertClock;
         private bool _ended;
+        private bool _failShown;
         private bool _scissors;
-        private bool _timeUpShown;
         private float _idle;
+        private int _combo;
+        private int _comboCoins;
+        private int _boostersUsed;
+        private int _rescues;
         private RectTransform? _hint;
         private RectTransform? _tip;
         private RectTransform? _scissorsBanner;
@@ -87,8 +101,14 @@ namespace KnittedPicture.Game
 
         public override void Tick(float dt)
         {
-            if (_ended)
+            if (_ended || _failShown)
             {
+                return;
+            }
+
+            if (_hitStop > 0)
+            {
+                _hitStop -= dt;
                 return;
             }
 
@@ -96,15 +116,39 @@ namespace KnittedPicture.Game
             {
                 _game.Tick(dt);
                 RefreshTimer();
-                if (_game.Status == GameStatus.TimeUp && _busy == 0 && !_timeUpShown)
+                if (_game.Status == GameStatus.TimeUp)
                 {
-                    _timeUpShown = true;
                     OnTimeUp();
                     return;
                 }
             }
 
-            if (_busy == 0 && _game.Status == GameStatus.Playing && _hint == null)
+            if (_game.Status == GameStatus.Playing)
+            {
+                _stepClock += dt;
+                var guard = 0;
+                while (_stepClock >= StepInterval && guard++ < 4)
+                {
+                    _stepClock -= StepInterval;
+                    var step = _game.Step();
+                    Present(step);
+                    if (step.Status != GameStatus.Playing)
+                    {
+                        AfterStatus(step.Status);
+                        return;
+                    }
+
+                    if (!step.Progress)
+                    {
+                        _stepClock = 0;
+                        break;
+                    }
+                }
+            }
+
+            UpdateLoomAlert(dt);
+
+            if (!_game.IsBusy && _hint == null && _game.Status == GameStatus.Playing)
             {
                 _idle += dt;
                 var threshold = _level.id <= 3 ? 1.5f : _level.id <= 5 ? 8f : -1f;
@@ -211,9 +255,13 @@ namespace KnittedPicture.Game
         private void BuildLoom()
         {
             Ui.Label(Root, "Станок", 13, Palette.Ink2, Pad + 6, _loomY, 120, 20, true, TextAnchor.MiddleLeft);
-            _loomLabel = Ui.Label(Root, "", 13, Palette.Ink2, W - Pad - 126, _loomY, 120, 20, true, TextAnchor.MiddleRight);
+            _loomLabel = Ui.Label(Root, "", 13, Palette.Ink2, W - Pad - 186, _loomY, 180, 20, true, TextAnchor.MiddleRight);
             _loomBg = Ui.Box(Root, "Loom", 20, Palette.LoomBg).rectTransform;
             Ui.Place(_loomBg, Pad, _loomY + 22f, W - 2 * Pad, 74);
+            _loomAlert = Ui.Image(Root, "LoomAlert", Art.RoundRectOutline(20, 3), Color.clear);
+            _loomAlert.type = Image.Type.Sliced;
+            _loomAlert.pixelsPerUnitMultiplier = Art.Density;
+            Ui.Place(_loomAlert.rectTransform, Pad - 2, _loomY + 20f, W - 2 * Pad + 4, 78);
             RebuildSlots();
         }
 
@@ -226,7 +274,7 @@ namespace KnittedPicture.Game
             _slotSpool = Mathf.Min(44f, slotW - 10f);
             _slotFrames = new RectTransform[n];
             _slotOutlines = new Image[n];
-            _slotViews = new SpoolView?[n];
+            _slotViews = new SlotSpool?[n];
             for (var i = 0; i < n; i++)
             {
                 var frame = Ui.Box(_loomBg, "Slot" + i, 14, Palette.Card);
@@ -297,48 +345,61 @@ namespace KnittedPicture.Game
                 RebuildSlots();
             }
 
-            RefreshLoom(null);
+            _arriving.Clear();
+            SyncLoom(true);
             RefreshField();
             RefreshBoosters();
-            RefreshProgress(_game.KnittedCount);
+            RefreshProgress();
             _coins.text = App.Progress.Coins.ToString();
         }
 
-        private void RefreshProgress(int knitted)
+        private void RefreshProgress()
         {
-            var fraction = (float)knitted / _game.TotalStitches;
+            var fraction = (float)_picture.LandedCount / _game.TotalStitches;
             _progressFill.sizeDelta = new Vector2(Mathf.Max(8f, _progressWidth * fraction), 8f);
             _progressText.text = Mathf.FloorToInt(fraction * 100f) + "%";
         }
 
-        /// <summary>Перерисовать станок. display — временное состояние во время анимации вязания.</summary>
-        private void RefreshLoom(SlotEntry?[]? display)
+        /// <summary>Привести клубки на станке к модели: новые появляются, ушедшие исчезают, числа обновляются.</summary>
+        private void SyncLoom(bool rebuild = false)
         {
             var used = 0;
             for (var i = 0; i < _slotFrames.Length; i++)
             {
-                if (_slotViews[i] != null)
+                var spool = _game.Slots[i];
+                var view = _slotViews[i];
+                if (view != null && (rebuild || spool == null || view.SpoolId != spool.Id))
                 {
-                    Object.Destroy(_slotViews[i]!.Root.gameObject);
+                    Object.Destroy(view.View.Root.gameObject);
                     _slotViews[i] = null;
+                    view = null;
                 }
 
-                var entry = display != null ? display[i] : _game.Slots[i] != null ? new SlotEntry(_game.Slots[i]!, _game.Slots[i]!.Loops) : null;
-                _slotOutlines[i].enabled = entry == null;
-                if (entry == null)
+                if (spool != null)
                 {
-                    continue;
+                    used++;
                 }
 
-                used++;
-                var view = SpoolView.Create(_slotFrames[i], _slotSpool);
-                Ui.PlaceCenter(view.Root, _slotFrames[i].sizeDelta.x / 2f, 29f, _slotSpool, _slotSpool);
-                view.Bind(entry.Spool, _colors[entry.Spool.Color], true);
-                view.SetLoops(entry.Loops);
-                _slotViews[i] = view;
+                if (spool != null && view == null && !_arriving.Contains(spool.Id))
+                {
+                    var created = SpoolView.Create(_slotFrames[i], _slotSpool);
+                    Ui.PlaceCenter(created.Root, _slotFrames[i].sizeDelta.x / 2f, 29f, _slotSpool, _slotSpool);
+                    created.Bind(spool, _colors[spool.Color], true);
+                    _slotViews[i] = new SlotSpool(created, spool.Id, spool.Color);
+                    view = _slotViews[i];
+                }
+
+                if (view != null && spool != null)
+                {
+                    view.View.SetLoops(spool.Loops);
+                }
+
+                _slotOutlines[i].enabled = spool == null;
             }
 
-            _loomLabel.text = $"{used} из {_slotFrames.Length}";
+            var free = _slotFrames.Length - used;
+            _loomLabel.text = free == 1 && _slotFrames.Length > 1 ? "Осталось 1 место!" : $"{used} из {_slotFrames.Length}";
+            _loomLabel.color = free <= 1 ? Palette.Danger : Palette.Ink2;
         }
 
         private void RefreshField()
@@ -346,6 +407,7 @@ namespace KnittedPicture.Game
             Ui.Clear(_fieldContent);
             _field.Clear();
             _hint = null;
+            var front = _game.FrontColors();
             for (var c = 0; c < _game.ColumnCount; c++)
             {
                 var column = _game.Column(c);
@@ -363,6 +425,13 @@ namespace KnittedPicture.Game
                     var depth = d;
                     tap.OnClick(() => OnSpoolTap(columnIndex, depth));
                     _field.Add(new FieldSpool(view, spool.Id, c, d));
+
+                    // Передний клубок, которому сразу есть работа, слегка «дышит».
+                    if (d == 0 && spool.IsColorVisible && front.Contains(spool.Color) && !spool.Locked)
+                    {
+                        var root = view.Root;
+                        Tweens.Run(root, 1.4f, t => root.localScale = Vector3.one * (1f + 0.04f * Ease.Bump(t)), null, null, c * 0.12f, true);
+                    }
                 }
 
                 if (column.Count > VisibleRows)
@@ -409,18 +478,131 @@ namespace KnittedPicture.Game
             _timerText.color = fraction < 0.25f ? Palette.Danger : Palette.Ink;
         }
 
+        /// <summary>Рамка станка: оранжевая, когда осталось одно место, красная — когда мест нет.</summary>
+        private void UpdateLoomAlert(float dt)
+        {
+            _alertClock += dt;
+            var free = _game.FreeSlots;
+            if (free >= 2 || _slotFrames.Length <= 1)
+            {
+                _loomAlert.color = Color.clear;
+                return;
+            }
+
+            var color = free == 1 ? Palette.Hex("#FF9A3C") : Palette.Danger;
+            var pulse = 0.45f + 0.55f * Ease.Bump(Mathf.Repeat(_alertClock / 0.9f, 1f));
+            _loomAlert.color = Palette.WithAlpha(color, pulse);
+        }
+
+        // ---------- Вязка ----------
+
+        private void Present(StepResult step)
+        {
+            var changed = new HashSet<int>();
+            foreach (var stitch in step.Stitches)
+            {
+                changed.Add(stitch.X);
+                _picture.MarkPending(stitch.X, stitch.Y);
+                var slot = _slotViews[stitch.Slot];
+                var from = slot != null ? Ui.WorldCenter(slot.View.Root) : Ui.WorldCenter(_slotFrames[stitch.Slot]);
+                var to = _picture.CellWorld(stitch.X, stitch.Y);
+                var color = _colors[stitch.Color];
+                var x = stitch.X;
+                var y = stitch.Y;
+                Fx.Bead(_fx, from, to, color, Mathf.Max(8f, _slotSpool * 0.24f), BeadFlight, () =>
+                {
+                    if (_picture.Land(x, y))
+                    {
+                        Fx.Sparkle(_fx, to, color);
+                        Sfx.Play(Sound.Stitch, 0.5f);
+                    }
+
+                    RefreshProgress();
+                });
+
+                if (slot != null)
+                {
+                    Wobble(slot.View.Root);
+                }
+            }
+
+            foreach (var done in step.Completed)
+            {
+                var slot = _slotViews[done.Slot];
+                if (slot != null)
+                {
+                    Fx.Poof(_fx, Ui.WorldCenter(slot.View.Root), _colors[slot.Color], _slotSpool * 1.3f);
+                }
+
+                Sfx.Play(Sound.SpoolDone, 0.7f);
+                OnSpoolDone(done);
+            }
+
+            if (step.Stitches.Count > 0 || step.Completed.Count > 0)
+            {
+                SyncLoom();
+            }
+
+            foreach (var x in changed)
+            {
+                _picture.RefreshColumn(x);
+            }
+
+            if (step.Stitches.Count > 0)
+            {
+                _idle = 0;
+            }
+        }
+
+        private void OnSpoolDone(Completion done)
+        {
+            if (!done.Perfect)
+            {
+                _combo = 0;
+                return;
+            }
+
+            _combo++;
+            if (_combo < 2)
+            {
+                return;
+            }
+
+            var at = Ui.WorldCenter(_loomBg) + new Vector3(0, 46f * _fx.lossyScale.y, 0);
+            var text = _combo >= 5 ? $"Безупречно! ×{_combo}" : _combo >= 3 ? $"Отлично! ×{_combo}" : $"Комбо ×{_combo}";
+            Fx.FloatText(_fx, at, text, _combo >= 3 ? Palette.Primary : Palette.Link, _combo >= 3 ? 24f : 20f);
+            if (_combo >= Economy.ComboCoinsFrom)
+            {
+                _comboCoins++;
+                Sfx.Play(Sound.Combo, 0.6f);
+            }
+        }
+
+        private void Wobble(RectTransform root)
+        {
+            Tweens.Run(root, 0.12f, t =>
+            {
+                root.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 2f) * 9f);
+                root.localScale = Vector3.one * (1f + 0.06f * Ease.Bump(t));
+            }, null, () =>
+            {
+                root.localRotation = Quaternion.identity;
+                root.localScale = Vector3.one;
+            });
+        }
+
         // ---------- Ходы ----------
 
         private void OnSpoolTap(int column, int depth)
         {
-            if (_busy > 0 || _ended || App.HasPopups)
+            if (_ended || _failShown || App.HasPopups)
             {
                 return;
             }
 
             _idle = 0;
             HideTip();
-            var before = SnapshotSlots();
+            HideHint();
             var result = _scissors ? _game.PullSpool(column, depth) : _game.TapColumn(column);
             if (!result.Accepted)
             {
@@ -432,6 +614,7 @@ namespace KnittedPicture.Game
             {
                 App.Progress.Pay(BoosterType.Scissors);
                 App.Save();
+                _boostersUsed++;
                 _scissors = false;
                 HideScissorsBanner();
             }
@@ -445,33 +628,19 @@ namespace KnittedPicture.Game
                 if (view != null)
                 {
                     Tweens.Punch(view.Root, 0.2f, 0.25f);
+                    Fx.Sparkle(_fx, Ui.WorldCenter(view.Root), Palette.Danger, 6, 26f);
                 }
 
-                AfterMove(result.Status);
                 return;
             }
 
-            AnimatePlacement(result, before);
-        }
-
-        private void AnimatePlacement(MoveResult result, SlotEntry?[] before)
-        {
-            _busy++;
             Sfx.Play(Sound.Pick);
-
-            var display = (SlotEntry?[])before.Clone();
-            var flyers = new List<(SpoolView view, Vector3 from, Vector3 to)>();
+            var flights = new List<(Placement placed, Vector3 from)>();
             foreach (var placed in result.Placed)
             {
-                var loops = placed.Spool.Loops + result.Knitted.Count(s => s.Slot == placed.Slot);
-                display[placed.Slot] = new SlotEntry(placed.Spool, loops);
-
                 var source = _field.FirstOrDefault(f => f.Column == placed.Column && f.Depth == placed.Depth);
-                var from = source != null ? Ui.WorldCenter(source.View.Root) : Ui.WorldCenter(_fieldContent);
-                var flyer = SpoolView.Create(_fx, _spoolSize);
-                flyer.Bind(placed.Spool, _colors[placed.Spool.Color], true);
-                flyer.SetLoops(loops);
-                flyers.Add((flyer, from, Ui.WorldCenter(_slotFrames[placed.Slot])));
+                flights.Add((placed, source != null ? Ui.WorldCenter(source.View.Root) : Ui.WorldCenter(_fieldContent)));
+                _arriving.Add(placed.Spool.Id);
             }
 
             RefreshField();
@@ -490,97 +659,31 @@ namespace KnittedPicture.Game
                 }
             }
 
-            var landed = 0;
-            foreach (var (view, from, to) in flyers)
+            foreach (var (placed, from) in flights)
             {
-                var flyer = view;
-                Tweens.Move(flyer.Root, from, to, 0.24f, Ease.OutCubic, () =>
+                var spool = placed.Spool;
+                var flyer = SpoolView.Create(_fx, _spoolSize);
+                flyer.Bind(spool, _colors[spool.Color], true);
+                var target = Ui.WorldCenter(_slotFrames[placed.Slot]);
+                var scale = _slotSpool / _spoolSize;
+                Tweens.Run(flyer.Root, LoomGame.WarmupSteps * StepInterval, t =>
+                {
+                    flyer.Root.localScale = Vector3.one * Mathf.Lerp(1f, scale, t) * (1f + 0.15f * Ease.Bump(t));
+                }, null, null);
+                Tweens.Move(flyer.Root, from, target, LoomGame.WarmupSteps * StepInterval, Ease.OutCubic, () =>
                 {
                     Object.Destroy(flyer.Root.gameObject);
-                    landed++;
-                    if (landed == flyers.Count)
+                    _arriving.Remove(spool.Id);
+                    SyncLoom();
+                    var slot = _slotViews[placed.Slot];
+                    if (slot != null && slot.SpoolId == spool.Id)
                     {
-                        RefreshLoom(display);
-                        KnitSequence(result, display);
-                    }
-                });
-                Tweens.Run(flyer.Root, 0.24f, t => flyer.Root.localScale = Vector3.one * Mathf.Lerp(1f, _slotSpool / _spoolSize, t));
-            }
-        }
-
-        private void KnitSequence(MoveResult result, SlotEntry?[] display)
-        {
-            var stitches = result.Knitted;
-            var startKnitted = _game.KnittedCount - stitches.Count;
-            var interval = stitches.Count == 0 ? 0f : Mathf.Min(0.045f, 0.75f / stitches.Count);
-            for (var i = 0; i < stitches.Count; i++)
-            {
-                var stitch = stitches[i];
-                var index = i;
-                Tweens.Delay(Root, i * interval, () =>
-                {
-                    _picture.Knit(stitch.X, stitch.Y);
-                    var next = startKnitted + index + 1;
-                    if (next < _game.TotalStitches)
-                    {
-                        _picture.ShowCursorAt(next % _game.Width, _game.Height - 1 - next / _game.Width);
-                    }
-                    else
-                    {
-                        _picture.HideCursor();
-                    }
-
-                    RefreshProgress(next);
-                    Sfx.Play(Sound.Stitch, 0.6f);
-
-                    var entry = display[stitch.Slot];
-                    if (entry == null)
-                    {
-                        return;
-                    }
-
-                    entry.Loops--;
-                    var view = _slotViews[stitch.Slot];
-                    view?.SetLoops(entry.Loops);
-                    if (entry.Loops <= 0 && view != null)
-                    {
-                        display[stitch.Slot] = null;
-                        _slotViews[stitch.Slot] = null;
-                        _slotOutlines[stitch.Slot].enabled = true;
-                        view.HideBadges();
-                        Sfx.Play(Sound.SpoolDone, 0.7f);
-                        Tweens.Scale(view.Root, 1f, 0f, 0.18f, Ease.OutCubic, () => Object.Destroy(view.Root.gameObject));
+                        Tweens.Scale(slot.View.Root, 1.25f, 1f, 0.18f);
                     }
                 });
             }
 
-            Tweens.Delay(Root, stitches.Count * interval + 0.15f, () =>
-            {
-                _busy--;
-                RefreshAll();
-                AfterMove(result.Status);
-            });
-        }
-
-        private void AfterMove(GameStatus status)
-        {
-            switch (status)
-            {
-                case GameStatus.Won:
-                    OnWon();
-                    break;
-                case GameStatus.Jammed:
-                    OnJam();
-                    break;
-                case GameStatus.TimeUp:
-                    if (!_timeUpShown)
-                    {
-                        _timeUpShown = true;
-                        OnTimeUp();
-                    }
-
-                    break;
-            }
+            SyncLoom();
         }
 
         private void Deny(int column, int depth, RejectReason reason)
@@ -604,38 +707,73 @@ namespace KnittedPicture.Game
                     var front = _game.Column(column).Count > 0 ? _game.Column(column)[0] : null;
                     App.Toast(front != null && front.Link != 0 && !_scissors
                         ? "Связанным клубкам нужно 2 свободных слота"
-                        : "На станке нет свободного слота");
+                        : "На станке нет места — подожди, пока клубок довяжет");
+                    Tweens.Shake(_loomBg, 5f, 0.25f);
                     break;
             }
         }
 
         // ---------- Победа и поражение ----------
 
+        private void AfterStatus(GameStatus status)
+        {
+            switch (status)
+            {
+                case GameStatus.Won:
+                    OnWon();
+                    break;
+                case GameStatus.Jammed:
+                    OnJam();
+                    break;
+                case GameStatus.TimeUp:
+                    OnTimeUp();
+                    break;
+            }
+        }
+
         private void OnWon()
         {
             _ended = true;
             HideHint();
             HideTip();
-            _picture.HideCursor();
-            Tweens.Punch(_pictureCard, 0.06f, 0.45f);
-            Tweens.Delay(Root, 0.9f, () => App.OnLevelWon(_level));
+            SetScissors(false);
+            Tweens.Delay(Root, BeadFlight + 0.1f, () =>
+            {
+                _picture.Refresh();
+                RefreshProgress();
+                Sfx.Play(Sound.Unlock);
+                _picture.Wave(() =>
+                {
+                    Tweens.Punch(_pictureCard, 0.06f, 0.4f);
+                    Fx.Poof(_fx, Ui.WorldCenter(_pictureCard), Palette.Coin, _pictureCard.sizeDelta.x * 0.9f);
+                    var stars = Economy.Stars(_boostersUsed, _rescues);
+                    Tweens.Delay(Root, 0.45f, () => App.OnLevelWon(_level, stars, _comboCoins));
+                });
+            });
         }
 
         private void OnJam()
         {
-            _busy++;
+            _failShown = true;
             HideHint();
+            _combo = 0;
+            _hitStop = 0.12f;
             Sfx.Play(Sound.Jam);
             Tweens.Shake(_loomBg, 10f, 0.4f);
-            Tweens.Delay(Root, 0.55f, () =>
+            Tweens.Shake(Root, 4f, 0.25f);
+            foreach (var outline in _slotOutlines)
             {
-                _busy--;
-                ShowFail(FailKind.Jam);
-            });
+                outline.enabled = true;
+                var image = outline;
+                Tweens.Run(image, 0.5f, t => image.color = Color.Lerp(Palette.Danger, Palette.SlotEmpty, t));
+            }
+
+            Tweens.Delay(Root, 0.6f, () => ShowFail(FailKind.Jam));
         }
 
         private void OnTimeUp()
         {
+            _failShown = true;
             HideHint();
             Sfx.Play(Sound.Jam);
             if (_timerMoth != null)
@@ -643,47 +781,51 @@ namespace KnittedPicture.Game
                 Tweens.Punch(_timerMoth, 0.4f, 0.4f);
             }
 
-            Tweens.Delay(Root, 0.4f, () => ShowFail(FailKind.TimeUp));
+            Tweens.Delay(Root, 0.45f, () => ShowFail(FailKind.TimeUp));
         }
 
         private void ShowFail(FailKind kind)
         {
             var canRescue = kind == FailKind.TimeUp || _game.Slots.Count < LoomGame.MaxSlots;
-            App.ShowPopup(new FailPopup(App, kind, canRescue, () => Rescue(kind), Restart));
+            var percent = Mathf.FloorToInt(100f * _game.KnittedCount / _game.TotalStitches);
+            App.ShowPopup(new FailPopup(App, kind, canRescue, percent, () => Rescue(kind), Restart));
         }
 
         private void Rescue(FailKind kind)
         {
+            _rescues++;
+            _failShown = false;
             if (kind == FailKind.Jam)
             {
                 _game.AddSlot();
                 RebuildSlots();
                 RefreshAll();
                 Sfx.Play(Sound.Unlock);
-                var last = _slotFrames[_slotFrames.Length - 1];
-                Tweens.Scale(last, 0.4f, 1f, 0.3f);
+                Tweens.Scale(_slotFrames[_slotFrames.Length - 1], 0.4f, 1f, 0.3f);
             }
             else
             {
                 _game.AddTime(Economy.TimeBonusSeconds);
-                _timeUpShown = false;
                 RefreshTimer();
                 RefreshAll();
             }
 
-            AfterMove(_game.Status);
+            if (_game.Status != GameStatus.Playing)
+            {
+                AfterStatus(_game.Status);
+            }
         }
 
         private void Restart()
         {
-            App.StartLevel(_level.id);
+            App.StartLevel(_level.id, restart: true);
         }
 
         // ---------- Бустеры ----------
 
         private void OnBooster(BoosterType type)
         {
-            if (_busy > 0 || _ended)
+            if (_ended || _failShown)
             {
                 return;
             }
@@ -724,6 +866,7 @@ namespace KnittedPicture.Game
                     else
                     {
                         App.Save();
+                        _boostersUsed++;
                         _game.Undo();
                         Sfx.Play(Sound.Pick);
                         RefreshAll();
@@ -743,6 +886,7 @@ namespace KnittedPicture.Game
                     else
                     {
                         App.Save();
+                        _boostersUsed++;
                         _game.AddSlot();
                         RebuildSlots();
                         RefreshAll();
@@ -752,6 +896,8 @@ namespace KnittedPicture.Game
 
                     break;
             }
+
+            _coins.text = App.Progress.Coins.ToString();
         }
 
         private void NotEnough(BoosterType type)
@@ -761,6 +907,11 @@ namespace KnittedPicture.Game
 
         private void SetScissors(bool on)
         {
+            if (_scissors == on)
+            {
+                return;
+            }
+
             _scissors = on;
             HideHint();
             if (on)
@@ -844,29 +995,20 @@ namespace KnittedPicture.Game
 
         private SpoolView? FindFieldView(int spoolId) => _field.FirstOrDefault(f => f.SpoolId == spoolId)?.View;
 
-        private SlotEntry?[] SnapshotSlots()
+        private sealed class SlotSpool
         {
-            var result = new SlotEntry?[_game.Slots.Count];
-            for (var i = 0; i < result.Length; i++)
+            public SlotSpool(SpoolView view, int spoolId, int color)
             {
-                var spool = _game.Slots[i];
-                result[i] = spool != null ? new SlotEntry(spool, spool.Loops) : null;
+                View = view;
+                SpoolId = spoolId;
+                Color = color;
             }
 
-            return result;
-        }
+            public SpoolView View { get; }
 
-        private sealed class SlotEntry
-        {
-            public SlotEntry(Spool spool, int loops)
-            {
-                Spool = spool;
-                Loops = loops;
-            }
+            public int SpoolId { get; }
 
-            public Spool Spool { get; }
-
-            public int Loops { get; set; }
+            public int Color { get; }
         }
 
         private sealed class FieldSpool
@@ -895,7 +1037,6 @@ namespace KnittedPicture.Game
             private readonly CanvasGroup _group;
             private readonly Image _badgeBack;
             private readonly Text _badgeText;
-            private readonly RectTransform _badge;
 
             public BoosterButton(RectTransform parent, BoosterType type, float x, float y, float w)
             {
@@ -909,10 +1050,10 @@ namespace KnittedPicture.Game
                 Ui.Place(label.rectTransform, w / 2f - total / 2f + 28f, 0, textW + 4f, 60);
                 label.alignment = TextAnchor.MiddleLeft;
 
-                _badge = Ui.Place(Ui.Node(root, "Badge"), w - 40f, -8f, 46, 22);
-                _badgeBack = Ui.Box(_badge, "Back", 11, Palette.Ink);
+                var badge = Ui.Place(Ui.Node(root, "Badge"), w - 40f, -8f, 46, 22);
+                _badgeBack = Ui.Box(badge, "Back", 11, Palette.Ink);
                 Ui.Stretch(_badgeBack.rectTransform);
-                _badgeText = Ui.Label(_badge, "", 12, Color.white);
+                _badgeText = Ui.Label(badge, "", 12, Color.white);
                 Ui.Stretch(_badgeText.rectTransform);
                 Tap = root.gameObject.AddComponent<Tap>();
             }

@@ -5,8 +5,8 @@ using System.Collections.Generic;
 namespace KnittedPicture.Core
 {
     /// <summary>
-    /// Поиск решения перебором тапов (без бустеров). Нужен для проверки уровней
-    /// и для подсказки на первых уровнях.
+    /// Поиск решения перебором тапов без бустеров. Модель хода: тап, затем станок вяжет,
+    /// пока не встанет. Нужен для проверки уровней и для подсказки на первых уровнях.
     /// </summary>
     public static class LevelSolver
     {
@@ -21,6 +21,7 @@ namespace KnittedPicture.Core
         public static IReadOnlyList<int>? Solve(LoomGame game, int maxStates = 300_000)
         {
             var copy = game.Clone();
+            copy.Settle();
             var visited = new HashSet<string>();
             var path = new List<int>();
             return Search(copy, visited, path, maxStates) ? path : null;
@@ -45,19 +46,20 @@ namespace KnittedPicture.Core
                 return false;
             }
 
-            // Сначала колонки с нужным сейчас цветом: решение находится быстрее.
-            var needed = game.NeededColor;
+            // Сначала колонки с цветом, который можно вязать сразу: решение находится быстрее.
+            var front = game.FrontColors();
             for (var pass = 0; pass < 2; pass++)
             {
                 for (var column = 0; column < game.ColumnCount; column++)
                 {
-                    var front = game.Column(column).Count > 0 ? game.Column(column)[0] : null;
-                    var preferred = front != null && front.Color == needed;
+                    var spool = game.Column(column).Count > 0 ? game.Column(column)[0] : null;
+                    var preferred = spool != null && front.Contains(spool.Color);
                     if (preferred != (pass == 0) || !game.TapColumn(column).Accepted)
                     {
                         continue;
                     }
 
+                    game.Settle();
                     path.Add(column);
                     if (Search(game, visited, path, maxStates))
                     {
