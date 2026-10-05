@@ -127,6 +127,11 @@ namespace KnittedPicture.Game
                     Close();
                     app.ShowPopup(new SettingsPopup(app));
                 });
+            AddSecondary("Как играть", KnittedPicture.Game.Icon.Hand).OnClick(() =>
+            {
+                Close();
+                app.ShowIntro();
+            });
             AddPrimary("Готово").OnClick(Close);
             var reset = AddLink("Сбросить прогресс");
             reset.OnClick(() =>

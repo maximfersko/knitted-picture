@@ -91,7 +91,14 @@ namespace KnittedPicture.Game
             EnsureCamera();
             EnsureEventSystem();
             BuildCanvas();
-            ShowHome();
+            if (Progress.Data.introSeen)
+            {
+                ShowHome();
+            }
+            else
+            {
+                ShowIntro();
+            }
         }
 
         private void Update()
@@ -136,6 +143,24 @@ namespace KnittedPicture.Game
         public void ShowHome() => Show(() => new HomeScreen(this));
 
         public void ShowAlbum() => Show(() => new AlbumScreen(this));
+
+        /// <summary>Вступление «как играть»: на первом запуске и из настроек.</summary>
+        public void ShowIntro() => Show(() => new IntroScreen(this));
+
+        /// <summary>Вступление закончено или пропущено: новичка сразу в первый уровень.</summary>
+        public void FinishIntro()
+        {
+            Progress.Data.introSeen = true;
+            Save();
+            if (Progress.IsCompleted(1))
+            {
+                ShowHome();
+            }
+            else
+            {
+                StartLevel(1);
+            }
+        }
 
         /// <summary>Начать уровень. restart — игрок перезапускает после неудачи: серия побед обрывается.</summary>
         public void StartLevel(int levelId, bool restart = false)
@@ -245,7 +270,7 @@ namespace KnittedPicture.Game
             Progress = new ProgressService(new PlayerProgress(), Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
             Save();
-            ShowHome();
+            ShowIntro();
         }
 
         private void Show(Func<ScreenView> route)

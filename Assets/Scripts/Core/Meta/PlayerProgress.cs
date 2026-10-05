@@ -31,6 +31,9 @@ namespace KnittedPicture.Core
         /// <summary>Побед подряд без перезапуска уровня.</summary>
         public int streak;
 
+        /// <summary>Вступление «как играть» уже показано.</summary>
+        public bool introSeen;
+
         public bool soundOn = true;
         public int totalWins;
         public int winsSinceInterstitial;

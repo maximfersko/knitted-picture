@@ -29,6 +29,7 @@ namespace KnittedPicture.Game
         Check,
         Settings,
         Star,
+        Hand,
     }
 
     /// <summary>
@@ -359,6 +360,11 @@ namespace KnittedPicture.Game
                     break;
                 case KnittedPicture.Game.Icon.Settings:
                     p.Line(20, 7, 11, 7).Line(13, 17, 4, 17).Circle(17, 17, 3).Circle(7, 7, 3);
+                    break;
+                case KnittedPicture.Game.Icon.Hand:
+                    // Указательный палец вверх и ладонь.
+                    p.Stroke(4.2f).Line(10, 4, 10, 14).Stroke(3.6f).Line(13.6f, 11, 13.6f, 14.5f).Line(16.8f, 12, 16.8f, 15)
+                        .Box(13.4f, 17.4f, 5.6f, 4.6f, 3f, true).Stroke(3.4f).Line(5.6f, 13.6f, 8, 17.5f);
                     break;
                 case KnittedPicture.Game.Icon.Star:
                     for (var i = 0; i < 10; i++)

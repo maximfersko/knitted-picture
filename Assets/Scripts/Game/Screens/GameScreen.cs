@@ -73,6 +73,7 @@ namespace KnittedPicture.Game
         private int _boostersUsed;
         private int _rescues;
         private RectTransform? _hint;
+        private RectTransform? _hintHand;
         private RectTransform? _tip;
         private RectTransform? _scissorsBanner;
 
@@ -407,6 +408,7 @@ namespace KnittedPicture.Game
             Ui.Clear(_fieldContent);
             _field.Clear();
             _hint = null;
+            _hintHand = null;
             var front = _game.FrontColors();
             for (var c = 0; c < _game.ColumnCount; c++)
             {
@@ -958,6 +960,24 @@ namespace KnittedPicture.Game
             _hint = ring.rectTransform;
             var hint = _hint;
             Tweens.Run(hint, 0.9f, t => hint.localScale = Vector3.one * (1f + 0.12f * Ease.Bump(t)), null, null, 0f, true);
+
+            // На первом уровне — рука, как во вступлении: тапни сюда.
+            if (_level.id == 1)
+            {
+                var hand = Ui.Node(_fieldContent, "HintHand");
+                Ui.PlaceCenter(hand, x + size * 0.35f, y + size * 0.45f, 52, 52);
+                var halo = Ui.Image(hand, "Halo", Art.Icon(Icon.Hand), Color.white);
+                Ui.PlaceCenter(halo.rectTransform, 26, 26, 60, 60);
+                var icon = Ui.Image(hand, "Hand", Art.Icon(Icon.Hand), Palette.Ink);
+                Ui.PlaceCenter(icon.rectTransform, 26, 26, 52, 52);
+                var start = hand.anchoredPosition;
+                Tweens.Run(hand, 0.9f, t =>
+                {
+                    hand.anchoredPosition = start + new Vector2(6f, -6f) * Ease.Bump(t);
+                    hand.localScale = Vector3.one * (1f - 0.1f * Ease.Bump(t));
+                }, null, null, 0f, true);
+                _hintHand = hand;
+            }
         }
 
         private void HideHint()
@@ -966,6 +986,12 @@ namespace KnittedPicture.Game
             {
                 Object.Destroy(_hint.gameObject);
                 _hint = null;
+            }
+
+            if (_hintHand != null)
+            {
+                Object.Destroy(_hintHand.gameObject);
+                _hintHand = null;
             }
 
             _idle = 0;
