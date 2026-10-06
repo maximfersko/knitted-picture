@@ -245,10 +245,14 @@ namespace KnittedPicture.Game
         /// <summary>Пилюля с монетами.</summary>
         public static Text CoinPill(RectTransform parent, int coins, float rightX, float y)
         {
-            const float w = 104f;
+            // Ширина — по числу цифр: монета и число стоят рядом, без пустоты справа.
+            var digits = Mathf.Max(3, coins.ToString().Length);
+            var w = 12f + 26f + 6f + digits * 10f + 12f;
             var root = Card(parent, "Coins", rightX - w, y, w, 44, 22, Palette.Card, Palette.CardShadow, 2f);
-            Coin(root, 22, 22, 26);
-            return Label(root, coins.ToString(), 17, Palette.Ink, 40, 0, w - 50, 44, true, TextAnchor.MiddleLeft);
+            Coin(root, 25, 22, 26);
+            var label = Label(root, coins.ToString(), 17, Palette.Ink, 44, 0, w - 50, 44, true, TextAnchor.MiddleLeft);
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            return label;
         }
 
         /// <summary>Полоса прогресса: фон и заливка, возвращает заливку.</summary>
