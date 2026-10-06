@@ -687,10 +687,9 @@ namespace KnittedPicture.Game
             var types = (BoosterType[])Enum.GetValues(typeof(BoosterType));
             // Компактный список: значок, название, одна короткая строка и запас. Полное описание — в игре.
             const float rowH = 60f;
-            const float listY = 46f;
+            const float listY = 12f;
             var cardH = listY + types.Length * rowH + 6f;
             var card = Ui.Card(content, "Stock", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
-            Ui.Label(card, "Запас бустеров", 18, Palette.Ink, 16, 12, cardW - 32, 26, true, TextAnchor.MiddleLeft);
             for (var i = 0; i < types.Length; i++)
             {
                 var type = types[i];

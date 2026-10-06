@@ -40,7 +40,7 @@ namespace KnittedPicture.Game
                 case BoosterType.Slot: return "Ещё одно место на станке";
                 case BoosterType.Scissors: return "Достать любой клубок или срезать со станка";
                 case BoosterType.Undo: return "Вернуть последний ход";
-                case BoosterType.Time: return "+20 секунд, когда моль близко";
+                case BoosterType.Time: return "Отогнать моль, когда она близко";
                 default: return string.Empty;
             }
         }

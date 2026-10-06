@@ -14,9 +14,40 @@ namespace KnittedPicture.Game
             : base(app)
         {
             Closed = closed;
-            var badge = AddIcon(icon, Palette.CoinShadow, Palette.CoinSoft, 84);
-            Tweens.Run(badge, 0.5f, t => badge.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 6f) * 12f * (1f - t)));
-            Fx.Sparkle(Card, Ui.WorldCenter(badge), Palette.Coin, 12, 60f);
+
+            // Тёплый свет за наградой: лучи медленно вращаются из-за карточки, мягкое свечение под значком.
+            // Ярко, но спокойно: без вспышек на весь экран.
+            const float badgeSize = 84f;
+            var badgeCy = Cursor + badgeSize / 2f;
+            var rays = Ui.Image(Card, "Rays", Art.Rays, Palette.WithAlpha(Palette.CoinSoft, 0f));
+            Ui.PlaceCenter(rays.rectTransform, CardWidth / 2f, badgeCy, 520, 520);
+            rays.rectTransform.SetAsFirstSibling();
+            var raysRt = rays.rectTransform;
+            Tweens.Run(raysRt, 40f, t => raysRt.localRotation = Quaternion.Euler(0, 0, -360f * t), null, null, 0f, true);
+            Tweens.Run(rays, 0.6f, t => rays.color = Palette.WithAlpha(Palette.CoinSoft, 0.55f * t), Ease.OutCubic);
+            var glow = Ui.Image(Card, "Glow", Art.Glow, Palette.WithAlpha(Palette.Coin, 0f));
+            Ui.PlaceCenter(glow.rectTransform, CardWidth / 2f, badgeCy, 190, 190);
+            Tweens.Run(glow, 0.5f, t => glow.color = Palette.WithAlpha(Palette.Coin, 0.4f * t), Ease.OutCubic);
+            var glowRt = glow.rectTransform;
+            Tweens.Run(glowRt, 2.4f, t => glowRt.localScale = Vector3.one * (1f + 0.08f * Ease.Bump(t)), null, null, 0.5f, true);
+
+            var badge = AddIcon(icon, Palette.CoinShadow, Palette.CoinSoft, badgeSize);
+            Tweens.Scale(badge, 0.2f, 1f, 0.45f, Ease.OutBack);
+            Tweens.Run(badge, 0.6f, t => badge.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 5f) * 10f * (1f - t)), null, null, 0.35f);
+            Tweens.Delay(badge, 0.2f, () => Fx.Sparkle(Card, Ui.WorldCenter(badge), Palette.Coin, 14, 70f));
+
+            // Три звёздочки мерцают вокруг значка.
+            var twinkles = new[] { (-56f, -30f, 16f), (58f, -18f, 12f), (46f, 34f, 10f) };
+            for (var i = 0; i < twinkles.Length; i++)
+            {
+                var (dx, dy, size) = twinkles[i];
+                var star = Ui.Image(Card, "Twinkle", Art.Icon(Icon.Star), Palette.Coin);
+                Ui.PlaceCenter(star.rectTransform, CardWidth / 2f + dx, badgeCy + dy, size, size);
+                var srt = star.rectTransform;
+                srt.localScale = Vector3.zero;
+                Tweens.Run(srt, 1.6f, t => srt.localScale = Vector3.one * Ease.Bump(t), null, null, 0.4f + i * 0.45f, true);
+            }
+
             AddTitle(title, 24);
 
             var items = Items(app, granted);
@@ -33,11 +64,16 @@ namespace KnittedPicture.Game
                 build(cell);
                 var label = Ui.Label(cell, caption, 13, captionColor, 0, 66, itemW, 38, true, TextAnchor.UpperCenter);
                 label.lineSpacing = 0.85f;
+                // Каждая плитка «выпрыгивает» с лёгким подскоком и искрами своего цвета.
                 cell.localScale = Vector3.zero;
-                Tweens.Delay(cell, 0.15f + i * 0.18f, () =>
+                var rest = cell.anchoredPosition;
+                var sparkColor = i == 0 ? Palette.Coin : captionColor == Palette.Ink ? Palette.Primary : captionColor;
+                Tweens.Delay(cell, 0.35f + i * 0.2f, () =>
                 {
-                    Tweens.Scale(cell, 0.3f, 1f, 0.3f, Ease.OutBack);
-                    Sfx.Play(Sound.Coin, 0.5f);
+                    Tweens.Scale(cell, 0.3f, 1f, 0.35f, Ease.OutBack);
+                    Tweens.Run(cell, 0.35f, t => cell.anchoredPosition = rest + new Vector2(0, 14f * Ease.Bump(t)));
+                    Fx.Sparkle(Card, cell.TransformPoint(new Vector3(itemW / 2f, -31f, 0)), sparkColor, 8, 46f);
+                    Sfx.Play(i == 0 ? Sound.Coin : Sound.Star, 0.55f);
                 });
             }
 

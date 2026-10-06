@@ -540,7 +540,7 @@ namespace KnittedPicture.Game
 
             // Готовое к получению: полоска уже полная и не нужна, кнопка компактнее и стоит с отступом от текста.
             const float claimW = 100f;
-            var textW = can ? w - 68f - claimW - 28f : w - 68f - rightW - 8f;
+            var textW = can ? w - 68f - claimW - 28f : w - 68f - rightW - 26f;
             var hasBar = !claimed && !can;
             var titleY = hasBar ? 9f : 14f;
             Ui.Fit(Ui.Label(row, a.Title, 15, Palette.Ink, 68, titleY, textW, 20, true, TextAnchor.MiddleLeft), 11);
