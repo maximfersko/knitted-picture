@@ -39,16 +39,27 @@ namespace KnittedPicture.Game
             return raw;
         }
 
-        /// <summary>Плитка альбома: готовая картинка, текущая (бледная, в рамке) или замок.</summary>
-        /// <summary>Три маленькие звезды: заработанные — золотые.</summary>
+        /// <summary>На сколько плашка звёзд выступает под плиткой: подписи ставим ниже.</summary>
+        public const float StarsOverhang = 11f;
+
+        /// <summary>
+        /// Три звезды на белой плашке-«ленточке» по центру нижнего края плитки: ровный ряд,
+        /// заработанные — золотые, пустые — лавандовые; плашка не даёт им потеряться на картинке.
+        /// </summary>
         public static void Stars(RectTransform parent, float cx, float cy, int stars, float size)
         {
+            var gap = Mathf.Round(size * 0.2f);
+            var w = 3 * size + 2 * gap + 12f;
+            var h = size + 8f;
+            var pill = Ui.Card(parent, "Stars", cx - w / 2f, cy - h / 2f, w, h, h / 2f, Palette.Card, Palette.CardShadow, 1.5f);
             for (var i = 0; i < 3; i++)
             {
-                var star = Ui.Image(parent, "Star", Art.Icon(Icon.Star), i < stars ? Palette.Coin : Palette.Track);
-                Ui.PlaceCenter(star.rectTransform, cx + (i - 1) * size * 0.95f, cy, size, size);
+                var star = Ui.Image(pill, "Star", Art.Icon(Icon.Star), i < stars ? Palette.Coin : Palette.SlotEmpty);
+                Ui.PlaceCenter(star.rectTransform, 6f + size / 2f + i * (size + gap), h / 2f, size, size);
             }
         }
+
+        /// <summary>Плитка альбома: готовая картинка, текущая (бледная, в рамке) или замок.</summary>
 
         public static Tap Tile(RectTransform parent, LevelData level, TileState state, float x, float y, float size, int stars = 0)
         {
@@ -79,7 +90,7 @@ namespace KnittedPicture.Game
 
             if (state == TileState.Done && stars > 0)
             {
-                Stars(root, size / 2f, size - 2f, stars, Mathf.Max(11f, size * 0.2f));
+                Stars(root, size / 2f, size, stars, Mathf.Clamp(size * 0.18f, 10f, 13f));
             }
 
             var tap = root.gameObject.AddComponent<Tap>();

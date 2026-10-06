@@ -147,7 +147,7 @@ namespace KnittedPicture.Game
                 }
 
                 var tilesY = 66f;
-                var stripY = tilesY + tile + 36f;
+                var stripY = tilesY + tile + MiniPicture.StarsOverhang + 34f;
                 var cardH = stripY + 48f + 14f;
                 var card = Ui.Card(content, collection.Name, 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
                 Header(card, cardW, collection.Name, $"{done} из {collection.Count} картинок", done == collection.Count ? "Собрана" : null,
@@ -170,7 +170,7 @@ namespace KnittedPicture.Game
                     tap.OnClick(() => LevelInfoPopup.OnTile(App, levelId, rt));
                     var name = Ui.Label(card, state == TileState.Locked ? $"Ур. {id}" : level.name, 11,
                         state == TileState.Current ? Palette.Primary : state == TileState.Locked ? Palette.Ink3 : Palette.Ink2,
-                        x - 6, tilesY + tile + 6, tile + 12, 26, state == TileState.Current, TextAnchor.UpperCenter);
+                        x - 6, tilesY + tile + MiniPicture.StarsOverhang + 3f, tile + 12, 26, state == TileState.Current, TextAnchor.UpperCenter);
                     name.lineSpacing = 0.85f;
                 }
 
@@ -394,16 +394,20 @@ namespace KnittedPicture.Game
             if (reward.Booster != null)
             {
                 var badge = Ui.Image(parent, "Booster", Art.Circle, Palette.PrimarySoft);
-                Ui.PlaceCenter(badge.rectTransform, x - 11, cy, 22, 22);
-                Ui.IconImage(parent, BoosterInfo.Icon(reward.Booster.Value), Palette.Primary, x - 11, cy, 14);
-                x -= 26f;
+                Ui.PlaceCenter(badge.rectTransform, x - 12, cy, 24, 24);
+                Ui.IconImage(parent, BoosterInfo.Icon(reward.Booster.Value), Palette.Primary, x - 12, cy, 14);
+                x -= 30f;
             }
 
             if (reward.Coins > 0)
             {
-                // Число заканчивается за 8 точек до монетки — не наезжает на неё.
-                Ui.Coin(parent, x - 10, cy, 18);
-                Ui.Label(parent, "+" + reward.Coins, 14, Palette.Ink, x - 90, cy - 11, 63, 22, true, TextAnchor.MiddleRight);
+                // Число и монета — одной плашкой, вплотную друг к другу.
+                var text = "+" + reward.Coins;
+                var w = text.Length * 8.5f + 34f;
+                var chip = Ui.Box(parent, "Coins", 12, Palette.CoinSoft).rectTransform;
+                Ui.PlaceCenter(chip, x - w / 2f, cy, w, 24);
+                Ui.Label(chip, text, 14, Palette.Ink, 6, 0, w - 30, 24, true, TextAnchor.MiddleRight);
+                Ui.Coin(chip, w - 14, 12, 17);
             }
         }
 

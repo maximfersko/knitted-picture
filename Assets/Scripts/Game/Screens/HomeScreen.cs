@@ -296,7 +296,8 @@ namespace KnittedPicture.Game
             const float gap = 8f;
             var tile = Mathf.Min(64f, Mathf.Floor((cardW - 24f - gap * (collection.Count - 1)) / collection.Count));
             var tilesW = collection.Count * tile + (collection.Count - 1) * gap;
-            cardH = 58f + tile + 34f + 48f + 14f;
+            var stripY = 58f + tile + MiniPicture.StarsOverhang + 34f;
+            cardH = stripY + 48f + 14f;
             var card = Ui.Card(_strip, "Collection" + index, index * W + 16f, 0, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
 
             var done = 0;
@@ -331,11 +332,11 @@ namespace KnittedPicture.Game
                 tap.OnClick(() => LevelInfoPopup.OnTile(App, levelId, rt));
                 var name = Ui.Label(card, state == TileState.Locked ? $"Ур. {id}" : level.name, 11,
                     state == TileState.Current ? Palette.Primary : state == TileState.Locked ? Palette.Ink3 : Palette.Ink2,
-                    x - 6, 58 + tile + 6, tile + 12, 26, state == TileState.Current, TextAnchor.UpperCenter);
+                    x - 6, 58 + tile + MiniPicture.StarsOverhang + 3f, tile + 12, 26, state == TileState.Current, TextAnchor.UpperCenter);
                 name.lineSpacing = 0.85f;
             }
 
-            CollectionReward.Build(App, card, index, 12, 58f + tile + 34f, cardW - 24, App.ShowHome);
+            CollectionReward.Build(App, card, index, 12, stripY, cardW - 24, App.ShowHome);
             return card;
         }
 
