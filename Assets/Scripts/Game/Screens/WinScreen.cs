@@ -72,8 +72,6 @@ namespace KnittedPicture.Game
     /// </summary>
     public sealed class WinScreen : ScreenView
     {
-        private const float RowH = 30f;
-
         private readonly Text _coins;
         private readonly List<(RectTransform from, int amount)> _flights = new List<(RectTransform, int)>();
         private int _shownCoins;
@@ -87,19 +85,40 @@ namespace KnittedPicture.Game
             _coins = Ui.CoinPill(Root, _shownCoins, W - 16, 8);
             Confetti();
 
-            // Вклад пряжи «в работе» — отдельной строкой с цифрой: копилка за картинку и надбавка за золото.
+            // Монеты по источникам: одна крупная сумма и мелкие плашки «откуда» — вместо стены строк.
             var goldBonus = stats.GoldCaught * YarnCatalog.GoldBonus(app.Progress.PerkPower(YarnPerk.Gold));
             goldBonus = Mathf.Clamp(goldBonus, 0, stats.GoldCoins);
-            var yarnCoins = reward.PerkCoins + goldBonus;
-            var rows = 1 + (stats.RushCoins > 0 ? 1 : 0) + (stats.GoldCoins > 0 ? 1 : 0) + (reward.StreakCoins > 0 ? 1 : 0) + (reward.Yarn >= 0 ? 1 : 0)
-                + (yarnCoins > 0 ? 1 : 0);
-            var compact = H < 760f || rows >= 4;
+            var parts = new List<(string name, int coins)> { ("за картинку", reward.BaseCoins) };
+            if (stats.RushCoins > 0)
+            {
+                parts.Add(($"разгон ×{stats.BestCombo}", stats.RushCoins));
+            }
+
+            if (stats.GoldCoins - goldBonus > 0)
+            {
+                parts.Add(($"золото {stats.GoldCaught}/{stats.GoldTotal}", stats.GoldCoins - goldBonus));
+            }
+
+            if (reward.StreakCoins > 0)
+            {
+                parts.Add(($"серия ×{reward.Streak}", reward.StreakCoins));
+            }
+
+            if (reward.PerkCoins + goldBonus > 0)
+            {
+                parts.Add(("пряжа", reward.PerkCoins + goldBonus));
+            }
+
+            if (reward.YarnCoins > 0)
+            {
+                parts.Add(("повтор мотка", reward.YarnCoins));
+            }
+
+            var compact = H < 760f || parts.Count >= 4;
             var hoopY = compact ? 52f : 64f;
 
-            // Всё под пяльцами (звёзды, заголовок, подсказка, карточка наград) должно уместиться над «Дальше»:
-            // на коротких экранах с множеством строк пяльцы уменьшаются, а не карточка уезжает под кнопку.
-            var lines = 1 + (stats.RushCoins > 0 ? 1 : 0) + (stats.GoldCoins > 0 ? 1 : 0) + (reward.StreakCoins > 0 ? 1 : 0) + (yarnCoins > 0 ? 1 : 0);
-            var cardEstimate = 10f + lines * RowH + (reward.Yarn >= 0 ? 44f : 0f) + 4f + 38f + 10f;
+            // Всё под пяльцами должно уместиться над «Дальше»: на коротких экранах уменьшаются пяльцы.
+            var cardEstimate = 52f + (parts.Count > 3 ? 2 : 1) * 34f + 12f + TileGap + TileH;
             var nextTop = H - 24f - 44f - 6f - 70f;
             var room = nextTop - 12f - hoopY - 10f - 48f - 40f - 30f - cardEstimate;
             var hoop = Mathf.Clamp(room, 110f, compact ? 168f : 220f);
@@ -122,44 +141,8 @@ namespace KnittedPicture.Game
             Ui.Fit(Ui.Label(Root, StarsHint(level, reward.Stars, stats), 15, Palette.Ink2, 16, y, W - 32, 22, false), 11);
             y += 30f;
 
-            var card = Ui.Card(Root, "Reward", 16, y, W - 32, 0, 20, Palette.Card, Palette.CardShadow);
-            var rowY = 10f;
-            rowY = Row(card, rowY, "За картинку", reward.BaseCoins);
-            if (stats.RushCoins > 0)
-            {
-                rowY = Row(card, rowY, $"Разгон · лучшее комбо ×{stats.BestCombo}", stats.RushCoins);
-            }
-
-            if (stats.GoldCoins > 0)
-            {
-                rowY = Row(card, rowY, $"Золотые петли {stats.GoldCaught}/{stats.GoldTotal}", stats.GoldCoins - goldBonus);
-            }
-
-            if (reward.StreakCoins > 0)
-            {
-                rowY = Row(card, rowY, $"Серия побед ×{reward.Streak}", reward.StreakCoins);
-            }
-
-            if (yarnCoins > 0 && app.Progress.ActiveYarn >= 0)
-            {
-                rowY = Row(card, rowY, $"Пряжа «{YarnCatalog.All[app.Progress.ActiveYarn].Name}» в работе", yarnCoins);
-            }
-
-            if (reward.Yarn >= 0)
-            {
-                rowY = YarnRow(card, rowY, reward);
-            }
-
-            rowY = ChestRow(card, rowY + 4f);
-            var cardH = rowY + 10f;
-            card.sizeDelta = new Vector2(W - 32, cardH);
-            foreach (Transform child in card)
-            {
-                if (child.name == "Shadow" || child.name == "Face")
-                {
-                    ((RectTransform)child).sizeDelta = new Vector2(W - 32, cardH);
-                }
-            }
+            y = CoinsCard(parts, y);
+            BuildTiles(reward, y + TileGap);
 
             FlyAll();
             BuildNext(app, level);
@@ -281,67 +264,112 @@ namespace KnittedPicture.Game
             }
         }
 
-        /// <summary>Строка награды; её монетка — точка вылета монет в счётчик.</summary>
-        private float Row(RectTransform card, float y, string title, int coins)
+        /// <summary>
+        /// Карточка монет: слева «Награда», справа крупная сумма; ниже — плашки «откуда» в строку с переносом.
+        /// Монетки вылетают из своих плашек в счётчик. Возвращает низ карточки.
+        /// </summary>
+        private float CoinsCard(List<(string name, int coins)> parts, float y)
         {
-            Ui.Fit(Ui.Label(card, title, 16, Palette.Ink, 16, y, W - 160, RowH - 2, true, TextAnchor.MiddleLeft), 11);
-            var coin = Ui.Coin(card, W - 32 - 74, y + RowH / 2f - 1f, 20);
-            Ui.Label(card, "+" + coins, 17, Palette.Ink, W - 32 - 60, y, 46, RowH - 2, true, TextAnchor.MiddleRight);
-            if (coins > 0)
+            var cardW = W - 32f;
+            var total = 0;
+            foreach (var (_, coins) in parts)
             {
-                _flights.Add((coin, coins));
+                total += coins;
             }
 
-            return y + RowH;
+            var card = Ui.Card(Root, "Reward", 16, y, cardW, 100, 20, Palette.Card, Palette.CardShadow);
+            Ui.Label(card, "НАГРАДА", 12, Palette.Ink3, 18, 12, 120, 26, true, TextAnchor.MiddleLeft);
+            var sum = Ui.Label(card, "+" + total, 26, Palette.Ink, cardW - 16 - 120, 6, 120, 38, true, TextAnchor.MiddleRight);
+            sum.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Ui.Coin(card, cardW - 16 - sum.preferredWidth - 18f, 25, 26);
+
+            // Плашки источников: «за картинку +20», «разгон ×11 +4»… — переносятся на вторую строку, если не влезли.
+            const float chipH = 28f;
+            const float gap = 6f;
+            var x = 14f;
+            var rowY = 50f;
+            foreach (var (name, coins) in parts)
+            {
+                var chip = Ui.Box(card, "Part", chipH / 2f, Palette.Surface).rectTransform;
+                var label = Ui.Label(chip, name, 13, Palette.Ink2, false);
+                label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                var value = Ui.Label(chip, "+" + coins, 13, Palette.Ink, true);
+                value.horizontalOverflow = HorizontalWrapMode.Overflow;
+                var nameW = label.preferredWidth;
+                var valueW = value.preferredWidth;
+                var w = 10f + nameW + 6f + valueW + 4f + 16f + 8f;
+                if (x + w > cardW - 14f && x > 14f)
+                {
+                    x = 14f;
+                    rowY += chipH + gap;
+                }
+
+                Ui.Place(chip, x, rowY, w, chipH);
+                Ui.Place(label.rectTransform, 10, 0, nameW + 2f, chipH);
+                label.alignment = TextAnchor.MiddleLeft;
+                Ui.Place(value.rectTransform, 10 + nameW + 6f, 0, valueW + 2f, chipH);
+                value.alignment = TextAnchor.MiddleLeft;
+                var coin = Ui.Coin(chip, w - 8f - 8f, chipH / 2f, 16);
+                if (coins > 0)
+                {
+                    _flights.Add((coin, coins));
+                }
+
+                x += w + gap;
+            }
+
+            var cardH = rowY + chipH + 14f;
+            card.sizeDelta = new Vector2(cardW, cardH);
+            foreach (Transform child in card)
+            {
+                if (child.name == "Shadow" || child.name == "Face")
+                {
+                    ((RectTransform)child).sizeDelta = new Vector2(cardW, cardH);
+                }
+            }
+
+            return y + cardH;
         }
 
-        /// <summary>Моток за новую картинку: новый — с блеском, повтор — монеты.</summary>
-        private float YarnRow(RectTransform card, float y, WinReward reward)
+        private const float TileH = 62f;
+        private const float TileGap = 10f;
+
+        /// <summary>Под монетами — две плитки рядом: моток (новый, новый уровень или повтор) и прогресс сундука.</summary>
+        private void BuildTiles(WinReward reward, float y)
         {
-            var yarn = YarnCatalog.All[reward.Yarn];
-            var ball = YarnView.Create(card, yarn, 28, y + 20f, 32, true);
-            ball.localScale = Vector3.zero;
-            Tweens.Delay(ball, 1.0f, () =>
+            var hasYarn = reward.Yarn >= 0;
+            var tileW = hasYarn ? (W - 32f - TileGap) / 2f : W - 32f;
+            var x = 16f;
+            if (hasYarn)
             {
-                Tweens.Scale(ball, 0.2f, 1f, 0.35f, Ease.OutBack);
-                Fx.Sparkle(Root, Ui.WorldCenter(ball), Palette.Hex(yarn.Hex), 10, 30f);
-                Sfx.Play(Sound.Star, 0.6f);
-            });
-            if (reward.NewYarn)
-            {
-                Ui.Label(card, $"Новый моток: {yarn.Name}", 15, Palette.Ink, 50, y + 4, W - 32 - 60, 20, true, TextAnchor.MiddleLeft);
-                Ui.Label(card, $"{YarnCatalog.RarityName(yarn.Rarity)} · в корзинке {App.Progress.YarnKinds}/{YarnCatalog.Count}", 12,
-                    YarnView.RarityColor(yarn.Rarity), 50, y + 22, W - 32 - 60, 18, false, TextAnchor.MiddleLeft);
-                return y + 44f;
+                var yarn = YarnCatalog.All[reward.Yarn];
+                var tile = Ui.Card(Root, "YarnTile", x, y, tileW, TileH, 18, Palette.Card, Palette.CardShadow, 3f);
+                var ball = YarnView.Create(tile, yarn, 30, TileH / 2f, 34, true);
+                ball.localScale = Vector3.zero;
+                Tweens.Delay(ball, 1.0f, () =>
+                {
+                    Tweens.Scale(ball, 0.2f, 1f, 0.35f, Ease.OutBack);
+                    Fx.Sparkle(Root, Ui.WorldCenter(ball), Palette.Hex(yarn.Hex), 10, 30f);
+                    Sfx.Play(Sound.Star, 0.6f);
+                });
+                var caption = reward.NewYarn ? "Новый моток"
+                    : reward.YarnLevelUp ? $"Уровень {App.Progress.YarnLevel(yarn.Id)}!"
+                    : "Повтор мотка";
+                Ui.Fit(Ui.Label(tile, caption, 12, reward.NewYarn ? YarnView.RarityColor(yarn.Rarity) : reward.YarnLevelUp ? Palette.Primary : Palette.Ink2,
+                    54, 10, tileW - 62, 18, true, TextAnchor.MiddleLeft), 9);
+                Ui.Fit(Ui.Label(tile, yarn.Name, 15, Palette.Ink, 54, 28, tileW - 62, 22, true, TextAnchor.MiddleLeft), 10);
+                x += tileW + TileGap;
             }
 
-            if (reward.YarnLevelUp)
-            {
-                // Повтор поднял уровень мотка — его бонус стал сильнее.
-                var level = App.Progress.YarnLevel(yarn.Id);
-                Ui.Fit(Ui.Label(card, $"{yarn.Name}: уровень {level}!", 15, Palette.Ink, 50, y + 4, W - 32 - 60, 20, true, TextAnchor.MiddleLeft), 11);
-                Ui.Fit(Ui.Label(card, YarnCatalog.PerkText(YarnCatalog.PerkOf(yarn.Id), YarnCatalog.Power(yarn.Id, level)), 12,
-                    Palette.Primary, 50, y + 22, W - 32 - 60, 18, false, TextAnchor.MiddleLeft), 9);
-                return y + 44f;
-            }
-
-            Ui.Label(card, $"Повтор: {yarn.Name}", 15, Palette.Ink, 50, y + 10, W - 160, 22, true, TextAnchor.MiddleLeft);
-            var coin = Ui.Coin(card, W - 32 - 74, y + 21f, 20);
-            Ui.Label(card, "+" + reward.YarnCoins, 17, Palette.Ink, W - 32 - 60, y + 8, 46, 26, true, TextAnchor.MiddleRight);
-            _flights.Add((coin, reward.YarnCoins));
-            return y + 44f;
-        }
-
-        /// <summary>Прогресс звёздного сундука — повод собрать три звезды.</summary>
-        private float ChestRow(RectTransform card, float y)
-        {
             var progress = App.Progress;
             var value = Mathf.Min(progress.ChestProgress, ProgressService.ChestEvery);
-            Ui.IconImage(card, Icon.Chest, Palette.CoinShadow, 28, y + 16, 24);
-            var text = progress.CanOpenChest ? "Сундук готов! Открой на главной" : $"Звёздный сундук: {value}/{ProgressService.ChestEvery} ★";
-            Ui.Label(card, text, 14, progress.CanOpenChest ? Palette.CoinShadow : Palette.Ink2, 50, y + 2, W - 32 - 60, 18, true, TextAnchor.MiddleLeft);
-            Ui.ProgressBar(card, 50, y + 24, W - 32 - 66, 7, (float)value / ProgressService.ChestEvery, Palette.Coin);
-            return y + 38f;
+            var ready = progress.CanOpenChest;
+            var chest = Ui.Card(Root, "ChestTile", x, y, tileW, TileH, 18, ready ? Palette.CoinSoft : Palette.Card, Palette.CardShadow, 3f);
+            Ui.IconImage(chest, Icon.Chest, Palette.CoinShadow, 28, TileH / 2f, 26);
+            Ui.Fit(Ui.Label(chest, ready ? "Сундук готов!" : "Сундук", 12, ready ? Palette.CoinShadow : Palette.Ink2, 50, 10, tileW - 58, 18, true,
+                TextAnchor.MiddleLeft), 9);
+            Ui.Label(chest, $"{value}/{ProgressService.ChestEvery} ★", 13, Palette.Ink, 50, 27, tileW - 58, 18, true, TextAnchor.MiddleLeft);
+            Ui.ProgressBar(chest, 50, 47, tileW - 64, 6, (float)value / ProgressService.ChestEvery, Palette.Coin);
         }
 
         /// <summary>Строки отдают монеты по очереди: сначала «за картинку», потом бонусы.</summary>
