@@ -28,6 +28,12 @@ namespace KnittedPicture.Core
         /// <summary>Лучшие звёзды по уровням: индекс — id уровня минус 1.</summary>
         public List<int> stars = new List<int>();
 
+        /// <summary>Лучшее число тапов по уровням (индекс — id минус 1), 0 — нет данных.</summary>
+        public List<int> bestTaps = new List<int>();
+
+        /// <summary>Уровни, пройденные хоть раз без бустеров и спасений.</summary>
+        public List<int> cleanWins = new List<int>();
+
         /// <summary>Побед подряд без перезапуска уровня.</summary>
         public int streak;
 

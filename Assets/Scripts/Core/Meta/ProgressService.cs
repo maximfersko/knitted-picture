@@ -183,6 +183,32 @@ namespace KnittedPicture.Core
             }
         }
 
+        /// <summary>Лучшее число тапов на уровне, 0 — ещё не проходил (или данных нет).</summary>
+        public int BestTaps(int levelId) => levelId >= 1 && levelId <= _data.bestTaps.Count ? _data.bestTaps[levelId - 1] : 0;
+
+        /// <summary>Проходил ли уровень без бустеров и спасений.</summary>
+        public bool WasClean(int levelId) => _data.cleanWins.Contains(levelId);
+
+        /// <summary>Запомнить рекорд уровня: лучшие тапы и чистое прохождение.</summary>
+        public void RecordResult(int levelId, int taps, bool clean)
+        {
+            while (_data.bestTaps.Count < levelId)
+            {
+                _data.bestTaps.Add(0);
+            }
+
+            var best = _data.bestTaps[levelId - 1];
+            if (taps > 0 && (best == 0 || taps < best))
+            {
+                _data.bestTaps[levelId - 1] = taps;
+            }
+
+            if (clean && !_data.cleanWins.Contains(levelId))
+            {
+                _data.cleanWins.Add(levelId);
+            }
+        }
+
         /// <summary>Записать итоги пройденного уровня в счётчики достижений.</summary>
         public void RecordLevel(int stitches, int rushes, int goldCaught, int bestCombo)
         {

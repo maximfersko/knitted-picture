@@ -207,6 +207,7 @@ namespace KnittedPicture.Game
             var pendingBefore = Progress.PendingClaims;
             var chestBefore = Progress.CanOpenChest;
             Progress.RecordLevel(stats.Stitches, stats.Rushes, stats.GoldCaught, stats.BestCombo);
+            Progress.RecordResult(level.id, stats.Taps, !stats.Helped);
             var reward = Progress.CompleteLevel(level.id, level.hard, stars, stats.RushCoins + stats.GoldCoins);
             Save();
             var news = new WinNews(Progress.PendingClaims > pendingBefore, Progress.CanOpenChest && !chestBefore);

@@ -32,6 +32,8 @@ namespace UnityEngine.EventSystems
     public class PointerEventData : BaseEventData
     {
         public Vector2 position { get; set; }
+
+        public Vector2 delta { get; set; }
     }
 
     public interface IEventSystemHandler

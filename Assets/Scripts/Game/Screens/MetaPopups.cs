@@ -199,42 +199,123 @@ namespace KnittedPicture.Game
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Карточка пройденного уровня: картинка, звёзды, чего не хватает до трёх и «Перевязать».
-    /// Не даёт случайно запустить старый уровень одним тапом.
+    /// Карточка пройденного уровня. Сверху — картинка, название и звёзды; ниже — особенности уровня
+    /// плашками и понятный разбор: за что даётся каждая звезда, что уже получено, твой рекорд.
+    /// Кнопка «Перевязать» не даёт случайно запустить старый уровень одним тапом.
     /// </summary>
     public sealed class LevelInfoPopup : Popup
     {
         public LevelInfoPopup(App app, KnittedPicture.Core.LevelData level)
             : base(app)
         {
-            const float size = 150f;
-            var frame = Ui.Card(Card, "Frame", CardWidth / 2f - size / 2f, Cursor, size, size, 24, Palette.Surface, Palette.CardShadow, 3f);
-            MiniPicture.Create(frame, level, size / 2f, size / 2f, size - 24f);
-            Space(size + 18f);
-
-            AddTitle(level.name, 24);
+            var progress = app.Progress;
+            var stars = progress.StarsOf(level.id);
             var collection = KnittedPicture.Core.Collections.Of(level.id);
-            var sub = AddText($"Уровень {level.id} · {collection.Name}", 14, 1);
-            sub.color = Palette.Ink2;
 
-            var stars = app.Progress.StarsOf(level.id);
-            var y = Cursor - 6f;
+            // Шапка: картинка слева, справа название, номер и звёзды.
+            const float pic = 108f;
+            var top = Cursor - 8f;
+            var frame = Ui.Card(Card, "Frame", 24, top, pic, pic, 20, Palette.Surface, Palette.CardShadow, 3f);
+            MiniPicture.Create(frame, level, pic / 2f, pic / 2f, pic - 18f);
+            var textX = 24 + pic + 16;
+            var textW = CardWidth - textX - 20;
+            Ui.Label(Card, level.name, 21, Palette.Ink, textX, top + 6, textW, 28, true, TextAnchor.MiddleLeft);
+            Ui.Label(Card, $"Уровень {level.id} · {collection.Name}", 13, Palette.Ink2, textX, top + 36, textW, 20, false, TextAnchor.MiddleLeft);
             for (var i = 0; i < 3; i++)
             {
                 var star = Ui.Image(Card, "Star", Art.Icon(Icon.Star), i < stars ? Palette.Coin : Palette.Track);
-                Ui.PlaceCenter(star.rectTransform, CardWidth / 2f + (i - 1) * 40f, y + 16f, i == 1 ? 38f : 32f, i == 1 ? 38f : 32f);
+                Ui.PlaceCenter(star.rectTransform, textX + 14 + i * 32, top + 80, 28, 28);
             }
 
-            Space(40f);
-            var hint = stars >= 3
-                ? "Три звезды — лучший результат"
-                : level.par > 0
-                    ? $"Третья звезда — без бустеров и за {level.par} тапов"
-                    : "Третья звезда — без бустеров и спасений";
-            AddText(hint, 14, 1.2f);
+            Space(pic + 6f);
+
+            // Особенности уровня — чтобы было понятно, что ждёт.
+            var chips = new List<(string text, Color back, Color ink)>();
+            if (level.hard)
+            {
+                chips.Add(("Сложный", Palette.DangerSoft, Palette.Danger));
+            }
+
+            if (level.timeLimit > 0)
+            {
+                chips.Add(($"Моль {level.timeLimit} с", Palette.Surface, Palette.Ink));
+            }
+
+            if (level.mystery)
+            {
+                chips.Add(("Загадка", Palette.Hex("#EDE4FF"), Palette.Link));
+            }
+
+            if (level.gold.Length > 0)
+            {
+                chips.Add(($"Золото ×{level.gold.Length}", Palette.CoinSoft, Palette.CoinShadow));
+            }
+
+            chips.Add(($"Слотов: {level.slots}", Palette.Surface, Palette.Ink));
+            var chipX = 24f;
+            foreach (var (text, back, ink) in chips)
+            {
+                var w = text.Length * 7.2f + 20f;
+                if (chipX + w > CardWidth - 24f)
+                {
+                    break;
+                }
+
+                var chip = Ui.Box(Card, "Chip", 12, back).rectTransform;
+                Ui.Place(chip, chipX, Cursor, w, 26);
+                Ui.Label(chip, text, 12, ink, 0, 0, w, 26);
+                chipX += w + 6f;
+            }
+
+            Space(38f);
+
+            // Разбор звёзд: каждая строка — условие и отметка, получено ли.
+            Ui.Label(Card, "Как получить звёзды", 14, Palette.Ink, 24, Cursor, Inner, 20, true, TextAnchor.MiddleLeft);
+            Space(26f);
+            var third = level.par > 0 ? $"Без бустеров и не больше {level.par} тапов" : "Без бустеров";
+            StarRow(1, "Довязать картинку", stars >= 1);
+            StarRow(2, "Без спасения после затора или моли", stars >= 2);
+            StarRow(3, third, stars >= 3);
+
+            var best = progress.BestTaps(level.id);
+            if (level.par > 0 && best > 0)
+            {
+                var record = AddText(stars >= 3 ? $"Твой рекорд: {best} тапов — в цель!" : $"Твой рекорд: {best} тапов, цель — {level.par}", 13, 1);
+                record.color = stars >= 3 ? Palette.Primary : Palette.Ink2;
+            }
+            else
+            {
+                Space(6f);
+            }
+
             AddPrimary(stars >= 3 ? "Перевязать" : "Перевязать на три звезды").OnClick(() => app.StartLevel(level.id));
+            var note = Ui.Label(Card, $"Повтор: +{KnittedPicture.Core.Economy.ReplayReward} монет · звёзды сохранятся лучшие", 12, Palette.Ink3,
+                24, Cursor - 10, Inner, 18, false);
+            note.alignment = TextAnchor.MiddleCenter;
+            Space(14f);
             AddLink("Закрыть").OnClick(Close);
-            Finish(8);
+            Finish(6);
+        }
+
+        /// <summary>Строка разбора: N звёзд, условие, зелёная галочка или пустой кружок.</summary>
+        private void StarRow(int count, string text, bool done)
+        {
+            var row = Ui.Box(Card, "StarRow", 14, done ? Palette.PrimarySoft : Palette.Surface).rectTransform;
+            Ui.Place(row, 24, Cursor, Inner, 40);
+            for (var i = 0; i < count; i++)
+            {
+                Ui.IconImage(row, Icon.Star, done ? Palette.Coin : Palette.Ink3, 16 + i * 13, 20, 14);
+            }
+
+            Ui.Label(row, text, 13, done ? Palette.Ink : Palette.Ink2, 58, 0, Inner - 58 - 40, 40, done, TextAnchor.MiddleLeft).lineSpacing = 0.85f;
+            var mark = Ui.Image(row, "Mark", done ? Art.Circle : Art.Ring, done ? Palette.Primary : Palette.SlotEmpty);
+            Ui.PlaceCenter(mark.rectTransform, Inner - 22, 20, 24, 24);
+            if (done)
+            {
+                Ui.IconImage(row, Icon.Check, Color.white, Inner - 22, 20, 15);
+            }
+
+            Space(46f);
         }
 
         /// <summary>Тап по плитке уровня где угодно: закрытый — подсказка, текущий — сразу в игру, пройденный — карточка.</summary>

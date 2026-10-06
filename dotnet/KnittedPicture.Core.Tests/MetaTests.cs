@@ -147,6 +147,20 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Level_record_keeps_fewest_taps_and_clean_win()
+        {
+            var progress = Fresh();
+            Assert.Equal(0, progress.BestTaps(3));
+
+            progress.RecordResult(3, taps: 15, clean: false);
+            progress.RecordResult(3, taps: 18, clean: true);
+
+            Assert.Equal(15, progress.BestTaps(3));
+            Assert.True(progress.WasClean(3));
+            Assert.False(progress.WasClean(2));
+        }
+
+        [Fact]
         public void Achievement_and_yarn_ids_match_their_positions()
         {
             Assert.Equal(Enumerable.Range(0, Achievements.All.Length), Achievements.All.Select(a => a.Id));

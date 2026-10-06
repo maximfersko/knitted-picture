@@ -127,24 +127,31 @@ namespace KnittedPicture.Game
 
         // ---------- Альбом ----------
 
+        /// <summary>Каждая коллекция — карточка-страница альбома: шапка, пять картинок с подписями, награда.</summary>
         private float BuildAlbum(RectTransform content)
         {
             var progress = App.Progress;
-            var y = 8f;
-            const float gap = 10f;
+            var y = 6f;
+            var cardW = W - 32f;
+            const float gap = 8f;
             for (var c = 0; c < Collections.All.Length; c++)
             {
                 var collection = Collections.All[c];
-                var tile = Mathf.Floor((W - 32f - gap * (collection.Count - 1)) / collection.Count);
+                var tile = Mathf.Floor((cardW - 28f - gap * (collection.Count - 1)) / collection.Count);
                 var done = 0;
+                var stars = 0;
                 for (var id = collection.FirstLevel; id <= collection.LastLevel; id++)
                 {
                     done += progress.IsCompleted(id) ? 1 : 0;
+                    stars += progress.StarsOf(id);
                 }
 
-                Ui.Label(content, collection.Name, 18, Palette.Ink, 18, y, W - 140, 26, true, TextAnchor.MiddleLeft);
-                Ui.Label(content, $"{done} из {collection.Count}", 15, Palette.Ink2, W - 118, y, 100, 26, true, TextAnchor.MiddleRight);
-                y += 34f;
+                var tilesY = 66f;
+                var stripY = tilesY + tile + 36f;
+                var cardH = stripY + 48f + 14f;
+                var card = Ui.Card(content, collection.Name, 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
+                Header(card, cardW, collection.Name, $"{done} из {collection.Count} картинок", done == collection.Count ? "Собрана" : null,
+                    $"{stars}/{collection.Count * 3}");
 
                 for (var i = 0; i < collection.Count; i++)
                 {
@@ -156,38 +163,68 @@ namespace KnittedPicture.Game
 
                     var level = App.Levels.Get(id);
                     var state = progress.IsCompleted(id) ? TileState.Done : progress.IsAvailable(id) ? TileState.Current : TileState.Locked;
-                    var x = 16 + i * (tile + gap);
+                    var x = 14 + i * (tile + gap);
                     var levelId = id;
-                    var tap = MiniPicture.Tile(content, level, state, x, y, tile, progress.StarsOf(id));
+                    var tap = MiniPicture.Tile(card, level, state, x, tilesY, tile, progress.StarsOf(id));
                     var rt = (RectTransform)tap.transform;
                     tap.OnClick(() => LevelInfoPopup.OnTile(App, levelId, rt));
-                    var name = Ui.Label(content, state == TileState.Locked ? "???" : level.name, 11, Palette.Ink2, x - 4, y + tile + 7, tile + 8, 28,
-                        false, TextAnchor.UpperCenter);
+                    var name = Ui.Label(card, state == TileState.Locked ? $"Ур. {id}" : level.name, 11,
+                        state == TileState.Current ? Palette.Primary : state == TileState.Locked ? Palette.Ink3 : Palette.Ink2,
+                        x - 6, tilesY + tile + 6, tile + 12, 26, state == TileState.Current, TextAnchor.UpperCenter);
                     name.lineSpacing = 0.85f;
                 }
 
-                y += tile + 40f;
-                var index = c;
-                y = RewardBar(content, y, "Награда за коллекцию: 100 монет, слот и моток",
-                    progress.CanClaimCollection(c), progress.IsCollectionClaimed(c), (float)done / collection.Count,
-                    () => Claim(progress.ClaimCollection(index, App.Random), collection.Name, Icon.Album, CollectionsTab.Album));
-                y += 18f;
+                CollectionReward.Build(App, card, c, 12, stripY, cardW - 24, () => App.ShowCollections(CollectionsTab.Album));
+                y += cardH + 16f;
             }
 
             return y;
         }
 
+        /// <summary>
+        /// Шапка карточки: название и подпись слева; справа — зелёная плашка «Собрана»
+        /// или счёт со звездой.
+        /// </summary>
+        private static void Header(RectTransform card, float cardW, string title, string subtitle, string? doneChip, string score)
+        {
+            Ui.Label(card, title, 18, Palette.Ink, 16, 12, cardW - 140, 26, true, TextAnchor.MiddleLeft);
+            Ui.Label(card, subtitle, 13, Palette.Ink2, 16, 36, cardW - 140, 20, false, TextAnchor.MiddleLeft);
+            if (doneChip != null)
+            {
+                var chip = Ui.Card(card, "Done", cardW - 16 - 104, 18, 104, 28, 14, Palette.PrimarySoft, Palette.PrimarySoft, 0f);
+                Ui.IconImage(chip, Icon.Check, Palette.Primary, 18, 14, 14);
+                Ui.Label(chip, doneChip, 13, Palette.Primary, 30, 0, 70, 28, true, TextAnchor.MiddleLeft);
+            }
+            else if (score.Length > 0)
+            {
+                var chip = Ui.Card(card, "Score", cardW - 16 - 92, 18, 92, 28, 14, Palette.Surface, Palette.Surface, 0f);
+                Ui.IconImage(chip, Icon.Star, Palette.Coin, 18, 14, 16);
+                Ui.Label(chip, score, 13, Palette.Ink, 30, 0, 58, 28, true, TextAnchor.MiddleLeft);
+            }
+        }
+
         // ---------- Пряжа ----------
 
+        /// <summary>Сверху — корзинка с общим прогрессом, ниже — наборы карточками: мотки, редкость, награда.</summary>
         private float BuildYarn(RectTransform content)
         {
             var progress = App.Progress;
-            var y = 4f;
-            var intro = Ui.Label(content, $"Мотков: {progress.YarnKinds} из {YarnCatalog.Count}. Выпадают за новые картинки, из сундука и подарков. Повтор — монеты",
-                14, Palette.Ink2, 20, y, W - 40, 40, false);
-            intro.lineSpacing = 0.9f;
-            y += 50f;
+            var cardW = W - 32f;
+            var y = 6f;
 
+            var banner = Ui.Card(content, "Basket", 16, y, cardW, 92, 24, Palette.Card, Palette.CardShadow, 3f);
+            var circle = Ui.Image(banner, "Back", Art.Circle, Palette.DangerSoft);
+            Ui.PlaceCenter(circle.rectTransform, 44, 46, 56, 56);
+            var logo = Ui.Image(banner, "Ball", Art.YarnBall, Palette.Hex("#FF6FA5"));
+            Ui.PlaceCenter(logo.rectTransform, 44, 46, 38, 38);
+            Ui.Label(banner, "Корзинка пряжи", 17, Palette.Ink, 84, 12, cardW - 100, 24, true, TextAnchor.MiddleLeft);
+            Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 84, 34, cardW - 100, 18, false, TextAnchor.MiddleLeft);
+            Ui.ProgressBar(banner, 84, 56, cardW - 104, 7, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Danger);
+            Ui.Label(banner, "За новые картинки, сундук и подарок дня · повтор — монеты", 11, Palette.Ink3, 84, 66, cardW - 100, 18, false,
+                TextAnchor.MiddleLeft);
+            y += 92f + 16f;
+
+            const float gap = 8f;
             foreach (var set in YarnCatalog.Sets)
             {
                 var owned = 0;
@@ -196,28 +233,31 @@ namespace KnittedPicture.Game
                     owned += progress.HasYarn(i) ? 1 : 0;
                 }
 
-                Ui.Label(content, set.Name, 18, Palette.Ink, 18, y, W - 140, 26, true, TextAnchor.MiddleLeft);
-                Ui.Label(content, $"{owned} из {set.Count}", 15, Palette.Ink2, W - 118, y, 100, 26, true, TextAnchor.MiddleRight);
-                y += 34f;
+                var cellW = (cardW - 28f - gap * (set.Count - 1)) / set.Count;
+                const float cellH = 128f;
+                var cellsY = 66f;
+                var stripY = cellsY + cellH + 14f;
+                var cardH = stripY + 48f + 14f;
+                var card = Ui.Card(content, set.Name, 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
+                Header(card, cardW, set.Name, $"{owned} из {set.Count} мотков", owned == set.Count ? "Собран" : null, "");
 
-                const float gap = 8f;
-                var cellW = (W - 32f - gap * (set.Count - 1)) / set.Count;
-                const float cellH = 124f;
                 for (var i = 0; i < set.Count; i++)
                 {
                     var yarn = YarnCatalog.All[set.First + i];
                     var has = progress.HasYarn(yarn.Id);
-                    var cell = Ui.Card(content, "Yarn", 16 + i * (cellW + gap), y, cellW, cellH, 16, has ? Palette.Card : Palette.Track,
-                        Palette.CardShadow, has ? 2f : 0f);
-                    YarnView.Create(cell, yarn, cellW / 2f, 38, 56, has);
-                    var name = Ui.Label(cell, has ? yarn.Name : "???", 13, has ? Palette.Ink : Palette.Ink3, 2, 72, cellW - 4, 20);
-                    name.lineSpacing = 0.85f;
-                    Ui.Label(cell, YarnCatalog.RarityName(yarn.Rarity), 11, YarnView.RarityColor(yarn.Rarity), 2, 92, cellW - 4, 16, false);
+                    var x = 14 + i * (cellW + gap);
+                    var cell = Ui.Box(card, "Yarn", 16, has ? Palette.Surface : Palette.WithAlpha(Palette.Surface, 0.6f), has).rectTransform;
+                    Ui.Place(cell, x, cellsY, cellW, cellH);
+                    Ui.Outline(cell, 16, has ? Palette.Line : Palette.WithAlpha(Palette.Line, 0.7f), 1.5f);
+                    YarnView.Create(cell, yarn, cellW / 2f, 38, 52, has);
+
+                    Ui.Label(cell, has ? yarn.Name : "???", 13, has ? Palette.Ink : Palette.Ink3, 2, 70, cellW - 4, 20);
+                    RarityChip(cell, yarn.Rarity, cellW / 2f, 104f);
                     var count = progress.YarnCount(yarn.Id);
                     if (count > 1)
                     {
-                        var chip = Ui.Card(cell, "Count", cellW - 34, 6, 28, 20, 10, Palette.Ink, Palette.Ink, 0f);
-                        Ui.Label(chip, "×" + count, 11, Color.white, 0, 0, 28, 20);
+                        var chip = Ui.Card(cell, "Count", cellW - 32, 6, 26, 18, 9, Palette.Ink, Palette.Ink, 0f);
+                        Ui.Label(chip, "×" + count, 11, Color.white, 0, 0, 26, 18);
                     }
 
                     if (has)
@@ -227,15 +267,26 @@ namespace KnittedPicture.Game
                     }
                 }
 
-                y += cellH + 12f;
                 var target = set;
-                var rewardText = $"За набор: {set.Reward.Coins} монет и {BoosterInfo.Name(set.Reward.Booster!.Value).ToLower()} ×{set.Reward.BoosterCount}";
-                y = RewardBar(content, y, rewardText, progress.CanClaimSet(set), progress.IsSetClaimed(set), (float)owned / set.Count,
+                var booster = BoosterInfo.Name(set.Reward.Booster!.Value).ToLower();
+                RewardStrip.Build(card, 12, stripY, cardW - 24, $"За весь набор: {set.Reward.Coins} монет и {booster} ×{set.Reward.BoosterCount}",
+                    (float)owned / set.Count, progress.CanClaimSet(set), progress.IsSetClaimed(set), "Набор собран!",
                     () => Claim(progress.ClaimSet(target, App.Random), "Набор «" + target.Name + "»", Icon.Gift, CollectionsTab.Yarn));
-                y += 18f;
+                y += cardH + 16f;
             }
 
             return y;
+        }
+
+        /// <summary>Плашка редкости: обычная — серая, редкая — фиолетовая, эпическая — золотая.</summary>
+        private static void RarityChip(RectTransform parent, Rarity rarity, float cx, float cy)
+        {
+            var back = rarity == Rarity.Common ? Palette.Track : rarity == Rarity.Rare ? Palette.Hex("#EDE4FF") : Palette.CoinSoft;
+            var text = YarnCatalog.RarityName(rarity);
+            var w = text.Length * 6.6f + 18f;
+            var chip = Ui.Box(parent, "Rarity", 10, back).rectTransform;
+            Ui.PlaceCenter(chip, cx, cy, w, 20);
+            Ui.Label(chip, text, 11, YarnView.RarityColor(rarity), 0, 0, w, 20);
         }
 
         // ---------- Достижения ----------
@@ -357,30 +408,6 @@ namespace KnittedPicture.Game
 
         // ---------- Общее ----------
 
-        /// <summary>Полоска награды под коллекцией: прогресс, «Забрать» или «Получено».</summary>
-        private float RewardBar(RectTransform content, float y, string text, bool canClaim, bool claimed, float fraction, System.Action claim)
-        {
-            var bar = Ui.Card(content, "RewardBar", 16, y, W - 32, 52, 18, canClaim ? Palette.CoinSoft : Palette.Card, Palette.CardShadow, 2f);
-            Ui.IconImage(bar, claimed ? Icon.Check : Icon.Gift, claimed ? Palette.Primary : Palette.CoinShadow, 24, 26, 22);
-            if (canClaim)
-            {
-                Ui.Label(bar, "Награда готова!", 15, Palette.Ink, 44, 0, W - 32 - 160, 52, true, TextAnchor.MiddleLeft);
-                Ui.Button(bar, "Забрать", W - 32 - 104, 8, 92, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15).OnClick(claim);
-            }
-            else if (claimed)
-            {
-                Ui.Label(bar, "Награда получена", 14, Palette.Ink2, 44, 0, W - 32 - 60, 52, true, TextAnchor.MiddleLeft);
-            }
-            else
-            {
-                var label = Ui.Label(bar, text, 12, Palette.Ink2, 44, 6, W - 32 - 56, 30, false, TextAnchor.MiddleLeft);
-                label.lineSpacing = 0.85f;
-                Ui.ProgressBar(bar, 44, 38, W - 32 - 60, 6, fraction, Palette.Primary);
-            }
-
-            return y + 52f;
-        }
-
         private void Claim(Granted? granted, string title, Icon icon, CollectionsTab tab)
         {
             if (granted == null)
@@ -390,6 +417,64 @@ namespace KnittedPicture.Game
 
             App.Save();
             App.ShowPopup(new RewardPopup(App, title, icon, granted.Value, () => App.ShowCollections(tab)));
+        }
+    }
+
+    /// <summary>
+    /// Полоска награды внизу карточки: прогресс с подписью, «Забрать» (золотая рамка) или «Награда получена».
+    /// Одна на главной, в альбоме и в пряже.
+    /// </summary>
+    public static class RewardStrip
+    {
+        public static void Build(RectTransform parent, float x, float y, float w, string text, float fraction, bool canClaim, bool claimed,
+            string readyText, System.Action claim)
+        {
+            var bar = Ui.Box(parent, "Reward", 16, canClaim ? Palette.CoinSoft : Palette.Surface).rectTransform;
+            Ui.Place(bar, x, y, w, 48);
+            Ui.Outline(bar, 16, canClaim ? Palette.Coin : Palette.Line, canClaim ? 2f : 1.5f);
+            var iconBack = Ui.Image(bar, "IconBack", Art.Circle, claimed ? Palette.PrimarySoft : Palette.CoinSoft);
+            Ui.PlaceCenter(iconBack.rectTransform, 26, 24, 32, 32);
+            Ui.IconImage(bar, claimed ? Icon.Check : Icon.Gift, claimed ? Palette.Primary : Palette.CoinShadow, 26, 24, 18);
+            if (canClaim)
+            {
+                Ui.Label(bar, readyText, 14, Palette.Ink, 50, 0, w - 160, 48, true, TextAnchor.MiddleLeft);
+                Ui.Button(bar, "Забрать", w - 100, 6, 92, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15).OnClick(claim);
+            }
+            else if (claimed)
+            {
+                Ui.Label(bar, "Награда получена", 14, Palette.Ink2, 50, 0, w - 60, 48, true, TextAnchor.MiddleLeft);
+            }
+            else
+            {
+                Ui.Label(bar, text, 12, Palette.Ink2, 50, 6, w - 60, 18, false, TextAnchor.MiddleLeft);
+                Ui.ProgressBar(bar, 50, 30, w - 64, 7, fraction, Palette.Primary);
+            }
+        }
+    }
+
+    /// <summary>Награда за коллекцию альбома: полоска прогресса и «Забрать» с окном награды.</summary>
+    public static class CollectionReward
+    {
+        public static void Build(App app, RectTransform parent, int index, float x, float y, float w, System.Action refresh)
+        {
+            var progress = app.Progress;
+            var collection = Collections.All[index];
+            var done = 0;
+            for (var id = collection.FirstLevel; id <= collection.LastLevel; id++)
+            {
+                done += progress.IsCompleted(id) ? 1 : 0;
+            }
+
+            RewardStrip.Build(parent, x, y, w, $"Собери все {collection.Count}: монеты, слот и моток", (float)done / collection.Count,
+                progress.CanClaimCollection(index), progress.IsCollectionClaimed(index), "Коллекция собрана!", () =>
+                {
+                    var granted = progress.ClaimCollection(index, app.Random);
+                    app.Save();
+                    if (granted != null)
+                    {
+                        app.ShowPopup(new RewardPopup(app, collection.Name, Icon.Album, granted.Value, refresh));
+                    }
+                });
         }
     }
 }
