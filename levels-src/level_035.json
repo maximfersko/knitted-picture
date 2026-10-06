@@ -1,0 +1,74 @@
+{
+  "id": 35,
+  "name": "Белочка",
+  "tip": "",
+  "hard": true,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#E6F5E1"
+    },
+    {
+      "key": "o",
+      "hex": "#E07A3C"
+    },
+    {
+      "key": "O",
+      "hex": "#B85A26"
+    },
+    {
+      "key": "c",
+      "hex": "#F2D3A8"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "n",
+      "hex": "#A0673C"
+    },
+    {
+      "key": "t",
+      "hex": "#FF9A3C"
+    }
+  ],
+  "picture": [
+    ".tt.......o.o.",
+    "tttt.....ooooo",
+    "tOtt....okoooo",
+    "ttOt....oooocc",
+    "tttOt..oooocc.",
+    ".ttOt.oooccc..",
+    "..tOtooocccn..",
+    "...tOooocccnn.",
+    "....toooccc...",
+    ".....oo..oo..."
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 14,
+  "swaps": 5,
+  "hidden": 2,
+  "knots": 2,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.15,
+  "maxWin": 0.45,
+  "maxRandom": 0.05,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 351
+}

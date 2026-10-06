@@ -1,0 +1,71 @@
+{
+  "id": 48,
+  "name": "Мишка",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#FFF4E8"
+    },
+    {
+      "key": "b",
+      "hex": "#A0673C"
+    },
+    {
+      "key": "B",
+      "hex": "#7A4A2A"
+    },
+    {
+      "key": "m",
+      "hex": "#F2D3A8"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    }
+  ],
+  "picture": [
+    ".BB........BB.",
+    "BmBbbbbbbbbBmB",
+    ".BBbbbbbbbbBB.",
+    ".bbbbbbbbbbbb.",
+    ".bbkbbbbbbkbb.",
+    ".bbbbmmmmbbbb.",
+    ".bbbmmkkmmbbb.",
+    ".bbbmmmmmmbbb.",
+    "..bbbmmmmbbb..",
+    "...bbbbbbbb...",
+    "....rrkrr....."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 19,
+  "swaps": 7,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 2,
+  "thick": 0,
+  "ice": 2,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.08,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 481
+}

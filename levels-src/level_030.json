@@ -1,0 +1,69 @@
+{
+  "id": 30,
+  "name": "Зонтик",
+  "tip": "",
+  "hard": true,
+  "timeLimit": 110,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#E3F2FF"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "h",
+      "hex": "#7A4A2A"
+    },
+    {
+      "key": "d",
+      "hex": "#6CB8FF"
+    }
+  ],
+  "picture": [
+    "....rrwwrr....",
+    "..wwrrwwrrww..",
+    ".rwwrrwwrrwwr.",
+    "rrwwrrwwrrwwrr",
+    "rrwwrrwwrrwwrr",
+    "rr.ww.rr.ww.rr",
+    "d......h......",
+    ".......h....d.",
+    "..d....h......",
+    ".......h.....d",
+    "d......h..d...",
+    ".....h.h......",
+    "......h......."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 3,
+  "slots": 4,
+  "columns": 5,
+  "spools": 13,
+  "swaps": 5,
+  "hidden": 0,
+  "knots": 2,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 2,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.15,
+  "maxWin": 0.45,
+  "maxRandom": 0.05,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 301
+}

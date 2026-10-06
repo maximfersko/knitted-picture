@@ -36,6 +36,21 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Collections_cover_every_level_without_gaps()
+        {
+            var count = LevelFiles().Count();
+            var expected = 1;
+            foreach (var collection in Collections.All)
+            {
+                Assert.Equal(expected, collection.FirstLevel);
+                Assert.True(collection.LastLevel >= collection.FirstLevel);
+                expected = collection.LastLevel + 1;
+            }
+
+            Assert.Equal(count, expected - 1);
+        }
+
+        [Fact]
         public void Solver_reports_unsolvable_level()
         {
             var level = new LevelData

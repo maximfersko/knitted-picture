@@ -1,0 +1,72 @@
+{
+  "id": 38,
+  "name": "Шарики",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#FFF0F5"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    },
+    {
+      "key": "y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "b",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "l",
+      "hex": "#8A81BA"
+    }
+  ],
+  "picture": [
+    ".rr....bb...",
+    "rwrr..bwbb..",
+    "rrrr..bbbb..",
+    "rrrr..bbbb..",
+    ".rr..yy.bb..",
+    "..l.ywyy.l..",
+    "..l.yyyy.l..",
+    "...lyyyyl...",
+    "....lyyl....",
+    ".....ll.....",
+    ".....l......",
+    "....l......."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 10,
+  "swaps": 6,
+  "hidden": 3,
+  "knots": 3,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.12,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 381
+}

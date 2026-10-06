@@ -1,0 +1,75 @@
+{
+  "id": 45,
+  "name": "Камин",
+  "tip": "",
+  "hard": true,
+  "timeLimit": 155,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#F3EDE3"
+    },
+    {
+      "key": "b",
+      "hex": "#C9682A"
+    },
+    {
+      "key": "B",
+      "hex": "#8B4A1F"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "f",
+      "hex": "#FF9A3C"
+    },
+    {
+      "key": "F",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "m",
+      "hex": "#7A4A2A"
+    }
+  ],
+  "picture": [
+    "mmmmmmmmmmmmmm",
+    ".bBbBbBbBbBbB.",
+    ".BbBbBbBbBbBb.",
+    ".bBkkkkkkkkBb.",
+    ".BbkkkFFkkkbB.",
+    ".bBkkFffFkkBb.",
+    ".BbkkFffFkkbB.",
+    ".bBkFffffFkBb.",
+    ".BbFffffffFbB.",
+    ".bBbBbBbBbBbB.",
+    "BBBBBBBBBBBBBB"
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 23,
+  "swaps": 6,
+  "hidden": 0,
+  "knots": 2,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 1,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.15,
+  "maxWin": 0.45,
+  "maxRandom": 0.05,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 451
+}

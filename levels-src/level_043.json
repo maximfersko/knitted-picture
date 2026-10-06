@@ -1,0 +1,64 @@
+{
+  "id": 43,
+  "name": "Варежка",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#F3EDE3"
+    },
+    {
+      "key": "b",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    }
+  ],
+  "picture": [
+    "...bbbb.....",
+    "..bbbbbb....",
+    "..bbwbbb.bb.",
+    "..bwwwbb.bbb",
+    "..bbwbbbbbbb",
+    "..bbbbbwbbb.",
+    "..bbbbwwwbb.",
+    "..bbwbbwbbb.",
+    "..bwwwbbbbb.",
+    "..bbwbbbbbb.",
+    "..rwrwrwrwr.",
+    "..wrwrwrwrw."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": true,
+  "gold": 4,
+  "slots": 3,
+  "columns": 5,
+  "spools": 17,
+  "swaps": 6,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 2,
+  "thick": 0,
+  "ice": 0,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.1,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 431
+}

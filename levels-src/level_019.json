@@ -1,0 +1,79 @@
+{
+  "id": 19,
+  "name": "Кекс",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#FFF4D6"
+    },
+    {
+      "key": "f",
+      "hex": "#FF8FB4"
+    },
+    {
+      "key": "F",
+      "hex": "#FF6FA5"
+    },
+    {
+      "key": "s",
+      "hex": "#FFD54A"
+    },
+    {
+      "key": "b",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "c",
+      "hex": "#A0673C"
+    },
+    {
+      "key": "C",
+      "hex": "#7A4A2A"
+    },
+    {
+      "key": "r",
+      "hex": "#E0306E"
+    }
+  ],
+  "picture": [
+    ".....rr.....",
+    "....FFFF....",
+    "...FffffF...",
+    "..FfsffbfF..",
+    ".FffbffsffF.",
+    ".FffffffffF.",
+    "..cCcCcCcC..",
+    "..CcCcCcCc..",
+    "..cCcCcCcC..",
+    "...CcCcCc...",
+    "...cCcCcC..."
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 3,
+  "slots": 5,
+  "columns": 5,
+  "spools": 13,
+  "swaps": 4,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 2,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 1,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.2,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 191
+}

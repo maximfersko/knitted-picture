@@ -1,0 +1,68 @@
+{
+  "id": 27,
+  "name": "Солнышко",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#E3F2FF"
+    },
+    {
+      "key": "y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "Y",
+      "hex": "#FF9A3C"
+    },
+    {
+      "key": "o",
+      "hex": "#FF8FA0"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    }
+  ],
+  "picture": [
+    "Y....YY....Y",
+    ".Y...yy...Y.",
+    "...yyyyyy...",
+    "..yyyyyyyy..",
+    "YyykyyyykyyY",
+    ".yyyyyyyyyy.",
+    ".yoyyyyyyoy.",
+    ".yyykyykyyy.",
+    "..yyykkyyy..",
+    "...yyyyyy...",
+    ".Y...yy...Y.",
+    "Y....YY....Y"
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": true,
+  "gold": 3,
+  "slots": 4,
+  "columns": 5,
+  "spools": 14,
+  "swaps": 5,
+  "hidden": 0,
+  "knots": 3,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.16,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 271
+}

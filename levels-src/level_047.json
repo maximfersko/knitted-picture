@@ -1,0 +1,77 @@
+{
+  "id": 47,
+  "name": "Зайчик",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#FFF4E8"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "W",
+      "hex": "#E6E1F2"
+    },
+    {
+      "key": "p",
+      "hex": "#FF8FB4"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "c",
+      "hex": "#FF9A3C"
+    },
+    {
+      "key": "g",
+      "hex": "#2EBD7E"
+    }
+  ],
+  "picture": [
+    "..ww....ww..",
+    "..wpw..wpw..",
+    "..wpw..wpw..",
+    "..wpw..wpw..",
+    "..wwwwwwww..",
+    ".wwwwwwwwww.",
+    ".wwkwwwwkww.",
+    ".wwwwppwwww.",
+    ".pwwwwwwwwp.",
+    "..wwwkkwww..",
+    "...WWWWWW...",
+    "...gccc.....",
+    "....cc......"
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 15,
+  "swaps": 7,
+  "hidden": 2,
+  "knots": 0,
+  "links": 0,
+  "locks": 2,
+  "rainbow": 0,
+  "thick": 2,
+  "ice": 0,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.08,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 471
+}

@@ -1,0 +1,127 @@
+{
+  "id": 17,
+  "name": "Арбуз",
+  "tip": "",
+  "width": 12,
+  "height": 8,
+  "colors": [
+    "#FFF4D6",
+    "#2E9E5B",
+    "#8EE0A6",
+    "#FF4F5E",
+    "#2B2350",
+    "#FF8FA0"
+  ],
+  "picture": [
+    "533333333335",
+    "334333334333",
+    "033334333330",
+    "033433334330",
+    "003333333300",
+    "002334333200",
+    "000222222000",
+    "000011110000"
+  ],
+  "canvas": [
+    "000000000000",
+    "000000000000",
+    "100000000001",
+    "100000000001",
+    "110000000011",
+    "110000000011",
+    "111000000111",
+    "111100001111"
+  ],
+  "gold": [
+    3,
+    52,
+    80
+  ],
+  "band": 2,
+  "par": 18,
+  "slots": 4,
+  "spools": [
+    {
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 2
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 5
+    },
+    {
+      "column": 1,
+      "loops": 4
+    },
+    {
+      "column": 1,
+      "loops": 3,
+      "rainbow": true
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 9
+    },
+    {
+      "column": 2,
+      "color": 5,
+      "loops": 2
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 8
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 7
+    },
+    {
+      "column": 3,
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 6
+    },
+    {
+      "column": 4,
+      "color": 5,
+      "loops": 5
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 13
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 6
+    }
+  ]
+}

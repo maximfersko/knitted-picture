@@ -1,0 +1,133 @@
+{
+  "id": 21,
+  "name": "Рыбка",
+  "tip": "",
+  "width": 12,
+  "height": 8,
+  "colors": [
+    "#CDEBFF",
+    "#FF9A3C",
+    "#E06A1F",
+    "#FFFFFF",
+    "#2B2350",
+    "#FFC23C",
+    "#EAF6FF"
+  ],
+  "picture": [
+    "006000000000",
+    "000055500000",
+    "000112133000",
+    "501132111340",
+    "551132111311",
+    "501132111310",
+    "000112133000",
+    "000055500000"
+  ],
+  "canvas": [
+    "110111111111",
+    "111100011111",
+    "111000000111",
+    "010000000001",
+    "000000000000",
+    "010000000001",
+    "111000000111",
+    "111100011111"
+  ],
+  "gold": [
+    18,
+    45,
+    79
+  ],
+  "band": 3,
+  "par": 20,
+  "slots": 5,
+  "spools": [
+    {
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "color": 3,
+      "loops": 3,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 1,
+      "knots": 1
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 5,
+      "knots": 2
+    },
+    {
+      "column": 1,
+      "color": 6,
+      "loops": 1
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 1
+    },
+    {
+      "column": 2,
+      "loops": 2
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 2,
+      "hidden": true
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 8
+    },
+    {
+      "column": 3,
+      "color": 4,
+      "loops": 3
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 2
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 6
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 11
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 2,
+      "hidden": true
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 4
+    },
+    {
+      "column": 4,
+      "color": 4,
+      "loops": 1
+    }
+  ]
+}

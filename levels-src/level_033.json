@@ -1,0 +1,69 @@
+{
+  "id": 33,
+  "name": "Улитка",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#E6F5E1"
+    },
+    {
+      "key": "s",
+      "hex": "#E8A65A"
+    },
+    {
+      "key": "S",
+      "hex": "#A0673C"
+    },
+    {
+      "key": "b",
+      "hex": "#9BE0B4"
+    },
+    {
+      "key": "B",
+      "hex": "#6CC28D"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    }
+  ],
+  "picture": [
+    "....SSSS......",
+    "..SSssssSS....",
+    ".SssSSSSssS...",
+    ".SsSssssSsS...",
+    "SsSsSSssSsS.k.",
+    "SsSsssSsSsS.b.",
+    ".SsSSSSsSsS.bb",
+    "bbbbbbbbbbbbbb",
+    ".BbBbBbBbBbBb."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": true,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 16,
+  "swaps": 5,
+  "hidden": 3,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.14,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 331
+}

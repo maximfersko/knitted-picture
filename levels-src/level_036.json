@@ -1,0 +1,66 @@
+{
+  "id": 36,
+  "name": "Подарок",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#FFF0F5"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    },
+    {
+      "key": "R",
+      "hex": "#D93A48"
+    },
+    {
+      "key": "y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "Y",
+      "hex": "#E59E12"
+    }
+  ],
+  "picture": [
+    "..yy....yy..",
+    ".y..y..y..y.",
+    "..yy.yy.yy..",
+    ".RRRRyyRRRR.",
+    ".rrrryyrrrr.",
+    ".rRrryyrrRr.",
+    ".YYYYyyYYYY.",
+    ".rrRryyrRrr.",
+    ".rrrryyrrrr.",
+    ".RRRRyyRRRR."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 14,
+  "swaps": 6,
+  "hidden": 0,
+  "knots": 0,
+  "links": 2,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 2,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.12,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 361
+}

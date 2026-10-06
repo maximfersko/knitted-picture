@@ -1,0 +1,68 @@
+{
+  "id": 34,
+  "name": "Пчёлка",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#E6F5E1"
+    },
+    {
+      "key": "y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "w",
+      "hex": "#EAF4FF"
+    },
+    {
+      "key": "W",
+      "hex": "#BFD9F2"
+    },
+    {
+      "key": "s",
+      "hex": "#7A4A2A"
+    }
+  ],
+  "picture": [
+    "...ww.ww....",
+    "..wWWwWWw...",
+    "...wwwww....",
+    "...ykyykyy..",
+    "..yykyykyyk.",
+    ".kyykyykyyks",
+    "..yykyykyyk.",
+    "...ykyykyy.."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 10,
+  "swaps": 5,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 2,
+  "rainbow": 0,
+  "thick": 1,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.14,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 341
+}

@@ -21,6 +21,9 @@ namespace KnittedPicture.LevelTool
         private const int MaxSeeds = 400;
         private const int MaxMeasured = 40;
 
+        /// <summary>Предел перебора решателя на один вариант: дольше — значит, вариант всё равно плохой.</summary>
+        private const int SolverStates = 120_000;
+
         private static readonly JsonSerializerOptions ReadOptions = new JsonSerializerOptions
         {
             IncludeFields = true,
@@ -37,17 +40,52 @@ namespace KnittedPicture.LevelTool
 
         public static int Main(string[] args)
         {
+            // dotnet run --project dotnet/KnittedPicture.LevelTool [-- [источник] [выход]] [--only 16-20]
+            var only = (from: 0, to: int.MaxValue);
+            var positional = new List<string>();
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--only" && i + 1 < args.Length)
+                {
+                    var parts = args[++i].Split('-');
+                    only = (int.Parse(parts[0]), int.Parse(parts[parts.Length - 1]));
+                }
+                else
+                {
+                    positional.Add(args[i]);
+                }
+            }
+
             var root = FindRoot();
-            var source = args.Length > 0 ? args[0] : Path.Combine(root, "levels-src");
-            var output = args.Length > 1 ? args[1] : Path.Combine(root, "Assets", "Resources", "Levels");
+            var source = positional.Count > 0 ? positional[0] : Path.Combine(root, "levels-src");
+            var output = positional.Count > 1 ? positional[1] : Path.Combine(root, "Assets", "Resources", "Levels");
             Directory.CreateDirectory(output);
+
+            var designs = Directory.GetFiles(source, "level_*.json")
+                .OrderBy(p => p)
+                .Select(path => JsonSerializer.Deserialize<LevelDesign>(File.ReadAllText(path), ReadOptions)!)
+                .Where(d => d.id >= only.from && d.id <= only.to)
+                .ToList();
+
+            // Уровни независимы: считаем параллельно, а печатаем и пишем по порядку — результат тот же.
+            var results = new Built?[designs.Count];
+            var done = 0;
+            System.Threading.Tasks.Parallel.For(0, designs.Count, i =>
+            {
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                results[i] = Build(designs[i]);
+                var n = System.Threading.Interlocked.Increment(ref done);
+
+                // Прогресс — в stderr, чтобы таблица в stdout осталась чистой.
+                Console.Error.WriteLine($"[{n}/{designs.Count}] уровень {designs[i].id} «{designs[i].name}» — {clock.Elapsed.TotalSeconds:0} с");
+            });
 
             var failed = false;
             Console.WriteLine("id  название           размер петли цв клуб кол сл  тапы/цель  бот  наугад фронт выбор1 роковые  сид   механики");
-            foreach (var path in Directory.GetFiles(source, "level_*.json").OrderBy(p => p))
+            for (var i = 0; i < designs.Count; i++)
             {
-                var design = JsonSerializer.Deserialize<LevelDesign>(File.ReadAllText(path), ReadOptions)!;
-                var built = Build(design);
+                var design = designs[i];
+                var built = results[i];
                 if (built == null)
                 {
                     Console.WriteLine($"{design.id,2}  {design.name}: не нашлось решаемого поля");
@@ -116,19 +154,18 @@ namespace KnittedPicture.LevelTool
                     continue;
                 }
 
-                var solution = LevelSolver.Solve(level);
-                if (solution == null)
-                {
-                    continue;
-                }
-
+                // Сначала дешёвые боты (доли секунды), а решатель и метрики (секунды) — только для подходящих.
                 var rate = Bot.WinRate(level, BotRuns, seed);
                 var random = Bot.RandomWinRate(level, BotRuns, seed);
                 var winDistance = (rate < design.minWin ? design.minWin - rate : rate > design.maxWin ? rate - design.maxWin : 0)
                     + Math.Max(0, random - design.maxRandom);
+                if (winDistance > 0 && best != null && winDistance * 4 >= bestDistance)
+                {
+                    continue;
+                }
 
-                // Метрики дорогие — считаем их, только когда бот уже в коридоре или лучшего пока нет.
-                if (winDistance > 0 && best != null)
+                var solution = LevelSolver.Solve(level, SolverStates);
+                if (solution == null)
                 {
                     continue;
                 }

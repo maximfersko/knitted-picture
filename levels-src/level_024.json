@@ -1,0 +1,62 @@
+{
+  "id": 24,
+  "name": "Ракушка",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#CDEBFF"
+    },
+    {
+      "key": "s",
+      "hex": "#FFB3A7"
+    },
+    {
+      "key": "S",
+      "hex": "#E8806F"
+    },
+    {
+      "key": "w",
+      "hex": "#FFE3DC"
+    }
+  ],
+  "picture": [
+    "....ssss....",
+    "..ssSssSss..",
+    ".sSswSSwsSs.",
+    ".sSswSSwsSs.",
+    "sSswsSSswsSs",
+    "sSswsSSswsSs",
+    ".SswsSSswsS.",
+    "..SSwSSwSS..",
+    "....SSSS....",
+    ".....SS....."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 3,
+  "columns": 5,
+  "spools": 13,
+  "swaps": 4,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 2,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.18,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 241
+}

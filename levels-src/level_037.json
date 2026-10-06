@@ -1,0 +1,83 @@
+{
+  "id": 37,
+  "name": "Торт",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#FFF0F5"
+    },
+    {
+      "key": "c",
+      "hex": "#FFF1D6"
+    },
+    {
+      "key": "p",
+      "hex": "#FF8FB4"
+    },
+    {
+      "key": "b",
+      "hex": "#E8A65A"
+    },
+    {
+      "key": "B",
+      "hex": "#C9803A"
+    },
+    {
+      "key": "s",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "f",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "r",
+      "hex": "#E0306E"
+    },
+    {
+      "key": "w",
+      "hex": "#D9E1EE"
+    }
+  ],
+  "picture": [
+    "...f..f..f....",
+    "...s..s..s....",
+    "...s..s..s....",
+    ".cccrccccrccc.",
+    ".cpccpccpccpc.",
+    ".pppppppppppp.",
+    ".bbbbbbbbbbbb.",
+    ".bBbBbBbBbBbb.",
+    ".pppppppppppp.",
+    ".bbbbbbbbbbbb.",
+    "wwwwwwwwwwwwww"
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 4,
+  "slots": 6,
+  "columns": 5,
+  "spools": 18,
+  "swaps": 2,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 2,
+  "thick": 2,
+  "ice": 0,
+  "extra": 3,
+  "junk": 0,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.12,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 371
+}

@@ -1,0 +1,80 @@
+{
+  "id": 25,
+  "name": "Кораблик",
+  "tip": "",
+  "hard": true,
+  "timeLimit": 110,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#CDEBFF"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    },
+    {
+      "key": "m",
+      "hex": "#7A4A2A"
+    },
+    {
+      "key": "h",
+      "hex": "#C9682A"
+    },
+    {
+      "key": "H",
+      "hex": "#8B4A1F"
+    },
+    {
+      "key": "f",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "v",
+      "hex": "#6CB8FF"
+    }
+  ],
+  "picture": [
+    ".......f......",
+    ".......ff.....",
+    ".......m......",
+    ".....wwm......",
+    "....wwwmr.....",
+    "...wwrwmrr....",
+    "..wwwwwmrrr...",
+    "..rrrrrmwwww..",
+    "hhhhhhhhhhhhhh",
+    ".hHhHhHhHhHhh.",
+    "..hhhhhhhhhh..",
+    "vv..vv..vv..vv"
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 3,
+  "slots": 5,
+  "columns": 5,
+  "spools": 14,
+  "swaps": 4,
+  "hidden": 2,
+  "knots": 2,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.15,
+  "maxWin": 0.45,
+  "maxRandom": 0.05,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 251
+}

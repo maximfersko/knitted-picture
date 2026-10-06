@@ -1,0 +1,161 @@
+{
+  "id": 26,
+  "name": "Радуга",
+  "tip": "",
+  "width": 14,
+  "height": 9,
+  "colors": [
+    "#E3F2FF",
+    "#FF4F5E",
+    "#FF9A3C",
+    "#FFC23C",
+    "#2EBD7E",
+    "#6CB8FF",
+    "#8B5CF6",
+    "#FFFFFF",
+    "#D9E6F5"
+  ],
+  "picture": [
+    "00001111110000",
+    "00112222221100",
+    "01223333332210",
+    "12334444443321",
+    "12345555554321",
+    "12345666654321",
+    "12345600654321",
+    "78745600654787",
+    "77770000007777"
+  ],
+  "canvas": [
+    "11110000001111",
+    "11000000000011",
+    "10000000000001",
+    "00000000000000",
+    "00000000000000",
+    "00000000000000",
+    "00000011000000",
+    "00000011000000",
+    "00001111110000"
+  ],
+  "gold": [
+    17,
+    45,
+    87
+  ],
+  "band": 3,
+  "par": 21,
+  "slots": 6,
+  "spools": [
+    {
+      "color": 4,
+      "loops": 6
+    },
+    {
+      "color": 2,
+      "loops": 3
+    },
+    {
+      "color": 1,
+      "loops": 6
+    },
+    {
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "loops": 5,
+      "rainbow": true
+    },
+    {
+      "column": 1,
+      "color": 7,
+      "loops": 6
+    },
+    {
+      "column": 1,
+      "loops": 6
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "color": 6,
+      "loops": 7
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "color": 5,
+      "loops": 4
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 3
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 10
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 6,
+      "link": 1
+    },
+    {
+      "column": 3,
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 3
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 4
+    },
+    {
+      "column": 3,
+      "color": 2,
+      "loops": 10
+    },
+    {
+      "column": 4,
+      "color": 6,
+      "loops": 1,
+      "link": 1
+    },
+    {
+      "column": 4,
+      "color": 8,
+      "loops": 1
+    },
+    {
+      "column": 4,
+      "color": 7,
+      "loops": 6
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 5
+    },
+    {
+      "column": 4,
+      "loops": 9,
+      "rainbow": true
+    }
+  ]
+}

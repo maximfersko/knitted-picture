@@ -1,0 +1,165 @@
+{
+  "id": 47,
+  "name": "Зайчик",
+  "tip": "",
+  "width": 12,
+  "height": 13,
+  "colors": [
+    "#FFF4E8",
+    "#FFFFFF",
+    "#E6E1F2",
+    "#FF8FB4",
+    "#2B2350",
+    "#FF9A3C",
+    "#2EBD7E"
+  ],
+  "picture": [
+    "001100001100",
+    "001310013100",
+    "001310013100",
+    "001310013100",
+    "001111111100",
+    "011111111110",
+    "011411114110",
+    "011113311110",
+    "031111111130",
+    "001114411100",
+    "000222222000",
+    "000655500000",
+    "000055000000"
+  ],
+  "canvas": [
+    "110011110011",
+    "110001100011",
+    "110001100011",
+    "110001100011",
+    "110000000011",
+    "100000000001",
+    "100000000001",
+    "100000000001",
+    "100000000001",
+    "110000000011",
+    "111000000111",
+    "111000011111",
+    "111100111111"
+  ],
+  "gold": [
+    27,
+    56,
+    75,
+    127
+  ],
+  "band": 3,
+  "par": 22,
+  "slots": 5,
+  "spools": [
+    {
+      "color": 1,
+      "loops": 25,
+      "thick": true
+    },
+    {
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "color": 2,
+      "loops": 3
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 5
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 4,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 2
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 3,
+      "key": true
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 2
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 10,
+      "locked": true
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 3
+    },
+    {
+      "column": 3,
+      "loops": 6,
+      "hidden": true
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 6
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 7
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 9,
+      "thick": true
+    },
+    {
+      "column": 4,
+      "color": 6,
+      "loops": 1
+    },
+    {
+      "column": 4,
+      "color": 6,
+      "loops": 5
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 1,
+      "locked": true
+    },
+    {
+      "column": 4,
+      "color": 4,
+      "loops": 2
+    }
+  ]
+}

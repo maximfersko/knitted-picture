@@ -1,0 +1,71 @@
+{
+  "id": 20,
+  "name": "Лимон",
+  "tip": "",
+  "hard": true,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#E8F7EC"
+    },
+    {
+      "key": "Y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "y",
+      "hex": "#FFE24A"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFBE0"
+    },
+    {
+      "key": "l",
+      "hex": "#FFF07A"
+    },
+    {
+      "key": "s",
+      "hex": "#E8D27A"
+    }
+  ],
+  "picture": [
+    "...YYYYYY...",
+    ".YYyyyyyyYY.",
+    ".YywwwwwwyY.",
+    "YywllwwllwyY",
+    "YywlsllslwyY",
+    "YywwwwwwwwyY",
+    "YywlsllslwyY",
+    "YywllwwllwyY",
+    ".YywwwwwwyY.",
+    ".YYyyyyyyYY.",
+    "...YYYYYY..."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 3,
+  "slots": 4,
+  "columns": 5,
+  "spools": 19,
+  "swaps": 4,
+  "hidden": 3,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 1,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.15,
+  "maxWin": 0.45,
+  "maxRandom": 0.05,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 201
+}

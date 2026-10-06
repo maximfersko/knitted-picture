@@ -1,0 +1,83 @@
+{
+  "id": 50,
+  "name": "Дракончик",
+  "tip": "Финал: всё, чему ты научилась. Удачи!",
+  "hard": true,
+  "timeLimit": 155,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#FFF4E8"
+    },
+    {
+      "key": "g",
+      "hex": "#2EBD7E"
+    },
+    {
+      "key": "G",
+      "hex": "#1E8A5A"
+    },
+    {
+      "key": "y",
+      "hex": "#FFE08A"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "p",
+      "hex": "#FF8FB4"
+    },
+    {
+      "key": "h",
+      "hex": "#FFC23C"
+    }
+  ],
+  "picture": [
+    "...h........h...",
+    "...hg......gh...",
+    "....gggggggg....",
+    "...gggggggggg...",
+    "...ggkwggwkgg...",
+    "...gggggggggg...",
+    "....gGggggGg....",
+    "pp...gggggg...pp",
+    "ppp.ggyyyygg.ppp",
+    "pppggyyyyyyggppp",
+    ".ppggyyyyyyggpp.",
+    "..pgggyyyygggp..",
+    "....gggyyggg....",
+    "....gg....gg....",
+    "...GGG....GGG..."
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 23,
+  "swaps": 7,
+  "hidden": 2,
+  "knots": 2,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 1,
+  "thick": 1,
+  "ice": 3,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.15,
+  "maxWin": 0.45,
+  "maxRandom": 0.05,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 501
+}

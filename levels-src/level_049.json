@@ -1,0 +1,85 @@
+{
+  "id": 49,
+  "name": "Единорог",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#FFF4E8"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "W",
+      "hex": "#E6E1F2"
+    },
+    {
+      "key": "h",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "p",
+      "hex": "#FF6FA5"
+    },
+    {
+      "key": "v",
+      "hex": "#8B5CF6"
+    },
+    {
+      "key": "b",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "n",
+      "hex": "#FF8FB4"
+    }
+  ],
+  "picture": [
+    "...........h..",
+    "..........hh..",
+    "..pp.....hh...",
+    ".pvvwwwww.....",
+    "pvbwwwwwwww...",
+    "pvbwwwkwwwww..",
+    "pvbwwwwwwwwww.",
+    "pvbwwwwwwwwnw.",
+    ".pvwwwwwwwwww.",
+    ".pbwwwwww.....",
+    "..pwwwwww.....",
+    "...wwwwww.....",
+    "...WWWWWW....."
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": true,
+  "gold": 4,
+  "slots": 6,
+  "columns": 5,
+  "spools": 17,
+  "swaps": 7,
+  "hidden": 2,
+  "knots": 2,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.08,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 491
+}

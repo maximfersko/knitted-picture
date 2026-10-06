@@ -46,7 +46,11 @@ namespace KnittedPicture.Core
             new AchievementInfo(8, "Собиратель", "Собери 6 разных мотков", 6, p => p.YarnKinds, Reward.CoinsOnly(100)),
             new AchievementInfo(9, "Целая коллекция", "Собери коллекцию альбома", 1, p => p.CompletedCollections, Reward.CoinsOnly(100)),
             new AchievementInfo(10, "Каждый день", "Подарок 7 дней подряд", 7, p => p.Data.dailyBest, new Reward(150, BoosterType.Slot, 1)),
-            new AchievementInfo(11, "Мастерица", "Все уровни на три звезды", 15, p => p.ThreeStarLevels, Reward.CoinsOnly(300)),
+            new AchievementInfo(11, "Мастерица", "25 уровней на три звезды", 25, p => p.ThreeStarLevels, new Reward(300, BoosterType.Slot, 2)),
+            new AchievementInfo(12, "Полальбома", "Довяжи 25 картинок", 25, p => p.Data.completed.Count, new Reward(150, BoosterType.Scissors, 1)),
+            new AchievementInfo(13, "Весь альбом", "Довяжи все 50 картинок", 50, p => p.Data.completed.Count, new Reward(500, BoosterType.Slot, 2)),
+            new AchievementInfo(14, "Пять коллекций", "Собери 5 коллекций альбома", 5, p => p.CompletedCollections, new Reward(200, BoosterType.Undo, 2)),
+            new AchievementInfo(15, "Корзинка полна", "Собери все мотки пряжи", 16, p => p.YarnKinds, Reward.CoinsOnly(400)),
         };
     }
 

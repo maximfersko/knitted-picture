@@ -1,0 +1,70 @@
+{
+  "id": 22,
+  "name": "Кит",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#CDEBFF"
+    },
+    {
+      "key": "b",
+      "hex": "#3D6FB6"
+    },
+    {
+      "key": "B",
+      "hex": "#2D5596"
+    },
+    {
+      "key": "w",
+      "hex": "#EAF4FF"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "s",
+      "hex": "#8FD3FF"
+    }
+  ],
+  "picture": [
+    "...s..s.......",
+    "....ss........",
+    ".....s........",
+    "...bbbbbb.....",
+    "..bbbbbbbb..bb",
+    ".bbkbbbbbbb.b.",
+    ".bbbbbbbbbbbb.",
+    ".bwwwwwwwbbb..",
+    "..wwwwwwwbb...",
+    "...BBBBBB....."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 3,
+  "slots": 4,
+  "columns": 5,
+  "spools": 12,
+  "swaps": 4,
+  "hidden": 0,
+  "knots": 0,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 2,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.18,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 221
+}

@@ -112,3 +112,7 @@ InitTestScene*.unity*
 !/dotnet/**/*.csproj
 /dotnet/**/bin/
 /dotnet/**/obj/
+
+# Python
+__pycache__/
+*.pyc

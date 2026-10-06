@@ -1,0 +1,82 @@
+{
+  "id": 40,
+  "name": "Снеговик",
+  "tip": "",
+  "hard": true,
+  "timeLimit": 120,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#DDE8FF"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "W",
+      "hex": "#C9D6EE"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "o",
+      "hex": "#FF9A3C"
+    },
+    {
+      "key": "h",
+      "hex": "#3B3266"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    },
+    {
+      "key": "R",
+      "hex": "#D93A48"
+    }
+  ],
+  "picture": [
+    ".....hhhh.....",
+    ".....hhhh.....",
+    "....hhhhhh....",
+    ".....wwww.....",
+    "....wkwwkw....",
+    "....wwwooo....",
+    "....wwkkww....",
+    "...RrRrRrRr...",
+    "...wwwwwwrR...",
+    "..wwwwkwwwwr..",
+    "..wWwwwwwwWw..",
+    "..wWwwkwwwWw..",
+    "...wWwwwwWw...",
+    "....WWWWWW...."
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 16,
+  "swaps": 6,
+  "hidden": 0,
+  "knots": 2,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 1,
+  "ice": 2,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.15,
+  "maxWin": 0.45,
+  "maxRandom": 0.05,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 401
+}

@@ -1,0 +1,62 @@
+{
+  "id": 41,
+  "name": "Чайник",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#F3EDE3"
+    },
+    {
+      "key": "t",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "T",
+      "hex": "#3D6FB6"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    }
+  ],
+  "picture": [
+    "......TT......",
+    ".....tttt.....",
+    "...TTTTTTTT...",
+    "..tttttttttt..",
+    "TTtwttwttwtttt",
+    "T.ttttttttttTt",
+    "T.twttwttwtt.T",
+    "TTtttttttttt..",
+    "..TwTTwTTwTT..",
+    "...TTTTTTTT..."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 3,
+  "columns": 5,
+  "spools": 16,
+  "swaps": 6,
+  "hidden": 0,
+  "knots": 0,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 3,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.1,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 411
+}

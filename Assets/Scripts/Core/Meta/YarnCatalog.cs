@@ -98,6 +98,10 @@ namespace KnittedPicture.Core
             new YarnInfo(9, "Меланж", "Три оттенка в одной нитке", "#6CB8FF", "#FF6FA5", YarnLook.Melange, Rarity.Rare),
             new YarnInfo(10, "Люрекс", "Нитка с блёстками", "#8B5CF6", "#FFD86B", YarnLook.Sparkle, Rarity.Rare),
             new YarnInfo(11, "Радужная", "Секционное крашение, вся радуга", "#FF6FA5", "#6CB8FF", YarnLook.Rainbow, Rarity.Epic),
+            new YarnInfo(12, "Твид", "Тёплая шерсть с цветными крапинками", "#8A6E5A", "#E8A65A", YarnLook.Melange, Rarity.Common),
+            new YarnInfo(13, "Ангора", "Пушистая, как облачко", "#FFE3EC", "#FFFFFF", YarnLook.Sparkle, Rarity.Rare),
+            new YarnInfo(14, "Пряжа-травка", "С длинными мягкими ворсинками", "#9BE0B4", "#2EBD7E", YarnLook.Melange, Rarity.Rare),
+            new YarnInfo(15, "Золотая нить", "Блестит, как ёлочная гирлянда", "#FFC23C", "#FFF1A8", YarnLook.Sparkle, Rarity.Epic),
         };
 
         public static readonly YarnSet[] Sets =
@@ -105,6 +109,7 @@ namespace KnittedPicture.Core
             new YarnSet(0, "Шерсть", 0, 4, new Reward(150, BoosterType.Slot, 1)),
             new YarnSet(1, "Хлопок и шёлк", 4, 4, new Reward(200, BoosterType.Scissors, 1)),
             new YarnSet(2, "Особая пряжа", 8, 4, new Reward(300, BoosterType.Undo, 2)),
+            new YarnSet(3, "Праздничная", 12, 4, new Reward(400, BoosterType.Slot, 2)),
         };
 
         public static int Count => All.Length;

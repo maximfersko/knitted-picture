@@ -1,0 +1,64 @@
+{
+  "id": 46,
+  "name": "Панда",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#FFF4E8"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "p",
+      "hex": "#FF8FB4"
+    }
+  ],
+  "picture": [
+    "..kk......kk..",
+    ".kkkwwwwwwkkk.",
+    ".kkwwwwwwwwkk.",
+    "..wwwwwwwwww..",
+    ".wwkkwwwwkkww.",
+    ".wkwkwwwwkwkw.",
+    ".wwkkwwwwkkww.",
+    ".pwwwwkkwwwwp.",
+    "..wwwwwwwwww..",
+    "...wwkwwkww...",
+    "....wwwwww....",
+    "..kkk....kkk.."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 3,
+  "columns": 5,
+  "spools": 19,
+  "swaps": 7,
+  "hidden": 0,
+  "knots": 3,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 2,
+  "extra": 3,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.08,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 461
+}

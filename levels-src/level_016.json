@@ -1,0 +1,73 @@
+{
+  "id": 16,
+  "name": "Пончик",
+  "tip": "Новая коллекция «Вкусняшки»: картинки крупнее, чужой пряжи больше",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#DDF1FF"
+    },
+    {
+      "key": "d",
+      "hex": "#E8A65A"
+    },
+    {
+      "key": "D",
+      "hex": "#C9803A"
+    },
+    {
+      "key": "p",
+      "hex": "#FF7FB0"
+    },
+    {
+      "key": "y",
+      "hex": "#FFD54A"
+    },
+    {
+      "key": "b",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    }
+  ],
+  "picture": [
+    "...dddddd...",
+    "..dppppppd..",
+    ".dpypbpwppd.",
+    ".dpbp..pypd.",
+    ".dppw..bppd.",
+    ".dpypppwppd.",
+    ".DdppbpppdD.",
+    "..DddddddD..",
+    "...DDDDDD..."
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 3,
+  "slots": 5,
+  "columns": 5,
+  "spools": 12,
+  "swaps": 4,
+  "hidden": 0,
+  "knots": 0,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.2,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 161
+}

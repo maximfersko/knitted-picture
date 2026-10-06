@@ -1,0 +1,78 @@
+{
+  "id": 29,
+  "name": "Воздушный шар",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#E3F2FF"
+    },
+    {
+      "key": "r",
+      "hex": "#FF6FA5"
+    },
+    {
+      "key": "y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "b",
+      "hex": "#6CB8FF"
+    },
+    {
+      "key": "k",
+      "hex": "#A0673C"
+    },
+    {
+      "key": "K",
+      "hex": "#7A4A2A"
+    },
+    {
+      "key": "l",
+      "hex": "#8A81BA"
+    }
+  ],
+  "picture": [
+    "....ybby....",
+    "..brybbyrb..",
+    ".ybrybbyrby.",
+    "rybrybbyrbyr",
+    "rybrybbyrbyr",
+    "rybrybbyrbyr",
+    "rybrybbyrbyr",
+    ".ybrybbyrby.",
+    "..brybbyrb..",
+    "...rybbyr...",
+    "..l......l..",
+    "...l....l...",
+    "...kKkKkK...",
+    "...KkKkKk..."
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 3,
+  "slots": 5,
+  "columns": 5,
+  "spools": 18,
+  "swaps": 5,
+  "hidden": 3,
+  "knots": 0,
+  "links": 0,
+  "locks": 3,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.16,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 291
+}

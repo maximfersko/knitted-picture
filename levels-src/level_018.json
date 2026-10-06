@@ -1,0 +1,76 @@
+{
+  "id": 18,
+  "name": "Мороженое",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#DDF1FF"
+    },
+    {
+      "key": "c",
+      "hex": "#FFB3C7"
+    },
+    {
+      "key": "m",
+      "hex": "#8B5A3C"
+    },
+    {
+      "key": "v",
+      "hex": "#FFF1D6"
+    },
+    {
+      "key": "w",
+      "hex": "#E8A65A"
+    },
+    {
+      "key": "W",
+      "hex": "#C9803A"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    }
+  ],
+  "picture": [
+    "....rr....",
+    "...cccc...",
+    "..cccccc..",
+    ".ccvcccvc.",
+    ".vvvvvvvv.",
+    ".vmvvvvmv.",
+    "..wWwwWw..",
+    "..WwwWww..",
+    "...wWwW...",
+    "...WwwW...",
+    "....wW....",
+    "....WW...."
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": true,
+  "gold": 3,
+  "slots": 5,
+  "columns": 5,
+  "spools": 10,
+  "swaps": 4,
+  "hidden": 0,
+  "knots": 2,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.2,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 181
+}

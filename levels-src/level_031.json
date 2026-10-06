@@ -1,0 +1,68 @@
+{
+  "id": 31,
+  "name": "Ёжик",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#E6F5E1"
+    },
+    {
+      "key": "s",
+      "hex": "#7A4A2A"
+    },
+    {
+      "key": "S",
+      "hex": "#A0673C"
+    },
+    {
+      "key": "f",
+      "hex": "#F2D3A8"
+    },
+    {
+      "key": "k",
+      "hex": "#2B2350"
+    },
+    {
+      "key": "a",
+      "hex": "#FF4F5E"
+    }
+  ],
+  "picture": [
+    "....SsSsS.....",
+    "..SsSsSsSs....",
+    ".sSsSaasSsS...",
+    "sSsSsaasSsSff.",
+    "SsSsSsSsSsfkff",
+    "sSsSsSsSsSfffk",
+    ".SsSsSsSsSfff.",
+    "..ff.ff..ff..."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 14,
+  "swaps": 5,
+  "hidden": 0,
+  "knots": 3,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 2,
+  "extra": 2,
+  "junk": 1,
+  "parSlack": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.14,
+  "maxForced": 0.55,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
+  "seed": 311
+}

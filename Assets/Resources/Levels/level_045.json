@@ -1,0 +1,203 @@
+{
+  "id": 45,
+  "name": "Камин",
+  "tip": "",
+  "hard": true,
+  "timeLimit": 155,
+  "width": 14,
+  "height": 11,
+  "colors": [
+    "#F3EDE3",
+    "#C9682A",
+    "#8B4A1F",
+    "#2B2350",
+    "#FF9A3C",
+    "#FFC23C",
+    "#7A4A2A"
+  ],
+  "picture": [
+    "66666666666666",
+    "01212121212120",
+    "02121212121210",
+    "01233333333210",
+    "02133355333120",
+    "01233544533210",
+    "02133544533120",
+    "01235444453210",
+    "02154444445120",
+    "01212121212120",
+    "22222222222222"
+  ],
+  "canvas": [
+    "00000000000000",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "00000000000000"
+  ],
+  "gold": [
+    2,
+    32,
+    106,
+    130
+  ],
+  "band": 3,
+  "par": 34,
+  "slots": 5,
+  "spools": [
+    {
+      "color": 5,
+      "loops": 1
+    },
+    {
+      "color": 3,
+      "loops": 7
+    },
+    {
+      "color": 4,
+      "loops": 8
+    },
+    {
+      "color": 2,
+      "loops": 4
+    },
+    {
+      "column": 1,
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 6
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "loops": 2
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 4
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 1,
+      "color": 6,
+      "loops": 5
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "color": 5,
+      "loops": 4
+    },
+    {
+      "column": 2,
+      "color": 5,
+      "loops": 2
+    },
+    {
+      "column": 2,
+      "color": 4,
+      "loops": 3
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 11,
+      "ice": 12
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 5
+    },
+    {
+      "column": 3,
+      "color": 2,
+      "loops": 5
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 9
+    },
+    {
+      "column": 3,
+      "color": 4,
+      "loops": 2,
+      "knots": 1
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 6
+    },
+    {
+      "column": 3,
+      "color": 2,
+      "loops": 9
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 5
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 8
+    },
+    {
+      "column": 4,
+      "color": 6,
+      "loops": 9,
+      "knots": 2
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 5
+    }
+  ]
+}

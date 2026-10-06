@@ -1,0 +1,153 @@
+{
+  "id": 44,
+  "name": "Шапка",
+  "tip": "",
+  "width": 12,
+  "height": 10,
+  "colors": [
+    "#F3EDE3",
+    "#FFFFFF",
+    "#D9E6F5",
+    "#FF6FA5",
+    "#FFC23C",
+    "#8B5CF6",
+    "#B9A7E8"
+  ],
+  "picture": [
+    "000001100000",
+    "000012210000",
+    "000001100000",
+    "000333333000",
+    "003343343300",
+    "033443344330",
+    "033333333330",
+    "034334334330",
+    "565656565656",
+    "656565656565"
+  ],
+  "canvas": [
+    "111110011111",
+    "111100001111",
+    "111110011111",
+    "111000000111",
+    "110000000011",
+    "100000000001",
+    "100000000001",
+    "100000000001",
+    "000000000000",
+    "000000000000"
+  ],
+  "gold": [
+    19,
+    43,
+    62,
+    96
+  ],
+  "band": 3,
+  "par": 18,
+  "slots": 5,
+  "spools": [
+    {
+      "color": 4,
+      "loops": 2,
+      "key": true
+    },
+    {
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "color": 4,
+      "loops": 4
+    },
+    {
+      "color": 6,
+      "loops": 6,
+      "locked": true
+    },
+    {
+      "column": 1,
+      "color": 6,
+      "loops": 5
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 6
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 8
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 3,
+      "hidden": true
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 3,
+      "hidden": true,
+      "locked": true
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 5
+    },
+    {
+      "column": 2,
+      "color": 6,
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 3,
+      "locked": true
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 6
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 9,
+      "hidden": true
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 7
+    },
+    {
+      "column": 3,
+      "color": 2,
+      "loops": 2
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 2
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 6
+    },
+    {
+      "column": 4,
+      "color": 4,
+      "loops": 2
+    }
+  ]
+}
