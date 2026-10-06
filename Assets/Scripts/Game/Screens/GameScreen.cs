@@ -51,7 +51,10 @@ namespace KnittedPicture.Game
         private readonly Dictionary<BoosterType, BoosterButton> _boosters = new Dictionary<BoosterType, BoosterButton>();
         private readonly HashSet<int> _arriving = new HashSet<int>();
         private readonly HashSet<int> _finishedColors = new HashSet<int>();
-        private readonly TempoCombo _tempo;
+        /// <summary>Счёт уровня, который переживает перестройку экрана (поворот, смена безопасной зоны).</summary>
+        private readonly LevelRun _run;
+
+        private TempoCombo _tempo => _run.Tempo;
 
         /// <summary>Монет за пойманную золотую петлю: база плюс бонус пряжи «в работе».</summary>
         private readonly int _goldPerLoop;
@@ -85,12 +88,27 @@ namespace KnittedPicture.Game
         private Text? _tapsGoal;
         private Text? _goldGoal;
         private bool _overParShown;
-        private bool _foreignShown;
-        private int _goldCaught;
-        private int _goldCoins;
+
+        private bool _foreignShown
+        {
+            get => _run.ForeignShown;
+            set => _run.ForeignShown = value;
+        }
+
+        private int _goldCaught
+        {
+            get => _run.GoldCaught;
+            set => _run.GoldCaught = value;
+        }
+
+        private int _goldCoins
+        {
+            get => _run.GoldCoins;
+            set => _run.GoldCoins = value;
+        }
 
         /// <summary>Золотые петли, которые уже засчитаны: клетка → поймана ли во время комбо.</summary>
-        private readonly Dictionary<int, bool> _goldDone = new Dictionary<int, bool>();
+        private Dictionary<int, bool> _goldDone => _run.GoldDone;
 
         private RectTransform _fieldContent = null!;
         private RectTransform _fx = null!;
@@ -115,21 +133,34 @@ namespace KnittedPicture.Game
         private bool _failShown;
         private bool _scissors;
         private float _idle;
-        private int _boostersUsed;
-        private int _rescues;
+        private int _boostersUsed
+        {
+            get => _run.BoostersUsed;
+            set => _run.BoostersUsed = value;
+        }
+
+        private int _rescues
+        {
+            get => _run.Rescues;
+            set => _run.Rescues = value;
+        }
+
+        /// <summary>Подсказка не нашла пути при стольких тапах: не искать снова, пока игрок не сходит.</summary>
+        private int _hintFailedAt = -1;
         private RectTransform? _hint;
         private RectTransform? _hintHand;
         private RectTransform? _tip;
         private RectTransform? _scissorsBanner;
 
-        public GameScreen(App app, LevelData level, LoomGame game)
+        public GameScreen(App app, LevelData level, LoomGame game, LevelRun run)
             : base(app, "Game")
         {
             _level = level;
             _game = game;
+            _run = run;
+            _overParShown = OverPar;
 
             // Пряжа «в работе» меняет только награды, не правила: уровень остаётся честным.
-            _tempo = new TempoCombo();
             _goldPerLoop = Economy.GoldCoins + YarnCatalog.GoldBonus(app.Progress.PerkPower(YarnPerk.Gold));
             _colors = level.colors.Select(Palette.Hex).ToArray();
 
@@ -147,7 +178,27 @@ namespace KnittedPicture.Game
             BuildBoosters();
             _fx = Ui.Stretch(Ui.Node(Root, "Fx"));
             RefreshAll();
-            ShowIntro();
+
+            // Экран перестроили посреди уровня: подсказки не повторяем, а затор или моль показываем снова.
+            if (_game.Taps == 0)
+            {
+                ShowIntro();
+            }
+
+            if (_game.Status != GameStatus.Playing)
+            {
+                var status = _game.Status;
+                Tweens.Delay(Root, 0.1f, () => AfterStatus(status));
+            }
+        }
+
+        /// <summary>Игру свернули посреди уровня: ставим на паузу, чтобы моль не съела картинку, пока игрока нет.</summary>
+        public void AutoPause()
+        {
+            if (!_ended && !_failShown && !App.HasPopups && _game.Status == GameStatus.Playing)
+            {
+                App.ShowPopup(new PausePopup(App, Restart, LeaveHome));
+            }
         }
 
         public override void Tick(float dt)
@@ -207,7 +258,7 @@ namespace KnittedPicture.Game
             UpdateLoomAlert(dt);
             UpdateCombo(dt);
 
-            if (!_game.IsBusy && _hint == null && _game.Status == GameStatus.Playing)
+            if (!_game.IsBusy && _hint == null && _game.Status == GameStatus.Playing && _hintFailedAt != _game.Taps)
             {
                 _idle += dt;
                 var threshold = _level.id <= 3 ? 1.5f : _level.id <= 5 ? 8f : -1f;
@@ -986,6 +1037,21 @@ namespace KnittedPicture.Game
             _idle = 0;
             HideTip();
             HideHint();
+            // Без ножниц работает только передний клубок. Тап по клубку из глубины раньше отправлял
+            // передний — неожиданный ход, лишний тап к цели и, бывает, затор. Теперь — только подсказка.
+            if (!_scissors && depth > 0)
+            {
+                var view = _field.FirstOrDefault(f => f.Column == column && f.Depth == depth);
+                if (view != null)
+                {
+                    Tweens.Shake(view.View.Root, 5f, 0.25f);
+                }
+
+                Sfx.Play(Sound.Deny, 0.6f);
+                App.Toast("Сначала уходит передний клубок. Достать из глубины можно ножницами");
+                return;
+            }
+
             var result = _scissors ? _game.PullSpool(column, depth) : _game.TapColumn(column);
             if (!result.Accepted)
             {
@@ -1494,6 +1560,9 @@ namespace KnittedPicture.Game
             var column = LevelSolver.Hint(_game);
             if (column < 0)
             {
+                // Пути нет (или перебор упёрся в предел): не перебирать заново каждый кадр — только после нового хода.
+                _hintFailedAt = _game.Taps;
+                _idle = 0;
                 return;
             }
 
@@ -1832,5 +1901,26 @@ namespace KnittedPicture.Game
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Всё, что игрок «заработал» в попытке уровня кроме самой модели: бустеры, спасения, комбо, золото.
+    /// Живёт вместе с LoomGame, а не с экраном: перестройка экрана не обнуляет счёт (и не дарит лишних звёзд).
+    /// </summary>
+    public sealed class LevelRun
+    {
+        public TempoCombo Tempo { get; } = new TempoCombo();
+
+        public int BoostersUsed { get; set; }
+
+        public int Rescues { get; set; }
+
+        public int GoldCaught { get; set; }
+
+        public int GoldCoins { get; set; }
+
+        public Dictionary<int, bool> GoldDone { get; } = new Dictionary<int, bool>();
+
+        public bool ForeignShown { get; set; }
     }
 }

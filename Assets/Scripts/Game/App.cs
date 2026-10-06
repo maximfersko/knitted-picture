@@ -127,7 +127,9 @@ namespace KnittedPicture.Game
 
             if (_popups.Count == 0)
             {
-                _screen?.Tick(Time.unscaledDeltaTime);
+                // После сворачивания первый кадр может прийти с огромным шагом времени — не даём ему
+                // разом съесть таймер моли или сжечь комбо.
+                _screen?.Tick(Mathf.Min(Time.unscaledDeltaTime, 0.1f));
             }
         }
 
@@ -136,6 +138,7 @@ namespace KnittedPicture.Game
             if (paused)
             {
                 Save();
+                (_screen as GameScreen)?.AutoPause();
             }
         }
 
@@ -220,7 +223,8 @@ namespace KnittedPicture.Game
             var intro = Progress.TakeBoosterIntro(levelId);
             Save();
             var game = new LoomGame(level);
-            Show(() => new GameScreen(this, level, game));
+            var run = new LevelRun();
+            Show(() => new GameScreen(this, level, game, run));
             if (intro != null)
             {
                 ShowPopup(new BoosterIntroPopup(this, intro.Value));
