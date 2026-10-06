@@ -53,7 +53,7 @@ namespace KnittedPicture.Game
             var chest = Tile(16 + w + gap, y, w, h, Icon.Chest, Palette.CoinShadow, "Сундук",
                 chestReady ? "открой!" : $"{chestProgress}/{ProgressService.ChestEvery} ★", chestReady ? 1 : 0,
                 (float)chestProgress / ProgressService.ChestEvery);
-            chest.OnClick(() => StarChest.Open(App, App.ShowHome));
+            chest.OnClick(App.ShowChest);
 
             var pending = progress.PendingClaims;
             var kinds = progress.YarnKinds;

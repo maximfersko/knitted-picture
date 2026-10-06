@@ -160,6 +160,9 @@ namespace KnittedPicture.Game
         public void ShowCollections(CollectionsTab tab) => Show(() => new CollectionsScreen(this, tab));
 
         /// <summary>Вступление «как играть»: на первом запуске и из настроек.</summary>
+        /// <summary>Сундук и запасы: открыть сундук, посмотреть бустеры и корзинку.</summary>
+        public void ShowChest() => Show(() => new ChestScreen(this));
+
         public void ShowIntro() => Show(() => new IntroScreen(this));
 
         /// <summary>Вступление закончено или пропущено: новичка сразу в первый уровень.</summary>

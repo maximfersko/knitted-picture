@@ -69,11 +69,48 @@ namespace KnittedPicture.Core.Tests
             Assert.True(progress.CanOpenChest);
 
             var coins = progress.Coins;
-            var granted = progress.OpenChest(new Random(3));
+            var contents = progress.PeekChest();
+            Assert.False(contents.Big);
+            Assert.Equal(Chest.Choices, contents.Yarns.Length);
+            Assert.Null(progress.ClaimChest(contents.Boosters.Length, 0));
+            var granted = progress.ClaimChest(0, 1);
             Assert.NotNull(granted);
+            Assert.Equal(contents.Boosters[0], granted!.Value.Reward.Booster);
+            Assert.Equal(contents.Yarns[1], granted.Value.Reward.Yarn);
             Assert.True(progress.Coins > coins);
             Assert.Equal(0, progress.ChestProgress);
             Assert.False(progress.CanOpenChest);
+        }
+
+        [Fact]
+        public void Chest_contents_are_stable_distinct_and_big_every_fourth()
+        {
+            var progress = Fresh();
+            var first = progress.PeekChest();
+            var again = progress.PeekChest();
+            Assert.Equal(first.Coins, again.Coins);
+            Assert.Equal(first.Yarns, again.Yarns);
+            Assert.Equal(first.Boosters, again.Boosters);
+
+            for (var n = 0; n < 40; n++)
+            {
+                var contents = Chest.Roll(n, 50, _ => false);
+                Assert.Equal(Chest.IsBig(n), contents.Big);
+                Assert.Equal(Chest.Choices, contents.Boosters.Length);
+                Assert.Equal(contents.Boosters.Length, new System.Collections.Generic.HashSet<BoosterType>(contents.Boosters).Count);
+                Assert.Equal(Chest.Choices, new System.Collections.Generic.HashSet<int>(contents.Yarns).Count);
+                if (contents.Big)
+                {
+                    Assert.Equal(2, contents.BoosterCount);
+                    Assert.Contains(contents.Yarns, y => YarnCatalog.All[y].Rarity != Rarity.Common);
+                }
+            }
+
+            Assert.True(Chest.IsBig(3));
+            Assert.False(Chest.IsBig(4));
+
+            // Бустеры — только уже открытые: на 6-м уровне есть лишь «+1 слот».
+            Assert.Equal(new[] { BoosterType.Slot }, Chest.Roll(0, 6, _ => false).Boosters);
         }
 
         [Fact]

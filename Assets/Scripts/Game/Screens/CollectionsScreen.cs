@@ -407,7 +407,7 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Плашка редкости: обычная — серая, редкая — фиолетовая, эпическая — золотая.</summary>
-        private static void RarityChip(RectTransform parent, Rarity rarity, float cx, float cy)
+        public static void RarityChip(RectTransform parent, Rarity rarity, float cx, float cy)
         {
             var back = rarity == Rarity.Common ? Palette.Track : rarity == Rarity.Rare ? Palette.Hex("#EDE4FF") : Palette.CoinSoft;
             var text = YarnCatalog.RarityName(rarity);

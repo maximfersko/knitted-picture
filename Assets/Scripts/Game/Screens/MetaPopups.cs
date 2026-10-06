@@ -176,27 +176,6 @@ namespace KnittedPicture.Game
             Finish(8);
         }
     }
-
-    /// <summary>Звёздный сундук: копится звёздами за уровни.</summary>
-    public static class StarChest
-    {
-        public static void Open(App app, Action changed)
-        {
-            if (!app.Progress.CanOpenChest)
-            {
-                var left = ProgressService.ChestEvery - app.Progress.ChestProgress;
-                app.Toast($"До сундука ещё {left} ★. Проходи уровни на три звезды");
-                return;
-            }
-
-            var granted = app.Progress.OpenChest(app.Random);
-            app.Save();
-            if (granted != null)
-            {
-                app.ShowPopup(new RewardPopup(app, "Звёздный сундук", Icon.Chest, granted.Value, changed));
-            }
-        }
-    }
 }
 
 namespace KnittedPicture.Game

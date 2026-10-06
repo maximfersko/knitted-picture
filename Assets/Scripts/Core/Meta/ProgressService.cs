@@ -391,17 +391,35 @@ namespace KnittedPicture.Core
 
         public bool CanOpenChest => ChestProgress >= ChestEvery;
 
-        public Granted? OpenChest(System.Random rng)
+        /// <summary>Сколько сундуков уже открыто: номер следующего.</summary>
+        public int ChestsOpened => _data.chestsOpened;
+
+        /// <summary>Следующий сундук — большой (каждый Chest.Cycle-й).</summary>
+        public bool NextChestBig => Chest.IsBig(_data.chestsOpened);
+
+        /// <summary>Что лежит в сундуке, который откроется следующим. Не меняет сохранение.</summary>
+        public ChestContents PeekChest() => Chest.Roll(_data.chestsOpened, CurrentLevel, HasYarn);
+
+        /// <summary>
+        /// Открыть сундук: монеты, выбранный бустер и выбранный моток (повтор — монетами).
+        /// null — сундук ещё не накоплен или выбор вне списка.
+        /// </summary>
+        public Granted? ClaimChest(int boosterChoice, int yarnChoice)
         {
             if (!CanOpenChest)
             {
                 return null;
             }
 
+            var contents = PeekChest();
+            if (boosterChoice < 0 || boosterChoice >= contents.Boosters.Length || yarnChoice < 0 || yarnChoice >= contents.Yarns.Length)
+            {
+                return null;
+            }
+
             _data.chestsOpened++;
-            var boosters = new[] { BoosterType.Slot, BoosterType.Scissors, BoosterType.Undo };
-            var reward = new Reward(60 + 10 * rng.Next(5), boosters[rng.Next(boosters.Length)], 1, DailyGift.RandomYarn);
-            return Grant(reward, rng);
+            var reward = new Reward(contents.Coins, contents.Boosters[boosterChoice], contents.BoosterCount, contents.Yarns[yarnChoice]);
+            return Grant(reward, new System.Random(0));
         }
 
         // ---------- Ежедневный подарок ----------

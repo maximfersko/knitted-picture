@@ -77,6 +77,27 @@ namespace KnittedPicture.Game
 
         public static Sprite Icon(Icon icon) => Cached("icon" + icon, () => BuildIcon(icon));
 
+        /// <summary>Мягкое круглое свечение: к краю плавно сходит на нет.</summary>
+        public static Sprite Glow => Cached("glow", () => Round(256, (d, r) =>
+        {
+            var t = Mathf.Clamp01(1f - d / r);
+            return t * t;
+        }));
+
+        /// <summary>Двенадцать тихих лучей, гаснущих к краю: подложка под открытым сундуком.</summary>
+        public static Sprite Rays => Cached("rays", () => BuildRays(256, 12));
+
+        /// <summary>Корпус вязаной шкатулки: петли «ёлочкой», лента посередине, кант сверху.</summary>
+        public static Sprite ChestBody(bool big) => Cached("chestBody" + big, () => BuildChest(false, big));
+
+        /// <summary>Крышка шкатулки: купол той же вязки, кант снизу.</summary>
+        public static Sprite ChestLid(bool big) => Cached("chestLid" + big, () => BuildChest(true, big));
+
+        /// <summary>Размеры частей сундука в точках макета при ширине корпуса 220.</summary>
+        public static readonly Vector2 ChestBodySize = new Vector2(220f, 118f);
+
+        public static readonly Vector2 ChestLidSize = new Vector2(232f, 74f);
+
         private static Texture2D? _knitPattern;
 
         /// <summary>Едва заметная вязаная фактура для фона: плитка 48×48, повторяется.</summary>
@@ -265,6 +286,112 @@ namespace KnittedPicture.Game
             texture.SetPixels32(pixels);
             texture.Apply();
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        private static Sprite BuildRays(int size, int count)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[size * size];
+            var c = size / 2f;
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = x + 0.5f - c;
+                    var dy = y + 0.5f - c;
+                    var d = Mathf.Sqrt(dx * dx + dy * dy) / c;
+                    var wave = 0.5f + 0.5f * Mathf.Cos(Mathf.Atan2(dy, dx) * count);
+                    var ray = Mathf.SmoothStep(0.55f, 1f, wave);
+                    var fade = Mathf.Clamp01(1f - d) * Mathf.Clamp01(d * 4f);
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)(ray * fade * 255));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        /// <summary>
+        /// Часть сундука в текстуру: тёплая карамельная вязка (столбики петель-«галочек»),
+        /// лента посередине (у большого — золотая), тёмный кант по стыку крышки и корпуса,
+        /// мягкая тень к низу и тонкий обод. Приглушённые цвета — сундук не спорит с картинкой.
+        /// </summary>
+        private static Sprite BuildChest(bool lid, bool big)
+        {
+            const float scale = 2f;
+            var size = lid ? ChestLidSize : ChestBodySize;
+            var tw = Mathf.CeilToInt(size.x * scale);
+            var th = Mathf.CeilToInt(size.y * scale);
+            var texture = new Texture2D(tw, th, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[tw * th];
+
+            var knit = Palette.Hex("#D8A47C");
+            var knitLight = Palette.Hex("#EBC39E");
+            var band = big ? Palette.Hex("#E7B64E") : Palette.Hex("#A893DA");
+            var bandLight = big ? Palette.Hex("#F6D88C") : Palette.Hex("#C6B7EE");
+            var trim = Palette.Hex("#B57A52");
+            var edge = Palette.Hex("#9A6544");
+            var topRadius = lid ? 34f : 10f;
+            var bottomRadius = lid ? 8f : 18f;
+            const float bandHalf = 17f;
+            const float rim = 9f;
+
+            for (var py = 0; py < th; py++)
+            {
+                for (var px = 0; px < tw; px++)
+                {
+                    // Координаты в точках макета, y — вниз.
+                    var x = (px + 0.5f) / scale;
+                    var y = (th - py - 0.5f) / scale;
+                    var radius = y < size.y / 2f ? topRadius : bottomRadius;
+                    var qx = Mathf.Abs(x - size.x / 2f) - size.x / 2f + radius;
+                    var qy = Mathf.Abs(y - size.y / 2f) - size.y / 2f + radius;
+                    var d = Mathf.Sqrt(Mathf.Max(qx, 0) * Mathf.Max(qx, 0) + Mathf.Max(qy, 0) * Mathf.Max(qy, 0))
+                            + Mathf.Min(Mathf.Max(qx, qy), 0) - radius;
+                    var alpha = Mathf.Clamp01(0.5f - d * scale);
+                    if (alpha <= 0f)
+                    {
+                        continue;
+                    }
+
+                    var inBand = Mathf.Abs(x - size.x / 2f) < bandHalf;
+                    var baseColor = inBand ? band : knit;
+                    var light = inBand ? bandLight : knitLight;
+
+                    // Петли: столбики «галочек» 14×12, лента — со своим шагом, чтобы читалась отдельной полосой.
+                    var cellW = inBand ? 11.33f : 14f;
+                    var lx = Mathf.Repeat(x - (inBand ? size.x / 2f - bandHalf : 0f), cellW);
+                    var ly = Mathf.Repeat(y + (lid ? 3f : 0f), 12f);
+                    var left = DistanceToSegment(lx, ly, 1.8f, 1.5f, cellW / 2f, 10.5f);
+                    var right = DistanceToSegment(lx, ly, cellW - 1.8f, 1.5f, cellW / 2f, 10.5f);
+                    var stitch = Mathf.Clamp01(2.1f - Mathf.Min(left, right));
+                    var color = Color.Lerp(baseColor, light, stitch * 0.85f);
+
+                    // Кант на стыке: у крышки снизу, у корпуса сверху.
+                    var fromSeam = lid ? size.y - y : y;
+                    if (fromSeam < rim)
+                    {
+                        var bead = Mathf.Clamp01(1.2f - Mathf.Abs(Mathf.Repeat(x, 8f) - 4f) / 2.6f);
+                        color = Color.Lerp(trim, Color.Lerp(trim, knitLight, 0.35f), bead * 0.6f);
+                        if (fromSeam < 1.5f)
+                        {
+                            color = edge;
+                        }
+                    }
+
+                    // Свет сверху, тень снизу, тонкий тёмный обод.
+                    var shade = lid ? Mathf.Lerp(1.06f, 0.96f, y / size.y) : Mathf.Lerp(1.02f, 0.84f, (y / size.y) * (y / size.y));
+                    color *= shade;
+                    color = Color.Lerp(color, edge, Mathf.Clamp01(1f + (d + 2.2f) * 0.9f) * 0.9f);
+                    color.a = alpha;
+                    pixels[py * tw + px] = color;
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, tw, th), new Vector2(0.5f, 0.5f), 100f);
         }
 
         private static Sprite BuildCell(bool knit, bool soft = false)
