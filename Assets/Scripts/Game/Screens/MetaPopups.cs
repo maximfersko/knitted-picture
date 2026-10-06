@@ -118,7 +118,7 @@ namespace KnittedPicture.Game
         }
     }
 
-    /// <summary>Подарок дня: неделя подарков, сегодняшний подсвечен, пропуск дня начинает неделю заново.</summary>
+    /// <summary>Подарок дня: неделя подарков, сегодняшний подсвечен; пропуск дня — пауза, а не сброс.</summary>
     public sealed class DailyGiftPopup : Popup
     {
         public DailyGiftPopup(App app, Action changed)
@@ -126,7 +126,7 @@ namespace KnittedPicture.Game
         {
             AddIcon(Icon.Gift, Palette.Danger, Palette.DangerSoft, 72);
             Ui.InfoButton(Card, CardWidth - 30, 30, "Как работает подарок",
-                "Подарки идут по кругу 7 дней и растут. Пропустишь день, и неделя начнётся с первого. " +
+                "Подарки идут по кругу 7 дней и растут. Пропустишь день — не страшно: неделя продолжится с того же места. " +
                 "На 7-й день: 150 монет и моток пряжи.", 26);
             AddTitle("Подарок дня", 24);
             AddText("Забирай каждый день", 14, 1);

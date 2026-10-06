@@ -54,7 +54,7 @@ namespace KnittedPicture.Core
         };
     }
 
-    /// <summary>Ежедневный подарок: 7 дней по кругу, пропуск дня возвращает к первому.</summary>
+    /// <summary>Ежедневный подарок: 7 дней по кругу; пропуск дня ставит неделю на паузу.</summary>
     public static class DailyGift
     {
         public static readonly Reward[] Days =

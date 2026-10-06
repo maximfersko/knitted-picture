@@ -505,17 +505,14 @@ namespace KnittedPicture.Core
         /// </summary>
         public bool CanClaimDaily(int today) => today > _data.dailyLastDay || _data.dailyLastDay - today > 1;
 
-        /// <summary>Какой день недели подарков будет следующим (0..6): пропуск дня начинает заново.</summary>
+        /// <summary>
+        /// Какой день недели подарков сегодня (0..6). Пропуск дня — пауза, а не сброс: вернувшийся
+        /// игрок продолжает с того же места недели, его не наказывают за перерыв.
+        /// </summary>
         public int DailyIndex(int today)
         {
-            var continues = _data.dailyLastDay == today - 1 || _data.dailyLastDay == today;
-            var streak = continues ? _data.dailyStreak : 0;
-            if (_data.dailyLastDay == today)
-            {
-                streak--;
-            }
-
-            return ((streak % DailyGift.Days.Length) + DailyGift.Days.Length) % DailyGift.Days.Length;
+            var claims = _data.dailyLastDay == today ? _data.dailyClaims - 1 : _data.dailyClaims;
+            return ((claims % DailyGift.Days.Length) + DailyGift.Days.Length) % DailyGift.Days.Length;
         }
 
         public Granted? ClaimDaily(int today, System.Random rng)
@@ -526,6 +523,9 @@ namespace KnittedPicture.Core
             }
 
             var index = DailyIndex(today);
+            _data.dailyClaims++;
+
+            // Дни подряд считаем отдельно — для достижения «Каждый день».
             _data.dailyStreak = _data.dailyLastDay == today - 1 ? _data.dailyStreak + 1 : 1;
             _data.dailyBest = System.Math.Max(_data.dailyBest, _data.dailyStreak);
             _data.dailyLastDay = today;

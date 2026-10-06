@@ -50,6 +50,9 @@ namespace KnittedPicture.Core
         public int dailyStreak;
         public int dailyBest;
 
+        /// <summary>Сколько подарков дня забрано всего: по нему идёт неделя подарков (пропуск — пауза, не сброс).</summary>
+        public int dailyClaims;
+
         public int chestsOpened;
 
         /// <summary>Моток «в работе»: его бонус действует в уровнях. -1 — ещё нет.</summary>

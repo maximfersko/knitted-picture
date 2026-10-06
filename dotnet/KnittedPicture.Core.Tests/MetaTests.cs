@@ -239,7 +239,7 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Daily_gift_once_a_day_and_streak_resets_after_a_missed_day()
+        public void Daily_gift_once_a_day_and_a_missed_day_only_pauses_the_week()
         {
             var progress = Fresh();
             var rng = new Random(5);
@@ -254,8 +254,12 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(3, progress.DailyIndex(103));
             Assert.Equal(3, progress.Data.dailyBest);
 
-            Assert.Equal(0, progress.DailyIndex(105));
+            // Пропустил день: неделя не сбрасывается, а продолжается с 4-го дня.
+            Assert.Equal(3, progress.DailyIndex(105));
             progress.ClaimDaily(105, rng);
+            Assert.Equal(4, progress.DailyIndex(106));
+
+            // Дни подряд для достижения считаются отдельно и после пропуска начинаются заново.
             Assert.Equal(1, progress.Data.dailyStreak);
             Assert.Equal(3, progress.Data.dailyBest);
         }
