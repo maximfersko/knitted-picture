@@ -308,8 +308,8 @@ namespace KnittedPicture.Game
                 stars += progress.StarsOf(id);
             }
 
-            Ui.Label(card, collection.Name, 18, Palette.Ink, 56, 10, cardW - 112, 24);
-            Ui.Label(card, $"{done} из {collection.Count} · {stars}/{collection.Count * 3} ★", 13, Palette.Ink2, 56, 32, cardW - 112, 18, false);
+            Ui.Fit(Ui.Label(card, collection.Name, 18, Palette.Ink, 56, 10, cardW - 112, 24), 13);
+            Ui.Fit(Ui.Label(card, $"{done} из {collection.Count} · {stars}/{collection.Count * 3} ★", 13, Palette.Ink2, 56, 32, cardW - 112, 18, false), 10);
             var page = index;
             Arrow(card, 10, index > 0, () => Turn(page - 1), false);
             Arrow(card, cardW - 50, index < Collections.All.Length - 1, () => Turn(page + 1), true);

@@ -187,8 +187,8 @@ namespace KnittedPicture.Game
         /// </summary>
         private static void Header(RectTransform card, float cardW, string title, string subtitle, string? doneChip, string score)
         {
-            Ui.Label(card, title, 18, Palette.Ink, 16, 12, cardW - 140, 26, true, TextAnchor.MiddleLeft);
-            Ui.Label(card, subtitle, 13, Palette.Ink2, 16, 36, cardW - 140, 20, false, TextAnchor.MiddleLeft);
+            Ui.Fit(Ui.Label(card, title, 18, Palette.Ink, 16, 12, cardW - 140, 26, true, TextAnchor.MiddleLeft), 13);
+            Ui.Fit(Ui.Label(card, subtitle, 13, Palette.Ink2, 16, 36, cardW - 140, 20, false, TextAnchor.MiddleLeft), 10);
             if (doneChip != null)
             {
                 var chip = Ui.Card(card, "Done", cardW - 16 - 104, 18, 104, 28, 14, Palette.PrimarySoft, Palette.PrimarySoft, 0f);
@@ -212,17 +212,18 @@ namespace KnittedPicture.Game
             var cardW = W - 32f;
             var y = 6f;
 
-            var banner = Ui.Card(content, "Basket", 16, y, cardW, 92, 24, Palette.Card, Palette.CardShadow, 3f);
+            var banner = Ui.Card(content, "Basket", 16, y, cardW, 80, 24, Palette.Card, Palette.CardShadow, 3f);
             var circle = Ui.Image(banner, "Back", Art.Circle, Palette.DangerSoft);
-            Ui.PlaceCenter(circle.rectTransform, 44, 46, 56, 56);
+            Ui.PlaceCenter(circle.rectTransform, 44, 40, 56, 56);
             var logo = Ui.Image(banner, "Ball", Art.YarnBall, Palette.Hex("#FF6FA5"));
-            Ui.PlaceCenter(logo.rectTransform, 44, 46, 38, 38);
-            Ui.Label(banner, "Корзинка пряжи", 17, Palette.Ink, 84, 12, cardW - 100, 24, true, TextAnchor.MiddleLeft);
-            Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 84, 34, cardW - 100, 18, false, TextAnchor.MiddleLeft);
-            Ui.ProgressBar(banner, 84, 56, cardW - 104, 7, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Danger);
-            Ui.Label(banner, "За новые картинки, сундук и подарок дня · повтор даёт монеты", 11, Palette.Ink3, 84, 66, cardW - 100, 18, false,
-                TextAnchor.MiddleLeft);
-            y += 92f + 16f;
+            Ui.PlaceCenter(logo.rectTransform, 44, 40, 38, 38);
+            Ui.Label(banner, "Корзинка пряжи", 17, Palette.Ink, 84, 12, cardW - 140, 24, true, TextAnchor.MiddleLeft);
+            Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 84, 34, cardW - 140, 18, false, TextAnchor.MiddleLeft);
+            Ui.ProgressBar(banner, 84, 58, cardW - 104, 7, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Danger);
+            Ui.InfoButton(banner, cardW - 30, 26, "Откуда пряжа",
+                "Моток выпадает за каждую новую картинку, из звёздного сундука и на 7-й день подарков. " +
+                "Повтор превращается в монеты: 10, 20 или 40 по редкости. За полный набор дают награду.", 26);
+            y += 80f + 16f;
 
             const float gap = 8f;
             foreach (var set in YarnCatalog.Sets)
@@ -357,8 +358,8 @@ namespace KnittedPicture.Game
             var textW = w - 68f - rightW - 8f;
             var hasBar = !claimed;
             var titleY = hasBar ? 9f : 14f;
-            Ui.Label(row, a.Title, 15, Palette.Ink, 68, titleY, textW, 20, true, TextAnchor.MiddleLeft);
-            Ui.Label(row, a.Description, 12, Palette.Ink2, 68, titleY + 21, textW, 18, false, TextAnchor.MiddleLeft);
+            Ui.Fit(Ui.Label(row, a.Title, 15, Palette.Ink, 68, titleY, textW, 20, true, TextAnchor.MiddleLeft), 11);
+            Ui.Fit(Ui.Label(row, a.Description, 12, Palette.Ink2, 68, titleY + 21, textW, 18, false, TextAnchor.MiddleLeft), 9);
             var value = progress.AchievementValue(a);
             if (hasBar)
             {
@@ -442,7 +443,7 @@ namespace KnittedPicture.Game
             Ui.IconImage(bar, claimed ? Icon.Check : Icon.Gift, claimed ? Palette.Primary : Palette.CoinShadow, 26, 24, 18);
             if (canClaim)
             {
-                Ui.Label(bar, readyText, 14, Palette.Ink, 50, 0, w - 160, 48, true, TextAnchor.MiddleLeft);
+                Ui.Fit(Ui.Label(bar, readyText, 14, Palette.Ink, 50, 12, w - 160, 24, true, TextAnchor.MiddleLeft), 10);
                 Ui.Button(bar, "Забрать", w - 100, 6, 92, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15).OnClick(claim);
             }
             else if (claimed)
@@ -451,7 +452,7 @@ namespace KnittedPicture.Game
             }
             else
             {
-                Ui.Label(bar, text, 12, Palette.Ink2, 50, 6, w - 60, 18, false, TextAnchor.MiddleLeft);
+                Ui.Fit(Ui.Label(bar, text, 12, Palette.Ink2, 50, 6, w - 60, 18, false, TextAnchor.MiddleLeft), 9);
                 Ui.ProgressBar(bar, 50, 30, w - 64, 7, fraction, Palette.Primary);
             }
         }

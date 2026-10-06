@@ -142,6 +142,41 @@ namespace KnittedPicture.Game
             return label;
         }
 
+        /// <summary>
+        /// Не дать тексту вылезти за свою рамку: шрифт уменьшается (до minSize), пока строка не влезет.
+        /// Для названий и подписей, длина которых заранее неизвестна.
+        /// </summary>
+        public static Text Fit(Text label, int minSize)
+        {
+            label.resizeTextForBestFit = true;
+            label.resizeTextMaxSize = label.fontSize;
+            label.resizeTextMinSize = Mathf.Min(minSize, label.fontSize);
+            label.verticalOverflow = VerticalWrapMode.Truncate;
+            return label;
+        }
+
+        /// <summary>Кнопка «i» в кружке: по тапу — короткая справка. Подробности не загромождают экран.</summary>
+        public static Tap InfoButton(RectTransform parent, float cx, float cy, string title, string text, float size = 26f)
+        {
+            var root = PlaceCenter(Node(parent, "Info"), cx, cy, size + 14f, size + 14f);
+            var hit = Image(root, "Hit", null, Color.clear, true);
+            Stretch(hit.rectTransform);
+            var circle = Image(root, "Back", Art.Circle, Palette.Surface);
+            PlaceCenter(circle.rectTransform, (size + 14f) / 2f, (size + 14f) / 2f, size, size);
+            Outline(circle.rectTransform, size / 2f, Palette.Line, 1.5f);
+            IconImage(root, Icon.Info, Palette.Ink2, (size + 14f) / 2f, (size + 14f) / 2f, size * 0.7f);
+            var tap = root.gameObject.AddComponent<Tap>();
+            tap.OnClick(() =>
+            {
+                var app = App.Instance;
+                if (app != null)
+                {
+                    app.ShowPopup(new InfoPopup(app, title, text));
+                }
+            });
+            return tap;
+        }
+
         public static Text Label(RectTransform parent, string text, float size, Color color, float x, float y, float w, float h,
             bool bold = true, TextAnchor anchor = TextAnchor.MiddleCenter)
         {

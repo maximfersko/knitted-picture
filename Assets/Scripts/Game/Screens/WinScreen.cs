@@ -107,7 +107,7 @@ namespace KnittedPicture.Game
 
             Ui.Label(Root, reward.NewRecord ? "Новый рекорд!" : "Готово!", compact ? 32 : 36, Palette.Ink, 16, y, W - 32, 42);
             y += 40f;
-            Ui.Label(Root, StarsHint(level, reward.Stars, stats), 15, Palette.Ink2, 16, y, W - 32, 22, false);
+            Ui.Fit(Ui.Label(Root, StarsHint(level, reward.Stars, stats), 15, Palette.Ink2, 16, y, W - 32, 22, false), 11);
             y += 30f;
 
             var card = Ui.Card(Root, "Reward", 16, y, W - 32, 0, 20, Palette.Card, Palette.CardShadow);
@@ -267,7 +267,7 @@ namespace KnittedPicture.Game
         /// <summary>Строка награды; её монетка — точка вылета монет в счётчик.</summary>
         private float Row(RectTransform card, float y, string title, int coins)
         {
-            Ui.Label(card, title, 16, Palette.Ink, 16, y, W - 160, RowH - 2, true, TextAnchor.MiddleLeft);
+            Ui.Fit(Ui.Label(card, title, 16, Palette.Ink, 16, y, W - 160, RowH - 2, true, TextAnchor.MiddleLeft), 11);
             var coin = Ui.Coin(card, W - 32 - 74, y + RowH / 2f - 1f, 20);
             Ui.Label(card, "+" + coins, 17, Palette.Ink, W - 32 - 60, y, 46, RowH - 2, true, TextAnchor.MiddleRight);
             if (coins > 0)

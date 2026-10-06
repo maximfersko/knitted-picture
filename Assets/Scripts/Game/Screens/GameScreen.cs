@@ -274,7 +274,14 @@ namespace KnittedPicture.Game
             var x = W / 2f - (chips.Count * chipW + (chips.Count - 1) * gap) / 2f;
             foreach (var (icon, tint, taps) in chips)
             {
-                var chip = Ui.Card(Root, taps ? "TapsGoal" : "GoldGoal", x, GoalsY, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f);
+                var chip = Ui.Card(Root, taps ? "TapsGoal" : "GoldGoal", x, GoalsY, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f, true);
+
+                // Тап по цели — короткая справка; игра на это время стоит.
+                var title = taps ? "Цель по тапам" : "Золотые петли";
+                var info = taps
+                    ? $"Уложись в {_game.Par} тапов без бустеров, и получишь третью звезду. Считаются тапы по клубкам и узелкам."
+                    : $"Петли в золотом кольце. Свяжи их, пока горит комбо (×2 и выше), и получишь +{Economy.GoldCoins} монеты за каждую.";
+                chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, title, info)));
                 Ui.IconImage(chip, icon, tint, 18, 14, 18);
                 var label = Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft);
                 if (taps)

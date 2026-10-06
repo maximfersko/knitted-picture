@@ -90,8 +90,11 @@ namespace KnittedPicture.Game
             : base(app)
         {
             AddIcon(Icon.Gift, Palette.Danger, Palette.DangerSoft, 72);
+            Ui.InfoButton(Card, CardWidth - 30, 30, "Как работает подарок",
+                "Подарки идут по кругу 7 дней и растут. Пропустишь день, и неделя начнётся с первого. " +
+                "На 7-й день: 150 монет и моток пряжи.", 26);
             AddTitle("Подарок дня", 24);
-            AddText("Заходи каждый день, и подарки будут расти. Пропустишь день, и неделя начнётся заново", 14, 2.4f);
+            AddText("Забирай каждый день", 14, 1);
 
             var today = app.Today;
             var index = app.Progress.DailyIndex(today);
@@ -219,8 +222,10 @@ namespace KnittedPicture.Game
             MiniPicture.Create(frame, level, pic / 2f, pic / 2f, pic - 18f);
             var textX = 24 + pic + 16;
             var textW = CardWidth - textX - 20;
-            Ui.Label(Card, level.name, 21, Palette.Ink, textX, top + 6, textW, 28, true, TextAnchor.MiddleLeft);
-            Ui.Label(Card, $"Уровень {level.id} · {collection.Name}", 13, Palette.Ink2, textX, top + 36, textW, 20, false, TextAnchor.MiddleLeft);
+            // Длинные названия («Мордочка котика») ужимаются в свою строку и не наезжают на подпись.
+            Ui.Fit(Ui.Label(Card, level.name, 21, Palette.Ink, textX, top + 6, textW, 28, true, TextAnchor.MiddleLeft), 14);
+            Ui.Fit(Ui.Label(Card, $"Уровень {level.id} · {collection.Name}", 13, Palette.Ink2, textX, top + 36, textW, 20, false,
+                TextAnchor.MiddleLeft), 10);
             for (var i = 0; i < 3; i++)
             {
                 var star = Ui.Image(Card, "Star", Art.Icon(Icon.Star), i < stars ? Palette.Coin : Palette.Track);
@@ -270,8 +275,11 @@ namespace KnittedPicture.Game
             Space(38f);
 
             // Разбор звёзд: каждая строка — условие и отметка, получено ли.
-            Ui.Label(Card, "Как получить звёзды", 14, Palette.Ink, 24, Cursor, Inner, 20, true, TextAnchor.MiddleLeft);
-            Space(26f);
+            Ui.Label(Card, "Как получить звёзды", 14, Palette.Ink, 24, Cursor, Inner - 40, 20, true, TextAnchor.MiddleLeft);
+            Ui.InfoButton(Card, 24 + Inner - 13, Cursor + 10, "Повтор уровня",
+                $"Повтор даёт +{KnittedPicture.Core.Economy.ReplayReward} монет. Сохраняется лучший результат: звёзды и рекорд по тапам. " +
+                "Третья звезда засчитывается, если оба условия выполнены за одно прохождение.", 24);
+            Space(28f);
             var third = level.par > 0 ? $"Без бустеров и не больше {level.par} тапов" : "Без бустеров";
             StarRow(1, "Довязать картинку", stars >= 1);
             StarRow(2, "Без спасения после затора или моли", stars >= 2);
@@ -289,10 +297,6 @@ namespace KnittedPicture.Game
             }
 
             AddPrimary(stars >= 3 ? "Перевязать" : "Перевязать на три звезды").OnClick(() => app.StartLevel(level.id));
-            var note = Ui.Label(Card, $"Повтор: +{KnittedPicture.Core.Economy.ReplayReward} монет · звёзды сохранятся лучшие", 12, Palette.Ink3,
-                24, Cursor - 10, Inner, 18, false);
-            note.alignment = TextAnchor.MiddleCenter;
-            Space(14f);
             AddLink("Закрыть").OnClick(Close);
             Finish(6);
         }
@@ -307,7 +311,8 @@ namespace KnittedPicture.Game
                 Ui.IconImage(row, Icon.Star, done ? Palette.Coin : Palette.Ink3, 16 + i * 13, 20, 14);
             }
 
-            Ui.Label(row, text, 13, done ? Palette.Ink : Palette.Ink2, 58, 0, Inner - 58 - 40, 40, done, TextAnchor.MiddleLeft).lineSpacing = 0.85f;
+            var label = Ui.Fit(Ui.Label(row, text, 13, done ? Palette.Ink : Palette.Ink2, 58, 2, Inner - 58 - 44, 36, done, TextAnchor.MiddleLeft), 10);
+            label.lineSpacing = 0.85f;
             var mark = Ui.Image(row, "Mark", done ? Art.Circle : Art.Ring, done ? Palette.Primary : Palette.SlotEmpty);
             Ui.PlaceCenter(mark.rectTransform, Inner - 22, 20, 24, 24);
             if (done)
@@ -341,6 +346,24 @@ namespace KnittedPicture.Game
             }
 
             app.ShowPopup(new LevelInfoPopup(app, app.Levels.Get(levelId)));
+        }
+    }
+}
+
+namespace KnittedPicture.Game
+{
+    /// <summary>Короткая справка по кнопке «i»: значок, заголовок, пара строк и «Понятно». Закрывается и тапом мимо.</summary>
+    public sealed class InfoPopup : Popup
+    {
+        public InfoPopup(App app, string title, string text)
+            : base(app)
+        {
+            AddIcon(Icon.Info, Palette.Link, Palette.Hex("#EDE4FF"), 52);
+            AddTitle(title, 19);
+            var lines = Mathf.Max(1f, Mathf.Ceil(text.Length / 34f));
+            AddText(text, 14, lines);
+            AddPrimary("Понятно", 50).OnClick(Close);
+            Finish(4);
         }
     }
 }

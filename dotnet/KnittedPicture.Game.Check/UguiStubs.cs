@@ -144,6 +144,12 @@ namespace UnityEngine.UI
         public bool supportRichText { get; set; }
 
         public float preferredWidth => 0f;
+
+        public bool resizeTextForBestFit { get; set; }
+
+        public int resizeTextMinSize { get; set; }
+
+        public int resizeTextMaxSize { get; set; }
     }
 
     public class CanvasScaler : UIBehaviour

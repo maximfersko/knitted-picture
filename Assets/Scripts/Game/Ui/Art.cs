@@ -35,6 +35,7 @@ namespace KnittedPicture.Game
         Gift,
         Chest,
         Trophy,
+        Info,
     }
 
     /// <summary>
@@ -395,6 +396,9 @@ namespace KnittedPicture.Game
                 case KnittedPicture.Game.Icon.Snowflake:
                     p.Stroke(2.2f).Line(12, 3, 12, 21).Line(4.2f, 7.5f, 19.8f, 16.5f).Line(4.2f, 16.5f, 19.8f, 7.5f)
                         .Stroke(1.8f).Line(9.5f, 4.5f, 12, 7).Line(14.5f, 4.5f, 12, 7).Line(9.5f, 19.5f, 12, 17).Line(14.5f, 19.5f, 12, 17);
+                    break;
+                case KnittedPicture.Game.Icon.Info:
+                    p.Stroke(2.4f).Circle(12, 12, 9).Disc(12, 7.6f, 1.6f).Stroke(2.6f).Line(12, 11, 12, 16.8f);
                     break;
                 case KnittedPicture.Game.Icon.Gift:
                     p.Box(12, 15.5f, 7.5f, 5.5f, 1.5f, false).Box(12, 9.5f, 9, 2.5f, 1.2f, false).Line(12, 7, 12, 21)
