@@ -248,10 +248,23 @@ namespace KnittedPicture.Game
             });
 
             var text = _level.hard ? $"Уровень {_level.id} · сложный" : $"Уровень {_level.id}";
-            var width = _level.hard ? 200f : 140f;
+            var hasTip = !string.IsNullOrEmpty(_level.tip);
+            var width = (_level.hard ? 200f : 140f) + (hasTip ? 22f : 0f);
             var pill = Ui.Card(Root, "Level", W / 2f - width / 2f, 8, width, 44, 22,
-                _level.hard ? Palette.DangerSoft : Palette.Card, Palette.CardShadow, _level.hard ? 0f : 2f);
-            Ui.Fit(Ui.Label(pill, text, 17, _level.hard ? Palette.Danger : Palette.Ink, 8, 0, width - 16, 44), 12);
+                _level.hard ? Palette.DangerSoft : Palette.Card, Palette.CardShadow, _level.hard ? 0f : 2f, hasTip);
+            Ui.Fit(Ui.Label(pill, text, 17, _level.hard ? Palette.Danger : Palette.Ink, 8, 0, width - 16 - (hasTip ? 22f : 0f), 44), 12);
+            if (hasTip)
+            {
+                // Подсказка уровня исчезает сама; вернуть её можно тапом по плашке уровня.
+                Ui.IconImage(pill, Icon.Info, _level.hard ? Palette.Danger : Palette.Ink3, width - 22f, 22, 18);
+                pill.gameObject.AddComponent<Tap>().OnClick(() =>
+                {
+                    if (!_ended && !_failShown)
+                    {
+                        App.ShowPopup(new InfoPopup(App, "Подсказка уровня", _level.tip));
+                    }
+                });
+            }
             _coins = Ui.CoinPill(Root, App.Progress.Coins, W - Pad, 8);
         }
 
@@ -478,16 +491,7 @@ namespace KnittedPicture.Game
         {
             if (!string.IsNullOrEmpty(_level.tip))
             {
-                // Подсказка лежит на пустом станке: в начале он всё равно пуст, а фронт картинки остаётся виден.
-                var width = W - 2 * Pad;
-                _tip = Ui.Card(Root, "Tip", Pad, _loomY + LoomTop, width, LoomH, 20, Palette.Ink, Palette.Ink, 0f);
-                var label = Ui.Label(_tip, _level.tip, 15, Color.white, 16, 0, width - 32, 74);
-                label.lineSpacing = 0.9f;
-                var group = _tip.gameObject.AddComponent<CanvasGroup>();
-                group.blocksRaycasts = false;
-                Tweens.Fade(group, 0f, 1f, 0.3f, null, 0.3f);
-                var tip = _tip;
-                Tweens.Delay(tip, 7f, HideTip);
+                Tweens.Delay(Root, 0.6f, ShowTip);
             }
 
             var bannerY = _top + 40f;
@@ -1538,6 +1542,169 @@ namespace KnittedPicture.Game
             }
 
             _idle = 0;
+        }
+
+        /// <summary>
+        /// Подсказка уровня — лёгкая выноска рядом с тем, о чём она: над особым клубком на поле
+        /// (с «?», узелком, замком, льдом…), под целью по тапам или золотом, над картинкой.
+        /// Белая, небольшая, со стрелкой; не перехватывает тапы, исчезает сама или с первым ходом.
+        /// Вернуть её можно тапом по плашке уровня.
+        /// </summary>
+        private void ShowTip()
+        {
+            if (_ended || _tip != null || _game.Taps > 0)
+            {
+                return;
+            }
+
+            var tipText = _level.tip;
+            var (target, below) = TipTarget(tipText.ToLowerInvariant());
+            var maxW = Mathf.Min(W - 2 * Pad, 320f);
+            var root = Ui.Node(Root, "Tip");
+            _tip = root;
+
+            var label = Ui.Label(root, tipText, 14, Palette.Ink, 40, 0, maxW - 52, 10, true, TextAnchor.MiddleLeft);
+            label.lineSpacing = 0.9f;
+            var textW = Mathf.Min(maxW - 52, Mathf.Max(label.preferredWidth, 60f));
+            label.rectTransform.sizeDelta = new Vector2(textW, 10);
+            var bubbleW = textW + 52f;
+            var bubbleH = Mathf.Max(40f, label.preferredHeight + 18f);
+
+            // Где цель на экране — в точках макета от левого верхнего угла экрана.
+            float cx, top, bottom;
+            if (target != null)
+            {
+                var corners = new Vector3[4];
+                target.GetWorldCorners(corners);
+                var a = Root.InverseTransformPoint(corners[0]);
+                var b = Root.InverseTransformPoint(corners[2]);
+                cx = (a.x + b.x) / 2f + W / 2f;
+                top = H / 2f - b.y;
+                bottom = H / 2f - a.y;
+            }
+            else
+            {
+                cx = W / 2f;
+                top = bottom = _loomY + LoomTop + LoomH / 2f;
+            }
+
+            const float arrow = 9f;
+            var x = Mathf.Clamp(cx - bubbleW / 2f, Pad, W - Pad - bubbleW);
+            var y = target == null ? top - bubbleH / 2f : below ? bottom + arrow + 2f : top - bubbleH - arrow - 2f;
+            Ui.Place(root, x, y, bubbleW, bubbleH);
+            var arrowX = Mathf.Clamp(cx - x, 22f, bubbleW - 22f);
+
+            var shadow = Ui.Box(root, "Shadow", 14, Palette.WithAlpha(Palette.Ink, 0.12f));
+            Ui.Place(shadow.rectTransform, 0, 3, bubbleW, bubbleH);
+
+            // Стрелка — повёрнутый квадратик с контуром; лицо выноски закрывает его половину.
+            if (target != null)
+            {
+                var tail = Ui.Box(root, "Arrow", 3, Palette.Card).rectTransform;
+                Ui.PlaceCenter(tail, arrowX, below ? 0f : bubbleH, 14, 14);
+                tail.localRotation = Quaternion.Euler(0, 0, 45f);
+                Ui.Outline(tail, 3, Palette.Line, 1.5f);
+            }
+
+            var face = Ui.Box(root, "Face", 14, Palette.Card);
+            Ui.Place(face.rectTransform, 0, 0, bubbleW, bubbleH);
+            Ui.Outline(face.rectTransform, 14, Palette.Line, 1.5f);
+            if (target != null)
+            {
+                // Без контура в месте стыка: выноска и стрелка читаются одной фигурой.
+                var patch = Ui.Box(root, "Patch", 2, Palette.Card).rectTransform;
+                Ui.PlaceCenter(patch, arrowX, below ? 1.5f : bubbleH - 1.5f, 16, 4);
+            }
+
+            var bulb = Ui.Image(root, "Bulb", Art.Circle, Palette.CoinSoft);
+            Ui.PlaceCenter(bulb.rectTransform, 22, bubbleH / 2f, 26, 26);
+            Ui.IconImage(root, Icon.Info, Palette.CoinShadow, 22, bubbleH / 2f, 16);
+            label.transform.SetAsLastSibling();
+            Ui.Place(label.rectTransform, 40, 0, textW, bubbleH);
+
+            var group = root.gameObject.AddComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+            Tweens.Fade(group, 0f, 1f, 0.25f);
+            Tweens.Scale(root, 0.85f, 1f, 0.3f, Ease.OutBack);
+            var rest = root.anchoredPosition;
+            var lift = below ? -1f : 1f;
+            Tweens.Run(root, 1.8f, t => root.anchoredPosition = rest + new Vector2(0, lift * 3f * Ease.Bump(t)), null, null, 0.3f, true);
+            Tweens.Delay(root, Mathf.Clamp(2.5f + tipText.Length * 0.06f, 5f, 8f), HideTip);
+        }
+
+        /// <summary>
+        /// К чему относится подсказка: по словам в ней ищем особый клубок на видимой части поля,
+        /// цель по тапам или золоту, картинку. below — выноска под целью (цели наверху), иначе над ней.
+        /// null — общий совет, выноска ложится на пустой станок.
+        /// </summary>
+        private (RectTransform? target, bool below) TipTarget(string tip)
+        {
+            System.Func<Spool, bool>? match = null;
+            if (tip.Contains("?") || tip.Contains("скрыт"))
+            {
+                match = s => !s.IsColorVisible;
+            }
+            else if (tip.Contains("узел"))
+            {
+                match = s => s.Knots > 0;
+            }
+            else if (tip.Contains("замок") || tip.Contains("ключ"))
+            {
+                match = s => s.Locked || s.IsKey;
+            }
+            else if (tip.Contains("ледян") || tip.Contains("лёд"))
+            {
+                match = s => s.Frozen;
+            }
+            else if (tip.Contains("связан"))
+            {
+                match = s => s.Link != 0;
+            }
+            else if (tip.Contains("толст"))
+            {
+                match = s => s.Thick;
+            }
+            else if (tip.Contains("радуж"))
+            {
+                match = s => s.Rainbow;
+            }
+            else if (tip.Contains("цвета ткани") || tip.Contains("чуж"))
+            {
+                match = s => _game.IsForeign(s);
+            }
+            else if (tip.Contains("тапни клубок"))
+            {
+                match = s => _game.HasWork(s);
+            }
+
+            if (match != null)
+            {
+                foreach (var f in _field)
+                {
+                    var column = _game.Column(f.Column);
+                    if (f.Depth < column.Count && column[f.Depth].Id == f.SpoolId && match(column[f.Depth]))
+                    {
+                        return (f.View.Root, false);
+                    }
+                }
+            }
+
+            if (tip.Contains("золот") && _goldGoal != null)
+            {
+                return ((RectTransform)_goldGoal.transform.parent, true);
+            }
+
+            if (tip.Contains("тапам") && _tapsGoal != null)
+            {
+                return ((RectTransform)_tapsGoal.transform.parent, true);
+            }
+
+            if (tip.Contains("фронт"))
+            {
+                return (_pictureCard, true);
+            }
+
+            return (null, false);
         }
 
         private void HideTip()
