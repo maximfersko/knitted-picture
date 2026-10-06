@@ -53,6 +53,13 @@ namespace KnittedPicture.Core
 
         public bool IsUnlocked(BoosterType type, int levelId) => levelId >= Economy.UnlockLevel(type);
 
+        /// <summary>
+        /// Доступен ли бустер в уровне levelId: уровень не раньше открытия бустера,
+        /// или бустер уже открыт дальше по прогрессу (тогда он есть и при перепрохождении старых уровней).
+        /// </summary>
+        public bool IsBoosterOpen(BoosterType type, int levelId) =>
+            IsUnlocked(type, levelId) || _data.introsShown.Contains((int)type);
+
         public int Stock(BoosterType type)
         {
             switch (type)
@@ -424,7 +431,11 @@ namespace KnittedPicture.Core
 
         // ---------- Ежедневный подарок ----------
 
-        public bool CanClaimDaily(int today) => _data.dailyLastDay != today;
+        /// <summary>
+        /// Подарок можно забрать раз в новый день. Перевод часов на день назад нового подарка не даёт;
+        /// если часы когда-то убежали далеко вперёд, а потом вернулись, подарок не блокируется навсегда.
+        /// </summary>
+        public bool CanClaimDaily(int today) => today > _data.dailyLastDay || _data.dailyLastDay - today > 1;
 
         /// <summary>Какой день недели подарков будет следующим (0..6): пропуск дня начинает заново.</summary>
         public int DailyIndex(int today)
@@ -512,7 +523,12 @@ namespace KnittedPicture.Core
                 _data.stars[levelId - 1] = stars;
             }
 
-            _data.streak++;
+            // Серия растёт и приносит монеты только за новые уровни: перепрохождение старых
+            // не должно превращаться в ферму (повтор и так даёт мало).
+            if (firstTime)
+            {
+                _data.streak++;
+            }
 
             // За новую картинку — моток в корзинку.
             var yarn = new Granted(default, false, 0);
@@ -524,7 +540,7 @@ namespace KnittedPicture.Core
             var reward = new WinReward(
                 firstTime ? Economy.Reward(hard) : Economy.ReplayReward,
                 comboCoins,
-                Economy.StreakBonus(_data.streak),
+                firstTime ? Economy.StreakBonus(_data.streak) : 0,
                 _data.streak,
                 stars,
                 stars > previousStars && !firstTime,

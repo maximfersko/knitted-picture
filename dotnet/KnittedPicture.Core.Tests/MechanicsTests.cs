@@ -19,6 +19,52 @@ namespace KnittedPicture.Core.Tests
         };
 
         [Fact]
+        public void Scissors_get_out_of_a_jam_that_an_extra_slot_cannot_fix()
+        {
+            // Лёд на клубке цвета 1 тает только от петель цвета 1, а их вяжет лишь он сам: тупик.
+            var game = new LoomGame(Strip(
+                new SpoolData { column = 0, color = 0, loops = 4 },
+                new SpoolData { column = 1, color = 1, loops = 4, ice = 4 }));
+            game.TapColumn(0);
+            game.Settle();
+
+            Assert.Equal(GameStatus.Jammed, game.Status);
+            Assert.False(game.SlotWouldHelp);
+            Assert.True(game.ScissorsWouldHelp);
+            Assert.False(game.TapColumn(1).Accepted);
+
+            Assert.True(game.PullSpool(1, 0).Accepted);
+            Assert.Equal(GameStatus.Playing, game.Status);
+            game.Settle();
+            Assert.Equal(GameStatus.Won, game.Status);
+        }
+
+        [Fact]
+        public void Extra_slot_helps_a_full_loom_jam()
+        {
+            var game = new LoomGame(new LevelData
+            {
+                id = 98,
+                width = 2,
+                height = 4,
+                colors = new[] { "#000000", "#FFFFFF" },
+                picture = new[] { "10", "01", "10", "01" },
+                slots = 1,
+                spools = new[]
+                {
+                    new SpoolData { column = 0, color = 0, loops = 4 },
+                    new SpoolData { column = 1, color = 1, loops = 4 },
+                },
+            });
+            game.TapColumn(0);
+            game.Settle();
+
+            Assert.Equal(GameStatus.Jammed, game.Status);
+            Assert.True(game.SlotWouldHelp);
+            Assert.True(game.ScissorsWouldHelp);
+        }
+
+        [Fact]
         public void Hidden_spool_reveals_when_it_reaches_the_front()
         {
             var game = new LoomGame(Strip(

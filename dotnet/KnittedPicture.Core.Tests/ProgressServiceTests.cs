@@ -139,6 +139,35 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Replays_neither_grow_nor_pay_the_win_streak()
+        {
+            var progress = Fresh();
+            progress.CompleteLevel(1, false);
+            progress.CompleteLevel(2, false);
+            Assert.Equal(2, progress.Streak);
+
+            // Повтор старого уровня — не ферма монет: серия не растёт и бонуса нет.
+            var replay = progress.CompleteLevel(1, false);
+            Assert.Equal(0, replay.StreakCoins);
+            Assert.Equal(Economy.ReplayReward, replay.Total);
+            Assert.Equal(2, progress.Streak);
+
+            Assert.Equal(2 * Economy.StreakStep, progress.CompleteLevel(3, false).StreakCoins);
+        }
+
+        [Fact]
+        public void Boosters_opened_later_stay_available_on_old_levels()
+        {
+            var progress = Fresh();
+            Assert.False(progress.IsBoosterOpen(BoosterType.Slot, 3));
+            Assert.True(progress.IsBoosterOpen(BoosterType.Slot, 5));
+
+            progress.TakeBoosterIntro(5);
+            Assert.True(progress.IsBoosterOpen(BoosterType.Slot, 3));
+            Assert.False(progress.IsBoosterOpen(BoosterType.Scissors, 3));
+        }
+
+        [Fact]
         public void Stars_depend_on_help_used()
         {
             Assert.Equal(3, Economy.Stars(boostersUsed: 0, rescues: 0));

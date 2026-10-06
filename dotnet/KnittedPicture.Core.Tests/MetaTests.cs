@@ -141,6 +141,21 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Turning_the_clock_back_a_day_gives_no_extra_daily_gift()
+        {
+            var progress = Fresh();
+            var rng = new Random(1);
+            Assert.NotNull(progress.ClaimDaily(100, rng));
+            Assert.False(progress.CanClaimDaily(100));
+            Assert.False(progress.CanClaimDaily(99));
+            Assert.True(progress.CanClaimDaily(101));
+
+            // Часы когда-то убежали далеко вперёд: после возврата подарок не заблокирован навсегда.
+            Assert.NotNull(progress.ClaimDaily(500, rng));
+            Assert.True(progress.CanClaimDaily(102));
+        }
+
+        [Fact]
         public void Daily_gift_once_a_day_and_streak_resets_after_a_missed_day()
         {
             var progress = Fresh();

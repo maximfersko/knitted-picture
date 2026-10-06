@@ -224,6 +224,27 @@ namespace KnittedPicture.Core
             return result;
         }
 
+        /// <summary>Затор: поможет ли ещё один слот (иначе спасение «+1 слот» бесполезно).</summary>
+        public bool SlotWouldHelp => _slots.Count < MaxSlots && !_grid.IsComplete && CanAct(FreeSlots + 1);
+
+        /// <summary>
+        /// Затор: помогут ли ножницы — достать клубок с поля (хоть замороженный или под замком)
+        /// или срезать клубок со станка, чтобы освободить место для обычного тапа.
+        /// </summary>
+        public bool ScissorsWouldHelp
+        {
+            get
+            {
+                if (_grid.IsComplete || _columns.All(c => c.Count == 0))
+                {
+                    return false;
+                }
+
+                var free = FreeSlots;
+                return _columns.Any(c => c.Any(s => s.Size <= free)) || (free < _slots.Count && CanAct(free + 1));
+            }
+        }
+
         /// <summary>Можно ли сейчас тапнуть колонку обычным тапом.</summary>
         public bool CanTap(int column) => Check(column, 0, false) == RejectReason.None;
 
@@ -233,6 +254,7 @@ namespace KnittedPicture.Core
         /// <summary>
         /// Бустер «Ножницы»: достать клубок с любой глубины колонки.
         /// Ножницы режут узелки, замок, лёд и связку — клубок едет на станок один.
+        /// Работают и при заторе: игра продолжается.
         /// </summary>
         public MoveResult PullSpool(int column, int depth) => Take(column, depth, true);
 
@@ -469,7 +491,7 @@ namespace KnittedPicture.Core
 
         private RejectReason Check(int column, int depth, bool scissors)
         {
-            if (_status != GameStatus.Playing)
+            if (_status != GameStatus.Playing && !(scissors && _status == GameStatus.Jammed))
             {
                 return RejectReason.GameOver;
             }
@@ -535,6 +557,7 @@ namespace KnittedPicture.Core
             var placed = new List<Placement>(2);
             if (scissors)
             {
+                _status = GameStatus.Playing;
                 spool.Knots = 0;
                 spool.Locked = false;
                 spool.Ice = 0;
@@ -699,9 +722,11 @@ namespace KnittedPicture.Core
         }
 
         /// <summary>Есть ли хоть одно действие без бустеров.</summary>
-        private bool CanAct()
+        private bool CanAct() => CanAct(FreeSlots);
+
+        /// <summary>Есть ли действие без бустеров, будь на станке free свободных слотов.</summary>
+        private bool CanAct(int free)
         {
-            var free = FreeSlots;
             if (free == 0)
             {
                 return false;

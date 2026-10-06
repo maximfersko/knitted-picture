@@ -203,7 +203,8 @@ namespace KnittedPicture.Game
         /// <summary>Начать уровень. restart — игрок перезапускает после неудачи: серия побед обрывается.</summary>
         public void StartLevel(int levelId, bool restart = false)
         {
-            if (restart)
+            // Перезапуск нового уровня обрывает серию; перепрохождение старых её не трогает.
+            if (restart && !Progress.IsCompleted(levelId))
             {
                 Progress.BreakStreak();
             }

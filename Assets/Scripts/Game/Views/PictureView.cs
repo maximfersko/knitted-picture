@@ -57,16 +57,10 @@ namespace KnittedPicture.Game
             {
                 for (var x = 0; x < game.Width; x++)
                 {
-                    if (!game.IsGold(x, y))
+                    if (game.IsGold(x, y))
                     {
-                        continue;
+                        AddGoldRing(x, y);
                     }
-
-                    var ring = Ui.Image(Root, "Gold", Art.Ring, Palette.Coin);
-                    Ui.PlaceCenter(ring.rectTransform, x * _step + cell / 2f, y * _step + cell / 2f, cell * 0.9f, cell * 0.9f);
-                    var rt = ring.rectTransform;
-                    Tweens.Run(rt, 1.2f, t => rt.localScale = Vector3.one * (1f + 0.12f * Ease.Bump(t)), null, null, (x + y) * 0.07f, true);
-                    _gold[Key(x, y)] = ring;
                 }
             }
 
@@ -171,6 +165,24 @@ namespace KnittedPicture.Game
                 rt.localScale = Vector3.one * (caught ? 1f + 0.9f * t : 1f - 0.6f * t);
                 ring.color = Palette.WithAlpha(caught ? Palette.Coin : Palette.Ink3, 1f - t);
             }, null, () => Object.Destroy(rt.gameObject));
+        }
+
+        /// <summary>Отмена хода развязала золотую петлю: кольцо возвращается.</summary>
+        public void RestoreGold(int x, int y)
+        {
+            if (_game.IsGold(x, y) && !_gold.ContainsKey(Key(x, y)))
+            {
+                AddGoldRing(x, y);
+            }
+        }
+
+        private void AddGoldRing(int x, int y)
+        {
+            var ring = Ui.Image(Root, "Gold", Art.Ring, Palette.Coin);
+            Ui.PlaceCenter(ring.rectTransform, x * _step + _cell / 2f, y * _step + _cell / 2f, _cell * 0.9f, _cell * 0.9f);
+            var rt = ring.rectTransform;
+            Tweens.Run(rt, 1.2f, t => rt.localScale = Vector3.one * (1f + 0.12f * Ease.Bump(t)), null, null, (x + y) * 0.07f, true);
+            _gold[Key(x, y)] = ring;
         }
 
         /// <summary>Петля связана в модели, нитка летит — клетка пока «в пути».</summary>

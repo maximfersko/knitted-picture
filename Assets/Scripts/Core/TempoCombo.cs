@@ -43,10 +43,10 @@ namespace KnittedPicture.Core
         /// <summary>Сколько осталось до сгорания серии: 1 — станок работает, 0 — серия сгорела.</summary>
         public float Heat => Combo > 0 ? Math.Max(0f, 1f - Idle / Grace) : 0f;
 
-        /// <summary>Клубок встал на станок. Возвращает новую длину серии.</summary>
         /// <summary>Сколько раз за уровень включался «Разгон».</summary>
         public int RushCount { get; private set; }
 
+        /// <summary>Клубок встал на станок. Возвращает новую длину серии.</summary>
         public int OnPlaced()
         {
             Combo++;

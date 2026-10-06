@@ -76,6 +76,9 @@ namespace KnittedPicture.Game
         private int _goldCaught;
         private int _goldCoins;
 
+        /// <summary>Золотые петли, которые уже засчитаны: клетка → поймана ли во время комбо.</summary>
+        private readonly Dictionary<int, bool> _goldDone = new Dictionary<int, bool>();
+
         private RectTransform _fieldContent = null!;
         private RectTransform _fx = null!;
         private Text _coins = null!;
@@ -206,7 +209,7 @@ namespace KnittedPicture.Game
             }
             else if (!_ended)
             {
-                App.ShowPopup(new PausePopup(App, Restart));
+                App.ShowPopup(new PausePopup(App, Restart, LeaveHome));
             }
 
             return true;
@@ -220,7 +223,7 @@ namespace KnittedPicture.Game
             {
                 if (!_ended)
                 {
-                    App.ShowPopup(new PausePopup(App, Restart));
+                    App.ShowPopup(new PausePopup(App, Restart, LeaveHome));
                 }
             });
 
@@ -660,7 +663,7 @@ namespace KnittedPicture.Game
             foreach (var pair in _boosters)
             {
                 var type = pair.Key;
-                var unlocked = App.Progress.IsUnlocked(type, _level.id);
+                var unlocked = App.Progress.IsBoosterOpen(type, _level.id);
                 var available = type == BoosterType.Undo ? _game.CanUndo
                     : type == BoosterType.Slot ? _game.Slots.Count < LoomGame.MaxSlots
                     : true;
@@ -837,6 +840,14 @@ namespace KnittedPicture.Game
 
         private void OnGold(int x, int y, bool caught)
         {
+            // Нитка могла долететь уже после отмены хода, а петля — засчитаться раньше: считаем каждую один раз.
+            var key = y * _game.Width + x;
+            if (!_game.IsKnitted(x, y) || _goldDone.ContainsKey(key))
+            {
+                return;
+            }
+
+            _goldDone[key] = caught;
             _picture.ResolveGold(x, y, caught);
             var at = _picture.CellWorld(x, y);
             if (!caught)
@@ -1089,6 +1100,7 @@ namespace KnittedPicture.Game
             RefreshField();
             RefreshBoosters();
             _coins.text = App.Progress.Coins.ToString();
+            CheckStatus();
         }
 
         private void Deny(int column, int depth, RejectReason reason)
@@ -1168,6 +1180,7 @@ namespace KnittedPicture.Game
         private void OnJam()
         {
             _failShown = true;
+            SetScissors(false);
             HideHint();
             _tempo.Break();
             _hitStop = 0.12f;
@@ -1198,18 +1211,52 @@ namespace KnittedPicture.Game
             Tweens.Delay(Root, 0.45f, () => ShowFail(FailKind.TimeUp));
         }
 
+        /// <summary>
+        /// Окно затора или моли. Спасение предлагается, только если оно правда поможет:
+        /// лишний слот — когда после него есть ход, иначе ножницы (достать клубок изо льда или
+        /// из-под замка, срезать чужую пряжу со станка). Если не поможет ничего — честно «заново».
+        /// </summary>
         private void ShowFail(FailKind kind)
         {
-            var canRescue = kind == FailKind.TimeUp || _game.Slots.Count < LoomGame.MaxSlots;
+            BoosterType? rescue = BoosterType.Time;
+            var reason = "Время вышло. Отгони моль и довяжи картинку";
+            if (kind == FailKind.Jam)
+            {
+                if (_game.SlotWouldHelp)
+                {
+                    rescue = BoosterType.Slot;
+                    reason = "Слоты заняты, а нужного цвета на станке нет";
+                }
+                else if (_game.ScissorsWouldHelp && App.Progress.IsBoosterOpen(BoosterType.Scissors, _level.id))
+                {
+                    rescue = BoosterType.Scissors;
+                    reason = "Ничего не вяжется. Ножницы достанут любой клубок с поля или срежут клубок со станка";
+                }
+                else
+                {
+                    rescue = null;
+                    reason = _game.Slots.Count >= LoomGame.MaxSlots
+                        ? "Станок заполнен до предела. Попробуй ещё раз"
+                        : "Нужной пряжи больше нет. Попробуй ещё раз";
+                }
+            }
+
             var percent = Mathf.FloorToInt(100f * _game.KnittedCount / _game.TotalStitches);
-            App.ShowPopup(new FailPopup(App, kind, canRescue, percent, () => Rescue(kind), Restart));
+            App.ShowPopup(new FailPopup(App, kind, rescue, reason, percent, Rescue, Restart, LeaveHome));
         }
 
-        private void Rescue(FailKind kind)
+        private void Rescue(BoosterType type)
         {
-            _rescues++;
             _failShown = false;
-            if (kind == FailKind.Jam)
+            if (type == BoosterType.Scissors)
+            {
+                // Ножницы оплачиваются, когда ими режут; затор снимается этим ходом.
+                SetScissors(true);
+                return;
+            }
+
+            _rescues++;
+            if (type == BoosterType.Slot)
             {
                 _game.AddSlot();
                 RebuildSlots();
@@ -1235,6 +1282,18 @@ namespace KnittedPicture.Game
             App.StartLevel(_level.id, restart: true);
         }
 
+        /// <summary>Уйти домой посреди уровня — как сдаться: серия побед обрывается (повтор её не трогает).</summary>
+        private void LeaveHome()
+        {
+            if (!_ended && _game.Taps > 0 && !App.Progress.IsCompleted(_level.id))
+            {
+                App.Progress.BreakStreak();
+                App.Save();
+            }
+
+            App.ShowHome();
+        }
+
         // ---------- Бустеры ----------
 
         private void OnBooster(BoosterType type)
@@ -1244,7 +1303,7 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            if (!App.Progress.IsUnlocked(type, _level.id))
+            if (!App.Progress.IsBoosterOpen(type, _level.id))
             {
                 App.Toast($"Откроется на уровне {Economy.UnlockLevel(type)}");
                 return;
@@ -1285,8 +1344,10 @@ namespace KnittedPicture.Game
                         _tempo.Break();
                         _overParShown = OverPar;
                         _finishedColors.Clear();
+                        RestoreUndoneGold();
                         Sfx.Play(Sound.Pick);
                         RefreshAll();
+                        CheckStatus();
                     }
 
                     break;
@@ -1309,12 +1370,48 @@ namespace KnittedPicture.Game
                         RefreshAll();
                         Sfx.Play(Sound.Unlock);
                         Tweens.Scale(_slotFrames[_slotFrames.Length - 1], 0.4f, 1f, 0.3f);
+                        CheckStatus();
                     }
 
                     break;
             }
 
             _coins.text = App.Progress.Coins.ToString();
+        }
+
+        /// <summary>Отмена развязала золотые петли: они снова в игре, а засчитанное за них снимается.</summary>
+        private void RestoreUndoneGold()
+        {
+            foreach (var key in _goldDone.Keys.ToList())
+            {
+                int x = key % _game.Width, y = key / _game.Width;
+                if (!_game.IsKnitted(x, y))
+                {
+                    _goldDone.Remove(key);
+                    _picture.RestoreGold(x, y);
+                }
+            }
+
+            _goldCaught = _goldDone.Values.Count(caught => caught);
+            _goldCoins = _goldCaught * Economy.GoldCoins;
+            RefreshGoals();
+        }
+
+        /// <summary>
+        /// Отмена, ножницы или новый слот меняют состояние вне шага вязки: если после них станок
+        /// встал (или картинка готова), показать это сразу, иначе экран «зависнет» без окна.
+        /// </summary>
+        private void CheckStatus()
+        {
+            if (_ended || _failShown)
+            {
+                return;
+            }
+
+            if (_game.Status == GameStatus.Won || _game.Status == GameStatus.Jammed)
+            {
+                AfterStatus(_game.Status);
+            }
         }
 
         private void NotEnough(BoosterType type)
@@ -1347,6 +1444,13 @@ namespace KnittedPicture.Game
 
             RefreshField();
             RefreshBoosters();
+
+            // Передумал резать, а станок стоит в заторе: вернуть окно затора.
+            if (!on && !_failShown && !_ended && _game.Status == GameStatus.Jammed)
+            {
+                _failShown = true;
+                ShowFail(FailKind.Jam);
+            }
         }
 
         private void HideScissorsBanner()
