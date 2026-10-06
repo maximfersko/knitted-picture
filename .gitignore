@@ -11,6 +11,8 @@
 /[Oo]bj/
 /[Bb]uild/
 /[Bb]uilds/
+# Проект Xcode, который Unity собирает для iPhone
+/[Ii][Oo][Ss]/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 *.log
