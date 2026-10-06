@@ -535,6 +535,32 @@ namespace KnittedPicture.Core
             return Grant(DailyGift.Days[index], rng);
         }
 
+        // ---------- Узор дня ----------
+
+        public bool PatternOpen => _data.nextLevel >= DailyPattern.FromLevel;
+
+        public bool PatternDone(int today) => _data.patternDay == today;
+
+        /// <summary>Дни подряд: сегодняшний или вчерашний узор продолжает серию, пропуск обрывает.</summary>
+        public int PatternStreak(int today) =>
+            _data.patternDay == today || _data.patternDay == today - 1 ? _data.patternStreak : 0;
+
+        /// <summary>Узор дня связан: монеты, а каждый 7-й день подряд — ещё и моток. Повторно в тот же день — ничего.</summary>
+        public Granted? CompletePattern(int today, System.Random rng)
+        {
+            if (!PatternOpen || PatternDone(today))
+            {
+                return null;
+            }
+
+            _data.patternStreak = _data.patternDay == today - 1 ? _data.patternStreak + 1 : 1;
+            _data.patternBest = System.Math.Max(_data.patternBest, _data.patternStreak);
+            _data.patternDay = today;
+            _data.patternsDone++;
+            var yarn = _data.patternStreak % DailyPattern.YarnEvery == 0 ? DailyGift.RandomYarn : -1;
+            return Grant(new Reward(DailyPattern.RewardCoins, null, 0, yarn), rng);
+        }
+
         // ---------- Задания дня ----------
 
         public bool MissionsOpen => _data.nextLevel >= DailyMissions.FromLevel;

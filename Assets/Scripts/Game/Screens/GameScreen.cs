@@ -295,7 +295,7 @@ namespace KnittedPicture.Game
                 }
             });
 
-            var text = _level.hard ? $"Уровень {_level.id} · сложный" : $"Уровень {_level.id}";
+            var text = _run.Pattern ? "Узор дня" : _level.hard ? $"Уровень {_level.id} · сложный" : $"Уровень {_level.id}";
             var hasTip = !string.IsNullOrEmpty(_level.tip);
             var width = (_level.hard ? 200f : 140f) + (hasTip ? 22f : 0f);
             var pill = Ui.Card(Root, "Level", W / 2f - width / 2f, 8, width, 44, 22,
@@ -562,9 +562,12 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>Уровень, по которому открыты бустеры: у «узора дня» — текущий уровень кампании.</summary>
+        private int BoosterLevel => _run.Pattern ? App.Progress.CurrentLevel : _level.id;
+
         /// <summary>Серия есть и уровень новый: перезапуск или уход её обнулят — честно предупредить.</summary>
         private string? StreakWarning() =>
-            App.Progress.Streak > 0 && !App.Progress.IsCompleted(_level.id)
+            !_run.Pattern && App.Progress.Streak > 0 && !App.Progress.IsCompleted(_level.id)
                 ? $"«Заново» или «Домой» обнулят тёплую серию ×{App.Progress.Streak}"
                 : null;
 
@@ -775,7 +778,7 @@ namespace KnittedPicture.Game
             foreach (var pair in _boosters)
             {
                 var type = pair.Key;
-                var unlocked = App.Progress.IsBoosterOpen(type, _level.id);
+                var unlocked = App.Progress.IsBoosterOpen(type, BoosterLevel);
                 var available = type == BoosterType.Undo ? _game.CanUndo
                     : type == BoosterType.Slot ? _game.Slots.Count < LoomGame.MaxSlots
                     : true;
@@ -1296,7 +1299,17 @@ namespace KnittedPicture.Game
                     var stars = Economy.Stars(_boostersUsed, _rescues, OverPar);
                     var stats = new LevelStats(_tempo.RushCoins, _goldCoins, _goldCaught, _level.gold.Length, _game.Taps, _game.Par,
                         _tempo.Best, _boostersUsed > 0 || _rescues > 0, _game.TotalStitches, _tempo.RushCount);
-                    Tweens.Delay(Root, 0.45f, () => App.OnLevelWon(_level, stars, stats));
+                    Tweens.Delay(Root, 0.45f, () =>
+                    {
+                        if (_run.Pattern)
+                        {
+                            App.OnPatternWon(_level, stars, stats);
+                        }
+                        else
+                        {
+                            App.OnLevelWon(_level, stars, stats);
+                        }
+                    });
                 });
             });
         }
@@ -1351,7 +1364,7 @@ namespace KnittedPicture.Game
                     rescue = BoosterType.Slot;
                     reason = "Слоты заняты, а нужного цвета на станке нет";
                 }
-                else if (_game.ScissorsWouldHelp && App.Progress.IsBoosterOpen(BoosterType.Scissors, _level.id))
+                else if (_game.ScissorsWouldHelp && App.Progress.IsBoosterOpen(BoosterType.Scissors, BoosterLevel))
                 {
                     rescue = BoosterType.Scissors;
                     reason = "Ничего не вяжется. Ножницы достанут любой клубок с поля или срежут клубок со станка";
@@ -1404,13 +1417,20 @@ namespace KnittedPicture.Game
 
         private void Restart()
         {
-            App.StartLevel(_level.id, restart: true);
+            if (_run.Pattern)
+            {
+                App.StartPattern();
+            }
+            else
+            {
+                App.StartLevel(_level.id, restart: true);
+            }
         }
 
         /// <summary>Уйти домой посреди уровня — как сдаться: серия побед обрывается (повтор её не трогает).</summary>
         private void LeaveHome()
         {
-            if (!_ended && _game.Taps > 0 && !App.Progress.IsCompleted(_level.id))
+            if (!_run.Pattern && !_ended && _game.Taps > 0 && !App.Progress.IsCompleted(_level.id))
             {
                 App.Progress.BreakStreak();
                 App.Save();
@@ -1428,7 +1448,7 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            if (!App.Progress.IsBoosterOpen(type, _level.id))
+            if (!App.Progress.IsBoosterOpen(type, BoosterLevel))
             {
                 App.Toast($"Откроется на уровне {Economy.UnlockLevel(type)}");
                 return;
@@ -1998,5 +2018,8 @@ namespace KnittedPicture.Game
         public int FreeScissors { get; set; }
 
         public int FreeUndo { get; set; }
+
+        /// <summary>Это «Узор дня», а не уровень кампании: своя награда, серия кампании не трогается.</summary>
+        public bool Pattern { get; set; }
     }
 }

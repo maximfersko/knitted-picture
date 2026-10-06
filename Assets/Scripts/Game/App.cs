@@ -248,6 +248,50 @@ namespace KnittedPicture.Game
             }
         }
 
+        private int _patternDay = int.MinValue;
+        private LevelData? _todayPattern;
+
+        /// <summary>Сегодняшний «Узор дня»: строится один раз за день (картинка альбома по дате, клубки заново).</summary>
+        public LevelData TodayPattern()
+        {
+            if (_todayPattern == null || _patternDay != Today)
+            {
+                var index = DailyPattern.PictureIndex(Today, Levels.Count);
+                _todayPattern = DailyPattern.Build(Levels.Get(index + 1), Today);
+                _patternDay = Today;
+            }
+
+            return _todayPattern;
+        }
+
+        /// <summary>Начать «Узор дня». Серия кампании и «тёплый старт» его не касаются.</summary>
+        public void StartPattern()
+        {
+            var level = TodayPattern();
+            var game = new LoomGame(level);
+            var run = new LevelRun { Pattern = true };
+            Show(() => new GameScreen(this, level, game, run));
+        }
+
+        /// <summary>Узор связан: награда (раз в день), задания дня засчитываются, назад на главную с окном награды.</summary>
+        public void OnPatternWon(LevelData level, int stars, LevelStats stats)
+        {
+            Progress.RecordMissions(Today, stars, !stats.Helped, stats.GoldCaught, stats.Rushes, stats.BestCombo, stats.Stitches);
+            Progress.RecordLevel(stats.Stitches, stats.Rushes, stats.GoldCaught, stats.BestCombo);
+            var granted = Progress.CompletePattern(Today, Random);
+            Save();
+            ShowHome();
+            if (granted != null)
+            {
+                var streak = Progress.PatternStreak(Today);
+                ShowPopup(new RewardPopup(this, streak > 1 ? $"Узор дня · {streak} дн. подряд" : "Узор дня", Icon.Star, granted.Value, ShowHome));
+            }
+            else
+            {
+                Toast("Узор дня уже связан. Новый будет завтра");
+            }
+        }
+
         public void OnLevelWon(LevelData level, int stars, LevelStats stats)
         {
             var pendingBefore = Progress.PendingClaims;

@@ -50,6 +50,12 @@ namespace KnittedPicture.Core
         public int dailyStreak;
         public int dailyBest;
 
+        /// <summary>«Узор дня»: последний связанный день, дни подряд, лучшая серия и сколько узоров всего.</summary>
+        public int patternDay = -10;
+        public int patternStreak;
+        public int patternBest;
+        public int patternsDone;
+
         /// <summary>Задания дня: на какой день выбраны, какие (вид и цель), сколько сделано, забрана ли награда.</summary>
         public int missionDay = -10;
         public List<int> missionKinds = new List<int>();

@@ -388,22 +388,73 @@ namespace KnittedPicture.Game
             button.OnClick(action);
         }
 
+        /// <summary>
+        /// Кнопка «Узор дня»: эскиз сегодняшней картинки, подпись и серия дней. Не связан сегодня —
+        /// красная точка; связан — галочка и «завтра новый», тап объясняет, когда ждать следующий.
+        /// </summary>
+        private void BuildPattern(float x, float y, float size)
+        {
+            var progress = App.Progress;
+            var done = progress.PatternDone(App.Today);
+            var streak = progress.PatternStreak(App.Today);
+            var card = Ui.Card(Root, "Pattern", x, y, size, size, 22, done ? Palette.Surface : Palette.Card, Palette.CardShadow, 5f, true);
+            var level = App.TodayPattern();
+            var frame = Ui.Box(card, "Preview", 10, Palette.Surface).rectTransform;
+            Ui.PlaceCenter(frame, size / 2f, 30, 44, 44);
+            MiniPicture.Create(frame, level, 22, 22, 38, faded: !done);
+            if (done)
+            {
+                var mark = Ui.Image(card, "Done", Art.Circle, Palette.Primary);
+                Ui.PlaceCenter(mark.rectTransform, size / 2f + 20, 48, 20, 20);
+                Ui.IconImage(card, Icon.Check, Color.white, size / 2f + 20, 48, 12);
+            }
+            else
+            {
+                Ui.Badge(card, size - 10, 8, 0);
+            }
+
+            Ui.Fit(Ui.Label(card, "Узор дня", 12, Palette.Ink, 2, 56, size - 4, 16), 9);
+            Ui.Fit(Ui.Label(card, streak > 0 ? $"серия {streak} дн." : "новый!", 11, streak > 0 ? Palette.CoinShadow : Palette.Danger, 2, 70, size - 4, 14,
+                streak > 0), 8);
+            card.gameObject.AddComponent<Tap>().OnClick(() =>
+            {
+                if (progress.PatternDone(App.Today))
+                {
+                    App.ShowPopup(new InfoPopup(App, "Узор дня связан",
+                        $"Новый узор появится завтра. Серия: {progress.PatternStreak(App.Today)} дн. подряд, каждый {DailyPattern.YarnEvery}-й день — моток в подарок."));
+                    return;
+                }
+
+                App.StartPattern();
+            });
+        }
+
         /// <summary>«Играть» с эскизом следующей картинки — видно, ради чего идёшь дальше.</summary>
         private void BuildPlay()
         {
             var progress = App.Progress;
             var buttonY = H - 24f - 84f;
+
+            // «Узор дня» — квадратная кнопка справа от «Играть»: новый повод зайти каждый день.
+            var playW = W - 40;
+            if (progress.PatternOpen)
+            {
+                const float size = 84f;
+                playW -= size + 10f;
+                BuildPattern(W - 20 - size, buttonY, size);
+            }
+
             if (progress.AllDone)
             {
-                var done = Ui.Button(Root, "", 20, buttonY, W - 40, 84, Palette.Primary, Palette.PrimaryShadow, Color.white);
-                Ui.Label((RectTransform)done.transform, "Все картинки связаны!", 22, Color.white, 0, 14, W - 40, 30);
-                Ui.Label((RectTransform)done.transform, "Собирай звёзды и пряжу в коллекциях", 14, Color.white, 0, 46, W - 40, 22, false);
+                var done = Ui.Button(Root, "", 20, buttonY, playW, 84, Palette.Primary, Palette.PrimaryShadow, Color.white);
+                Ui.Fit(Ui.Label((RectTransform)done.transform, "Все картинки связаны!", 22, Color.white, 8, 14, playW - 16, 30), 14);
+                Ui.Fit(Ui.Label((RectTransform)done.transform, "Собирай звёзды и пряжу в коллекциях", 14, Color.white, 8, 46, playW - 16, 22, false), 10);
                 done.OnClick(App.ShowAlbum);
                 return;
             }
 
             var level = progress.CurrentLevel;
-            var play = Ui.Button(Root, "", 20, buttonY, W - 40, 84, Palette.Primary, Palette.PrimaryShadow, Color.white);
+            var play = Ui.Button(Root, "", 20, buttonY, playW, 84, Palette.Primary, Palette.PrimaryShadow, Color.white);
             var face = (RectTransform)play.transform;
             if (App.Levels.Has(level))
             {
@@ -417,9 +468,9 @@ namespace KnittedPicture.Game
                 }
             }
 
-            Ui.Label(face, "Играть", 28, Color.white, 76, 12, W - 40 - 88, 36);
+            Ui.Fit(Ui.Label(face, "Играть", 28, Color.white, 76, 12, playW - 88, 36), 18);
             var hard = App.Levels.Has(level) && App.Levels.Get(level).hard;
-            Ui.Label(face, hard ? $"Уровень {level} · сложный" : $"Уровень {level}", 15, Color.white, 76, 46, W - 40 - 88, 22, false);
+            Ui.Fit(Ui.Label(face, hard ? $"Уровень {level} · сложный" : $"Уровень {level}", 15, Color.white, 76, 46, playW - 88, 22, false), 10);
             play.OnClick(() => App.StartLevel(level));
             Tweens.Run(play, 1.6f, t => play.transform.localScale = Vector3.one * (1f + 0.025f * Ease.Bump(t)), null, null, 0.6f, true);
         }

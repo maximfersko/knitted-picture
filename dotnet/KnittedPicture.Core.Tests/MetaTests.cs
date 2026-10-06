@@ -280,6 +280,30 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Pattern_of_the_day_pays_once_a_day_and_counts_days_in_a_row()
+        {
+            var progress = Fresh();
+            Assert.Null(progress.CompletePattern(400, new Random(1)));
+
+            progress.Data.nextLevel = DailyPattern.FromLevel;
+            var coins = progress.Coins;
+            Assert.NotNull(progress.CompletePattern(400, new Random(1)));
+            Assert.Equal(coins + DailyPattern.RewardCoins, progress.Coins);
+            Assert.True(progress.PatternDone(400));
+            Assert.Null(progress.CompletePattern(400, new Random(1)));
+
+            for (var day = 401; day <= 406; day++)
+            {
+                var granted = progress.CompletePattern(day, new Random(day));
+                Assert.Equal(day == 406, granted!.Value.Reward.Yarn >= 0);
+            }
+
+            Assert.Equal(7, progress.PatternStreak(406));
+            Assert.Equal(7, progress.PatternStreak(407));
+            Assert.Equal(0, progress.PatternStreak(408));
+        }
+
+        [Fact]
         public void Daily_gift_once_a_day_and_a_missed_day_only_pauses_the_week()
         {
             var progress = Fresh();

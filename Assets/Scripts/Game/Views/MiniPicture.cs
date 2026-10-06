@@ -21,7 +21,8 @@ namespace KnittedPicture.Game
 
         public static RawImage Create(RectTransform parent, LevelData level, float cx, float cy, float size, bool faded = false)
         {
-            var key = level.id + (faded ? "f" : "");
+            // У «узора дня» номер один на все дни — ключ включает и картинку, чтобы не показать вчерашнюю.
+            var key = level.id + ":" + level.name + (faded ? "f" : "");
             if (!Textures.TryGetValue(key, out var texture) || texture == null)
             {
                 texture = Art.PictureTexture(level, done: !faded);
