@@ -72,6 +72,12 @@ namespace KnittedPicture.Game
 
         public bool HasPopups => _popups.Count > 0;
 
+        /// <summary>Сегодняшний день (с 1970 года) по местному времени — для подарка дня.</summary>
+        public int Today => (int)(DateTime.Now.Date - new DateTime(1970, 1, 1)).TotalDays;
+
+        /// <summary>Случай для наград: мотки, сундуки.</summary>
+        public System.Random Random { get; } = new System.Random();
+
         private void Awake()
         {
             Instance = this;
@@ -94,6 +100,12 @@ namespace KnittedPicture.Game
             if (Progress.Data.introSeen)
             {
                 ShowHome();
+
+                // Подарок дня встречает игрока сразу при входе — повод заходить каждый день.
+                if (Progress.CanClaimDaily(Today) && Progress.Data.completed.Count > 0)
+                {
+                    ShowPopup(new DailyGiftPopup(this, ShowHome));
+                }
             }
             else
             {
@@ -142,7 +154,9 @@ namespace KnittedPicture.Game
 
         public void ShowHome() => Show(() => new HomeScreen(this));
 
-        public void ShowAlbum() => Show(() => new AlbumScreen(this));
+        public void ShowAlbum() => ShowCollections(CollectionsTab.Album);
+
+        public void ShowCollections(CollectionsTab tab) => Show(() => new CollectionsScreen(this, tab));
 
         /// <summary>Вступление «как играть»: на первом запуске и из настроек.</summary>
         public void ShowIntro() => Show(() => new IntroScreen(this));
@@ -189,9 +203,13 @@ namespace KnittedPicture.Game
 
         public void OnLevelWon(LevelData level, int stars, LevelStats stats)
         {
+            var pendingBefore = Progress.PendingClaims;
+            var chestBefore = Progress.CanOpenChest;
+            Progress.RecordLevel(stats.Stitches, stats.Rushes, stats.GoldCaught, stats.BestCombo);
             var reward = Progress.CompleteLevel(level.id, level.hard, stars, stats.RushCoins + stats.GoldCoins);
             Save();
-            Show(() => new WinScreen(this, level, reward, stats));
+            var news = new WinNews(Progress.PendingClaims > pendingBefore, Progress.CanOpenChest && !chestBefore);
+            Show(() => new WinScreen(this, level, reward, stats, news));
         }
 
         /// <summary>«Дальше» после победы: при необходимости реклама, потом следующий уровень.</summary>

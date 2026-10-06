@@ -1,7 +1,7 @@
 {
   "id": 3,
   "name": "Мухомор",
-  "tip": "Клубки на станке вяжут вместе и открывают друг другу новые клетки",
+  "tip": "Пряжи цвета ткани в рисунке нет: такой клубок займёт место на станке насовсем",
   "hard": false,
   "timeLimit": 0,
   "palette": [
@@ -41,6 +41,7 @@
     "glglgglg"
   ],
   "fabric": "g",
+  "band": 0,
   "mystery": false,
   "gold": 0,
   "slots": 4,
@@ -55,9 +56,11 @@
   "thick": 0,
   "ice": 0,
   "extra": 0,
+  "junk": 1,
   "parSlack": 1,
   "minWin": 0.7,
   "maxWin": 0.92,
+  "maxRandom": 0.6,
   "maxForced": 1.0,
   "minDanger": 0.0,
   "maxDanger": 1.0,

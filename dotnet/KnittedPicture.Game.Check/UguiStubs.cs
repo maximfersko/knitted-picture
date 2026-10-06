@@ -148,4 +148,36 @@ namespace UnityEngine.UI
     public class GraphicRaycaster : BaseRaycaster
     {
     }
+
+    public class ScrollRect : UIBehaviour
+    {
+        public enum MovementType
+        {
+            Unrestricted,
+            Elastic,
+            Clamped,
+        }
+
+        public RectTransform content { get; set; }
+
+        public RectTransform viewport { get; set; }
+
+        public bool horizontal { get; set; }
+
+        public bool vertical { get; set; }
+
+        public MovementType movementType { get; set; }
+
+        public bool inertia { get; set; }
+
+        public float decelerationRate { get; set; }
+
+        public float scrollSensitivity { get; set; }
+
+        public float verticalNormalizedPosition { get; set; }
+    }
+
+    public class RectMask2D : UIBehaviour
+    {
+    }
 }

@@ -133,6 +133,316 @@ namespace KnittedPicture.Core
             _data.streak = 0;
         }
 
+        // ---------- Статистика и достижения ----------
+
+        public int TotalStars
+        {
+            get
+            {
+                var total = 0;
+                foreach (var s in _data.stars)
+                {
+                    total += s;
+                }
+
+                return total;
+            }
+        }
+
+        public int ThreeStarLevels
+        {
+            get
+            {
+                var count = 0;
+                foreach (var s in _data.stars)
+                {
+                    if (s >= 3)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
+
+        public int CompletedCollections
+        {
+            get
+            {
+                var count = 0;
+                foreach (var collection in Collections.All)
+                {
+                    if (IsCollectionDone(collection))
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
+
+        /// <summary>Записать итоги пройденного уровня в счётчики достижений.</summary>
+        public void RecordLevel(int stitches, int rushes, int goldCaught, int bestCombo)
+        {
+            _data.totalStitches += stitches;
+            _data.rushCount += rushes;
+            _data.goldCaught += goldCaught;
+            _data.bestCombo = System.Math.Max(_data.bestCombo, bestCombo);
+        }
+
+        public int AchievementValue(AchievementInfo a) => System.Math.Min(a.Value(this), a.Target);
+
+        public bool IsAchievementDone(AchievementInfo a) => a.Value(this) >= a.Target;
+
+        public bool IsAchievementClaimed(AchievementInfo a) => _data.achievementsClaimed.Contains(a.Id);
+
+        public bool CanClaimAchievement(AchievementInfo a) => IsAchievementDone(a) && !IsAchievementClaimed(a);
+
+        public Granted? ClaimAchievement(AchievementInfo a, System.Random rng)
+        {
+            if (!CanClaimAchievement(a))
+            {
+                return null;
+            }
+
+            _data.achievementsClaimed.Add(a.Id);
+            return Grant(a.Reward, rng);
+        }
+
+        // ---------- Награды ----------
+
+        /// <summary>Выдать награду. Случайный моток разыгрывается здесь; повтор превращается в монеты.</summary>
+        public Granted Grant(Reward reward, System.Random rng)
+        {
+            _data.coins += reward.Coins;
+            if (reward.Booster != null)
+            {
+                AddStock(reward.Booster.Value, reward.BoosterCount);
+            }
+
+            var yarn = reward.Yarn == DailyGift.RandomYarn ? RollYarn(rng) : reward.Yarn;
+            var granted = new Reward(reward.Coins, reward.Booster, reward.BoosterCount, yarn);
+            if (yarn < 0)
+            {
+                return new Granted(granted, false, 0);
+            }
+
+            var isNew = AddYarn(yarn);
+            var duplicate = isNew ? 0 : YarnCatalog.DuplicateCoins(YarnCatalog.All[yarn].Rarity);
+            _data.coins += duplicate;
+            return new Granted(granted, isNew, duplicate);
+        }
+
+        // ---------- Корзинка пряжи ----------
+
+        public int YarnCount(int yarn) => yarn >= 0 && yarn < _data.yarns.Count ? _data.yarns[yarn] : 0;
+
+        public bool HasYarn(int yarn) => YarnCount(yarn) > 0;
+
+        public int YarnKinds
+        {
+            get
+            {
+                var kinds = 0;
+                for (var i = 0; i < YarnCatalog.Count; i++)
+                {
+                    if (HasYarn(i))
+                    {
+                        kinds++;
+                    }
+                }
+
+                return kinds;
+            }
+        }
+
+        /// <summary>Положить моток в корзинку. true — такого ещё не было.</summary>
+        public bool AddYarn(int yarn)
+        {
+            while (_data.yarns.Count <= yarn)
+            {
+                _data.yarns.Add(0);
+            }
+
+            _data.yarns[yarn]++;
+            return _data.yarns[yarn] == 1;
+        }
+
+        /// <summary>Случайный моток: редкие выпадают реже, недостающие — втрое чаще.</summary>
+        public int RollYarn(System.Random rng)
+        {
+            var total = 0;
+            var weights = new int[YarnCatalog.Count];
+            for (var i = 0; i < weights.Length; i++)
+            {
+                weights[i] = YarnCatalog.Weight(YarnCatalog.All[i].Rarity) * (HasYarn(i) ? 1 : 3);
+                total += weights[i];
+            }
+
+            var roll = rng.Next(total);
+            for (var i = 0; i < weights.Length; i++)
+            {
+                roll -= weights[i];
+                if (roll < 0)
+                {
+                    return i;
+                }
+            }
+
+            return weights.Length - 1;
+        }
+
+        public bool IsSetDone(YarnSet set)
+        {
+            for (var i = set.First; i < set.First + set.Count; i++)
+            {
+                if (!HasYarn(i))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public bool CanClaimSet(YarnSet set) => IsSetDone(set) && !_data.yarnSetsClaimed.Contains(set.Id);
+
+        public bool IsSetClaimed(YarnSet set) => _data.yarnSetsClaimed.Contains(set.Id);
+
+        public Granted? ClaimSet(YarnSet set, System.Random rng)
+        {
+            if (!CanClaimSet(set))
+            {
+                return null;
+            }
+
+            _data.yarnSetsClaimed.Add(set.Id);
+            return Grant(set.Reward, rng);
+        }
+
+        // ---------- Коллекции альбома ----------
+
+        public static readonly Reward CollectionReward = new Reward(100, BoosterType.Slot, 1, DailyGift.RandomYarn);
+
+        public bool IsCollectionDone(CollectionInfo collection)
+        {
+            for (var id = collection.FirstLevel; id <= collection.LastLevel; id++)
+            {
+                if (!IsCompleted(id))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public bool CanClaimCollection(int index) =>
+            index >= 0 && index < Collections.All.Length && IsCollectionDone(Collections.All[index]) && !_data.collectionsClaimed.Contains(index);
+
+        public bool IsCollectionClaimed(int index) => _data.collectionsClaimed.Contains(index);
+
+        public Granted? ClaimCollection(int index, System.Random rng)
+        {
+            if (!CanClaimCollection(index))
+            {
+                return null;
+            }
+
+            _data.collectionsClaimed.Add(index);
+            return Grant(CollectionReward, rng);
+        }
+
+        // ---------- Звёздный сундук ----------
+
+        /// <summary>Сколько звёзд нужно на сундук.</summary>
+        public const int ChestEvery = 12;
+
+        /// <summary>Звёзды к следующему сундуку (могут быть больше ChestEvery, если сундук не открыт).</summary>
+        public int ChestProgress => System.Math.Max(0, TotalStars - _data.chestsOpened * ChestEvery);
+
+        public bool CanOpenChest => ChestProgress >= ChestEvery;
+
+        public Granted? OpenChest(System.Random rng)
+        {
+            if (!CanOpenChest)
+            {
+                return null;
+            }
+
+            _data.chestsOpened++;
+            var boosters = new[] { BoosterType.Slot, BoosterType.Scissors, BoosterType.Undo };
+            var reward = new Reward(60 + 10 * rng.Next(5), boosters[rng.Next(boosters.Length)], 1, DailyGift.RandomYarn);
+            return Grant(reward, rng);
+        }
+
+        // ---------- Ежедневный подарок ----------
+
+        public bool CanClaimDaily(int today) => _data.dailyLastDay != today;
+
+        /// <summary>Какой день недели подарков будет следующим (0..6): пропуск дня начинает заново.</summary>
+        public int DailyIndex(int today)
+        {
+            var continues = _data.dailyLastDay == today - 1 || _data.dailyLastDay == today;
+            var streak = continues ? _data.dailyStreak : 0;
+            if (_data.dailyLastDay == today)
+            {
+                streak--;
+            }
+
+            return ((streak % DailyGift.Days.Length) + DailyGift.Days.Length) % DailyGift.Days.Length;
+        }
+
+        public Granted? ClaimDaily(int today, System.Random rng)
+        {
+            if (!CanClaimDaily(today))
+            {
+                return null;
+            }
+
+            var index = DailyIndex(today);
+            _data.dailyStreak = _data.dailyLastDay == today - 1 ? _data.dailyStreak + 1 : 1;
+            _data.dailyBest = System.Math.Max(_data.dailyBest, _data.dailyStreak);
+            _data.dailyLastDay = today;
+            return Grant(DailyGift.Days[index], rng);
+        }
+
+        /// <summary>Сколько наград ждёт в коллекциях: достижения, наборы пряжи, коллекции альбома.</summary>
+        public int PendingClaims
+        {
+            get
+            {
+                var count = 0;
+                foreach (var a in Achievements.All)
+                {
+                    if (CanClaimAchievement(a))
+                    {
+                        count++;
+                    }
+                }
+
+                foreach (var set in YarnCatalog.Sets)
+                {
+                    if (CanClaimSet(set))
+                    {
+                        count++;
+                    }
+                }
+
+                for (var i = 0; i < Collections.All.Length; i++)
+                {
+                    if (CanClaimCollection(i))
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
+
         /// <summary>Засчитать победу и начислить награду.</summary>
         public WinReward CompleteLevel(int levelId, bool hard, int stars = 3, int comboCoins = 0)
         {
@@ -159,14 +469,25 @@ namespace KnittedPicture.Core
             }
 
             _data.streak++;
+
+            // За новую картинку — моток в корзинку.
+            var yarn = new Granted(default, false, 0);
+            if (firstTime)
+            {
+                yarn = Grant(new Reward(0, null, 0, DailyGift.RandomYarn), new System.Random(levelId * 97 + _data.totalWins));
+            }
+
             var reward = new WinReward(
                 firstTime ? Economy.Reward(hard) : Economy.ReplayReward,
                 comboCoins,
                 Economy.StreakBonus(_data.streak),
                 _data.streak,
                 stars,
-                stars > previousStars && !firstTime);
-            _data.coins += reward.Total;
+                stars > previousStars && !firstTime,
+                firstTime ? yarn.Reward.Yarn : -1,
+                yarn.NewYarn,
+                yarn.DuplicateCoins);
+            _data.coins += reward.BaseCoins + reward.ComboCoins + reward.StreakCoins;
             _data.totalWins++;
             _data.winsSinceInterstitial++;
             return reward;
@@ -188,8 +509,12 @@ namespace KnittedPicture.Core
     /// <summary>Из чего сложилась награда за победу — экран победы показывает строки.</summary>
     public readonly struct WinReward
     {
-        public WinReward(int baseCoins, int comboCoins, int streakCoins, int streak, int stars, bool newRecord)
+        public WinReward(int baseCoins, int comboCoins, int streakCoins, int streak, int stars, bool newRecord,
+            int yarn = -1, bool newYarn = false, int yarnCoins = 0)
         {
+            Yarn = yarn;
+            NewYarn = newYarn;
+            YarnCoins = yarnCoins;
             BaseCoins = baseCoins;
             ComboCoins = comboCoins;
             StreakCoins = streakCoins;
@@ -211,6 +536,14 @@ namespace KnittedPicture.Core
         /// <summary>Перепрошёл уровень лучше прежнего.</summary>
         public bool NewRecord { get; }
 
-        public int Total => BaseCoins + ComboCoins + StreakCoins;
+        /// <summary>Моток за новую картинку, -1 — без мотка.</summary>
+        public int Yarn { get; }
+
+        public bool NewYarn { get; }
+
+        /// <summary>Монеты за повторный моток (уже начислены вместе с ним).</summary>
+        public int YarnCoins { get; }
+
+        public int Total => BaseCoins + ComboCoins + StreakCoins + YarnCoins;
     }
 }

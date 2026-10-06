@@ -1,7 +1,7 @@
 {
   "id": 3,
   "name": "Мухомор",
-  "tip": "Клубки на станке вяжут вместе и открывают друг другу новые клетки",
+  "tip": "Пряжи цвета ткани в рисунке нет: такой клубок займёт место на станке насовсем",
   "width": 8,
   "height": 8,
   "colors": [
@@ -33,54 +33,69 @@
     "10101101"
   ],
   "gold": [],
+  "par": 14,
   "slots": 4,
   "spools": [
     {
-      "color": 4,
-      "loops": 3
-    },
-    {
-      "color": 2,
-      "loops": 1
-    },
-    {
       "color": 1,
-      "loops": 1
+      "loops": 2
     },
     {
-      "column": 1,
       "color": 5,
       "loops": 3
     },
     {
+      "color": 4,
+      "loops": 4
+    },
+    {
       "column": 1,
       "color": 3,
-      "loops": 3
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 2
     },
     {
       "column": 2,
       "color": 4,
-      "loops": 6
+      "loops": 5
     },
     {
       "column": 2,
+      "color": 1,
+      "loops": 2
+    },
+    {
+      "column": 2,
+      "loops": 3
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 3,
+      "color": 2,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 2
+    },
+    {
+      "column": 3,
       "color": 2,
       "loops": 2
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 2
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 9
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 3
     }
   ]
 }

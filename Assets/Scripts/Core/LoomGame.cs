@@ -174,11 +174,36 @@ namespace KnittedPicture.Core
         public bool HasWork(Spool spool) =>
             spool.Rainbow ? !_grid.IsComplete : _grid.FindTarget(spool.Color) >= 0;
 
-        /// <summary>Лишняя пряжа: этот цвет в картинке уже кончился.</summary>
-        public bool IsSurplus(Spool spool) => !spool.Rainbow && _grid.Left(spool.Color) == 0;
+        /// <summary>Лишняя пряжа: этот цвет был в рисунке, но уже довязан — клубок уйдёт со станка.</summary>
+        public bool IsSurplus(Spool spool) => !spool.Rainbow && _grid.TotalOf(spool.Color) > 0 && _grid.Left(spool.Color) == 0;
+
+        /// <summary>
+        /// Чужая пряжа: этого цвета в рисунке нет вовсе (например, цвет ткани).
+        /// На станке такой клубок занимает слот, пока его не срежут ножницами.
+        /// </summary>
+        public bool IsForeign(Spool spool) => !spool.Rainbow && _grid.TotalOf(spool.Color) == 0;
 
         /// <summary>Цвета, которые прямо сейчас можно вязать хоть в одном столбце.</summary>
-        public HashSet<int> FrontColors() => SoonColors(1);
+        public HashSet<int> FrontColors()
+        {
+            var result = new HashSet<int>();
+            for (var x = 0; x < Width; x++)
+            {
+                var y = _grid.ActiveFrontY(x);
+                if (y >= 0)
+                {
+                    result.Add(_grid.ColorAt(x, y));
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Фронт столбца, если его можно вязать прямо сейчас (натяжение полотна), иначе -1.</summary>
+        public int ActiveFrontY(int x) => _grid.ActiveFrontY(x);
+
+        /// <summary>Натяжение полотна: на сколько рядов фронт может обогнать самый нижний. 0 — без ограничения.</summary>
+        public int Band => _grid.Band;
 
         /// <summary>Цвета на фронте и сразу за ним — для подсказок и ботов.</summary>
         public HashSet<int> SoonColors(int depth)
@@ -343,6 +368,24 @@ namespace KnittedPicture.Core
                 _status = GameStatus.Playing;
                 Reevaluate();
             }
+        }
+
+        /// <summary>
+        /// Ножницы по станку: срезать клубок со слота (например, чужую пряжу).
+        /// Можно и при заторе — тогда игра продолжается.
+        /// </summary>
+        public bool CutFromLoom(int slot)
+        {
+            if ((_status != GameStatus.Playing && _status != GameStatus.Jammed) || slot < 0 || slot >= _slots.Count || _slots[slot] == null)
+            {
+                return false;
+            }
+
+            SaveSnapshot();
+            Free(_slots[slot]!);
+            _status = GameStatus.Playing;
+            Reevaluate();
+            return true;
         }
 
         /// <summary>Отменить последний ход (бустер «Отменить»): вместе с ним откатывается и связанное после него.</summary>

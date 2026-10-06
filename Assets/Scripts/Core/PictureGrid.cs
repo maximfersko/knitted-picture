@@ -24,10 +24,11 @@ namespace KnittedPicture.Core
         private int[] _done;
         private int[] _leftByColor;
 
-        public PictureGrid(int width, int height, string[] picture, string[]? canvas)
+        public PictureGrid(int width, int height, string[] picture, string[]? canvas, int band = 0)
         {
             Width = width;
             Height = height;
+            Band = band;
             _pixels = new int[width * height];
             _fabric = new bool[width * height];
             var colors = 0;
@@ -80,6 +81,7 @@ namespace KnittedPicture.Core
 
         private PictureGrid(PictureGrid other)
         {
+            Band = other.Band;
             Width = other.Width;
             Height = other.Height;
             Total = other.Total;
@@ -97,6 +99,12 @@ namespace KnittedPicture.Core
 
         public int Height { get; }
 
+        /// <summary>
+        /// Натяжение полотна: столбец вяжется, только если его фронт не выше самого нижнего
+        /// фронта больше чем на столько рядов. 0 — без ограничения.
+        /// </summary>
+        public int Band { get; }
+
         /// <summary>Сколько клеток рисунка нужно связать (без ткани).</summary>
         public int Total { get; }
 
@@ -104,7 +112,7 @@ namespace KnittedPicture.Core
 
         public bool IsComplete => Knitted == Total;
 
-        public static PictureGrid From(LevelData level) => new PictureGrid(level.width, level.height, level.picture, level.canvas);
+        public static PictureGrid From(LevelData level) => new PictureGrid(level.width, level.height, level.picture, level.canvas, level.band);
 
         public PictureGrid Clone() => new PictureGrid(this);
 
@@ -124,6 +132,27 @@ namespace KnittedPicture.Core
 
         /// <summary>Ряд фронта столбца: следующая клетка, которая свяжется. -1 — столбец готов.</summary>
         public int FrontY(int x) => _done[x] < _order[x].Length ? _order[x][_done[x]] : -1;
+
+        /// <summary>Самый нижний ряд среди фронтов (наибольший y); -1 — всё связано.</summary>
+        public int LowestFront()
+        {
+            var lowest = -1;
+            for (var x = 0; x < Width; x++)
+            {
+                lowest = Math.Max(lowest, FrontY(x));
+            }
+
+            return lowest;
+        }
+
+        /// <summary>Фронт столбца, если его можно вязать прямо сейчас (с учётом натяжения), иначе -1.</summary>
+        public int ActiveFrontY(int x) => ActiveFrontY(x, Band > 0 ? LowestFront() : -1);
+
+        private int ActiveFrontY(int x, int lowest)
+        {
+            var y = FrontY(x);
+            return y >= 0 && (Band <= 0 || y >= lowest - Band) ? y : -1;
+        }
 
         /// <summary>Ряд клетки, которая свяжется в столбце через depth петель после фронта; -1 — таких нет.</summary>
         public int AheadY(int x, int depth)
@@ -146,9 +175,10 @@ namespace KnittedPicture.Core
         {
             var best = -1;
             var bestY = -1;
+            var lowest = Band > 0 ? LowestFront() : -1;
             for (var x = 0; x < Width; x++)
             {
-                var y = FrontY(x);
+                var y = ActiveFrontY(x, lowest);
                 if (y < 0 || (color != AnyColor && _pixels[y * Width + x] != color))
                 {
                     continue;

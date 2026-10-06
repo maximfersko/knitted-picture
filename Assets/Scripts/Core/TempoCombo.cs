@@ -44,9 +44,17 @@ namespace KnittedPicture.Core
         public float Heat => Combo > 0 ? Math.Max(0f, 1f - Idle / Grace) : 0f;
 
         /// <summary>Клубок встал на станок. Возвращает новую длину серии.</summary>
+        /// <summary>Сколько раз за уровень включался «Разгон».</summary>
+        public int RushCount { get; private set; }
+
         public int OnPlaced()
         {
             Combo++;
+            if (Combo == RushFrom)
+            {
+                RushCount++;
+            }
+
             Idle = 0;
             Best = Math.Max(Best, Combo);
             return Combo;

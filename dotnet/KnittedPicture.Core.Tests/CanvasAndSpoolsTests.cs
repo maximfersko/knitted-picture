@@ -268,6 +268,79 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Foreign_yarn_stays_on_the_loom_until_cut()
+        {
+            var game = new LoomGame(Framed(
+                new SpoolData { column = 0, color = 0, loops = 3 },
+                new SpoolData { column = 1, color = 1, loops = 1 },
+                new SpoolData { column = 2, color = 2, loops = 1 }));
+            var foreign = game.Column(0)[0];
+            Assert.True(game.IsForeign(foreign));
+
+            game.TapColumn(0);
+            game.Settle();
+            Assert.Same(foreign, game.Slots[0]);
+
+            Assert.True(game.CutFromLoom(0));
+            Assert.Null(game.Slots[0]);
+            game.TapColumn(1);
+            game.TapColumn(2);
+            game.Settle();
+            Assert.Equal(GameStatus.Won, game.Status);
+        }
+
+        [Fact]
+        public void Foreign_yarn_can_jam_the_loom_and_cutting_it_unjams()
+        {
+            var level = Framed(
+                new SpoolData { column = 0, color = 0, loops = 3 },
+                new SpoolData { column = 1, color = 1, loops = 1 },
+                new SpoolData { column = 2, color = 2, loops = 1 });
+            level.slots = 1;
+            var game = new LoomGame(level);
+
+            game.TapColumn(0);
+            game.Settle();
+            Assert.Equal(GameStatus.Jammed, game.Status);
+
+            Assert.True(game.CutFromLoom(0));
+            Assert.Equal(GameStatus.Playing, game.Status);
+        }
+
+        [Fact]
+        public void Band_keeps_columns_within_rows_of_the_lowest_front()
+        {
+            // 2×4: левый столбец весь цвета 0, правый — цвета 1. С натяжением 1 левый
+            // не может уйти вверх больше чем на ряд, пока правый стоит.
+            var level = new LevelData
+            {
+                width = 2,
+                height = 4,
+                colors = new[] { "#000000", "#FFFFFF" },
+                picture = new[] { "01", "01", "01", "01" },
+                band = 1,
+                slots = 2,
+                spools = new[]
+                {
+                    new SpoolData { column = 0, color = 0, loops = 4 },
+                    new SpoolData { column = 1, color = 1, loops = 4 },
+                },
+            };
+            var game = new LoomGame(level);
+
+            game.TapColumn(0);
+            game.Settle();
+
+            Assert.Equal(2, game.ColumnHeight(0));
+            Assert.Equal(-1, game.ActiveFrontY(0));
+            Assert.Equal(GameStatus.Playing, game.Status);
+
+            game.TapColumn(1);
+            game.Settle();
+            Assert.Equal(GameStatus.Won, game.Status);
+        }
+
+        [Fact]
         public void Tempo_combo_grows_while_the_loom_works_and_burns_after_idle()
         {
             var combo = new TempoCombo();

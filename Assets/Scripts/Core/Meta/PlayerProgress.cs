@@ -34,6 +34,27 @@ namespace KnittedPicture.Core
         /// <summary>Вступление «как играть» уже показано.</summary>
         public bool introSeen;
 
+        /// <summary>Мотки «Корзинки»: индекс — номер мотка в каталоге, значение — сколько штук.</summary>
+        public List<int> yarns = new List<int>();
+
+        /// <summary>День (с 1970 года), когда последний раз забран ежедневный подарок.</summary>
+        public int dailyLastDay = -10;
+
+        /// <summary>Сколько дней подряд забран подарок и лучшая такая серия.</summary>
+        public int dailyStreak;
+        public int dailyBest;
+
+        public int chestsOpened;
+        public List<int> achievementsClaimed = new List<int>();
+        public List<int> yarnSetsClaimed = new List<int>();
+        public List<int> collectionsClaimed = new List<int>();
+
+        /// <summary>Счётчики для достижений.</summary>
+        public int totalStitches;
+        public int rushCount;
+        public int goldCaught;
+        public int bestCombo;
+
         public bool soundOn = true;
         public int totalWins;
         public int winsSinceInterstitial;

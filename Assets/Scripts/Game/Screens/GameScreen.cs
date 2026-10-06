@@ -69,6 +69,7 @@ namespace KnittedPicture.Game
         private Text? _tapsGoal;
         private Text? _goldGoal;
         private bool _overParShown;
+        private bool _foreignShown;
         private int _goldCaught;
         private int _goldCoins;
 
@@ -406,6 +407,12 @@ namespace KnittedPicture.Game
                 Ui.Stretch(outline.rectTransform);
                 _slotFrames[i] = frame.rectTransform;
                 _slotOutlines[i] = outline;
+                var slot = i;
+                var tap = frame.gameObject.AddComponent<Tap>();
+                frame.raycastTarget = true;
+                tap.ClickSound = false;
+                tap.PressFeedback = false;
+                tap.OnClick(() => OnSlotTap(slot));
             }
         }
 
@@ -546,8 +553,13 @@ namespace KnittedPicture.Game
                 {
                     var created = SpoolView.Create(_slotFrames[i], _slotSpool);
                     Ui.PlaceCenter(created.Root, _slotFrames[i].sizeDelta.x / 2f, 29f, _slotSpool, _slotSpool);
-                    created.Bind(spool, _colors[spool.Color], true);
+                    created.Bind(spool, _colors[spool.Color], true, false, _game.IsForeign(spool));
                     _slotViews[i] = new SlotSpool(created, spool.Id, spool.Rainbow ? -1 : spool.Color);
+                    if (_game.IsForeign(spool) && !_foreignShown)
+                    {
+                        _foreignShown = true;
+                        App.Toast("Этой пряжи нет в рисунке — она заняла слот. Срезать её можно ножницами");
+                    }
                     view = _slotViews[i];
                 }
 
@@ -752,9 +764,17 @@ namespace KnittedPicture.Game
                 SyncLoom();
             }
 
-            foreach (var x in changed)
+            if (_game.Band > 0 && changed.Count > 0)
             {
-                _picture.RefreshColumn(x);
+                // Натяжение: сдвинулся нижний фронт — у других столбцов могли включиться фронты.
+                _picture.RefreshColumns();
+            }
+            else
+            {
+                foreach (var x in changed)
+                {
+                    _picture.RefreshColumn(x);
+                }
             }
 
             if (step.Stitches.Count > 0)
@@ -1012,6 +1032,51 @@ namespace KnittedPicture.Game
             SyncLoom();
         }
 
+        /// <summary>Тап по слоту станка: с ножницами — срезать клубок, без них — подсказка про чужую пряжу.</summary>
+        private void OnSlotTap(int slot)
+        {
+            if (_ended || _failShown || App.HasPopups || slot >= _game.Slots.Count)
+            {
+                return;
+            }
+
+            var spool = _game.Slots[slot];
+            if (spool == null)
+            {
+                return;
+            }
+
+            if (!_scissors)
+            {
+                if (_game.IsForeign(spool))
+                {
+                    App.Toast("Чужая пряжа: её нет в рисунке. Срезать — ножницами");
+                }
+
+                return;
+            }
+
+            var head = _game.Slots.ToList().IndexOf(spool);
+            var view = _slotViews[head];
+            var at = view != null ? Ui.WorldCenter(view.View.Root) : Ui.WorldCenter(_slotFrames[slot]);
+            if (!_game.CutFromLoom(slot))
+            {
+                return;
+            }
+
+            App.Progress.Pay(BoosterType.Scissors);
+            App.Save();
+            _boostersUsed++;
+            _scissors = false;
+            HideScissorsBanner();
+            Fx.Poof(_fx, at, Palette.Ink3, _slotSpool * 1.4f);
+            Sfx.Play(Sound.Knot);
+            SyncLoom();
+            RefreshField();
+            RefreshBoosters();
+            _coins.text = App.Progress.Coins.ToString();
+        }
+
         private void Deny(int column, int depth, RejectReason reason)
         {
             Sfx.Play(Sound.Deny);
@@ -1080,7 +1145,7 @@ namespace KnittedPicture.Game
                     Fx.Poof(_fx, Ui.WorldCenter(_pictureCard), Palette.Coin, _pictureCard.sizeDelta.x * 0.9f);
                     var stars = Economy.Stars(_boostersUsed, _rescues, OverPar);
                     var stats = new LevelStats(_tempo.RushCoins, _goldCoins, _goldCaught, _level.gold.Length, _game.Taps, _game.Par,
-                        _tempo.Best, _boostersUsed > 0 || _rescues > 0);
+                        _tempo.Best, _boostersUsed > 0 || _rescues > 0, _game.TotalStitches, _tempo.RushCount);
                     Tweens.Delay(Root, 0.45f, () => App.OnLevelWon(_level, stars, stats));
                 });
             });
@@ -1257,7 +1322,7 @@ namespace KnittedPicture.Game
                 HideTip();
                 _scissorsBanner = Ui.Card(Root, "ScissorsBanner", Pad, _fieldY - 50f, W - 2 * Pad, 40, 20, Palette.Primary, Palette.Primary, 0f);
                 Ui.IconImage(_scissorsBanner, Icon.Scissors, Color.white, 24, 20, 20);
-                Ui.Label(_scissorsBanner, "Выбери любой клубок на поле", 15, Color.white, 40, 0, W - 2 * Pad - 52, 40, true, TextAnchor.MiddleLeft);
+                Ui.Label(_scissorsBanner, "Выбери клубок на поле или на станке", 15, Color.white, 40, 0, W - 2 * Pad - 52, 40, true, TextAnchor.MiddleLeft);
                 var group = _scissorsBanner.gameObject.AddComponent<CanvasGroup>();
                 group.blocksRaycasts = false;
             }

@@ -91,9 +91,19 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>Перерисовать все столбцы, не трогая петли «в пути» (натяжение меняет активные фронты).</summary>
+        public void RefreshColumns()
+        {
+            for (var x = 0; x < _game.Width; x++)
+            {
+                RefreshColumn(x);
+            }
+        }
+
         public void RefreshColumn(int x)
         {
             var front = _game.FrontY(x);
+            var active = _game.ActiveFrontY(x) >= 0;
             var next = _game.AheadY(x, 1);
             for (var y = 0; y < _game.Height; y++)
             {
@@ -121,9 +131,14 @@ namespace KnittedPicture.Game
                 }
 
                 image.sprite = Art.PlainCell;
-                if (pending || y == front)
+                if (pending || (y == front && active))
                 {
                     image.color = Palette.WithAlpha(color, FrontAlpha);
+                }
+                else if (y == front)
+                {
+                    // Фронт есть, но столбец ждёт соседей — натяжение полотна.
+                    image.color = Palette.WithAlpha(color, NextAlpha);
                 }
                 else if (_game.Mystery)
                 {

@@ -32,6 +32,9 @@ namespace KnittedPicture.Game
         Hand,
         Snowflake,
         Bolt,
+        Gift,
+        Chest,
+        Trophy,
     }
 
     /// <summary>
@@ -386,6 +389,17 @@ namespace KnittedPicture.Game
                 case KnittedPicture.Game.Icon.Snowflake:
                     p.Stroke(2.2f).Line(12, 3, 12, 21).Line(4.2f, 7.5f, 19.8f, 16.5f).Line(4.2f, 16.5f, 19.8f, 7.5f)
                         .Stroke(1.8f).Line(9.5f, 4.5f, 12, 7).Line(14.5f, 4.5f, 12, 7).Line(9.5f, 19.5f, 12, 17).Line(14.5f, 19.5f, 12, 17);
+                    break;
+                case KnittedPicture.Game.Icon.Gift:
+                    p.Box(12, 15.5f, 7.5f, 5.5f, 1.5f, false).Box(12, 9.5f, 9, 2.5f, 1.2f, false).Line(12, 7, 12, 21)
+                        .Circle(9, 5, 2.2f).Circle(15, 5, 2.2f);
+                    break;
+                case KnittedPicture.Game.Icon.Chest:
+                    p.Box(12, 15, 8.5f, 5.5f, 2, false).Arc(12, 10, 8.5f, 180, 360).Line(3.5f, 10, 20.5f, 10).Box(12, 13, 1.8f, 2.2f, 0.8f, true);
+                    break;
+                case KnittedPicture.Game.Icon.Trophy:
+                    p.Line(6, 5, 18, 5).Arc(12, 5, 6, 0, 180).Arc(6, 8, 2.6f, 90, 270).Arc(18, 8, 2.6f, -90, 90)
+                        .Line(12, 11, 12, 17).Line(8, 19, 16, 19);
                     break;
                 case KnittedPicture.Game.Icon.Bolt:
                     p.Triangle(14, 2, 5, 13.5f, 12.5f, 13.5f).Triangle(10, 22, 19, 10.5f, 11.5f, 10.5f);

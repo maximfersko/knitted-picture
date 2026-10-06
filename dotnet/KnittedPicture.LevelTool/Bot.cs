@@ -26,6 +26,46 @@ namespace KnittedPicture.LevelTool
             return (double)wins / runs;
         }
 
+        /// <summary>
+        /// Доля побед игрока, который тапает наугад: любой доступный клубок с равной вероятностью.
+        /// Если она высокая, уровень проходится без мыслей.
+        /// </summary>
+        public static double RandomWinRate(LevelData level, int runs, int seed)
+        {
+            var rng = new Random(seed * 7 + 1);
+            var wins = 0;
+            for (var run = 0; run < runs; run++)
+            {
+                var game = new LoomGame(level);
+                for (var step = 0; step < 1000 && game.Status == GameStatus.Playing; step++)
+                {
+                    var options = new List<int>();
+                    for (var c = 0; c < game.ColumnCount; c++)
+                    {
+                        if (game.CanTap(c))
+                        {
+                            options.Add(c);
+                        }
+                    }
+
+                    if (options.Count == 0)
+                    {
+                        break;
+                    }
+
+                    game.TapColumn(options[rng.Next(options.Count)]);
+                    game.Settle();
+                }
+
+                if (game.Status == GameStatus.Won)
+                {
+                    wins++;
+                }
+            }
+
+            return (double)wins / runs;
+        }
+
         private static bool Play(LevelData level, Random rng)
         {
             var game = new LoomGame(level);
@@ -50,6 +90,10 @@ namespace KnittedPicture.LevelTool
                     else if (!spool.IsColorVisible)
                     {
                         weight = 1.5;
+                    }
+                    else if (game.IsForeign(spool))
+                    {
+                        weight = 0.3;
                     }
                     else if (game.IsSurplus(spool))
                     {

@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Collections.Generic;
 using KnittedPicture.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,8 +10,11 @@ namespace KnittedPicture.Game
     /// <summary>Как прошёл уровень: для строк награды и подсказки про третью звезду.</summary>
     public sealed class LevelStats
     {
-        public LevelStats(int rushCoins, int goldCoins, int goldCaught, int goldTotal, int taps, int par, int bestCombo, bool helped)
+        public LevelStats(int rushCoins, int goldCoins, int goldCaught, int goldTotal, int taps, int par, int bestCombo, bool helped,
+            int stitches, int rushes)
         {
+            Stitches = stitches;
+            Rushes = rushes;
             RushCoins = rushCoins;
             GoldCoins = goldCoins;
             GoldCaught = goldCaught;
@@ -36,32 +40,57 @@ namespace KnittedPicture.Game
 
         public int BestCombo { get; }
 
+        /// <summary>Сколько петель связано и сколько раз включался «Разгон» — для достижений.</summary>
+        public int Stitches { get; }
+
+        public int Rushes { get; }
+
         /// <summary>Были бустеры или спасение.</summary>
         public bool Helped { get; }
 
         public bool OverPar => Par > 0 && Taps > Par;
     }
 
+    /// <summary>Что нового открылось этой победой: достижение ждёт в коллекциях, сундук готов.</summary>
+    public sealed class WinNews
+    {
+        public WinNews(bool achievement, bool chest)
+        {
+            Achievement = achievement;
+            Chest = chest;
+        }
+
+        public bool Achievement { get; }
+
+        public bool Chest { get; }
+    }
+
     /// <summary>
-    /// Победа: картинка в пяльцах, звёзды по одной, награда по строкам, монеты летят в счётчик.
-    /// Главная кнопка — «Дальше»; видео за двойную награду — тихая вторичная.
+    /// Победа: картинка в пяльцах, звёзды по одной, награда по строкам. Монеты вылетают из той
+    /// строки, за которую получены, и по очереди летят в счётчик. Дальше — моток пряжи и сундук.
+    /// Главная кнопка — «Дальше» с эскизом следующей картинки; домой — кнопка в углу.
     /// </summary>
     public sealed class WinScreen : ScreenView
     {
+        private const float RowH = 30f;
+
         private readonly Text _coins;
+        private readonly List<(RectTransform from, int amount)> _flights = new List<(RectTransform, int)>();
         private int _shownCoins;
 
-        public WinScreen(App app, LevelData level, WinReward reward, LevelStats stats)
+        public WinScreen(App app, LevelData level, WinReward reward, LevelStats stats, WinNews news)
             : base(app, "Win")
         {
             Sfx.Play(Sound.Win);
             _shownCoins = app.Progress.Coins - reward.Total;
+            Ui.RoundButton(Root, Icon.Home, 16, 8).OnClick(app.ShowHome);
             _coins = Ui.CoinPill(Root, _shownCoins, W - 16, 8);
             Confetti();
 
-            var compact = H < 760f;
-            var hoop = compact ? 190f : 236f;
-            var hoopY = compact ? 58f : 72f;
+            var rows = 1 + (stats.RushCoins > 0 ? 1 : 0) + (stats.GoldCoins > 0 ? 1 : 0) + (reward.StreakCoins > 0 ? 1 : 0) + (reward.Yarn >= 0 ? 1 : 0);
+            var compact = H < 760f || rows >= 4;
+            var hoop = compact ? 168f : 220f;
+            var hoopY = compact ? 52f : 64f;
             var hoopRoot = Ui.PlaceCenter(Ui.Node(Root, "Hoop"), W / 2f, hoopY + hoop / 2f, hoop, hoop);
             var clamp = Ui.Box(hoopRoot, "Clamp", 6, Palette.WoodDark);
             Ui.PlaceCenter(clamp.rectTransform, hoop / 2f, 2f, 36, 22);
@@ -72,17 +101,17 @@ namespace KnittedPicture.Game
             Ui.PlaceCenter(ring.rectTransform, hoop / 2f, hoop / 2f, hoop + 14, hoop + 14);
             Tweens.Scale(hoopRoot, 0.6f, 1f, 0.45f);
 
-            var y = hoopY + hoop + 14f;
+            var y = hoopY + hoop + 10f;
             BuildStars(y, reward.Stars);
-            y += 50f;
+            y += 48f;
 
-            Ui.Label(Root, reward.NewRecord ? "Новый рекорд!" : "Готово!", 38, Palette.Ink, 16, y, W - 32, 46);
-            y += 44f;
-            Ui.Label(Root, StarsHint(level, reward.Stars, stats), 16, Palette.Ink2, 16, y, W - 32, 24, false);
-            y += 34f;
+            Ui.Label(Root, reward.NewRecord ? "Новый рекорд!" : "Готово!", compact ? 32 : 36, Palette.Ink, 16, y, W - 32, 42);
+            y += 40f;
+            Ui.Label(Root, StarsHint(level, reward.Stars, stats), 15, Palette.Ink2, 16, y, W - 32, 22, false);
+            y += 30f;
 
             var card = Ui.Card(Root, "Reward", 16, y, W - 32, 0, 20, Palette.Card, Palette.CardShadow);
-            var rowY = 12f;
+            var rowY = 10f;
             rowY = Row(card, rowY, "За картинку", reward.BaseCoins);
             if (stats.RushCoins > 0)
             {
@@ -99,20 +128,13 @@ namespace KnittedPicture.Game
                 rowY = Row(card, rowY, $"Серия побед ×{reward.Streak}", reward.StreakCoins);
             }
 
-            var collection = Collections.Of(level.id);
-            var done = 0;
-            for (var id = collection.FirstLevel; id <= collection.LastLevel; id++)
+            if (reward.Yarn >= 0)
             {
-                if (app.Progress.IsCompleted(id))
-                {
-                    done++;
-                }
+                rowY = YarnRow(card, rowY, reward);
             }
 
-            Ui.Label(card, collection.Name, 14, Palette.Ink2, 16, rowY + 4, W - 140, 22, true, TextAnchor.MiddleLeft);
-            Ui.Label(card, $"{done} из {collection.Count}", 14, Palette.Ink2, W - 148, rowY + 4, 100, 22, true, TextAnchor.MiddleRight);
-            Ui.ProgressBar(card, 16, rowY + 32, W - 64, 8, (float)done / collection.Count, Palette.Primary);
-            var cardH = rowY + 54f;
+            rowY = ChestRow(card, rowY + 4f);
+            var cardH = rowY + 10f;
             card.sizeDelta = new Vector2(W - 32, cardH);
             foreach (Transform child in card)
             {
@@ -122,13 +144,54 @@ namespace KnittedPicture.Game
                 }
             }
 
-            FlyCoins(card, reward.Total);
+            FlyAll();
+            BuildNext(app, level);
 
-            var nextY = H - 24f - 48f - 8f - 64f;
-            Ui.Button(Root, app.Progress.AllDone ? "На главную" : "Дальше", 20, nextY, W - 40, 64, Palette.Primary, Palette.PrimaryShadow, Color.white, 22)
-                .OnClick(() => app.ContinueAfterWin(level.id));
+            if (news.Chest)
+            {
+                Tweens.Delay(Root, 2.2f, () => app.Toast("Звёздный сундук готов — открой его на главной!"));
+            }
+            else if (news.Achievement)
+            {
+                Tweens.Delay(Root, 2.2f, () => app.Toast("Новое достижение! Награда ждёт в коллекциях"));
+            }
+        }
 
-            var doubleTap = Ui.TextButton(Root, "Удвоить награду за видео", 20, H - 24f - 48f, W - 40, 48, Palette.Ink2, 15, Icon.Video);
+        public override bool OnBack()
+        {
+            App.ShowHome();
+            return true;
+        }
+
+        /// <summary>«Дальше» с эскизом следующей картинки и тихая кнопка «удвоить за видео».</summary>
+        private void BuildNext(App app, LevelData level)
+        {
+            var nextY = H - 24f - 44f - 6f - 70f;
+            var next = Ui.Button(Root, "", 20, nextY, W - 40, 70, Palette.Primary, Palette.PrimaryShadow, Color.white, 22);
+            var face = (RectTransform)next.transform;
+            next.OnClick(() => app.ContinueAfterWin(level.id));
+            var nextId = app.Progress.CurrentLevel;
+            if (!app.Progress.AllDone && app.Levels.Has(nextId))
+            {
+                var data = app.Levels.Get(nextId);
+                var frame = Ui.Box(face, "Preview", 12, Palette.Card);
+                Ui.Place(frame.rectTransform, 10, 9, 52, 52);
+                MiniPicture.Create(frame.rectTransform, data, 26, 26, 44, faded: true);
+                if (data.mystery)
+                {
+                    Ui.Label(frame.rectTransform, "?", 26, Palette.Ink2, 0, 0, 52, 52);
+                }
+
+                Ui.Label(face, "Дальше", 22, Color.white, 62, 10, W - 40 - 72, 30);
+                Ui.Label(face, data.hard ? $"Уровень {nextId} · сложный" : $"Уровень {nextId}", 13, Color.white, 62, 38, W - 40 - 72, 20, false);
+            }
+            else
+            {
+                Ui.Label(face, "На главную", 22, Color.white, 0, 0, W - 40, 70);
+            }
+
+            var doubleTap = Ui.TextButton(Root, "Удвоить награду за видео", 20, H - 24f - 44f, W - 40, 44, Palette.Ink2, 15, Icon.Video);
+            var total = _flights.Count > 0 ? TotalFlights() : 0;
             doubleTap.OnClick(() =>
             {
                 doubleTap.Interactable = false;
@@ -140,19 +203,24 @@ namespace KnittedPicture.Game
                         return;
                     }
 
-                    app.Progress.AddCoins(reward.Total);
+                    app.Progress.AddCoins(total);
                     app.Save();
                     Sfx.Play(Sound.Coin);
-                    FlyCoins(card, reward.Total);
+                    Fly((RectTransform)doubleTap.transform, total, 0f);
                     doubleTap.gameObject.SetActive(false);
                 });
             });
         }
 
-        public override bool OnBack()
+        private int TotalFlights()
         {
-            App.ShowHome();
-            return true;
+            var total = 0;
+            foreach (var (_, amount) in _flights)
+            {
+                total += amount;
+            }
+
+            return total;
         }
 
         /// <summary>Под заголовком: чего не хватило до трёх звёзд, иначе — про альбом.</summary>
@@ -173,7 +241,7 @@ namespace KnittedPicture.Game
 
         private void BuildStars(float y, int stars)
         {
-            const float size = 40f;
+            const float size = 38f;
             for (var i = 0; i < 3; i++)
             {
                 var x = W / 2f + (i - 1) * (size + 14f);
@@ -196,38 +264,103 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>Строка награды; её монетка — точка вылета монет в счётчик.</summary>
         private float Row(RectTransform card, float y, string title, int coins)
         {
-            Ui.Label(card, title, 16, Palette.Ink, 16, y, W - 160, 28, true, TextAnchor.MiddleLeft);
-            Ui.Coin(card, W - 32 - 74, y + 14, 20);
-            Ui.Label(card, "+" + coins, 17, Palette.Ink, W - 32 - 60, y, 46, 28, true, TextAnchor.MiddleRight);
-            return y + 30f;
+            Ui.Label(card, title, 16, Palette.Ink, 16, y, W - 160, RowH - 2, true, TextAnchor.MiddleLeft);
+            var coin = Ui.Coin(card, W - 32 - 74, y + RowH / 2f - 1f, 20);
+            Ui.Label(card, "+" + coins, 17, Palette.Ink, W - 32 - 60, y, 46, RowH - 2, true, TextAnchor.MiddleRight);
+            if (coins > 0)
+            {
+                _flights.Add((coin, coins));
+            }
+
+            return y + RowH;
         }
 
-        /// <summary>Монетки летят из карточки награды в счётчик, число растёт по мере прилёта.</summary>
-        private void FlyCoins(RectTransform from, int amount)
+        /// <summary>Моток за новую картинку: новый — с блеском, повтор — монеты.</summary>
+        private float YarnRow(RectTransform card, float y, WinReward reward)
         {
-            var count = Mathf.Clamp(amount / 5, 3, 10);
+            var yarn = YarnCatalog.All[reward.Yarn];
+            var ball = YarnView.Create(card, yarn, 28, y + 20f, 32, true);
+            ball.localScale = Vector3.zero;
+            Tweens.Delay(ball, 1.0f, () =>
+            {
+                Tweens.Scale(ball, 0.2f, 1f, 0.35f, Ease.OutBack);
+                Fx.Sparkle(Root, Ui.WorldCenter(ball), Palette.Hex(yarn.Hex), 10, 30f);
+                Sfx.Play(Sound.Star, 0.6f);
+            });
+            if (reward.NewYarn)
+            {
+                Ui.Label(card, $"Новый моток: {yarn.Name}", 15, Palette.Ink, 50, y + 4, W - 32 - 60, 20, true, TextAnchor.MiddleLeft);
+                Ui.Label(card, $"{YarnCatalog.RarityName(yarn.Rarity)} · в корзинке {App.Progress.YarnKinds}/{YarnCatalog.Count}", 12,
+                    YarnView.RarityColor(yarn.Rarity), 50, y + 22, W - 32 - 60, 18, false, TextAnchor.MiddleLeft);
+                return y + 44f;
+            }
+
+            Ui.Label(card, $"Повтор: {yarn.Name}", 15, Palette.Ink, 50, y + 10, W - 160, 22, true, TextAnchor.MiddleLeft);
+            var coin = Ui.Coin(card, W - 32 - 74, y + 21f, 20);
+            Ui.Label(card, "+" + reward.YarnCoins, 17, Palette.Ink, W - 32 - 60, y + 8, 46, 26, true, TextAnchor.MiddleRight);
+            _flights.Add((coin, reward.YarnCoins));
+            return y + 44f;
+        }
+
+        /// <summary>Прогресс звёздного сундука — повод собрать три звезды.</summary>
+        private float ChestRow(RectTransform card, float y)
+        {
+            var progress = App.Progress;
+            var value = Mathf.Min(progress.ChestProgress, ProgressService.ChestEvery);
+            Ui.IconImage(card, Icon.Chest, Palette.CoinShadow, 28, y + 16, 24);
+            var text = progress.CanOpenChest ? "Сундук готов — открой на главной!" : $"Звёздный сундук: {value}/{ProgressService.ChestEvery} ★";
+            Ui.Label(card, text, 14, progress.CanOpenChest ? Palette.CoinShadow : Palette.Ink2, 50, y + 2, W - 32 - 60, 18, true, TextAnchor.MiddleLeft);
+            Ui.ProgressBar(card, 50, y + 24, W - 32 - 66, 7, (float)value / ProgressService.ChestEvery, Palette.Coin);
+            return y + 38f;
+        }
+
+        /// <summary>Строки отдают монеты по очереди: сначала «за картинку», потом бонусы.</summary>
+        private void FlyAll()
+        {
+            var delay = 0.8f;
+            foreach (var (from, amount) in _flights)
+            {
+                Fly(from, amount, delay);
+                delay += 0.35f;
+            }
+        }
+
+        /// <summary>Монетки вылетают из точки from и летят в счётчик; число растёт по мере прилёта.</summary>
+        private void Fly(RectTransform from, int amount, float delay)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            var count = Mathf.Clamp(amount / 5, 2, 8);
             var target = Ui.WorldCenter((RectTransform)_coins.transform.parent);
-            var start = Ui.WorldCenter(from);
             var perCoin = Mathf.Max(1, amount / count);
             var given = 0;
+            Tweens.Delay(Root, delay, () => Tweens.Punch(from, 0.4f, 0.25f));
             for (var i = 0; i < count; i++)
             {
-                var coin = Ui.Coin(Root, 0, 0, 22);
+                var start = Ui.WorldCenter(from);
+                var coin = Ui.Coin(Root, 0, 0, 20);
                 coin.position = start;
+                coin.localScale = Vector3.zero;
                 var last = i == count - 1;
                 var portion = last ? amount - given : perCoin;
                 given += portion;
-                var jitter = new Vector3(Random.Range(-60f, 60f), Random.Range(-20f, 30f), 0) * Root.lossyScale.x;
-                Tweens.Move(coin, start + jitter, target, 0.5f, Ease.InOutCubic, () =>
+                var jitter = new Vector3(Random.Range(-24f, 24f), Random.Range(-10f, 18f), 0) * Root.lossyScale.x;
+                var itemDelay = delay + i * 0.06f;
+                Tweens.Delay(coin, itemDelay, () => coin.localScale = Vector3.one);
+                Tweens.Move(coin, start + jitter, target, 0.55f, Ease.InOutCubic, () =>
                 {
                     Object.Destroy(coin.gameObject);
                     _shownCoins += portion;
                     _coins.text = _shownCoins.ToString();
                     Tweens.Punch(_coins.transform.parent, 0.12f, 0.15f);
                     Sfx.Play(Sound.Coin, 0.4f);
-                }, 0.8f + i * 0.07f);
+                }, itemDelay);
             }
         }
 

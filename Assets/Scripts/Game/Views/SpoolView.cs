@@ -26,6 +26,7 @@ namespace KnittedPicture.Game
         private readonly RectTransform _ice;
         private readonly Text _iceText;
         private readonly RectTransform _surplus;
+        private readonly RectTransform _foreign;
         private readonly CanvasGroup _group;
 
         private SpoolView(RectTransform root, float size)
@@ -77,6 +78,10 @@ namespace KnittedPicture.Game
             _surplus = Ui.Place(Ui.Node(root, "Surplus"), -badgeH * 0.2f, size - badgeH * 0.8f, badgeH, badgeH);
             Ui.Stretch(Ui.Image(_surplus, "Back", Art.Circle, Palette.Primary).rectTransform);
             Ui.IconImage(_surplus, Icon.Check, Color.white, badgeH / 2f, badgeH / 2f, badgeH * 0.7f);
+
+            _foreign = Ui.Place(Ui.Node(root, "Foreign"), -badgeH * 0.2f, size - badgeH * 0.8f, badgeH, badgeH);
+            Ui.Stretch(Ui.Image(_foreign, "Back", Art.Circle, Palette.Danger).rectTransform);
+            Ui.IconImage(_foreign, Icon.Close, Color.white, badgeH / 2f, badgeH / 2f, badgeH * 0.62f);
         }
 
         public RectTransform Root { get; }
@@ -96,7 +101,7 @@ namespace KnittedPicture.Game
         /// Показать клубок. front — передний в колонке (полностью яркий);
         /// surplus — его цвет в картинке уже довязан, клубок лишний.
         /// </summary>
-        public void Bind(Spool spool, Color color, bool front, bool surplus = false)
+        public void Bind(Spool spool, Color color, bool front, bool surplus = false, bool foreign = false)
         {
             var visible = spool.IsColorVisible;
             _ball.sprite = spool.Rainbow && visible ? Art.RainbowBall : Art.YarnBall;
@@ -108,6 +113,7 @@ namespace KnittedPicture.Game
 
             SetIce(spool.Ice);
             _surplus.gameObject.SetActive(surplus && visible);
+            _foreign.gameObject.SetActive(foreign);
 
             _badge.gameObject.SetActive(visible);
             _badgeText.text = spool.Loops.ToString();
@@ -143,6 +149,7 @@ namespace KnittedPicture.Game
             _linkRing.gameObject.SetActive(false);
             _ice.gameObject.SetActive(false);
             _surplus.gameObject.SetActive(false);
+            _foreign.gameObject.SetActive(false);
         }
     }
 }

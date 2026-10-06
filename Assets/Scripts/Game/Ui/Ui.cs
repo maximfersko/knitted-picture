@@ -210,6 +210,41 @@ namespace KnittedPicture.Game
             return bar.rectTransform;
         }
 
+        /// <summary>
+        /// Вертикальная прокрутка: окно x, y, w, h и содержимое внутри него.
+        /// Высоту содержимого задаёт вызывающий: content.sizeDelta = (w, высота).
+        /// </summary>
+        public static RectTransform Scroll(RectTransform parent, float x, float y, float w, float h)
+        {
+            var viewport = Place(Node(parent, "Scroll"), x, y, w, h);
+            var hit = Image(viewport, "Hit", null, Color.clear, true);
+            Stretch(hit.rectTransform);
+            viewport.gameObject.AddComponent<RectMask2D>();
+            var content = Place(Node(viewport, "Content"), 0, 0, w, h);
+            var scroll = viewport.gameObject.AddComponent<ScrollRect>();
+            scroll.viewport = viewport;
+            scroll.content = content;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Elastic;
+            scroll.inertia = true;
+            scroll.decelerationRate = 0.12f;
+            scroll.scrollSensitivity = 24f;
+            return content;
+        }
+
+        /// <summary>Красная точка-счётчик в углу кнопки: «здесь что-то ждёт».</summary>
+        public static RectTransform Badge(RectTransform parent, float cx, float cy, int count)
+        {
+            var size = count > 9 ? 26f : 22f;
+            var root = PlaceCenter(Node(parent, "Badge"), cx, cy, size, 22f);
+            Stretch(Box(root, "Back", 11, Palette.Danger).rectTransform);
+            var label = Label(root, count > 0 ? count.ToString() : "!", 13, Color.white);
+            Stretch(label.rectTransform);
+            Tweens.Run(root, 1.2f, t => root.localScale = Vector3.one * (1f + 0.12f * Ease.Bump(t)), null, null, 0f, true);
+            return root;
+        }
+
         /// <summary>Мировая позиция центра элемента — для анимаций перелёта между панелями.</summary>
         public static Vector3 WorldCenter(RectTransform rt)
         {

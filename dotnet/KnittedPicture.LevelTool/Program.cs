@@ -43,7 +43,7 @@ namespace KnittedPicture.LevelTool
             Directory.CreateDirectory(output);
 
             var failed = false;
-            Console.WriteLine("id  название           размер петли цв клуб кол сл  тапы/цель  бот   фронт выбор1 роковые  сид   механики");
+            Console.WriteLine("id  название           размер петли цв клуб кол сл  тапы/цель  бот  наугад фронт выбор1 роковые  сид   механики");
             foreach (var path in Directory.GetFiles(source, "level_*.json").OrderBy(p => p))
             {
                 var design = JsonSerializer.Deserialize<LevelDesign>(File.ReadAllText(path), ReadOptions)!;
@@ -62,9 +62,11 @@ namespace KnittedPicture.LevelTool
                 var mechanics = string.Join(" ", new[]
                 {
                     design.fabric.Length > 0 ? "канва" : null,
+                    design.band > 0 ? $"натяжение {design.band}" : null,
                     design.mystery ? "загадка" : null,
                     design.gold > 0 ? $"золото×{level.gold.Length}" : null,
                     design.extra > 0 ? $"лишние×{design.extra}" : null,
+                    design.junk > 0 ? $"чужие×{design.junk}" : null,
                     design.hidden > 0 ? $"скрытые×{design.hidden}" : null,
                     design.knots > 0 ? $"узелки×{design.knots}" : null,
                     design.links > 0 ? $"связки×{design.links}" : null,
@@ -79,7 +81,7 @@ namespace KnittedPicture.LevelTool
                 var taps = level.par > 0 ? $"{built.Solution,3}/{level.par,-3}" : $"{built.Solution,3}    ";
                 var stitches = PictureGrid.From(level).Total;
                 Console.WriteLine(
-                    $"{design.id,2}  {design.name,-18} {level.width,2}×{level.height,-2} {stitches,5} {level.colors.Length,2} {level.spools.Length,4} {design.columns,3} {level.slots,2}  {taps,9}  {built.WinRate,4:P0}{mark} {built.Metrics.FrontColors,5:0.0} {built.Metrics.Forced,5:P0} {built.Metrics.Danger,6:P0}  {built.Seed,5}   {mechanics}");
+                    $"{design.id,2}  {design.name,-18} {level.width,2}×{level.height,-2} {stitches,5} {level.colors.Length,2} {level.spools.Length,4} {design.columns,3} {level.slots,2}  {taps,9}  {built.WinRate,4:P0}{mark} {built.RandomRate,5:P0} {built.Metrics.FrontColors,5:0.0} {built.Metrics.Forced,5:P0} {built.Metrics.Danger,6:P0}  {built.Seed,5}   {mechanics}");
             }
 
             return failed ? 1 : 0;
@@ -90,6 +92,7 @@ namespace KnittedPicture.LevelTool
             public LevelData Level = null!;
             public int Solution;
             public double WinRate;
+            public double RandomRate;
             public int Seed;
             public bool InRange;
             public Metrics Metrics = null!;
@@ -120,7 +123,9 @@ namespace KnittedPicture.LevelTool
                 }
 
                 var rate = Bot.WinRate(level, BotRuns, seed);
-                var winDistance = rate < design.minWin ? design.minWin - rate : rate > design.maxWin ? rate - design.maxWin : 0;
+                var random = Bot.RandomWinRate(level, BotRuns, seed);
+                var winDistance = (rate < design.minWin ? design.minWin - rate : rate > design.maxWin ? rate - design.maxWin : 0)
+                    + Math.Max(0, random - design.maxRandom);
 
                 // Метрики дорогие — считаем их, только когда бот уже в коридоре или лучшего пока нет.
                 if (winDistance > 0 && best != null)
@@ -136,7 +141,7 @@ namespace KnittedPicture.LevelTool
                     + Math.Max(0, metrics.Danger - design.maxDanger);
                 if (distance < bestDistance)
                 {
-                    best = new Built { Level = level, Solution = solution.Count, WinRate = rate, Seed = seed, Metrics = metrics };
+                    best = new Built { Level = level, Solution = solution.Count, WinRate = rate, RandomRate = random, Seed = seed, Metrics = metrics };
                     bestDistance = distance;
                 }
 

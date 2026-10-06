@@ -46,7 +46,7 @@ namespace KnittedPicture.LevelTool
             // Нарезаем клубки, вяжя картинку по правилам игры: берём цвет с фронта
             // и вяжем им, пока клубок не наберёт свою длину или цвет не кончится на фронте.
             // Полученный порядок клубков проходим даже с одним слотом.
-            var grid = new PictureGrid(width, height, picture, canvas);
+            var grid = new PictureGrid(width, height, picture, canvas, design.band);
             var rainbowAt = PickIndices(design.rainbow, 2, design.spools - 1, rng);
             var thickAt = PickIndices(design.thick, 1, design.spools - 1, rng, rainbowAt);
             var order = new List<Draft>();
@@ -58,7 +58,7 @@ namespace KnittedPicture.LevelTool
                 var front = new List<int>();
                 for (var x = 0; x < width; x++)
                 {
-                    var y = grid.FrontY(x);
+                    var y = grid.ActiveFrontY(x);
                     if (y >= 0 && !front.Contains(grid.ColorAt(x, y)))
                     {
                         front.Add(grid.ColorAt(x, y));
@@ -101,6 +101,19 @@ namespace KnittedPicture.LevelTool
                 });
             }
 
+            // Чужая пряжа — цвета ткани, в рисунке её нет.
+            var fabricList = fabricColors.OrderBy(c => c).ToList();
+            for (var i = 0; i < design.junk && fabricList.Count > 0; i++)
+            {
+                extras.Add(new Draft
+                {
+                    Color = fabricList[i % fabricList.Count],
+                    Loops = 2 + rng.Next(5),
+                    Order = order.Count + extras.Count,
+                    Extra = true,
+                });
+            }
+
             var columns = Enumerable.Range(0, design.columns).Select(_ => new List<Draft>()).ToList();
             var firstColumns = Enumerable.Range(0, design.columns).OrderBy(_ => rng.Next()).ToList();
             for (var i = 0; i < order.Count; i++)
@@ -115,11 +128,11 @@ namespace KnittedPicture.LevelTool
                 columns[Pick(weights, rng)].Add(order[i]);
             }
 
-            // Лишние клубки — не в первом ряду: сначала игрок видит только нужные.
+            // Лишние и чужие клубки — неглубоко: их приходится обходить или брать в удачный момент.
             foreach (var extra in extras)
             {
                 var col = columns[rng.Next(columns.Count)];
-                col.Insert(1 + rng.Next(Math.Max(1, col.Count)), extra);
+                col.Insert(Math.Min(col.Count, rng.Next(3)), extra);
             }
 
             for (var i = 0; i < design.swaps; i++)
@@ -155,6 +168,7 @@ namespace KnittedPicture.LevelTool
                 colors = design.palette.Select(p => p.hex).ToArray(),
                 picture = picture,
                 canvas = canvas,
+                band = design.band,
                 gold = gold,
                 mystery = design.mystery,
                 slots = design.slots,

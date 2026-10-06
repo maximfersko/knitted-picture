@@ -20,6 +20,9 @@ namespace KnittedPicture.LevelTool
         /// <summary>Буквы цветов ткани-основы: эти клетки связаны с начала, вяжется только рисунок.</summary>
         public string fabric = string.Empty;
 
+        /// <summary>Натяжение полотна: на сколько рядов фронт может обогнать самый нижний. 0 — без ограничения.</summary>
+        public int band;
+
         /// <summary>Загадка: эскиз рисунка скрыт.</summary>
         public bool mystery;
 
@@ -43,6 +46,9 @@ namespace KnittedPicture.LevelTool
         public int thick;
         public int ice;
 
+        /// <summary>Чужая пряжа: клубки цвета ткани. Взятый на станок — занимает слот насовсем.</summary>
+        public int junk;
+
         /// <summary>Лишние клубки сверх картинки: стоят тапа и места на станке, зато их можно не брать.</summary>
         public int extra;
 
@@ -53,6 +59,9 @@ namespace KnittedPicture.LevelTool
         public double maxForced = 1.0;
         public double minDanger;
         public double maxDanger = 1.0;
+
+        /// <summary>Сколько партий может выиграть игрок, который тапает наугад: выше — уровень проходится без мыслей.</summary>
+        public double maxRandom = 1.0;
 
         /// <summary>Допустимая доля побед бота: так задаётся сложность.</summary>
         public double minWin;
