@@ -88,6 +88,7 @@ namespace KnittedPicture.Game
             }
 
             Tweens.Install(gameObject);
+            Reminders.CancelAll();
             Sfx.Install(gameObject);
             Levels = new LevelRepository();
             Progress = new ProgressService(SaveStore.Load(), Levels.Count);
@@ -139,6 +140,11 @@ namespace KnittedPicture.Game
             {
                 Save();
                 (_screen as GameScreen)?.AutoPause();
+                Reminders.Schedule(Progress, Today);
+            }
+            else
+            {
+                Reminders.CancelAll();
             }
         }
 
@@ -147,6 +153,7 @@ namespace KnittedPicture.Game
             if (!SaveStore.WasCleared)
             {
                 Save();
+                Reminders.Schedule(Progress, Today);
             }
         }
 
@@ -294,6 +301,13 @@ namespace KnittedPicture.Game
 
         public void OnLevelWon(LevelData level, int stars, LevelStats stats)
         {
+            // Разрешение на напоминания спрашиваем после третьей картинки: игрок уже понял, зачем возвращаться.
+            if (!Progress.Data.remindersAsked && Progress.Data.completed.Count >= 2)
+            {
+                Progress.Data.remindersAsked = true;
+                Reminders.AskPermission();
+            }
+
             var pendingBefore = Progress.PendingClaims;
             var chestBefore = Progress.CanOpenChest;
             Progress.RecordLevel(stats.Stitches, stats.Rushes, stats.GoldCaught, stats.BestCombo);

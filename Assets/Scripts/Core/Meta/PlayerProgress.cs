@@ -81,6 +81,10 @@ namespace KnittedPicture.Core
         public int bestCombo;
 
         public bool soundOn = true;
+
+        /// <summary>Напоминания на телефон включены; спрашивали ли уже разрешение у системы.</summary>
+        public bool remindersOn = true;
+        public bool remindersAsked;
         public int totalWins;
         public int winsSinceInterstitial;
     }

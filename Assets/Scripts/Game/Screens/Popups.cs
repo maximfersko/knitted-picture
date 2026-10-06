@@ -147,6 +147,19 @@ namespace KnittedPicture.Game
                     Close();
                     app.ShowPopup(new SettingsPopup(app));
                 });
+            var reminders = app.Progress.Data.remindersOn;
+            AddSecondary(reminders ? "Напоминания: включены" : "Напоминания: выключены", KnittedPicture.Game.Icon.Clock).OnClick(() =>
+            {
+                app.Progress.Data.remindersOn = !app.Progress.Data.remindersOn;
+                if (app.Progress.Data.remindersOn)
+                {
+                    Reminders.AskPermission();
+                }
+
+                app.Save();
+                Close();
+                app.ShowPopup(new SettingsPopup(app));
+            });
             AddSecondary("Как играть", KnittedPicture.Game.Icon.Hand).OnClick(() =>
             {
                 Close();

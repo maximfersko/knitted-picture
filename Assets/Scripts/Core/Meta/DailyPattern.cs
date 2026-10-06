@@ -30,10 +30,11 @@ namespace KnittedPicture.Core
 
         public static LevelData Build(LevelData source, int day)
         {
-            for (var attempt = 0; attempt < 6; attempt++)
+            // Перебор недолгий: узор строится на телефоне при открытии главной, раз в день.
+            for (var attempt = 0; attempt < 3; attempt++)
             {
                 var level = Make(source, day, attempt, swaps: 2);
-                if (LevelValidator.Validate(level).Count == 0 && LevelSolver.Solve(level, 20_000) != null)
+                if (LevelValidator.Validate(level).Count == 0 && LevelSolver.Solve(level, 12_000) != null)
                 {
                     return level;
                 }
