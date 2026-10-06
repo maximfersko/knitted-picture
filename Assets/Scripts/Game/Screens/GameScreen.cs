@@ -699,6 +699,7 @@ namespace KnittedPicture.Game
                 if (view != null && spool != null)
                 {
                     view.View.SetLoops(spool.Loops);
+                    view.View.SetWaiting(!_game.IsForeign(spool) && !_game.HasWork(spool));
                 }
 
                 _slotOutlines[i].enabled = spool == null;
@@ -1412,7 +1413,7 @@ namespace KnittedPicture.Game
                 else if (_game.ScissorsWouldHelp && App.Progress.IsBoosterOpen(BoosterType.Scissors, BoosterLevel))
                 {
                     rescue = BoosterType.Scissors;
-                    reason = "Ничего не вяжется. Ножницы достанут любой клубок с поля или срежут клубок со станка";
+                    reason = "Станок занят, а картинка ждёт другой цвет. Ножницы срежут лишний клубок со станка или достанут нужный с поля";
                 }
                 else
                 {
@@ -1424,8 +1425,13 @@ namespace KnittedPicture.Game
             }
 
             var percent = Mathf.FloorToInt(100f * _game.KnittedCount / _game.TotalStitches);
+
+            // Каких цветов ждут столбцы, которые можно вязать прямо сейчас: игрок видит, чего не хватило.
+            var needed = kind == FailKind.Jam && rescue != null
+                ? _game.FrontColors().OrderBy(c => c).Select(c => _colors[c]).ToArray()
+                : null;
             App.ShowPopup(new FailPopup(App, kind, rescue, reason, percent, Rescue, Restart, LeaveHome,
-                rescue == BoosterType.Scissors && _run.FreeScissors > 0, StreakWarning()));
+                rescue == BoosterType.Scissors && _run.FreeScissors > 0, StreakWarning(), needed));
         }
 
         private void Rescue(BoosterType type)

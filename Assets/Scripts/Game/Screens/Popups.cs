@@ -225,7 +225,7 @@ namespace KnittedPicture.Game
     public sealed class FailPopup : Popup
     {
         public FailPopup(App app, FailKind kind, BoosterType? rescue, string reason, int percent, Action<BoosterType> rescued,
-            Action restart, Action home, bool freeRescue = false, string? streakWarning = null)
+            Action restart, Action home, bool freeRescue = false, string? streakWarning = null, Color[]? needed = null)
             : base(app, bottomSheet: true)
         {
             AddIcon(kind == FailKind.Jam ? KnittedPicture.Game.Icon.Knot : KnittedPicture.Game.Icon.Moth, Palette.Danger, Palette.DangerSoft, 64);
@@ -238,6 +238,30 @@ namespace KnittedPicture.Game
             }
 
             AddText(reason, 16, 1.6f);
+
+            // Затор: какие цвета ждёт картинка — клубками в ряд.
+            if (needed != null && needed.Length > 0)
+            {
+                const float ball = 30f;
+                const float gap = 8f;
+                var shown = Math.Min(needed.Length, 5);
+                var label = Ui.Label(Card, "Картинка ждёт:", 14, Palette.Ink2, 24, Cursor, Inner, ball, true, TextAnchor.MiddleLeft);
+                label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                var x = 24f + label.preferredWidth + 12f;
+                var width = shown * ball + (shown - 1) * gap;
+                if (x + width > 24f + Inner)
+                {
+                    x = 24f + Inner - width;
+                }
+
+                for (var i = 0; i < shown; i++)
+                {
+                    var yarn = Ui.Image(Card, "Needed", Art.YarnBall, needed[i]);
+                    Ui.PlaceCenter(yarn.rectTransform, x + i * (ball + gap) + ball / 2f, Cursor + ball / 2f, ball, ball);
+                }
+
+                Space(ball + 10f);
+            }
 
             if (rescue != null)
             {
@@ -271,7 +295,7 @@ namespace KnittedPicture.Game
                     {
                         if (!ok)
                         {
-                            app.ShowPopup(new FailPopup(app, kind, rescue, reason, percent, rescued, restart, home, freeRescue, streakWarning));
+                            app.ShowPopup(new FailPopup(app, kind, rescue, reason, percent, rescued, restart, home, freeRescue, streakWarning, needed));
                             return;
                         }
 

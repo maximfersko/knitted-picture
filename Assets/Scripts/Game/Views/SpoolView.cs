@@ -136,6 +136,12 @@ namespace KnittedPicture.Game
             _iceText.text = ice.ToString();
         }
 
+        /// <summary>Клубок на станке ждёт: его цвета сейчас нет на фронте (или фронт держит натяжение). Бледнее, чтобы было видно, что он не вяжет.</summary>
+        public void SetWaiting(bool waiting)
+        {
+            _group.alpha = waiting ? 0.5f : 1f;
+        }
+
         public void SetLoops(int loops)
         {
             _badgeText.text = loops.ToString();
