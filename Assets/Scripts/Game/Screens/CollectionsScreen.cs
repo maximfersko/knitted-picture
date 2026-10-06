@@ -486,8 +486,10 @@ namespace KnittedPicture.Game
             Ui.PlaceCenter(circle.rectTransform, 36, rowH / 2f, 44, 44);
             Ui.IconImage(row, claimed ? Icon.Check : Icon.Trophy, can ? Color.white : claimed ? Palette.Primary : Palette.Ink3, 36, rowH / 2f, 24);
 
-            var textW = w - 68f - rightW - 8f;
-            var hasBar = !claimed;
+            // Готовое к получению: полоска уже полная и не нужна, кнопка компактнее и стоит с отступом от текста.
+            const float claimW = 100f;
+            var textW = can ? w - 68f - claimW - 28f : w - 68f - rightW - 8f;
+            var hasBar = !claimed && !can;
             var titleY = hasBar ? 9f : 14f;
             Ui.Fit(Ui.Label(row, a.Title, 15, Palette.Ink, 68, titleY, textW, 20, true, TextAnchor.MiddleLeft), 11);
             Ui.Fit(Ui.Label(row, a.Description, 12, Palette.Ink2, 68, titleY + 21, textW, 18, false, TextAnchor.MiddleLeft), 9);
@@ -501,7 +503,7 @@ namespace KnittedPicture.Game
             if (can)
             {
                 var target = a;
-                Ui.Button(row, "Забрать", right, 16, rightW, 40, Palette.Primary, Palette.PrimaryShadow, Color.white, 15)
+                Ui.Button(row, "Забрать", w - claimW - 14f, 17, claimW, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15)
                     .OnClick(() => Claim(progress.ClaimAchievement(target, App.Random), target.Title, Icon.Trophy, CollectionsTab.Achievements));
             }
             else if (claimed)

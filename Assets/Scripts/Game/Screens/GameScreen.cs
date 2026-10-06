@@ -19,6 +19,16 @@ namespace KnittedPicture.Game
         private const float Pad = 16f;
         private const int VisibleRows = 3;
 
+        /// <summary>
+        /// Строка над станком (подпись «Станок» или плашка комбо, справа счётчик мест): станок начинается ниже,
+        /// и плашка комбо не наезжает ни на картинку, ни на станок, ни на его подсветку.
+        /// </summary>
+        private const float LoomTop = 30f;
+
+        private const float LoomH = 74f;
+
+        private const float ComboW = 132f;
+
         /// <summary>Полоска под клубками для «+N» — сколько ещё ждёт в колонке.</summary>
         private const float DepthRow = 16f;
 
@@ -329,7 +339,7 @@ namespace KnittedPicture.Game
             {
                 _fieldH = VisibleRows * (_spoolSize + 10f) + 10f + DepthRow;
                 _fieldY = boostersY - 16f - _fieldH;
-                _loomY = _fieldY - 12f - 96f;
+                _loomY = _fieldY - 12f - LoomTop - LoomH;
                 if (_loomY - 10f - _top >= 170f || _spoolSize <= 40f)
                 {
                     break;
@@ -365,38 +375,42 @@ namespace KnittedPicture.Game
 
         private void BuildLoom()
         {
-            _loomTitle = Ui.Label(Root, "Станок", 13, Palette.Ink2, Pad + 6, _loomY, 120, 20, true, TextAnchor.MiddleLeft);
-            _loomLabel = Ui.Label(Root, "", 13, Palette.Ink2, W - Pad - 186, _loomY, 180, 20, true, TextAnchor.MiddleRight);
+            _loomTitle = Ui.Label(Root, "Станок", 13, Palette.Ink2, Pad + 6, _loomY + 2f, 120, 24, true, TextAnchor.MiddleLeft);
+            _loomLabel = Ui.Label(Root, "", 13, Palette.Ink2, W - Pad - 186, _loomY + 2f, 180, 24, true, TextAnchor.MiddleRight);
             _loomBgImage = Ui.Box(Root, "Loom", 20, Palette.LoomBg);
             _loomBg = _loomBgImage.rectTransform;
-            Ui.Place(_loomBg, Pad, _loomY + 22f, W - 2 * Pad, 74);
+            Ui.Place(_loomBg, Pad, _loomY + LoomTop, W - 2 * Pad, LoomH);
+            // Рамки тревоги и «Разгона» лежат ровно по краю станка, внутрь, а не выступают на соседей.
             _loomAlert = Ui.Image(Root, "LoomAlert", Art.RoundRectOutline(20, 3), Color.clear);
             _loomAlert.type = Image.Type.Sliced;
             _loomAlert.pixelsPerUnitMultiplier = Art.Density;
-            Ui.Place(_loomAlert.rectTransform, Pad - 2, _loomY + 20f, W - 2 * Pad + 4, 78);
-            _rushGlow = Ui.Image(Root, "RushGlow", Art.RoundRectOutline(24, 5), Color.clear);
+            Ui.Place(_loomAlert.rectTransform, Pad, _loomY + LoomTop, W - 2 * Pad, LoomH);
+            _rushGlow = Ui.Image(Root, "RushGlow", Art.RoundRectOutline(20, 4), Color.clear);
             _rushGlow.type = Image.Type.Sliced;
             _rushGlow.pixelsPerUnitMultiplier = Art.Density;
-            Ui.Place(_rushGlow.rectTransform, Pad - 6, _loomY + 16f, W - 2 * Pad + 12, 86);
+            Ui.Place(_rushGlow.rectTransform, Pad, _loomY + LoomTop, W - 2 * Pad, LoomH);
             BuildComboChip();
             RebuildSlots();
         }
 
-        /// <summary>Плашка комбо над станком: «Комбо ×3» и полоска — сколько ещё станок может простоять.</summary>
+        /// <summary>
+        /// Плашка комбо в строке над станком, на месте подписи «Станок»: «Комбо ×3» и полоска —
+        /// сколько ещё станок может простоять. Компактная и целиком в своей строке.
+        /// </summary>
         private void BuildComboChip()
         {
-            _comboChip = Ui.Place(Ui.Node(Root, "Combo"), Pad, _loomY - 5f, 150, 26);
+            _comboChip = Ui.Place(Ui.Node(Root, "Combo"), Pad + 2f, _loomY + 2f, ComboW, 24);
             _comboGroup = _comboChip.gameObject.AddComponent<CanvasGroup>();
             _comboGroup.blocksRaycasts = false;
             _comboGroup.alpha = 0f;
             _comboBack = Ui.Box(_comboChip, "Back", 13, Palette.Link);
             Ui.Stretch(_comboBack.rectTransform);
-            _comboBolt = Ui.IconImage(_comboChip, Icon.Bolt, Color.white, 16, 13, 16);
-            _comboText = Ui.Label(_comboChip, "", 14, Color.white, 28, 0, 116, 22, true, TextAnchor.MiddleLeft);
+            _comboBolt = Ui.IconImage(_comboChip, Icon.Bolt, Color.white, 14, 11, 14);
+            _comboText = Ui.Fit(Ui.Label(_comboChip, "", 13, Color.white, 24, 0, ComboW - 30, 19, true, TextAnchor.MiddleLeft), 10);
             var track = Ui.Box(_comboChip, "HeatTrack", 1.5f, Palette.WithAlpha(Color.white, 0.3f));
-            Ui.Place(track.rectTransform, 28, 19, 112, 3);
+            Ui.Place(track.rectTransform, 10, 18, ComboW - 20, 3);
             _comboHeat = Ui.Box(track.rectTransform, "Heat", 1.5f, Color.white).rectTransform;
-            Ui.Place(_comboHeat, 0, 0, 112, 3);
+            Ui.Place(_comboHeat, 0, 0, ComboW - 20, 3);
         }
 
         private void RebuildSlots()
@@ -456,7 +470,7 @@ namespace KnittedPicture.Game
             {
                 // Подсказка лежит на пустом станке: в начале он всё равно пуст, а фронт картинки остаётся виден.
                 var width = W - 2 * Pad;
-                _tip = Ui.Card(Root, "Tip", Pad, _loomY + 22f, width, 74, 20, Palette.Ink, Palette.Ink, 0f);
+                _tip = Ui.Card(Root, "Tip", Pad, _loomY + LoomTop, width, LoomH, 20, Palette.Ink, Palette.Ink, 0f);
                 var label = Ui.Label(_tip, _level.tip, 15, Color.white, 16, 0, width - 32, 74);
                 label.lineSpacing = 0.9f;
                 var group = _tip.gameObject.AddComponent<CanvasGroup>();
@@ -917,8 +931,8 @@ namespace KnittedPicture.Game
                 _comboText.text = rush ? $"Разгон ×{_tempo.Combo}" : $"Комбо ×{_tempo.Combo}";
                 _comboBack.color = rush ? RushColor : Palette.Link;
                 _comboBolt.enabled = rush;
-                _comboText.rectTransform.anchoredPosition = new Vector2(rush ? 28f : 10f, 0f);
-                _comboHeat.sizeDelta = new Vector2(112f * _tempo.Heat, 3f);
+                _comboText.rectTransform.anchoredPosition = new Vector2(rush ? 24f : 10f, 0f);
+                _comboHeat.sizeDelta = new Vector2((ComboW - 20f) * _tempo.Heat, 3f);
             }
 
             if (_tempo.Rush)
