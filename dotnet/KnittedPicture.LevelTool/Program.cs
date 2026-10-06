@@ -100,7 +100,7 @@ namespace KnittedPicture.LevelTool
                 var mechanics = string.Join(" ", new[]
                 {
                     design.fabric.Length > 0 ? "канва" : null,
-                    design.band > 0 ? $"натяжение {design.band}" : null,
+                    level.band > 0 ? $"натяжение {level.band}" : null,
                     design.mystery ? "загадка" : null,
                     design.gold > 0 ? $"золото×{level.gold.Length}" : null,
                     design.extra > 0 ? $"лишние×{design.extra}" : null,

@@ -168,7 +168,7 @@ namespace KnittedPicture.LevelTool
                 colors = design.palette.Select(p => p.hex).ToArray(),
                 picture = picture,
                 canvas = canvas,
-                band = design.band,
+                band = design.playBand > 0 ? design.playBand : design.band,
                 gold = gold,
                 mystery = design.mystery,
                 slots = design.slots,

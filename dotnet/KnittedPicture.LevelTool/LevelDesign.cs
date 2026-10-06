@@ -23,6 +23,12 @@ namespace KnittedPicture.LevelTool
         /// <summary>Натяжение полотна: на сколько рядов фронт может обогнать самый нижний. 0 — без ограничения.</summary>
         public int band;
 
+        /// <summary>
+        /// Натяжение в игре, если оно мягче, чем при нарезке клубков (0 — то же, что band).
+        /// Клубки режутся с band, а играется уровень с playBand: раскладка та же, но столбцам свободнее.
+        /// </summary>
+        public int playBand;
+
         /// <summary>Загадка: эскиз рисунка скрыт.</summary>
         public bool mystery;
 
