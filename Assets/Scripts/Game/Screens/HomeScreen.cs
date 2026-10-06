@@ -155,7 +155,8 @@ namespace KnittedPicture.Game
         private void BuildCollection(float y)
         {
             var progress = App.Progress;
-            var showStreak = progress.Streak >= 2 && !progress.AllDone;
+            var warm = progress.WarmStartFor(progress.CurrentLevel);
+            var showStreak = warm.Any && !progress.AllDone;
             var bottom = H - 24f - 84f - 16f - (showStreak ? 44f : 0f);
             var available = Mathf.Max(220f, bottom - y);
             var viewport = Ui.Place(Ui.Node(Root, "Carousel"), 0, y, W, available);
@@ -219,8 +220,9 @@ namespace KnittedPicture.Game
                 var chipW = Mathf.Min(W - 32f, 300f);
                 var chip = Ui.Card(Root, "Streak", (W - chipW) / 2f, bottom + 4f, chipW, 32, 16, Palette.CoinSoft, Palette.CoinSoft, 0f);
                 Ui.IconImage(chip, Icon.Star, Palette.CoinShadow, 22, 16, 18);
-                var bonus = Economy.StreakBonus(progress.Streak + 1);
-                Ui.Label(chip, $"Серия побед: {progress.Streak} · +{bonus} за следующую", 14, Palette.Ink, 36, 0, chipW - 44, 32, true, TextAnchor.MiddleLeft);
+                // Что даст серия на старте следующего уровня — повод не перезапускать и вернуться за продолжением.
+                Ui.Fit(Ui.Label(chip, $"Тёплая серия ×{progress.Streak}: на старте {GameScreen.WarmGifts(warm)}", 14, Palette.Ink, 36, 0, chipW - 44, 32,
+                    true, TextAnchor.MiddleLeft), 10);
             }
         }
 

@@ -197,7 +197,7 @@ namespace KnittedPicture.Game
         {
             if (!_ended && !_failShown && !App.HasPopups && _game.Status == GameStatus.Playing)
             {
-                App.ShowPopup(new PausePopup(App, Restart, LeaveHome));
+                App.ShowPopup(new PausePopup(App, Restart, LeaveHome, StreakWarning()));
             }
         }
 
@@ -277,7 +277,7 @@ namespace KnittedPicture.Game
             }
             else if (!_ended)
             {
-                App.ShowPopup(new PausePopup(App, Restart, LeaveHome));
+                App.ShowPopup(new PausePopup(App, Restart, LeaveHome, StreakWarning()));
             }
 
             return true;
@@ -291,7 +291,7 @@ namespace KnittedPicture.Game
             {
                 if (!_ended)
                 {
-                    App.ShowPopup(new PausePopup(App, Restart, LeaveHome));
+                    App.ShowPopup(new PausePopup(App, Restart, LeaveHome, StreakWarning()));
                 }
             });
 
@@ -552,18 +552,54 @@ namespace KnittedPicture.Game
             if (_level.mystery)
             {
                 Banner("Загадка: что получится?", Palette.Link, bannerY);
+                bannerY += 66f;
+            }
+
+            // Подарок «тёплой серии» — тёплой плашкой: что именно дали на этот уровень.
+            if (_run.Warm.Any)
+            {
+                Banner($"Серия ×{_run.WarmStreak}: {WarmGifts(_run.Warm)}", Palette.CoinShadow, bannerY, 1.0f);
             }
         }
 
-        private void Banner(string text, Color color, float y)
+        /// <summary>Серия есть и уровень новый: перезапуск или уход её обнулят — честно предупредить.</summary>
+        private string? StreakWarning() =>
+            App.Progress.Streak > 0 && !App.Progress.IsCompleted(_level.id)
+                ? $"«Заново» или «Домой» обнулят тёплую серию ×{App.Progress.Streak}"
+                : null;
+
+        /// <summary>Подарок серии словами: «+1 слот, ножницы и отмена».</summary>
+        public static string WarmGifts(WarmStart warm)
         {
-            const float width = 260f;
+            var parts = new List<string>();
+            if (warm.ExtraSlot)
+            {
+                parts.Add("+1 слот");
+            }
+
+            if (warm.FreeScissors)
+            {
+                parts.Add("ножницы");
+            }
+
+            if (warm.FreeUndo)
+            {
+                parts.Add("отмена");
+            }
+
+            return parts.Count <= 1 ? string.Concat(parts) : string.Join(", ", parts.Take(parts.Count - 1)) + " и " + parts[parts.Count - 1];
+        }
+
+        private void Banner(string text, Color color, float y, float delay = 0f)
+        {
+            var width = Mathf.Min(W - 2 * Pad, 320f);
             var banner = Ui.Card(Root, "Banner", W / 2f - width / 2f, y, width, 56, 28, color, color, 0f);
-            Ui.Label(banner, text, 20, Color.white, 0, 0, width, 56);
+            Ui.Fit(Ui.Label(banner, text, 20, Color.white, 14, 0, width - 28, 56), 13);
             var group = banner.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
-            Tweens.Scale(banner, 0.6f, 1f, 0.3f);
-            Tweens.Fade(group, 1f, 0f, 0.4f, () => Object.Destroy(banner.gameObject), 1.6f);
+            banner.localScale = Vector3.zero;
+            Tweens.Scale(banner, 0.6f, 1f, 0.3f, Ease.OutBack, null, delay);
+            Tweens.Fade(group, 1f, 0f, 0.4f, () => Object.Destroy(banner.gameObject), 1.6f + delay);
         }
 
         // ---------- Обновление ----------
@@ -743,8 +779,9 @@ namespace KnittedPicture.Game
                 var available = type == BoosterType.Undo ? _game.CanUndo
                     : type == BoosterType.Slot ? _game.Slots.Count < LoomGame.MaxSlots
                     : true;
+                var free = type == BoosterType.Scissors ? _run.FreeScissors : type == BoosterType.Undo ? _run.FreeUndo : 0;
                 pair.Value.Refresh(unlocked, App.Progress.Stock(type), Economy.Price(type), Economy.UnlockLevel(type),
-                    available, type == BoosterType.Scissors && _scissors);
+                    available, type == BoosterType.Scissors && _scissors, free);
             }
         }
 
@@ -1061,9 +1098,7 @@ namespace KnittedPicture.Game
 
             if (_scissors)
             {
-                App.Progress.Pay(BoosterType.Scissors);
-                App.Save();
-                _boostersUsed++;
+                PayScissors();
                 _scissors = false;
                 HideScissorsBanner();
             }
@@ -1180,9 +1215,7 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            App.Progress.Pay(BoosterType.Scissors);
-            App.Save();
-            _boostersUsed++;
+            PayScissors();
             _scissors = false;
             HideScissorsBanner();
             Fx.Poof(_fx, at, Palette.Ink3, _slotSpool * 1.4f);
@@ -1333,7 +1366,8 @@ namespace KnittedPicture.Game
             }
 
             var percent = Mathf.FloorToInt(100f * _game.KnittedCount / _game.TotalStitches);
-            App.ShowPopup(new FailPopup(App, kind, rescue, reason, percent, Rescue, Restart, LeaveHome));
+            App.ShowPopup(new FailPopup(App, kind, rescue, reason, percent, Rescue, Restart, LeaveHome,
+                rescue == BoosterType.Scissors && _run.FreeScissors > 0, StreakWarning()));
         }
 
         private void Rescue(BoosterType type)
@@ -1407,7 +1441,7 @@ namespace KnittedPicture.Game
                     {
                         SetScissors(false);
                     }
-                    else if (App.Progress.CanAfford(type))
+                    else if (_run.FreeScissors > 0 || App.Progress.CanAfford(type))
                     {
                         SetScissors(true);
                     }
@@ -1423,14 +1457,23 @@ namespace KnittedPicture.Game
                     {
                         App.Toast("Пока нечего отменять");
                     }
-                    else if (App.Progress.Pay(type) == Payment.NotEnough)
+                    else if (_run.FreeUndo == 0 && App.Progress.Pay(type) == Payment.NotEnough)
                     {
                         NotEnough(type);
                     }
                     else
                     {
+                        // Подарок серии — сначала он, и звезда за него не снимается.
+                        if (_run.FreeUndo > 0)
+                        {
+                            _run.FreeUndo--;
+                        }
+                        else
+                        {
+                            _boostersUsed++;
+                        }
+
                         App.Save();
-                        _boostersUsed++;
                         _game.Undo();
                         _tempo.Break();
                         _overParShown = OverPar;
@@ -1503,6 +1546,22 @@ namespace KnittedPicture.Game
             {
                 AfterStatus(_game.Status);
             }
+        }
+
+        /// <summary>Ножницы сработали: сначала тратятся бесплатные от серии (без потери звезды), потом запас или монеты.</summary>
+        private void PayScissors()
+        {
+            if (_run.FreeScissors > 0)
+            {
+                _run.FreeScissors--;
+            }
+            else
+            {
+                App.Progress.Pay(BoosterType.Scissors);
+                _boostersUsed++;
+            }
+
+            App.Save();
         }
 
         private void NotEnough(BoosterType type)
@@ -1874,7 +1933,7 @@ namespace KnittedPicture.Game
 
             public Tap Tap { get; }
 
-            public void Refresh(bool unlocked, int stock, int price, int unlockLevel, bool available, bool active)
+            public void Refresh(bool unlocked, int stock, int price, int unlockLevel, bool available, bool active, int free = 0)
             {
                 _face.color = active ? Palette.PrimarySoft : Palette.Card;
                 if (!unlocked)
@@ -1887,7 +1946,14 @@ namespace KnittedPicture.Game
                 }
 
                 _group.alpha = available ? 1f : 0.55f;
-                if (stock > 0)
+                if (free > 0)
+                {
+                    // Подарок «тёплой серии»: зелёная плашка, бесплатно.
+                    _badgeBack.color = Palette.Primary;
+                    _badgeText.color = Color.white;
+                    _badgeText.text = "даром";
+                }
+                else if (stock > 0)
                 {
                     _badgeBack.color = Palette.Ink;
                     _badgeText.color = Color.white;
@@ -1922,5 +1988,15 @@ namespace KnittedPicture.Game
         public Dictionary<int, bool> GoldDone { get; } = new Dictionary<int, bool>();
 
         public bool ForeignShown { get; set; }
+
+        /// <summary>Подарок «тёплой серии» на этот уровень и длина серии на старте.</summary>
+        public WarmStart Warm { get; set; }
+
+        public int WarmStreak { get; set; }
+
+        /// <summary>Бесплатные ножницы и отмены от серии: тратятся первыми и не снимают звезду.</summary>
+        public int FreeScissors { get; set; }
+
+        public int FreeUndo { get; set; }
     }
 }

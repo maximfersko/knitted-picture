@@ -224,6 +224,18 @@ namespace KnittedPicture.Game
             Save();
             var game = new LoomGame(level);
             var run = new LevelRun();
+
+            // «Тёплая серия»: подарок на старт — лишний слот сразу, ножницы и отмена бесплатно.
+            var warm = Progress.WarmStartFor(levelId);
+            run.Warm = warm;
+            run.WarmStreak = Progress.Streak;
+            if (warm.ExtraSlot)
+            {
+                game.AddSlot();
+            }
+
+            run.FreeScissors = warm.FreeScissors ? 1 : 0;
+            run.FreeUndo = warm.FreeUndo ? 1 : 0;
             Show(() => new GameScreen(this, level, game, run));
             if (intro != null)
             {

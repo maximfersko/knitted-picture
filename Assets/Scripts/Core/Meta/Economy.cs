@@ -66,11 +66,6 @@ namespace KnittedPicture.Core
         /// <summary>Золотая петля, связанная во время комбо.</summary>
         public const int GoldCoins = 3;
 
-        /// <summary>Серия побед подряд без перезапуска: +5 монет за каждую победу в серии, максимум +15.</summary>
-        public const int StreakStep = 5;
-        public const int StreakMax = 15;
-
-        public static int StreakBonus(int streak) => System.Math.Min(System.Math.Max(0, streak - 1) * StreakStep, StreakMax);
 
         /// <summary>
         /// Звёзды: 3 — чисто и в цель по тапам; минус звезда за бустеры и минус за перебор тапов;

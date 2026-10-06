@@ -121,38 +121,47 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Win_streak_grows_pays_a_capped_bonus_and_breaks_on_restart()
+        public void Warm_streak_grows_its_start_gift_and_breaks_on_restart()
         {
             var progress = Fresh();
+            for (var id = 1; id <= 8; id++)
+            {
+                progress.TakeBoosterIntro(id);
+            }
 
-            Assert.Equal(0, progress.CompleteLevel(1, false).StreakCoins);
-            Assert.Equal(Economy.StreakStep, progress.CompleteLevel(2, false).StreakCoins);
-            progress.CompleteLevel(3, false);
-            progress.CompleteLevel(4, false);
-            var fifth = progress.CompleteLevel(5, true, comboCoins: 4);
-            Assert.Equal(Economy.StreakMax, fifth.StreakCoins);
-            Assert.Equal(Economy.HardWinReward + 4 + Economy.StreakMax + fifth.YarnCoins + fifth.PerkCoins, fifth.Total);
-            Assert.Equal(5, progress.Streak);
+            Assert.False(progress.WarmStartFor(9).Any);
+            progress.CompleteLevel(9, false);
+            var one = progress.WarmStartFor(10);
+            Assert.True(one.ExtraSlot);
+            Assert.False(one.FreeScissors);
 
+            progress.CompleteLevel(10, false);
+            Assert.True(progress.WarmStartFor(11).FreeScissors);
+            Assert.False(progress.WarmStartFor(11).FreeUndo);
+
+            // Отмена откроется только на 12-м: на 11-м третьей ступени нет, на 12-м есть.
+            progress.CompleteLevel(11, false);
+            Assert.False(progress.WarmStartFor(11).Any);
+            progress.TakeBoosterIntro(12);
+            Assert.True(progress.WarmStartFor(12).FreeUndo);
+
+            // На старых уровнях подарок не действует, серия обнуляется перезапуском.
+            Assert.False(progress.WarmStartFor(9).Any);
             progress.BreakStreak();
-            Assert.Equal(0, progress.CompleteLevel(6, false).StreakCoins);
+            Assert.False(progress.WarmStartFor(12).Any);
         }
 
         [Fact]
-        public void Replays_neither_grow_nor_pay_the_win_streak()
+        public void Replays_neither_grow_nor_break_the_win_streak()
         {
             var progress = Fresh();
             progress.CompleteLevel(1, false);
             progress.CompleteLevel(2, false);
             Assert.Equal(2, progress.Streak);
 
-            // Повтор старого уровня — не ферма монет: серия не растёт и бонуса нет.
             var replay = progress.CompleteLevel(1, false);
-            Assert.Equal(0, replay.StreakCoins);
             Assert.Equal(Economy.ReplayReward, replay.Total);
             Assert.Equal(2, progress.Streak);
-
-            Assert.Equal(2 * Economy.StreakStep, progress.CompleteLevel(3, false).StreakCoins);
         }
 
         [Fact]

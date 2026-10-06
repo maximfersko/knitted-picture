@@ -131,6 +131,25 @@ namespace KnittedPicture.Core
 
         public int Streak => _data.streak;
 
+        /// <summary>
+        /// «Тёплая серия»: победы подряд на новых уровнях дают бесплатный старт следующего нового уровня.
+        /// 1 победа — лишний слот на станке, 2 — ещё и бесплатные ножницы, 3 и больше — ещё и бесплатная отмена.
+        /// Только для открытых бустеров; на перепрохождении старых уровней серия не действует.
+        /// </summary>
+        public WarmStart WarmStartFor(int levelId)
+        {
+            if (IsCompleted(levelId) || _data.streak <= 0)
+            {
+                return default;
+            }
+
+            var tier = System.Math.Min(_data.streak, WarmStart.MaxTier);
+            return new WarmStart(
+                tier >= 1 && IsBoosterOpen(BoosterType.Slot, levelId),
+                tier >= 2 && IsBoosterOpen(BoosterType.Scissors, levelId),
+                tier >= 3 && IsBoosterOpen(BoosterType.Undo, levelId));
+        }
+
         /// <summary>Лучший результат уровня в звёздах, 0 — не пройден.</summary>
         public int StarsOf(int levelId) => levelId >= 1 && levelId <= _data.stars.Count ? _data.stars[levelId - 1] : 0;
 
@@ -589,7 +608,6 @@ namespace KnittedPicture.Core
             var reward = new WinReward(
                 firstTime ? Economy.Reward(hard) : Economy.ReplayReward,
                 comboCoins,
-                firstTime ? Economy.StreakBonus(_data.streak) : 0,
                 _data.streak,
                 stars,
                 stars > previousStars && !firstTime,
@@ -597,7 +615,7 @@ namespace KnittedPicture.Core
                 yarn.NewYarn,
                 yarn.DuplicateCoins,
                 firstTime ? YarnCatalog.CoinsBonus(PerkPower(YarnPerk.Coins)) : 0);
-            _data.coins += reward.BaseCoins + reward.ComboCoins + reward.StreakCoins + reward.PerkCoins;
+            _data.coins += reward.BaseCoins + reward.ComboCoins + reward.PerkCoins;
             _data.totalWins++;
             _data.winsSinceInterstitial++;
             return reward;
@@ -619,7 +637,7 @@ namespace KnittedPicture.Core
     /// <summary>Из чего сложилась награда за победу — экран победы показывает строки.</summary>
     public readonly struct WinReward
     {
-        public WinReward(int baseCoins, int comboCoins, int streakCoins, int streak, int stars, bool newRecord,
+        public WinReward(int baseCoins, int comboCoins, int streak, int stars, bool newRecord,
             int yarn = -1, bool newYarn = false, int yarnCoins = 0, int perkCoins = 0)
         {
             PerkCoins = perkCoins;
@@ -628,7 +646,6 @@ namespace KnittedPicture.Core
             YarnCoins = yarnCoins;
             BaseCoins = baseCoins;
             ComboCoins = comboCoins;
-            StreakCoins = streakCoins;
             Streak = streak;
             Stars = stars;
             NewRecord = newRecord;
@@ -638,7 +655,6 @@ namespace KnittedPicture.Core
 
         public int ComboCoins { get; }
 
-        public int StreakCoins { get; }
 
         public int Streak { get; }
 
@@ -661,6 +677,6 @@ namespace KnittedPicture.Core
         /// <summary>Повтор мотка поднял его уровень (монет за повтор нет).</summary>
         public bool YarnLevelUp => Yarn >= 0 && !NewYarn && YarnCoins == 0;
 
-        public int Total => BaseCoins + ComboCoins + StreakCoins + YarnCoins + PerkCoins;
+        public int Total => BaseCoins + ComboCoins + YarnCoins + PerkCoins;
     }
 }

@@ -100,17 +100,23 @@ namespace KnittedPicture.Game
 
     public sealed class PausePopup : Popup
     {
-        public PausePopup(App app, Action restart, Action home)
+        public PausePopup(App app, Action restart, Action home, string? warning = null)
             : base(app)
         {
             AddTitle("Пауза");
+            if (warning != null)
+            {
+                var warn = AddText(warning, 13, 1);
+                warn.color = Palette.CoinShadow;
+            }
+
             AddPrimary("Продолжить").OnClick(Close);
             var sound = AddSecondary(SoundLabel(app.Progress.SoundOn), app.Progress.SoundOn ? KnittedPicture.Game.Icon.SoundOn : KnittedPicture.Game.Icon.SoundOff);
             sound.OnClick(() =>
             {
                 app.SetSound(!app.Progress.SoundOn);
                 Close();
-                app.ShowPopup(new PausePopup(app, restart, home));
+                app.ShowPopup(new PausePopup(app, restart, home, warning));
             });
             var (again, toHome) = AddPair("Заново", KnittedPicture.Game.Icon.Restart, "Домой", KnittedPicture.Game.Icon.Home);
             again.OnClick(() =>
@@ -206,7 +212,7 @@ namespace KnittedPicture.Game
     public sealed class FailPopup : Popup
     {
         public FailPopup(App app, FailKind kind, BoosterType? rescue, string reason, int percent, Action<BoosterType> rescued,
-            Action restart, Action home)
+            Action restart, Action home, bool freeRescue = false, string? streakWarning = null)
             : base(app, bottomSheet: true)
         {
             AddIcon(kind == FailKind.Jam ? KnittedPicture.Game.Icon.Knot : KnittedPicture.Game.Icon.Moth, Palette.Danger, Palette.DangerSoft, 64);
@@ -224,13 +230,14 @@ namespace KnittedPicture.Game
             {
                 var type = rescue.Value;
                 var stock = app.Progress.Stock(type);
-                var title = stock > 0
+                var title = freeRescue ? $"{BoosterInfo.Name(type)} · подарок серии"
+                    : stock > 0
                     ? $"{BoosterInfo.Name(type)} · есть {stock}"
                     : $"{BoosterInfo.Name(type)} · {Economy.Price(type)} монет";
                 AddPrimary(title).OnClick(() =>
                 {
                     // Ножницы списываются, когда ими режут; слот и время — сразу.
-                    var paid = type == BoosterType.Scissors ? app.Progress.CanAfford(type) : app.Progress.Pay(type) != Payment.NotEnough;
+                    var paid = type == BoosterType.Scissors ? freeRescue || app.Progress.CanAfford(type) : app.Progress.Pay(type) != Payment.NotEnough;
                     if (!paid)
                     {
                         app.Toast("Не хватает монет, можно за видео");
@@ -242,6 +249,8 @@ namespace KnittedPicture.Game
                     Close();
                     rescued(type);
                 });
+                if (!freeRescue)
+                {
                 AddSecondary(BoosterInfo.Name(type) + " за видео", KnittedPicture.Game.Icon.Video).OnClick(() =>
                 {
                     Close();
@@ -249,7 +258,7 @@ namespace KnittedPicture.Game
                     {
                         if (!ok)
                         {
-                            app.ShowPopup(new FailPopup(app, kind, rescue, reason, percent, rescued, restart, home));
+                            app.ShowPopup(new FailPopup(app, kind, rescue, reason, percent, rescued, restart, home, freeRescue, streakWarning));
                             return;
                         }
 
@@ -263,6 +272,13 @@ namespace KnittedPicture.Game
                         rescued(type);
                     });
                 });
+                }
+            }
+
+            if (streakWarning != null)
+            {
+                var warn = AddText(streakWarning, 13, 1);
+                warn.color = Palette.CoinShadow;
             }
 
             var (again, toHome) = AddPair("Заново", KnittedPicture.Game.Icon.Restart, "Домой", KnittedPicture.Game.Icon.Home);

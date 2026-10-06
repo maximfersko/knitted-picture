@@ -99,11 +99,6 @@ namespace KnittedPicture.Game
                 parts.Add(($"золото {stats.GoldCaught}/{stats.GoldTotal}", stats.GoldCoins - goldBonus));
             }
 
-            if (reward.StreakCoins > 0)
-            {
-                parts.Add(($"серия ×{reward.Streak}", reward.StreakCoins));
-            }
-
             if (reward.PerkCoins + goldBonus > 0)
             {
                 parts.Add(("пряжа", reward.PerkCoins + goldBonus));
