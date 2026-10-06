@@ -131,7 +131,7 @@ namespace KnittedPicture.Core.Tests
             progress.CompleteLevel(4, false);
             var fifth = progress.CompleteLevel(5, true, comboCoins: 4);
             Assert.Equal(Economy.StreakMax, fifth.StreakCoins);
-            Assert.Equal(Economy.HardWinReward + 4 + Economy.StreakMax, fifth.Total);
+            Assert.Equal(Economy.HardWinReward + 4 + Economy.StreakMax + fifth.YarnCoins + fifth.PerkCoins, fifth.Total);
             Assert.Equal(5, progress.Streak);
 
             progress.BreakStreak();

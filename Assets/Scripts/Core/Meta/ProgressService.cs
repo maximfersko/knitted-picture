@@ -262,8 +262,10 @@ namespace KnittedPicture.Core
                 return new Granted(granted, false, 0);
             }
 
+            // Повтор сначала поднимает уровень мотка, и только на максимальном уровне становится монетами.
+            var maxedBefore = YarnLevel(yarn) >= YarnCatalog.MaxLevel;
             var isNew = AddYarn(yarn);
-            var duplicate = isNew ? 0 : YarnCatalog.DuplicateCoins(YarnCatalog.All[yarn].Rarity);
+            var duplicate = isNew || !maxedBefore ? 0 : YarnCatalog.DuplicateCoins(YarnCatalog.All[yarn].Rarity);
             _data.coins += duplicate;
             return new Granted(granted, isNew, duplicate);
         }
@@ -273,6 +275,31 @@ namespace KnittedPicture.Core
         public int YarnCount(int yarn) => yarn >= 0 && yarn < _data.yarns.Count ? _data.yarns[yarn] : 0;
 
         public bool HasYarn(int yarn) => YarnCount(yarn) > 0;
+
+        /// <summary>Уровень мотка 0..3: сколько штук собрано, но не больше максимума.</summary>
+        public int YarnLevel(int yarn) => System.Math.Min(YarnCount(yarn), YarnCatalog.MaxLevel);
+
+        /// <summary>Моток «в работе», -1 — нет.</summary>
+        public int ActiveYarn => HasYarn(_data.activeYarn) ? _data.activeYarn : -1;
+
+        /// <summary>Взять моток в работу: его бонус будет действовать в уровнях.</summary>
+        public bool SetActiveYarn(int yarn)
+        {
+            if (!HasYarn(yarn))
+            {
+                return false;
+            }
+
+            _data.activeYarn = yarn;
+            return true;
+        }
+
+        /// <summary>Сила бонуса perk от мотка в работе; 0 — у мотка другой бонус или мотка нет.</summary>
+        public int PerkPower(YarnPerk perk)
+        {
+            var yarn = ActiveYarn;
+            return yarn >= 0 && YarnCatalog.PerkOf(yarn) == perk ? YarnCatalog.Power(yarn, YarnLevel(yarn)) : 0;
+        }
 
         public int YarnKinds
         {
@@ -300,6 +327,12 @@ namespace KnittedPicture.Core
             }
 
             _data.yarns[yarn]++;
+
+            // Первый моток сразу берётся в работу: бонус начинает действовать без лишних шагов.
+            if (!HasYarn(_data.activeYarn))
+            {
+                _data.activeYarn = yarn;
+            }
             return _data.yarns[yarn] == 1;
         }
 
@@ -546,8 +579,9 @@ namespace KnittedPicture.Core
                 stars > previousStars && !firstTime,
                 firstTime ? yarn.Reward.Yarn : -1,
                 yarn.NewYarn,
-                yarn.DuplicateCoins);
-            _data.coins += reward.BaseCoins + reward.ComboCoins + reward.StreakCoins;
+                yarn.DuplicateCoins,
+                firstTime ? YarnCatalog.CoinsBonus(PerkPower(YarnPerk.Coins)) : 0);
+            _data.coins += reward.BaseCoins + reward.ComboCoins + reward.StreakCoins + reward.PerkCoins;
             _data.totalWins++;
             _data.winsSinceInterstitial++;
             return reward;
@@ -570,8 +604,9 @@ namespace KnittedPicture.Core
     public readonly struct WinReward
     {
         public WinReward(int baseCoins, int comboCoins, int streakCoins, int streak, int stars, bool newRecord,
-            int yarn = -1, bool newYarn = false, int yarnCoins = 0)
+            int yarn = -1, bool newYarn = false, int yarnCoins = 0, int perkCoins = 0)
         {
+            PerkCoins = perkCoins;
             Yarn = yarn;
             NewYarn = newYarn;
             YarnCoins = yarnCoins;
@@ -604,6 +639,12 @@ namespace KnittedPicture.Core
         /// <summary>Монеты за повторный моток (уже начислены вместе с ним).</summary>
         public int YarnCoins { get; }
 
-        public int Total => BaseCoins + ComboCoins + StreakCoins + YarnCoins;
+        /// <summary>Бонус пряжи «в работе» (Тёплая копилка) за новую картинку.</summary>
+        public int PerkCoins { get; }
+
+        /// <summary>Повтор мотка поднял его уровень (монет за повтор нет).</summary>
+        public bool YarnLevelUp => Yarn >= 0 && !NewYarn && YarnCoins == 0;
+
+        public int Total => BaseCoins + ComboCoins + StreakCoins + YarnCoins + PerkCoins;
     }
 }

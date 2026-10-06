@@ -51,6 +51,9 @@ namespace KnittedPicture.Core
         public int dailyBest;
 
         public int chestsOpened;
+
+        /// <summary>Моток «в работе»: его бонус действует в уровнях. -1 — ещё нет.</summary>
+        public int activeYarn = -1;
         public List<int> achievementsClaimed = new List<int>();
         public List<int> yarnSetsClaimed = new List<int>();
         public List<int> collectionsClaimed = new List<int>();

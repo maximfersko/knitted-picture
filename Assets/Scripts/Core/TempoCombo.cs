@@ -25,6 +25,19 @@ namespace KnittedPicture.Core
 
         private int _rushStitches;
 
+        /// <summary>Комбо со стандартными правилами или с бонусами пряжи «в работе».</summary>
+        public TempoCombo(float grace = Grace, int rushStitchesPerCoin = RushStitchesPerCoin)
+        {
+            GraceTime = grace;
+            StitchesPerCoin = rushStitchesPerCoin;
+        }
+
+        /// <summary>Сколько секунд простоя переживает серия на этом уровне.</summary>
+        public float GraceTime { get; }
+
+        /// <summary>Сколько петель «Разгона» дают монету на этом уровне.</summary>
+        public int StitchesPerCoin { get; }
+
         public int Combo { get; private set; }
 
         /// <summary>Лучшая серия за уровень.</summary>
@@ -41,7 +54,7 @@ namespace KnittedPicture.Core
         public int RushCoins { get; private set; }
 
         /// <summary>Сколько осталось до сгорания серии: 1 — станок работает, 0 — серия сгорела.</summary>
-        public float Heat => Combo > 0 ? Math.Max(0f, 1f - Idle / Grace) : 0f;
+        public float Heat => Combo > 0 ? Math.Max(0f, 1f - Idle / GraceTime) : 0f;
 
         /// <summary>Сколько раз за уровень включался «Разгон».</summary>
         public int RushCount { get; private set; }
@@ -79,7 +92,7 @@ namespace KnittedPicture.Core
             }
 
             Idle += dt;
-            if (Idle < Grace)
+            if (Idle < GraceTime)
             {
                 return false;
             }
@@ -97,7 +110,7 @@ namespace KnittedPicture.Core
             }
 
             _rushStitches++;
-            if (_rushStitches < RushStitchesPerCoin)
+            if (_rushStitches < StitchesPerCoin)
             {
                 return false;
             }

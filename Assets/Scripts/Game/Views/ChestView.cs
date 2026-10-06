@@ -163,34 +163,54 @@ namespace KnittedPicture.Game
             var pose = _pose;
             var lid = _lid;
             var clasp = _clasp;
-            Tweens.Run(pose, 0.7f, t =>
+            var scale = _scale;
+
+            // 1. Замах: сундук приседает и дважды коротко дёргается — внутри что-то есть.
+            Tweens.Run(pose, 0.42f, t =>
             {
-                var sway = Mathf.Sin(t * Mathf.PI * 4f) * 3.5f * (1f - t);
-                var squash = 0.05f * Ease.Bump(Mathf.Clamp01(t * 1.4f));
-                pose.localRotation = Quaternion.Euler(0, 0, sway);
-                pose.localScale = new Vector3(1f + squash * 0.6f, 1f - squash, 1f);
+                var squash = 0.1f * Ease.Bump(Mathf.Clamp01(t * 2.4f));
+                var shake = t > 0.35f ? Mathf.Sin((t - 0.35f) / 0.65f * Mathf.PI * 4f) * 6f * (1f - t) : 0f;
+                pose.localRotation = Quaternion.Euler(0, 0, shake);
+                pose.localScale = new Vector3(1f + squash * 0.7f, 1f - squash, 1f);
             }, null, () =>
             {
                 pose.localRotation = Quaternion.identity;
-                pose.localScale = Vector3.one;
-                Sfx.Play(Sound.Unlock, 0.5f);
-                var claspRest = clasp.anchoredPosition;
-                Tweens.Run(clasp, 0.25f, t =>
-                {
-                    clasp.anchoredPosition = claspRest + new Vector2(0, -6f * _scale * t);
-                    clasp.localRotation = Quaternion.Euler(0, 0, 18f * t);
-                }, Ease.OutCubic);
+                Sfx.Play(Sound.Unlock, 0.8f);
 
-                // Крышка откидывается: поднимается, чуть наклоняется и «уходит» назад (сжимается по высоте).
-                var rest = _lidRest;
-                Tweens.Run(lid, 0.6f, t =>
+                // 2. Хлопок: сундук подпрыгивает и вытягивается, застёжка отлетает, крышка откидывается с перелётом.
+                Tweens.Run(pose, 0.5f, t =>
                 {
-                    lid.anchoredPosition = rest + new Vector2(0, 16f * _scale * t);
-                    lid.localScale = new Vector3(1f - 0.04f * t, 1f - 0.5f * t, 1f);
-                    lid.localRotation = Quaternion.Euler(0, 0, -6f * t);
-                }, Ease.InOutCubic);
+                    var jump = t < 0.4f ? Ease.OutCubic(t / 0.4f) : 1f - Ease.InOutCubic((t - 0.4f) / 0.6f);
+                    pose.anchoredPosition = new Vector2(0, 22f * scale * jump);
+                    var stretch = t < 0.4f ? 0.08f * (1f - t / 0.4f) : -0.06f * Ease.Bump((t - 0.4f) / 0.6f);
+                    pose.localScale = new Vector3(1f - stretch * 0.6f, 1f + stretch, 1f);
+                }, null, () =>
+                {
+                    pose.anchoredPosition = Vector2.zero;
+                    pose.localScale = Vector3.one;
+                });
+
+                var claspRest = clasp.anchoredPosition;
+                Tweens.Run(clasp, 0.3f, t =>
+                {
+                    clasp.anchoredPosition = claspRest + new Vector2(4f * scale * t, -10f * scale * t);
+                    clasp.localRotation = Quaternion.Euler(0, 0, 32f * t);
+                }, Ease.OutBack);
+
+                var rest = _lidRest;
+                Tweens.Run(lid, 0.34f, t =>
+                {
+                    lid.anchoredPosition = rest + new Vector2(0, 26f * scale * t);
+                    lid.localScale = new Vector3(1f - 0.05f * t, 1f - 0.55f * t, 1f);
+                    lid.localRotation = Quaternion.Euler(0, 0, -10f * t);
+                }, Ease.OutBack);
+
+                // Вспышка света изнутри и короткий всплеск лучей, потом ровное свечение.
+                // Shine плавно ведёт яркость от текущей: вспышка = начать с почти полной.
+                _glow.color = Palette.WithAlpha(_glow.color, 0.95f);
+                _rays.color = Palette.WithAlpha(_rays.color, 0.45f);
                 Shine(0.6f, 0.22f);
-                Tweens.Delay(Root, 0.45f, opened);
+                Tweens.Delay(Root, 0.22f, opened);
             });
         }
 

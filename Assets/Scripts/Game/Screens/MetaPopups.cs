@@ -19,7 +19,7 @@ namespace KnittedPicture.Game
             Fx.Sparkle(Card, Ui.WorldCenter(badge), Palette.Coin, 12, 60f);
             AddTitle(title, 24);
 
-            var items = Items(granted);
+            var items = Items(app, granted);
             const float itemW = 92f;
             var x = CardWidth / 2f - items.Count * itemW / 2f;
             var y = Cursor;
@@ -49,7 +49,7 @@ namespace KnittedPicture.Game
 
         protected override bool CloseOnDim => false;
 
-        public static List<(Action<RectTransform> build, string caption, Color color)> Items(Granted granted)
+        public static List<(Action<RectTransform> build, string caption, Color color)> Items(App app, Granted granted)
         {
             var reward = granted.Reward;
             var items = new List<(Action<RectTransform>, string, Color)>();
@@ -72,7 +72,9 @@ namespace KnittedPicture.Game
             if (reward.Yarn >= 0)
             {
                 var yarn = YarnCatalog.All[reward.Yarn];
-                var caption = granted.NewYarn ? $"{yarn.Name}\nновый моток!" : $"{yarn.Name}\nповтор: +{granted.DuplicateCoins}";
+                var caption = granted.NewYarn ? $"{yarn.Name}\nновый моток!"
+                    : granted.YarnLevelUp ? $"{yarn.Name}\nуровень {app.Progress.YarnLevel(yarn.Id)}!"
+                    : $"{yarn.Name}\nповтор: +{granted.DuplicateCoins}";
                 items.Add((cell => YarnView.Create(cell, yarn, 46, 30, 56, true), caption, granted.NewYarn ? YarnView.RarityColor(yarn.Rarity) : Palette.Ink2));
             }
 

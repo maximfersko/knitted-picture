@@ -24,18 +24,82 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Duplicate_yarn_turns_into_coins()
+        public void Duplicate_yarn_levels_up_first_and_turns_into_coins_at_max_level()
         {
             var progress = Fresh();
             progress.AddYarn(0);
+            Assert.Equal(1, progress.YarnLevel(0));
             var coins = progress.Coins;
 
-            var granted = progress.Grant(new Reward(0, null, 0, yarn: 0), new Random(1));
+            // Повторы до третьего уровня поднимают уровень, монет за них нет.
+            var second = progress.Grant(new Reward(0, null, 0, yarn: 0), new Random(1));
+            Assert.False(second.NewYarn);
+            Assert.True(second.YarnLevelUp);
+            Assert.Equal(0, second.DuplicateCoins);
+            Assert.Equal(2, progress.YarnLevel(0));
+            progress.Grant(new Reward(0, null, 0, yarn: 0), new Random(1));
+            Assert.Equal(YarnCatalog.MaxLevel, progress.YarnLevel(0));
+            Assert.Equal(coins, progress.Coins);
 
-            Assert.False(granted.NewYarn);
-            Assert.Equal(YarnCatalog.DuplicateCoins(Rarity.Common), granted.DuplicateCoins);
-            Assert.Equal(coins + granted.DuplicateCoins, progress.Coins);
-            Assert.Equal(2, progress.YarnCount(0));
+            // На максимальном уровне повтор — монеты.
+            var extra = progress.Grant(new Reward(0, null, 0, yarn: 0), new Random(1));
+            Assert.False(extra.YarnLevelUp);
+            Assert.Equal(YarnCatalog.DuplicateCoins(Rarity.Common), extra.DuplicateCoins);
+            Assert.Equal(coins + extra.DuplicateCoins, progress.Coins);
+            Assert.Equal(YarnCatalog.MaxLevel, progress.YarnLevel(0));
+        }
+
+        [Fact]
+        public void First_yarn_goes_to_work_and_its_perk_grows_with_rarity_and_level()
+        {
+            var progress = Fresh();
+            Assert.Equal(-1, progress.ActiveYarn);
+            Assert.Equal(0, progress.PerkPower(YarnPerk.Coins));
+
+            progress.AddYarn(0); // Меринос: шерсть, обычная → копилка, сила 1
+            Assert.Equal(0, progress.ActiveYarn);
+            Assert.Equal(1, progress.PerkPower(YarnPerk.Coins));
+            Assert.Equal(0, progress.PerkPower(YarnPerk.Gold));
+
+            progress.AddYarn(7); // Шёлк: хлопок и шёлк, эпическая → комбо
+            Assert.Equal(0, progress.ActiveYarn);
+            Assert.False(progress.SetActiveYarn(3));
+            Assert.True(progress.SetActiveYarn(7));
+            Assert.Equal(3, progress.PerkPower(YarnPerk.Combo));
+            progress.AddYarn(7);
+            progress.AddYarn(7);
+            Assert.Equal(5, progress.PerkPower(YarnPerk.Combo));
+
+            Assert.Equal(YarnPerk.Coins, YarnCatalog.PerkOf(0));
+            Assert.Equal(YarnPerk.Rush, YarnCatalog.PerkOf(15));
+            Assert.Equal(5, YarnCatalog.RushStitches(1));
+            Assert.Equal(3, YarnCatalog.RushStitches(5));
+        }
+
+        [Fact]
+        public void Coins_perk_pays_on_new_pictures_only()
+        {
+            var progress = Fresh();
+            progress.AddYarn(3); // Кашемир: эпическая шерсть, сила 3
+            var first = progress.CompleteLevel(1, hard: false);
+            Assert.Equal(YarnCatalog.CoinsBonus(3), first.PerkCoins);
+            Assert.Equal(Economy.WinReward + first.PerkCoins + first.YarnCoins, first.Total);
+
+            var replay = progress.CompleteLevel(1, hard: false);
+            Assert.Equal(0, replay.PerkCoins);
+        }
+
+        [Fact]
+        public void Tempo_combo_uses_the_yarn_bonus()
+        {
+            var combo = new TempoCombo(grace: TempoCombo.Grace + 0.5f, rushStitchesPerCoin: 3);
+            for (var i = 0; i < TempoCombo.RushFrom; i++)
+            {
+                combo.OnPlaced();
+            }
+
+            Assert.False(combo.Update(TempoCombo.Grace + 0.3f, working: false));
+            Assert.Equal(1, Enumerable.Range(0, 3).Count(_ => combo.OnStitch()));
         }
 
         [Fact]

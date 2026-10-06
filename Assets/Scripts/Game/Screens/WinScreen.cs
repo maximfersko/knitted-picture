@@ -87,13 +87,14 @@ namespace KnittedPicture.Game
             _coins = Ui.CoinPill(Root, _shownCoins, W - 16, 8);
             Confetti();
 
-            var rows = 1 + (stats.RushCoins > 0 ? 1 : 0) + (stats.GoldCoins > 0 ? 1 : 0) + (reward.StreakCoins > 0 ? 1 : 0) + (reward.Yarn >= 0 ? 1 : 0);
+            var rows = 1 + (stats.RushCoins > 0 ? 1 : 0) + (stats.GoldCoins > 0 ? 1 : 0) + (reward.StreakCoins > 0 ? 1 : 0) + (reward.Yarn >= 0 ? 1 : 0)
+                + (reward.PerkCoins > 0 ? 1 : 0);
             var compact = H < 760f || rows >= 4;
             var hoopY = compact ? 52f : 64f;
 
             // Всё под пяльцами (звёзды, заголовок, подсказка, карточка наград) должно уместиться над «Дальше»:
             // на коротких экранах с множеством строк пяльцы уменьшаются, а не карточка уезжает под кнопку.
-            var lines = 1 + (stats.RushCoins > 0 ? 1 : 0) + (stats.GoldCoins > 0 ? 1 : 0) + (reward.StreakCoins > 0 ? 1 : 0);
+            var lines = 1 + (stats.RushCoins > 0 ? 1 : 0) + (stats.GoldCoins > 0 ? 1 : 0) + (reward.StreakCoins > 0 ? 1 : 0) + (reward.PerkCoins > 0 ? 1 : 0);
             var cardEstimate = 10f + lines * RowH + (reward.Yarn >= 0 ? 44f : 0f) + 4f + 38f + 10f;
             var nextTop = H - 24f - 44f - 6f - 70f;
             var room = nextTop - 12f - hoopY - 10f - 48f - 40f - 30f - cardEstimate;
@@ -133,6 +134,11 @@ namespace KnittedPicture.Game
             if (reward.StreakCoins > 0)
             {
                 rowY = Row(card, rowY, $"Серия побед ×{reward.Streak}", reward.StreakCoins);
+            }
+
+            if (reward.PerkCoins > 0 && app.Progress.ActiveYarn >= 0)
+            {
+                rowY = Row(card, rowY, $"Пряжа «{YarnCatalog.All[app.Progress.ActiveYarn].Name}»", reward.PerkCoins);
             }
 
             if (reward.Yarn >= 0)
@@ -302,6 +308,16 @@ namespace KnittedPicture.Game
                 Ui.Label(card, $"Новый моток: {yarn.Name}", 15, Palette.Ink, 50, y + 4, W - 32 - 60, 20, true, TextAnchor.MiddleLeft);
                 Ui.Label(card, $"{YarnCatalog.RarityName(yarn.Rarity)} · в корзинке {App.Progress.YarnKinds}/{YarnCatalog.Count}", 12,
                     YarnView.RarityColor(yarn.Rarity), 50, y + 22, W - 32 - 60, 18, false, TextAnchor.MiddleLeft);
+                return y + 44f;
+            }
+
+            if (reward.YarnLevelUp)
+            {
+                // Повтор поднял уровень мотка — его бонус стал сильнее.
+                var level = App.Progress.YarnLevel(yarn.Id);
+                Ui.Fit(Ui.Label(card, $"{yarn.Name}: уровень {level}!", 15, Palette.Ink, 50, y + 4, W - 32 - 60, 20, true, TextAnchor.MiddleLeft), 11);
+                Ui.Fit(Ui.Label(card, YarnCatalog.PerkText(YarnCatalog.PerkOf(yarn.Id), YarnCatalog.Power(yarn.Id, level)), 12,
+                    Palette.Primary, 50, y + 22, W - 32 - 60, 18, false, TextAnchor.MiddleLeft), 9);
                 return y + 44f;
             }
 

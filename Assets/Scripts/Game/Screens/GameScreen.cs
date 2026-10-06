@@ -51,7 +51,10 @@ namespace KnittedPicture.Game
         private readonly Dictionary<BoosterType, BoosterButton> _boosters = new Dictionary<BoosterType, BoosterButton>();
         private readonly HashSet<int> _arriving = new HashSet<int>();
         private readonly HashSet<int> _finishedColors = new HashSet<int>();
-        private readonly TempoCombo _tempo = new TempoCombo();
+        private readonly TempoCombo _tempo;
+
+        /// <summary>Монет за пойманную золотую петлю: база плюс бонус пряжи «в работе».</summary>
+        private readonly int _goldPerLoop;
 
         private PictureView _picture = null!;
         private RectTransform _pictureCard = null!;
@@ -124,6 +127,13 @@ namespace KnittedPicture.Game
         {
             _level = level;
             _game = game;
+
+            // Пряжа «в работе» меняет только награды и темп, не правила: уровень остаётся честным.
+            var progress = app.Progress;
+            _tempo = new TempoCombo(
+                TempoCombo.Grace + YarnCatalog.ComboBonus(progress.PerkPower(YarnPerk.Combo)),
+                YarnCatalog.RushStitches(progress.PerkPower(YarnPerk.Rush)));
+            _goldPerLoop = Economy.GoldCoins + YarnCatalog.GoldBonus(progress.PerkPower(YarnPerk.Gold));
             _colors = level.colors.Select(Palette.Hex).ToArray();
 
             BuildHud();
@@ -293,7 +303,7 @@ namespace KnittedPicture.Game
                 var title = taps ? "Цель по тапам" : "Золотые петли";
                 var info = taps
                     ? $"Уложись в {_game.Par} тапов без бустеров, и получишь третью звезду. Считаются тапы по клубкам и узелкам."
-                    : $"Петли в золотом кольце. Свяжи их, пока горит комбо (×2 и выше), и получишь +{Economy.GoldCoins} монеты за каждую.";
+                    : $"Петли в золотом кольце. Свяжи их, пока горит комбо (×2 и выше), и получишь +{_goldPerLoop} монет за каждую.";
                 chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, title, info)));
                 Ui.IconImage(chip, icon, tint, 18, 14, 18);
                 var label = Ui.Fit(Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft), 10);
@@ -871,9 +881,9 @@ namespace KnittedPicture.Game
             }
 
             _goldCaught++;
-            _goldCoins += Economy.GoldCoins;
+            _goldCoins += _goldPerLoop;
             Fx.Sparkle(_fx, at, Palette.Coin, 10, 34f);
-            Fx.FloatText(_fx, at, "+" + Economy.GoldCoins, Palette.CoinShadow, 20f);
+            Fx.FloatText(_fx, at, "+" + _goldPerLoop, Palette.CoinShadow, 20f);
             Sfx.Play(Sound.Coin, 0.7f);
             RefreshGoals();
             if (_goldGoal != null)
@@ -1407,7 +1417,7 @@ namespace KnittedPicture.Game
             }
 
             _goldCaught = _goldDone.Values.Count(caught => caught);
-            _goldCoins = _goldCaught * Economy.GoldCoins;
+            _goldCoins = _goldCaught * _goldPerLoop;
             RefreshGoals();
         }
 

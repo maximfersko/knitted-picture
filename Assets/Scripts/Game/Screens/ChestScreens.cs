@@ -94,15 +94,30 @@ namespace KnittedPicture.Game
             _buttonGroup.blocksRaycasts = false;
             tap.OnClick(() => _confirm?.Invoke());
 
-            // Сундук мягко опускается на место и начинает «дышать».
+            // Сундук падает сверху с ускорением, ударяется, приседает и подпрыгивает — потом «дышит».
             var chest = _chest.Root;
             var rest = chest.anchoredPosition;
-            Tweens.Run(chest, 0.7f, t => chest.anchoredPosition = rest + new Vector2(0, 260f * (1f - t)), Ease.OutCubic, () =>
+            chest.anchoredPosition = rest + new Vector2(0, 420f);
+            Tweens.Run(chest, 0.42f, t => chest.anchoredPosition = rest + new Vector2(0, 420f * (1f - t * t)), null, () =>
             {
-                Tweens.Run(chest, 0.25f, t => chest.localScale = new Vector3(1f + 0.03f * Ease.Bump(t), 1f - 0.04f * Ease.Bump(t), 1f));
-                _chest.Breathe();
-                _chest.Shine(0.28f, 0.06f);
-            });
+                Sfx.Play(Sound.Knot, 0.8f);
+                Fx.Sparkle(_stage, chest.TransformPoint(new Vector3(-70f, -60f, 0)), Color.white, 5, 40f);
+                Fx.Sparkle(_stage, chest.TransformPoint(new Vector3(70f, -60f, 0)), Color.white, 5, 40f);
+                Tweens.Run(chest, 0.4f, t =>
+                {
+                    // Удар: сплющился, отскочил на десяток точек вверх и встал.
+                    var squash = t < 0.3f ? Ease.Bump(t / 0.3f) * 0.14f : 0f;
+                    var hop = t >= 0.3f ? Mathf.Sin((t - 0.3f) / 0.7f * Mathf.PI) * 14f : 0f;
+                    chest.localScale = new Vector3(1f + squash * 0.8f, 1f - squash, 1f);
+                    chest.anchoredPosition = rest + new Vector2(0, hop);
+                }, null, () =>
+                {
+                    chest.localScale = Vector3.one;
+                    chest.anchoredPosition = rest;
+                    _chest.Breathe();
+                    _chest.Shine(0.28f, 0.06f);
+                });
+            }, 0.05f);
             var hint = _hint;
             Tweens.Run(hint, 1.8f, t => hint.color = Palette.WithAlpha(Color.white, 0.45f + 0.4f * Ease.Bump(t)), null, null, 0.8f, true);
         }
@@ -116,9 +131,9 @@ namespace KnittedPicture.Game
 
         private float TrayY => ChestTopY + 96f;
 
-        private float StepTitleY => TrayY + 34f;
+        private float StepTitleY => TrayY + 52f;
 
-        private float CardsTop => StepTitleY + 44f;
+        private float CardsTop => StepTitleY + 40f;
 
         private float CardW => Mathf.Min(104f, (_w - 32f - 20f) / 3f);
 
@@ -137,14 +152,14 @@ namespace KnittedPicture.Game
                 var chest = _chest.Root;
                 var from = chest.anchoredPosition;
                 var to = new Vector2(from.x, -ChestTopY);
-                Tweens.Run(chest, 0.6f, t =>
+                Tweens.Run(chest, 0.38f, t =>
                 {
                     chest.anchoredPosition = Vector2.Lerp(from, to, t);
                     chest.localScale = Vector3.one * Mathf.Lerp(1f, 0.66f, t);
-                }, Ease.InOutCubic, () =>
+                }, Ease.OutCubic, () =>
                 {
                     ShowCoins();
-                    Tweens.Delay(_stage, 0.7f, ShowBoosters);
+                    Tweens.Delay(_stage, 0.55f, ShowBoosters);
                 });
             });
         }
@@ -195,18 +210,22 @@ namespace KnittedPicture.Game
             var target = Ui.WorldCenter(chip);
             var from = _chest.Mouth;
             var unit = _stage.lossyScale.x;
-            const int flyers = 7;
+            const int flyers = 10;
             for (var i = 0; i < flyers; i++)
             {
-                var coin = Ui.Coin(_stage, 0, 0, 20);
+                // Фонтан: монета вылетает вверх веером, на миг зависает и падает в лоток.
+                var coin = Ui.Coin(_stage, 0, 0, 22);
                 coin.position = from;
-                var control = (from + target) / 2f + new Vector3((i - flyers / 2f) * 14f * unit, 60f * unit, 0);
+                var spread = (i - (flyers - 1) / 2f) / flyers;
+                var peak = from + new Vector3(spread * 220f * unit, UnityEngine.Random.Range(90f, 150f) * unit, 0);
+                var spin = UnityEngine.Random.Range(-540f, 540f);
                 var index = i;
-                Tweens.Run(coin, 0.55f, t =>
+                Tweens.Run(coin, 0.62f, t =>
                 {
                     var u = 1f - t;
-                    coin.position = u * u * from + 2f * u * t * control + t * t * target;
-                    coin.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, Ease.Bump(t) + t * 0.5f);
+                    coin.position = u * u * from + 2f * u * t * peak + t * t * target;
+                    coin.localScale = Vector3.one * (t < 0.2f ? Mathf.Lerp(0.3f, 1.15f, t / 0.2f) : Mathf.Lerp(1.15f, 0.8f, (t - 0.2f) / 0.8f));
+                    coin.localRotation = Quaternion.Euler(0, 0, spin * t);
                 }, Ease.InOutCubic, () =>
                 {
                     UnityEngine.Object.Destroy(coin.gameObject);
@@ -216,8 +235,8 @@ namespace KnittedPicture.Game
                         label.text = "+" + Mathf.RoundToInt(total * (index + 1f) / flyers);
                     }
 
-                    Tweens.Punch(chip, 0.08f, 0.16f);
-                }, i * 0.07f);
+                    Tweens.Punch(chip, 0.1f, 0.14f);
+                }, i * 0.045f);
             }
         }
 
@@ -242,17 +261,31 @@ namespace KnittedPicture.Game
             var outline = Ui.Outline(visual, 20, Palette.Primary, 3f);
             outline.enabled = false;
 
+            // Карточка выпрыгивает из сундука: дугой вверх с вращением, падает на место и пружинит.
             var rest = visual.anchoredPosition;
             var start = (Vector2)root.InverseTransformPoint(_chest.Mouth);
+            var tilt = (index - (count - 1) / 2f) * 14f + (count == 1 ? 10f : 0f);
             visual.anchoredPosition = start;
-            visual.localScale = Vector3.one * 0.3f;
+            visual.localScale = Vector3.one * 0.2f;
             group.alpha = 0f;
-            Tweens.Run(visual, 0.55f, t =>
+            Tweens.Run(visual, 0.5f, t =>
             {
-                visual.anchoredPosition = Vector2.LerpUnclamped(start, rest, t);
-                visual.localScale = Vector3.one * Mathf.Lerp(0.3f, 1f, t);
-                group.alpha = Mathf.Clamp01(t * 3f);
-            }, Ease.OutCubic, () => Sfx.Play(Sound.Pick, 0.4f), delay);
+                var arc = 4f * t * (1f - t) * 110f;
+                visual.anchoredPosition = Vector2.LerpUnclamped(start, rest, t) + new Vector2(0, arc);
+                visual.localScale = Vector3.one * Mathf.Lerp(0.2f, 1f, Ease.OutCubic(t));
+                visual.localRotation = Quaternion.Euler(0, 0, tilt * (1f - t) * 2f);
+                group.alpha = Mathf.Clamp01(t * 5f);
+            }, null, () =>
+            {
+                visual.localRotation = Quaternion.identity;
+                visual.anchoredPosition = rest;
+                Sfx.Play(Sound.Pick, 0.6f);
+                Tweens.Run(visual, 0.24f, t =>
+                {
+                    var squash = Ease.Bump(t) * 0.1f * (1f - t);
+                    visual.localScale = new Vector3(1f + squash, 1f - squash, 1f);
+                }, null, () => visual.localScale = Vector3.one);
+            }, delay);
 
             var card = (root, visual, group, outline);
             _cards.Add(card);
@@ -297,9 +330,14 @@ namespace KnittedPicture.Game
             {
                 var yarn = YarnCatalog.All[_contents.Yarns[index]];
                 var set = SetOf(yarn.Id);
-                _description.text = App.Progress.HasYarn(yarn.Id)
-                    ? $"Такой уже есть: повтор даст {YarnCatalog.DuplicateCoins(yarn.Rarity)} монет"
-                    : $"{yarn.Description}. Набор «{set}»";
+                // Выбор со смыслом: что даст моток — новый бонус, следующий уровень или монеты за повтор.
+                var level = App.Progress.YarnLevel(yarn.Id);
+                var perk = YarnCatalog.PerkOf(yarn.Id);
+                _description.text = level == 0
+                    ? $"Набор «{set}». Бонус: {YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, 1))}"
+                    : level < YarnCatalog.MaxLevel
+                        ? $"Уровень {level + 1}: {YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, level + 1))}"
+                        : $"Уже максимальный уровень: повтор даст {YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
             }
 
             ShowButton("Взять");
@@ -360,11 +398,11 @@ namespace KnittedPicture.Game
             var count = _contents.BoosterCount;
             _description.text = count > 1 ? "Большой сундук: возьмёшь сразу 2 штуки" : "Один из трёх. Нажми, чтобы узнать, что он делает";
             var options = _contents.Boosters;
-            Tweens.Delay(_stage, 0.1f * (options.Length - 1) + 0.6f, () => _selectable = true);
+            Tweens.Delay(_stage, 0.12f * (options.Length - 1) + 0.75f, () => _selectable = true);
             for (var i = 0; i < options.Length; i++)
             {
                 var type = options[i];
-                var (_, visual, _, _) = AddCard(i, options.Length, i * 0.1f);
+                var (_, visual, _, _) = AddCard(i, options.Length, i * 0.12f);
                 var w = CardW;
                 var circle = Ui.Image(visual, "Back", Art.Circle, Palette.PrimarySoft);
                 Ui.PlaceCenter(circle.rectTransform, w / 2f, 46, 60, 60);
@@ -405,11 +443,11 @@ namespace KnittedPicture.Game
             _stepTitle.text = "Выбери моток";
             _description.text = "Рубашка подсказывает редкость";
             var options = _contents.Yarns;
-            Tweens.Delay(_stage, 0.75f + 0.4f * (options.Length - 1) + 0.45f, () => _selectable = true);
+            Tweens.Delay(_stage, 0.8f + 0.28f * (options.Length - 1) + 0.45f, () => _selectable = true);
             for (var i = 0; i < options.Length; i++)
             {
                 var yarn = YarnCatalog.All[options[i]];
-                var card = AddCard(i, options.Length, i * 0.1f);
+                var card = AddCard(i, options.Length, i * 0.12f);
                 var visual = card.visual;
                 var w = CardW;
 
@@ -437,15 +475,22 @@ namespace KnittedPicture.Game
                 name.lineSpacing = 0.85f;
                 Ui.Fit(name, 10);
                 var isNew = !App.Progress.HasYarn(yarn.Id);
-                var chipText = isNew ? "новый!" : $"+{YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
-                var chip = Ui.Box(front, "State", 11, isNew ? Palette.DangerSoft : Palette.CoinSoft).rectTransform;
+                var yarnLevel = App.Progress.YarnLevel(yarn.Id);
+                var levelUp = !isNew && yarnLevel < YarnCatalog.MaxLevel;
+                var chipText = isNew ? "новый!" : levelUp ? $"ур. {yarnLevel + 1}!" : $"+{YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
+                var chip = Ui.Box(front, "State", 11, isNew ? Palette.DangerSoft : levelUp ? Palette.PrimarySoft : Palette.CoinSoft).rectTransform;
                 Ui.PlaceCenter(chip, w / 2f, 130, w - 16, 22);
-                Ui.Fit(Ui.Label(chip, chipText, 12, isNew ? Palette.Danger : Palette.CoinShadow, 0, 0, w - 16, 22), 9);
+                Ui.Fit(Ui.Label(chip, chipText, 12, isNew ? Palette.Danger : levelUp ? Palette.Primary : Palette.CoinShadow, 0, 0, w - 16, 22), 9);
+
+                // Значок бонуса в углу: сразу видно, чем поможет моток.
+                var perkBack = Ui.Image(front, "Perk", Art.Circle, Palette.Surface);
+                Ui.PlaceCenter(perkBack.rectTransform, 18, 18, 26, 26);
+                YarnCardPopup.PerkIcon(front, YarnCatalog.PerkOf(yarn.Id), 18, 18, 15);
                 front.gameObject.SetActive(false);
 
                 // Переворот по очереди, когда все карточки легли.
                 var rare = yarn.Rarity != Rarity.Common;
-                var flipDelay = 0.75f + i * 0.4f;
+                var flipDelay = 0.8f + i * 0.28f;
                 Tweens.Delay(visual, flipDelay, () => Flip(visual, back, front, rare ? ink : Palette.Ink3));
             }
 
@@ -504,14 +549,19 @@ namespace KnittedPicture.Game
             _step = Step.Done;
             HideButton();
             var yarn = YarnCatalog.All[_contents.Yarns[yarnChoice]];
-            var duplicate = granted != null && !granted.Value.NewYarn;
-            var chip = AddTrayChip(c => YarnView.Create(c, yarn, 22, 20, 28, true), duplicate ? "+" + granted!.Value.DuplicateCoins : yarn.Name);
+            var levelUp = granted != null && granted.Value.YarnLevelUp;
+            var duplicate = granted != null && !granted.Value.NewYarn && !levelUp;
+            var level = App.Progress.YarnLevel(yarn.Id);
+            var chip = AddTrayChip(c => YarnView.Create(c, yarn, 22, 20, 28, true),
+                duplicate ? "+" + granted!.Value.DuplicateCoins : levelUp ? $"ур. {level}" : yarn.Name);
             ClearCards(yarnChoice, Ui.WorldCenter(chip));
 
             _stepTitle.text = "Всё в корзинке";
             _description.text = duplicate
-                ? $"«{yarn.Name}» уже был: повтор стал монетами"
-                : $"Новый моток «{yarn.Name}» в коллекции";
+                ? $"«{yarn.Name}» уже на максимуме: повтор стал монетами"
+                : levelUp
+                    ? $"«{yarn.Name}» теперь уровня {level}: бонус сильнее"
+                    : $"Новый моток «{yarn.Name}» в коллекции";
             _description.rectTransform.anchoredPosition = new Vector2(24, -(CardsTop + 10f));
             Fx.Sparkle(_stage, Ui.WorldCenter(chip), Palette.Coin, 10, 60f);
             Sfx.Play(Sound.Win, 0.5f);
@@ -667,7 +717,7 @@ namespace KnittedPicture.Game
         {
             var progress = App.Progress;
             var cardW = W - 32f;
-            const float cardH = 136f;
+            const float cardH = 182f;
             var card = Ui.Card(content, "Basket", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
             var circle = Ui.Image(card, "Back", Art.Circle, Palette.DangerSoft);
             Ui.PlaceCenter(circle.rectTransform, 44, 40, 56, 56);
@@ -697,6 +747,7 @@ namespace KnittedPicture.Game
                 Ui.Label(card, "Пока пусто: мотки дают за новые картинки и сундуки", 13, Palette.Ink3, 16, 86, cardW - 32, 24, false);
             }
 
+            CollectionsScreen.ActiveYarnStrip(card, 12, 128, cardW - 24, App.ShowChest);
             card.gameObject.AddComponent<Tap>().OnClick(() => App.ShowCollections(CollectionsTab.Yarn));
             return y + cardH;
         }

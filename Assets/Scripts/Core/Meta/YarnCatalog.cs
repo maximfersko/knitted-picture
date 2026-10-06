@@ -17,6 +17,25 @@ namespace KnittedPicture.Core
         Rainbow,
     }
 
+    /// <summary>
+    /// Чем помогает пряжа «в работе». Только награды и темп, но не правила головоломки:
+    /// уровни, цель по тапам и три звезды остаются честными для всех.
+    /// </summary>
+    public enum YarnPerk
+    {
+        /// <summary>Шерсть: монеты за каждую новую картинку.</summary>
+        Coins,
+
+        /// <summary>Хлопок и шёлк: комбо гаснет позже.</summary>
+        Combo,
+
+        /// <summary>Особая пряжа: золотые петли дороже.</summary>
+        Gold,
+
+        /// <summary>Праздничная: «Разгон» чаще приносит монету.</summary>
+        Rush,
+    }
+
     public enum Rarity
     {
         Common,
@@ -132,7 +151,52 @@ namespace KnittedPicture.Core
 
         public static string RarityName(Rarity rarity) => rarity == Rarity.Common ? "обычная" : rarity == Rarity.Rare ? "редкая" : "эпическая";
 
-        /// <summary>Монеты за повторный моток.</summary>
+        /// <summary>Монеты за повторный моток, когда он уже максимального уровня.</summary>
         public static int DuplicateCoins(Rarity rarity) => rarity == Rarity.Common ? 10 : rarity == Rarity.Rare ? 20 : 40;
+
+        // ---------- Характеристики ----------
+
+        /// <summary>Уровень мотка растёт от повторов: 1 моток — ур. 1, второй — ур. 2, третий — ур. 3.</summary>
+        public const int MaxLevel = 3;
+
+        /// <summary>Бонус мотка — общий для набора: так набор читается как «тема» (шерсть греет копилку и т.д.).</summary>
+        public static YarnPerk PerkOf(int yarn) => (YarnPerk)SetOf(yarn).Id;
+
+        /// <summary>Сила бонуса 1..5: редкость (1, 2, 3) плюс уровень сверх первого.</summary>
+        public static int Power(int yarn, int level)
+        {
+            var rarity = All[yarn].Rarity == Rarity.Common ? 1 : All[yarn].Rarity == Rarity.Rare ? 2 : 3;
+            return level <= 0 ? 0 : rarity + System.Math.Min(level, MaxLevel) - 1;
+        }
+
+        /// <summary>+монет за новую картинку.</summary>
+        public static int CoinsBonus(int power) => 2 * power;
+
+        /// <summary>+секунд, которые комбо переживает простой станка.</summary>
+        public static float ComboBonus(int power) => 0.1f * power;
+
+        /// <summary>+монет за каждую пойманную золотую петлю.</summary>
+        public static int GoldBonus(int power) => power;
+
+        /// <summary>Петель «Разгона» на монету (без пряжи — 6).</summary>
+        public static int RushStitches(int power) => 6 - (power + 1) / 2;
+
+        public static string PerkTitle(YarnPerk perk) =>
+            perk == YarnPerk.Coins ? "Тёплая копилка"
+            : perk == YarnPerk.Combo ? "Ровный ход"
+            : perk == YarnPerk.Gold ? "Золотые руки"
+            : "Праздничный разгон";
+
+        /// <summary>Что даёт бонус при этой силе — коротко, для карточки и экрана победы.</summary>
+        public static string PerkText(YarnPerk perk, int power)
+        {
+            switch (perk)
+            {
+                case YarnPerk.Coins: return $"+{CoinsBonus(power)} монет за каждую новую картинку";
+                case YarnPerk.Combo: return $"Комбо держится на {ComboBonus(power):0.0} с дольше";
+                case YarnPerk.Gold: return $"+{GoldBonus(power)} к монетам за золотую петлю";
+                default: return $"В «Разгоне» монета каждые {RushStitches(power)} петель, а не 6";
+            }
+        }
     }
 }

@@ -42,5 +42,8 @@ namespace KnittedPicture.Core
         public int DuplicateCoins { get; }
 
         public int TotalCoins => Reward.Coins + DuplicateCoins;
+
+        /// <summary>Повтор мотка поднял его уровень (а не превратился в монеты).</summary>
+        public bool YarnLevelUp => Reward.Yarn >= 0 && !NewYarn && DuplicateCoins == 0;
     }
 }

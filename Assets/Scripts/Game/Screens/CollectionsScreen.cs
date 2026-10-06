@@ -310,6 +310,37 @@ namespace KnittedPicture.Game
             return y;
         }
 
+        /// <summary>Полоска «В работе»: моток, его бонус; тап — карточка мотка. Её же видно на экране сундука.</summary>
+        public static void ActiveYarnStrip(RectTransform parent, float x, float y, float w, System.Action refresh)
+        {
+            var app = App.Instance;
+            if (app == null)
+            {
+                return;
+            }
+
+            var progress = app.Progress;
+            var active = progress.ActiveYarn;
+            var strip = Ui.Box(parent, "Active", 14, active >= 0 ? Palette.PrimarySoft : Palette.Surface, active >= 0).rectTransform;
+            Ui.Place(strip, x, y, w, 40);
+            if (active < 0)
+            {
+                Ui.Fit(Ui.Label(strip, "В работе пока ничего: найди первый моток", 12, Palette.Ink2, 12, 0, w - 24, 40, false,
+                    TextAnchor.MiddleLeft), 9);
+                return;
+            }
+
+            var yarn = YarnCatalog.All[active];
+            var perk = YarnCatalog.PerkOf(active);
+            YarnView.Create(strip, yarn, 22, 20, 26, true);
+            Ui.Fit(Ui.Label(strip, $"В работе: {yarn.Name} · ур. {progress.YarnLevel(active)}", 13, Palette.Ink, 42, 3, w - 52, 18, true,
+                TextAnchor.MiddleLeft), 10);
+            Ui.Fit(Ui.Label(strip, YarnCatalog.PerkText(perk, YarnCatalog.Power(active, progress.YarnLevel(active))), 11, Palette.Primary,
+                42, 20, w - 52, 16, false, TextAnchor.MiddleLeft), 8);
+            strip.gameObject.AddComponent<Tap>().OnClick(() =>
+                app.ShowPopup(new YarnCardPopup(app, active, refresh)));
+        }
+
         /// <summary>
         /// Шапка карточки: название и подпись слева; справа — зелёная плашка «Собрана»
         /// или счёт со звездой.
@@ -341,7 +372,8 @@ namespace KnittedPicture.Game
             var cardW = W - 32f;
             var y = 6f;
 
-            var banner = Ui.Card(content, "Basket", 16, y, cardW, 80, 24, Palette.Card, Palette.CardShadow, 3f);
+            const float bannerH = 128f;
+            var banner = Ui.Card(content, "Basket", 16, y, cardW, bannerH, 24, Palette.Card, Palette.CardShadow, 3f);
             var circle = Ui.Image(banner, "Back", Art.Circle, Palette.DangerSoft);
             Ui.PlaceCenter(circle.rectTransform, 44, 40, 56, 56);
             var logo = Ui.Image(banner, "Ball", Art.YarnBall, Palette.Hex("#FF6FA5"));
@@ -349,10 +381,12 @@ namespace KnittedPicture.Game
             Ui.Label(banner, "Корзинка пряжи", 17, Palette.Ink, 84, 12, cardW - 140, 24, true, TextAnchor.MiddleLeft);
             Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 84, 34, cardW - 140, 18, false, TextAnchor.MiddleLeft);
             Ui.ProgressBar(banner, 84, 58, cardW - 104, 7, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Danger);
-            Ui.InfoButton(banner, cardW - 30, 26, "Откуда пряжа",
+            Ui.InfoButton(banner, cardW - 30, 26, "Пряжа и её бонусы",
                 "Моток выпадает за каждую новую картинку, из звёздного сундука и на 7-й день подарков. " +
-                "Повтор превращается в монеты: 10, 20 или 40 по редкости. За полный набор дают награду.", 26);
-            y += 80f + 16f;
+                "Один моток «в работе» даёт бонус в каждом уровне: монеты, комбо, золото или разгон. " +
+                "Повтор поднимает уровень мотка (до 3), а на третьем уровне превращается в монеты. За полный набор дают награду.", 26);
+            ActiveYarnStrip(banner, 12, 76, cardW - 24, () => App.ShowCollections(CollectionsTab.Yarn));
+            y += bannerH + 16f;
 
             const float gap = 8f;
             foreach (var set in YarnCatalog.Sets)
@@ -381,20 +415,29 @@ namespace KnittedPicture.Game
                     Ui.Outline(cell, 16, has ? Palette.Line : Palette.WithAlpha(Palette.Line, 0.7f), 1.5f);
                     YarnView.Create(cell, yarn, cellW / 2f, 38, 52, has);
 
-                    Ui.Label(cell, has ? yarn.Name : "???", 13, has ? Palette.Ink : Palette.Ink3, 2, 70, cellW - 4, 20);
-                    RarityChip(cell, yarn.Rarity, cellW / 2f, 104f);
-                    var count = progress.YarnCount(yarn.Id);
-                    if (count > 1)
-                    {
-                        var chip = Ui.Card(cell, "Count", cellW - 32, 6, 26, 18, 9, Palette.Ink, Palette.Ink, 0f);
-                        Ui.Label(chip, "×" + count, 11, Color.white, 0, 0, 26, 18);
-                    }
+                    Ui.Fit(Ui.Label(cell, has ? yarn.Name : "???", 13, has ? Palette.Ink : Palette.Ink3, 2, 70, cellW - 4, 20), 10);
+                    RarityChip(cell, yarn.Rarity, cellW / 2f, 104f, cellW - 8f);
 
+                    // Уровень мотка (растёт от повторов) и отметка «в работе».
                     if (has)
                     {
-                        var info = yarn;
-                        cell.gameObject.AddComponent<Tap>().OnClick(() => App.Toast($"{info.Name}: {info.Description}"));
+                        var levelChip = Ui.Card(cell, "Level", cellW - 36, 6, 30, 18, 9, Palette.Ink, Palette.Ink, 0f);
+                        Ui.Label(levelChip, "ур." + progress.YarnLevel(yarn.Id), 10, Color.white, 0, 0, 30, 18);
                     }
+
+                    if (progress.ActiveYarn == yarn.Id)
+                    {
+                        Ui.Outline(cell, 16, Palette.Primary, 2.5f);
+                        var mark = Ui.Image(cell, "Active", Art.Circle, Palette.Primary);
+                        Ui.PlaceCenter(mark.rectTransform, 15, 15, 20, 20);
+                        Ui.IconImage(cell, Icon.Check, Color.white, 15, 15, 12);
+                    }
+
+                    // Тап — карточка с характеристикой; у ненайденного видно, за чем охотиться.
+                    var id = yarn.Id;
+                    var tap = cell.gameObject.AddComponent<Tap>();
+                    cell.GetComponent<UnityEngine.UI.Image>().raycastTarget = true;
+                    tap.OnClick(() => App.ShowPopup(new YarnCardPopup(App, id, () => App.ShowCollections(CollectionsTab.Yarn))));
                 }
 
                 var target = set;
@@ -409,7 +452,7 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Плашка редкости: обычная — серая, редкая — фиолетовая, эпическая — золотая.</summary>
-        public static void RarityChip(RectTransform parent, Rarity rarity, float cx, float cy)
+        public static void RarityChip(RectTransform parent, Rarity rarity, float cx, float cy, float maxW = 0f)
         {
             var back = rarity == Rarity.Common ? Palette.Track : rarity == Rarity.Rare ? Palette.Hex("#EDE4FF") : Palette.CoinSoft;
             var text = YarnCatalog.RarityName(rarity);
@@ -417,6 +460,14 @@ namespace KnittedPicture.Game
             var label = Ui.Label(chip, text, 11, YarnView.RarityColor(rarity));
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
             var w = Mathf.Max(text.Length * 6.6f, label.preferredWidth) + 18f;
+            if (maxW > 0f && w > maxW)
+            {
+                // «эпическая» не вылезает за узкую плитку: плашка по ширине плитки, текст ужимается.
+                w = maxW;
+                label.horizontalOverflow = HorizontalWrapMode.Wrap;
+                Ui.Fit(label, 8);
+            }
+
             Ui.PlaceCenter(chip, cx, cy, w, 20);
             Ui.Stretch(label.rectTransform);
         }
