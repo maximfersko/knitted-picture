@@ -187,6 +187,28 @@ namespace KnittedPicture.Game
             return root.gameObject.AddComponent<Tap>();
         }
 
+        /// <summary>
+        /// Две равные кнопки рядом: обычно «Заново» и «Домой». Иконка над подписью —
+        /// так обе читаются сразу и не путаются с главной кнопкой.
+        /// </summary>
+        protected (Tap left, Tap right) AddPair(string leftText, Icon leftIcon, string rightText, Icon rightIcon, float height = 64f)
+        {
+            const float gap = 10f;
+            var w = (Inner - gap) / 2f;
+            var left = PairButton(24, w, height, leftText, leftIcon);
+            var right = PairButton(24 + w + gap, w, height, rightText, rightIcon);
+            _cursor += height + 14f;
+            return (left, right);
+        }
+
+        private Tap PairButton(float x, float w, float h, string text, Icon icon)
+        {
+            var root = Ui.Card(Card, "Pair", x, _cursor, w, h, 18, Palette.Surface, Palette.CardShadow, 3f, true);
+            Ui.IconImage(root, icon, Palette.Ink, w / 2f, 22, 22);
+            Ui.Label(root, text, 14, Palette.Ink, 0, 34, w, 24);
+            return root.gameObject.AddComponent<Tap>();
+        }
+
         protected Tap AddLink(string text, Icon? icon = null)
         {
             var tap = Ui.TextButton(Card, text, 24, _cursor, Inner, 44, Palette.Ink2, 15, icon);

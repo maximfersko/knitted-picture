@@ -83,7 +83,8 @@ namespace KnittedPicture.Game
             }
 
             var tap = root.gameObject.AddComponent<Tap>();
-            tap.Interactable = state != TileState.Locked;
+            // Закрытая плитка тоже отвечает на тап — подсказкой, когда она откроется.
+            tap.PressFeedback = state != TileState.Locked;
             return tap;
         }
     }

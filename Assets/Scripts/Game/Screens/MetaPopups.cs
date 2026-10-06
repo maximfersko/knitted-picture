@@ -195,3 +195,71 @@ namespace KnittedPicture.Game
         }
     }
 }
+
+namespace KnittedPicture.Game
+{
+    /// <summary>
+    /// Карточка пройденного уровня: картинка, звёзды, чего не хватает до трёх и «Перевязать».
+    /// Не даёт случайно запустить старый уровень одним тапом.
+    /// </summary>
+    public sealed class LevelInfoPopup : Popup
+    {
+        public LevelInfoPopup(App app, KnittedPicture.Core.LevelData level)
+            : base(app)
+        {
+            const float size = 150f;
+            var frame = Ui.Card(Card, "Frame", CardWidth / 2f - size / 2f, Cursor, size, size, 24, Palette.Surface, Palette.CardShadow, 3f);
+            MiniPicture.Create(frame, level, size / 2f, size / 2f, size - 24f);
+            Space(size + 18f);
+
+            AddTitle(level.name, 24);
+            var collection = KnittedPicture.Core.Collections.Of(level.id);
+            var sub = AddText($"Уровень {level.id} · {collection.Name}", 14, 1);
+            sub.color = Palette.Ink2;
+
+            var stars = app.Progress.StarsOf(level.id);
+            var y = Cursor - 6f;
+            for (var i = 0; i < 3; i++)
+            {
+                var star = Ui.Image(Card, "Star", Art.Icon(Icon.Star), i < stars ? Palette.Coin : Palette.Track);
+                Ui.PlaceCenter(star.rectTransform, CardWidth / 2f + (i - 1) * 40f, y + 16f, i == 1 ? 38f : 32f, i == 1 ? 38f : 32f);
+            }
+
+            Space(40f);
+            var hint = stars >= 3
+                ? "Три звезды — лучший результат"
+                : level.par > 0
+                    ? $"Третья звезда — без бустеров и за {level.par} тапов"
+                    : "Третья звезда — без бустеров и спасений";
+            AddText(hint, 14, 1.2f);
+            AddPrimary(stars >= 3 ? "Перевязать" : "Перевязать на три звезды").OnClick(() => app.StartLevel(level.id));
+            AddLink("Закрыть").OnClick(Close);
+            Finish(8);
+        }
+
+        /// <summary>Тап по плитке уровня где угодно: закрытый — подсказка, текущий — сразу в игру, пройденный — карточка.</summary>
+        public static void OnTile(App app, int levelId, RectTransform tile)
+        {
+            var progress = app.Progress;
+            if (!app.Levels.Has(levelId))
+            {
+                return;
+            }
+
+            if (!progress.IsAvailable(levelId))
+            {
+                Tweens.Shake(tile, 6f, 0.3f);
+                app.Toast($"Уровень {levelId} пока закрыт — сейчас ты на уровне {progress.CurrentLevel}");
+                return;
+            }
+
+            if (!progress.IsCompleted(levelId))
+            {
+                app.StartLevel(levelId);
+                return;
+            }
+
+            app.ShowPopup(new LevelInfoPopup(app, app.Levels.Get(levelId)));
+        }
+    }
+}

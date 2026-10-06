@@ -341,10 +341,13 @@ namespace KnittedPicture.Game
                     p.Box(12, 12, 9, 7, 3.5f, false).Triangle(10, 9, 15.5f, 12, 10, 15);
                     break;
                 case KnittedPicture.Game.Icon.Home:
-                    p.Line(3, 11, 12, 3.5f).Line(12, 3.5f, 21, 11).Line(6, 9, 6, 20).Line(18, 9, 18, 20).Line(6, 20, 18, 20);
+                    // Домик: крыша, стены и дверь.
+                    p.Stroke(2.4f).Line(3, 11.5f, 12, 3.5f).Line(12, 3.5f, 21, 11.5f)
+                        .Box(12, 15, 6.5f, 5.5f, 1.6f, false).Box(12, 18, 1.7f, 2.8f, 0.8f, true);
                     break;
                 case KnittedPicture.Game.Icon.Restart:
-                    p.Arc(12, 12.5f, 7.5f, -50, 220).Line(16.8f, 6.8f, 20, 4.5f).Line(16.8f, 6.8f, 19.5f, 9.8f);
+                    // Круговая стрелка по часовой: дуга и залитый наконечник сверху.
+                    p.Stroke(2.5f).Arc(12, 12.5f, 7, 0, 262).Triangle(16.4f, 5.5f, 11, 1.8f, 11, 9.2f);
                     break;
                 case KnittedPicture.Game.Icon.SoundOn:
                     p.Box(5.5f, 12, 2.5f, 3, 1, true).Triangle(5, 12, 12.5f, 5, 12.5f, 19).Arc(13, 12, 4, -45, 45).Arc(13, 12, 7.5f, -45, 45);

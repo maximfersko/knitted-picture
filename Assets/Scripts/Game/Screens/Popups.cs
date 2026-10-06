@@ -92,11 +92,6 @@ namespace KnittedPicture.Game
         {
             AddTitle("Пауза");
             AddPrimary("Продолжить").OnClick(Close);
-            AddSecondary("Начать заново", KnittedPicture.Game.Icon.Restart).OnClick(() =>
-            {
-                Close();
-                restart();
-            });
             var sound = AddSecondary(SoundLabel(app.Progress.SoundOn), app.Progress.SoundOn ? KnittedPicture.Game.Icon.SoundOn : KnittedPicture.Game.Icon.SoundOff);
             sound.OnClick(() =>
             {
@@ -104,7 +99,13 @@ namespace KnittedPicture.Game
                 Close();
                 app.ShowPopup(new PausePopup(app, restart));
             });
-            AddLink("На главную", KnittedPicture.Game.Icon.Home).OnClick(app.ShowHome);
+            var (again, home) = AddPair("Заново", KnittedPicture.Game.Icon.Restart, "Домой", KnittedPicture.Game.Icon.Home);
+            again.OnClick(() =>
+            {
+                Close();
+                restart();
+            });
+            home.OnClick(app.ShowHome);
             Finish(12);
         }
 
@@ -244,17 +245,18 @@ namespace KnittedPicture.Game
                 });
             }
 
-            AddLink("Начать заново", KnittedPicture.Game.Icon.Restart).OnClick(() =>
+            var (again, home) = AddPair("Заново", KnittedPicture.Game.Icon.Restart, "Домой", KnittedPicture.Game.Icon.Home);
+            again.OnClick(() =>
             {
                 Close();
                 restart();
             });
-            AddLink("На главную", KnittedPicture.Game.Icon.Home).OnClick(() =>
+            home.OnClick(() =>
             {
                 app.Progress.BreakStreak();
                 app.ShowHome();
             });
-            Finish(4);
+            Finish(12);
         }
 
         public override bool Closable => false;

@@ -53,6 +53,21 @@ namespace UnityEngine.EventSystems
         void OnPointerExit(PointerEventData eventData);
     }
 
+    public interface IBeginDragHandler : IEventSystemHandler
+    {
+        void OnBeginDrag(PointerEventData eventData);
+    }
+
+    public interface IDragHandler : IEventSystemHandler
+    {
+        void OnDrag(PointerEventData eventData);
+    }
+
+    public interface IEndDragHandler : IEventSystemHandler
+    {
+        void OnEndDrag(PointerEventData eventData);
+    }
+
     public interface IPointerClickHandler : IEventSystemHandler
     {
         void OnPointerClick(PointerEventData eventData);

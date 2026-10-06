@@ -190,6 +190,7 @@ namespace KnittedPicture.Game
                 return;
             }
 
+            HomeScreen.ResetCarousel();
             var level = Levels.Get(levelId);
             var intro = Progress.TakeBoosterIntro(levelId);
             Save();

@@ -158,7 +158,9 @@ namespace KnittedPicture.Game
                     var state = progress.IsCompleted(id) ? TileState.Done : progress.IsAvailable(id) ? TileState.Current : TileState.Locked;
                     var x = 16 + i * (tile + gap);
                     var levelId = id;
-                    MiniPicture.Tile(content, level, state, x, y, tile, progress.StarsOf(id)).OnClick(() => App.StartLevel(levelId));
+                    var tap = MiniPicture.Tile(content, level, state, x, y, tile, progress.StarsOf(id));
+                    var rt = (RectTransform)tap.transform;
+                    tap.OnClick(() => LevelInfoPopup.OnTile(App, levelId, rt));
                     var name = Ui.Label(content, state == TileState.Locked ? "???" : level.name, 11, Palette.Ink2, x - 4, y + tile + 7, tile + 8, 28,
                         false, TextAnchor.UpperCenter);
                     name.lineSpacing = 0.85f;
@@ -238,43 +240,44 @@ namespace KnittedPicture.Game
 
         // ---------- Достижения ----------
 
+        /// <summary>
+        /// Три секции: «Можно забрать» (золотые карточки с кнопкой), «В процессе» (прогресс и награда),
+        /// «Получено» (белые карточки с зелёной плашкой — не теряются на фоне).
+        /// </summary>
         private float BuildAchievements(RectTransform content)
         {
             var progress = App.Progress;
             var y = 4f;
-            const float rowH = 76f;
-
-            // Сначала то, что можно забрать, потом незавершённые, в конце — полученные.
-            var ordered = new System.Collections.Generic.List<AchievementInfo>(Achievements.All);
-            ordered.Sort((a, b) => Rank(a).CompareTo(Rank(b)) != 0 ? Rank(a).CompareTo(Rank(b)) : a.Id.CompareTo(b.Id));
-            foreach (var a in ordered)
+            var sections = new[]
             {
-                var claimed = progress.IsAchievementClaimed(a);
-                var can = progress.CanClaimAchievement(a);
-                var row = Ui.Card(content, "Achievement", 16, y, W - 32, rowH - 8, 18, claimed ? Palette.Track : Palette.Card, Palette.CardShadow,
-                    claimed ? 0f : 2f);
-                var icon = Ui.Image(row, "Icon", Art.Circle, can ? Palette.CoinSoft : claimed ? Palette.PrimarySoft : Palette.Track);
-                Ui.PlaceCenter(icon.rectTransform, 34, (rowH - 8) / 2f, 44, 44);
-                Ui.IconImage(row, claimed ? Icon.Check : Icon.Trophy, can ? Palette.CoinShadow : claimed ? Palette.Primary : Palette.Ink3, 34, (rowH - 8) / 2f, 24);
-                Ui.Label(row, a.Title, 15, Palette.Ink, 64, 8, W - 32 - 64 - 110, 20, true, TextAnchor.MiddleLeft);
-                Ui.Label(row, a.Description, 12, Palette.Ink2, 64, 28, W - 32 - 64 - 110, 18, false, TextAnchor.MiddleLeft);
-                var value = progress.AchievementValue(a);
-                Ui.ProgressBar(row, 64, 52, W - 32 - 64 - 120, 6, (float)value / a.Target, can || claimed ? Palette.Primary : Palette.Link);
-
-                var right = W - 32 - 100;
-                if (can)
+                ("Можно забрать", 0),
+                ("В процессе", 1),
+                ("Получено", 2),
+            };
+            foreach (var (title, rank) in sections)
+            {
+                var items = new System.Collections.Generic.List<AchievementInfo>();
+                foreach (var a in Achievements.All)
                 {
-                    var target = a;
-                    Ui.Button(row, "Забрать", right, 14, 88, 40, Palette.Primary, Palette.PrimaryShadow, Color.white, 15)
-                        .OnClick(() => Claim(progress.ClaimAchievement(target, App.Random), target.Title, Icon.Trophy, CollectionsTab.Achievements));
-                }
-                else if (!claimed)
-                {
-                    Ui.Label(row, $"{value}/{a.Target}", 13, Palette.Ink2, right, 4, 88, 22, true, TextAnchor.MiddleRight);
-                    RewardHint(row, a.Reward, right, 30);
+                    if (Rank(a) == rank)
+                    {
+                        items.Add(a);
+                    }
                 }
 
-                y += rowH;
+                if (items.Count == 0)
+                {
+                    continue;
+                }
+
+                Ui.Label(content, $"{title} · {items.Count}", 14, Palette.Ink2, 20, y, W - 40, 24, true, TextAnchor.MiddleLeft);
+                y += 28f;
+                foreach (var a in items)
+                {
+                    y = AchievementRow(content, a, y);
+                }
+
+                y += 10f;
             }
 
             return y;
@@ -282,18 +285,73 @@ namespace KnittedPicture.Game
             int Rank(AchievementInfo a) => progress.CanClaimAchievement(a) ? 0 : progress.IsAchievementClaimed(a) ? 2 : 1;
         }
 
-        private static void RewardHint(RectTransform parent, Reward reward, float x, float y)
+        private float AchievementRow(RectTransform content, AchievementInfo a, float y)
         {
-            var text = reward.Coins > 0 ? "+" + reward.Coins : "";
-            Ui.Label(parent, text, 14, Palette.Ink, x, y, 60, 24, true, TextAnchor.MiddleRight);
-            if (reward.Coins > 0)
+            const float rowH = 72f;
+            const float rightW = 96f;
+            var progress = App.Progress;
+            var claimed = progress.IsAchievementClaimed(a);
+            var can = progress.CanClaimAchievement(a);
+            var w = W - 32f;
+            var row = Ui.Card(content, "Achievement", 16, y, w, rowH, 18, can ? Palette.CoinSoft : Palette.Card, Palette.CardShadow, 3f);
+            if (can)
             {
-                Ui.Coin(parent, x + 72, y + 12, 18);
+                Ui.Outline(row, 18, Palette.Coin, 2f);
             }
 
+            var circle = Ui.Image(row, "Icon", Art.Circle, can ? Palette.Coin : claimed ? Palette.PrimarySoft : Palette.Surface);
+            Ui.PlaceCenter(circle.rectTransform, 36, rowH / 2f, 44, 44);
+            Ui.IconImage(row, claimed ? Icon.Check : Icon.Trophy, can ? Color.white : claimed ? Palette.Primary : Palette.Ink3, 36, rowH / 2f, 24);
+
+            var textW = w - 68f - rightW - 8f;
+            var hasBar = !claimed;
+            var titleY = hasBar ? 9f : 14f;
+            Ui.Label(row, a.Title, 15, Palette.Ink, 68, titleY, textW, 20, true, TextAnchor.MiddleLeft);
+            Ui.Label(row, a.Description, 12, Palette.Ink2, 68, titleY + 21, textW, 18, false, TextAnchor.MiddleLeft);
+            var value = progress.AchievementValue(a);
+            if (hasBar)
+            {
+                Ui.ProgressBar(row, 68, 54, textW, 6, (float)value / a.Target, can ? Palette.Primary : Palette.Link);
+            }
+
+            var right = w - rightW - 10f;
+            if (can)
+            {
+                var target = a;
+                Ui.Button(row, "Забрать", right, 16, rightW, 40, Palette.Primary, Palette.PrimaryShadow, Color.white, 15)
+                    .OnClick(() => Claim(progress.ClaimAchievement(target, App.Random), target.Title, Icon.Trophy, CollectionsTab.Achievements));
+            }
+            else if (claimed)
+            {
+                var chip = Ui.Card(row, "Done", right + 4, 22, rightW - 4, 28, 14, Palette.PrimarySoft, Palette.PrimarySoft, 0f);
+                Ui.IconImage(chip, Icon.Check, Palette.Primary, 16, 14, 14);
+                Ui.Label(chip, "Получено", 12, Palette.Primary, 26, 0, rightW - 32, 28, true, TextAnchor.MiddleLeft);
+            }
+            else
+            {
+                Ui.Label(row, $"{value}/{a.Target}", 13, Palette.Ink2, right, 8, rightW, 20, true, TextAnchor.MiddleRight);
+                RewardInline(row, a.Reward, right + rightW, 42);
+            }
+
+            return y + rowH + 10f;
+        }
+
+        /// <summary>Награда в одну строку, выровненная по правому краю: «+50 [монета] [бустер]».</summary>
+        private static void RewardInline(RectTransform parent, Reward reward, float rightEdge, float cy)
+        {
+            var x = rightEdge;
             if (reward.Booster != null)
             {
-                Ui.IconImage(parent, BoosterInfo.Icon(reward.Booster.Value), Palette.Primary, x + 72, y + 34, 16);
+                var badge = Ui.Image(parent, "Booster", Art.Circle, Palette.PrimarySoft);
+                Ui.PlaceCenter(badge.rectTransform, x - 11, cy, 22, 22);
+                Ui.IconImage(parent, BoosterInfo.Icon(reward.Booster.Value), Palette.Primary, x - 11, cy, 14);
+                x -= 26f;
+            }
+
+            if (reward.Coins > 0)
+            {
+                Ui.Coin(parent, x - 10, cy, 18);
+                Ui.Label(parent, "+" + reward.Coins, 14, Palette.Ink, x - 74, cy - 11, 58, 22, true, TextAnchor.MiddleRight);
             }
         }
 

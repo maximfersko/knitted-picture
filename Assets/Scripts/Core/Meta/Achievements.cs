@@ -37,16 +37,16 @@ namespace KnittedPicture.Core
         {
             new AchievementInfo(0, "Первая петля", "Довяжи первую картинку", 1, p => p.Data.completed.Count, Reward.CoinsOnly(20)),
             new AchievementInfo(1, "Пять картинок", "Довяжи 5 картинок", 5, p => p.Data.completed.Count, Reward.CoinsOnly(50)),
-            new AchievementInfo(2, "Разгон!", "Включи «Разгон» — комбо ×5", 1, p => p.Data.rushCount, Reward.CoinsOnly(30)),
+            new AchievementInfo(2, "Разгон!", "Разгони станок до комбо ×5", 1, p => p.Data.rushCount, Reward.CoinsOnly(30)),
             new AchievementInfo(3, "Скоростная вязка", "Включи «Разгон» 15 раз", 15, p => p.Data.rushCount, new Reward(40, BoosterType.Scissors, 1)),
             new AchievementInfo(4, "Золотые руки", "Поймай 10 золотых петель", 10, p => p.Data.goldCaught, Reward.CoinsOnly(60)),
-            new AchievementInfo(5, "Перфекционист", "Пройди 5 уровней на три звезды", 5, p => p.ThreeStarLevels, new Reward(50, BoosterType.Slot, 1)),
+            new AchievementInfo(5, "Перфекционист", "5 уровней на три звезды", 5, p => p.ThreeStarLevels, new Reward(50, BoosterType.Slot, 1)),
             new AchievementInfo(6, "Тысяча петель", "Свяжи 1000 петель", 1000, p => p.Data.totalStitches, Reward.CoinsOnly(80)),
             new AchievementInfo(7, "Комбо ×10", "Держи серию до ×10", 10, p => p.Data.bestCombo, new Reward(50, BoosterType.Undo, 1)),
             new AchievementInfo(8, "Собиратель", "Собери 6 разных мотков", 6, p => p.YarnKinds, Reward.CoinsOnly(100)),
-            new AchievementInfo(9, "Целая коллекция", "Заверши коллекцию альбома", 1, p => p.CompletedCollections, Reward.CoinsOnly(100)),
-            new AchievementInfo(10, "Каждый день", "Забери подарок 7 дней подряд", 7, p => p.Data.dailyBest, new Reward(150, BoosterType.Slot, 1)),
-            new AchievementInfo(11, "Мастерица", "Пройди все уровни на три звезды", 15, p => p.ThreeStarLevels, Reward.CoinsOnly(300)),
+            new AchievementInfo(9, "Целая коллекция", "Собери коллекцию альбома", 1, p => p.CompletedCollections, Reward.CoinsOnly(100)),
+            new AchievementInfo(10, "Каждый день", "Подарок 7 дней подряд", 7, p => p.Data.dailyBest, new Reward(150, BoosterType.Slot, 1)),
+            new AchievementInfo(11, "Мастерица", "Все уровни на три звезды", 15, p => p.ThreeStarLevels, Reward.CoinsOnly(300)),
         };
     }
 
