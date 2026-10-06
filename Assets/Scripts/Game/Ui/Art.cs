@@ -61,7 +61,7 @@ namespace KnittedPicture.Game
 
         public static Sprite Ring => Cached("ring", () => Round(192, (d, r) => Mathf.Clamp01(5.5f - Mathf.Abs(d - (r - 7f)) + 0.5f)));
 
-        /// <summary>Клубок: тело чуть темнее, нитки — цвет как есть, низ в тени, тонкий обод.</summary>
+        /// <summary>Клубок: шар, намотанный нитью, с перевязью наискосок и кончиком нити. Красится цветом пряжи.</summary>
         public static Sprite YarnBall => Cached("yarn", () => BuildYarnBall(false));
 
         /// <summary>Радужный клубок: витки разных цветов, красится белым.</summary>
@@ -232,60 +232,156 @@ namespace KnittedPicture.Game
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
+        /// <summary>
+        /// Клубок рисуется как шар, намотанный нитью: снизу слой витков в одну сторону, поверх — широкая
+        /// перевязь витков наискосок с тенью по краю. Каждая нитка круглая в сечении (светлая середина,
+        /// тёмная бороздка между нитками), свет сверху слева, по краю мягкий обод. Слева внизу — кончик нити.
+        /// Текстура серая и красится цветом пряжи; у радужного каждая нитка своего цвета.
+        /// </summary>
         private static Sprite BuildYarnBall(bool rainbow)
         {
             const int size = 192;
+            const float c = size / 2f;
+            const float radius = c - 8f;
+            const float strand = 0.24f;
+            const float band = 0.55f;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
             var pixels = new Color32[size * size];
-            const float c = size / 2f;
-            const float radius = c - 2f;
+            var under = new Vector3(0.3f, 0.9f, 0.3f).normalized;
+            var over = new Vector3(-0.9f, 0.3f, 0.3f).normalized;
+            var light = new Vector3(-0.5f, 0.6f, 0.65f).normalized;
+            var half = (light + Vector3.forward).normalized;
+            var tail = YarnTail(c, radius);
+            const float tailWidth = 5f;
+
             for (var py = 0; py < size; py++)
             {
                 for (var px = 0; px < size; px++)
                 {
+                    // Координаты от центра, y вверх (нулевая строка текстуры — нижняя).
                     var x = px + 0.5f;
-                    var y = size - py - 0.5f;
-                    var d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c));
+                    var y = py + 0.5f;
+                    var nx = (x - c) / radius;
+                    var ny = (y - c) / radius;
+                    var r2 = nx * nx + ny * ny;
+                    var d = Mathf.Sqrt(r2) * radius;
                     var alpha = Mathf.Clamp01(radius - d + 0.5f);
-
-                    // Тело клубка темнее к низу.
-                    var down = Mathf.Clamp01((y - c) / radius);
-                    var value = 0.86f - 0.16f * down * down;
-
-                    // Три витка нитки — дуги, выгнутые вверх.
-                    for (var i = -1; i <= 1; i++)
+                    var value = 0f;
+                    var strandIndex = 0f;
+                    if (alpha > 0f)
                     {
-                        var arcRadius = 300f - i * 46f;
-                        var arcDistance = Mathf.Abs(Mathf.Sqrt((x - c) * (x - c) + (y - (c + 300f)) * (y - (c + 300f))) - arcRadius);
-                        var line = Mathf.Clamp01(5.5f - arcDistance + 0.5f);
-                        value = Mathf.Lerp(value, 1f, line);
+                        var n = new Vector3(nx, ny, Mathf.Sqrt(Mathf.Max(0f, 1f - r2)));
+                        var tOver = Vector3.Dot(n, over);
+                        if (Mathf.Abs(tOver) < band)
+                        {
+                            // Перевязь сверху; у самого края — тёмная кромка.
+                            value = Strand(tOver, strand, out strandIndex) * (1f - 0.25f * SmoothStep(band - 0.06f, band, Mathf.Abs(tOver)));
+                            strandIndex += 100f;
+                        }
+                        else
+                        {
+                            // Нижний слой в тени перевязи.
+                            var shadow = 1f - 0.22f * (1f - SmoothStep(band, band + 0.12f, Mathf.Abs(tOver)));
+                            value = Strand(Vector3.Dot(n, under), strand, out strandIndex) * shadow;
+                        }
+
+                        var lambert = Mathf.Clamp01(Vector3.Dot(n, light));
+                        var shine = Mathf.Pow(Mathf.Clamp01(Vector3.Dot(n, half)), 18f) * 0.25f;
+                        value = value * (0.66f + 0.34f * lambert) * 1.12f + shine;
+                        value *= 1f - 0.18f * SmoothStep(radius - 7f, radius - 1f, d);
                     }
 
-                    // Блик слева сверху.
-                    var glare = Mathf.Clamp01(1f - Mathf.Sqrt((x - 62f) * (x - 62f) + (y - 58f) * (y - 58f)) / 26f);
-                    value = Mathf.Lerp(value, 1f, glare * 0.5f);
+                    var color = rainbow
+                        ? Color.HSVToRGB(Mathf.Repeat(strandIndex * 0.11f, 1f), 0.5f, 1f) * Mathf.Clamp01(value)
+                        : Color.white * Mathf.Clamp01(value);
 
-                    // Тонкий обод, чтобы белый клубок не терялся на белом.
-                    var rim = Mathf.Clamp01(d - (radius - 6f));
-                    value *= 1f - 0.22f * rim;
-
-                    if (rainbow)
+                    // Кончик нити поверх клубка: круглый в сечении, как и нитки.
+                    var tailDistance = DistanceToPolyline(tail, x, y, tailWidth + 1f);
+                    var tailAlpha = Mathf.Clamp01(tailWidth - tailDistance + 0.5f);
+                    if (tailAlpha > 0f)
                     {
-                        // Полосы радуги по диагонали, поверх — те же тени, витки и блик.
-                        var hue = Mathf.Repeat((x + y * 0.6f) / (size * 1.1f), 1f);
-                        var tint = Color.HSVToRGB(hue, 0.55f, 1f) * Mathf.Clamp01(value);
-                        pixels[py * size + px] = new Color(tint.r, tint.g, tint.b, alpha);
-                        continue;
+                        var profile = Mathf.Sqrt(Mathf.Clamp01(1f - (tailDistance / tailWidth) * (tailDistance / tailWidth)));
+                        var tailValue = 0.72f + 0.24f * profile;
+                        var tailColor = rainbow ? Color.HSVToRGB(0f, 0.5f, 1f) * tailValue : Color.white * tailValue;
+                        var total = tailAlpha + alpha * (1f - tailAlpha);
+                        color = (tailColor * tailAlpha + color * alpha * (1f - tailAlpha)) / Mathf.Max(total, 0.0001f);
+                        alpha = total;
                     }
 
-                    var v = (byte)(Mathf.Clamp01(value) * 255);
-                    pixels[py * size + px] = new Color32(v, v, v, (byte)(alpha * 255));
+                    color.a = alpha;
+                    pixels[py * size + px] = color;
                 }
             }
 
             texture.SetPixels32(pixels);
             texture.Apply();
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        /// <summary>Нитка в сечении: 1 — середина нитки, ниже — бороздка между соседними. Номер нитки — для радуги.</summary>
+        private static float Strand(float t, float width, out float index)
+        {
+            var k = Mathf.Asin(Mathf.Clamp(t, -1f, 1f)) / width;
+            index = Mathf.Floor(k);
+            var profile = Mathf.Sin(Mathf.PI * (k - index));
+            return 0.74f + 0.26f * Mathf.Sqrt(Mathf.Max(0f, profile));
+        }
+
+        private static float SmoothStep(float from, float to, float t)
+        {
+            t = Mathf.Clamp01((t - from) / (to - from));
+            return t * t * (3f - 2f * t);
+        }
+
+        /// <summary>Кончик нити: выходит из клубка слева внизу и завивается в угол (кривая через опорные точки).</summary>
+        private static List<Vector2> YarnTail(float c, float radius)
+        {
+            var anchors = new[] { (210f, -4f), (225f, 4f), (234f, 16f), (230f, 30f), (218f, 38f) };
+            var points = new List<Vector2>();
+            foreach (var (angle, offset) in anchors)
+            {
+                var a = angle * Mathf.Deg2Rad;
+                points.Add(new Vector2(c + Mathf.Cos(a) * (radius + offset), c + Mathf.Sin(a) * (radius + offset)));
+            }
+
+            var curve = new List<Vector2>();
+            for (var i = 0; i + 1 < points.Count; i++)
+            {
+                var p0 = points[Mathf.Max(0, i - 1)];
+                var p1 = points[i];
+                var p2 = points[i + 1];
+                var p3 = points[Mathf.Min(points.Count - 1, i + 2)];
+                for (var s = 0; s < 16; s++)
+                {
+                    var t = s / 16f;
+                    curve.Add(0.5f * (2f * p1 + (p2 - p0) * t + (2f * p0 - 5f * p1 + 4f * p2 - p3) * (t * t) + (3f * p1 - p0 - 3f * p2 + p3) * (t * t * t)));
+                }
+            }
+
+            curve.Add(points[points.Count - 1]);
+            return curve;
+        }
+
+        /// <summary>Расстояние от точки до ломаной; дальше limit — просто большое число (быстрый отказ по рамке).</summary>
+        private static float DistanceToPolyline(List<Vector2> line, float x, float y, float limit)
+        {
+            var best = float.MaxValue;
+            var p = new Vector2(x, y);
+            for (var i = 0; i + 1 < line.Count; i++)
+            {
+                var a = line[i];
+                var b = line[i + 1];
+                if (x < Mathf.Min(a.x, b.x) - limit || x > Mathf.Max(a.x, b.x) + limit || y < Mathf.Min(a.y, b.y) - limit || y > Mathf.Max(a.y, b.y) + limit)
+                {
+                    continue;
+                }
+
+                var ab = b - a;
+                var t = ab.sqrMagnitude > 0.0001f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude) : 0f;
+                best = Mathf.Min(best, Vector2.Distance(p, a + ab * t));
+            }
+
+            return best;
         }
 
         private static Sprite BuildRays(int size, int count)
