@@ -21,120 +21,202 @@ namespace KnittedPicture.Game
         private const float TabsY = 62f;
         private const float ContentY = 116f;
 
-        private readonly CollectionsTab _tab;
+        private static readonly string[] TabTitles = { "Альбом", "Пряжа", "Достижения" };
 
-        public CollectionsScreen(App app, CollectionsTab tab, int slideFrom = 0)
+        private readonly CollectionsTab _tab;
+        private readonly UnityEngine.UI.ScrollRect[] _scrolls = new UnityEngine.UI.ScrollRect[3];
+        private readonly UnityEngine.UI.Text[] _tabLabels = new UnityEngine.UI.Text[3];
+        private RectTransform _strip = null!;
+        private RectTransform _indicator = null!;
+        private RectTransform _indicatorShadow = null!;
+        private float _tabW;
+        private float _pos;
+        private float _speed;
+        private int _target;
+        private bool _dragging;
+        private int _axis;
+
+        public CollectionsScreen(App app, CollectionsTab tab)
             : base(app, "Collections")
         {
             _tab = tab;
+            _target = (int)tab;
+            _pos = _target;
             Ui.RoundButton(Root, Icon.Back, 16, 8).OnClick(app.ShowHome);
             Ui.Label(Root, "Коллекции", 22, Palette.Ink, 66, 8, W - 66 - 128, 44);
             Ui.CoinPill(Root, app.Progress.Coins, W - 16, 8);
             BuildTabs();
+            BuildPages();
+            Apply();
+        }
 
-            var content = Ui.Scroll(Root, 0, ContentY, W, H - ContentY);
-            float height;
-            switch (tab)
+        public override void Tick(float dt)
+        {
+            if (!_dragging)
             {
-                case CollectionsTab.Yarn:
-                    height = BuildYarn(content);
-                    break;
-                case CollectionsTab.Achievements:
-                    height = BuildAchievements(content);
-                    break;
-                default:
-                    height = BuildAlbum(content);
-                    break;
+                _pos = Mathf.SmoothDamp(_pos, _target, ref _speed, 0.14f, Mathf.Infinity, dt);
+                if (Mathf.Abs(_pos - _target) < 0.0005f)
+                {
+                    _pos = _target;
+                    _speed = 0f;
+                }
             }
 
-            content.sizeDelta = new Vector2(W, Mathf.Max(height + 24f, H - ContentY));
-            EnableSwipe((RectTransform)content.parent, slideFrom);
+            Apply();
         }
 
         /// <summary>
-        /// Свайп между вкладками без зацикливания: содержимое идёт за пальцем, на крайних вкладках — туго.
-        /// Pager стоит на том же объекте, что и вертикальная прокрутка, и получает те же события.
+        /// Три вкладки — лентой рядом, как карусель на главной: лента едет за пальцем и плавно
+        /// доводится до ближайшей вкладки, на крайних — туго, без зацикливания.
         /// </summary>
-        private void EnableSwipe(RectTransform viewport, int slideFrom)
+        private void BuildPages()
         {
-            var content = (RectTransform)viewport.GetChild(viewport.childCount - 1);
-            var group = viewport.gameObject.AddComponent<CanvasGroup>();
-            if (slideFrom != 0)
+            var h = H - ContentY;
+            var viewport = Ui.Place(Ui.Node(Root, "Pages"), 0, ContentY, W, h);
+            viewport.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
+            _strip = Ui.Place(Ui.Node(viewport, "Strip"), 0, 0, W * TabTitles.Length, h);
+            for (var i = 0; i < TabTitles.Length; i++)
             {
-                Tweens.Run(viewport, 0.25f, t =>
+                var content = Ui.Scroll(_strip, i * W, 0, W, h);
+                var page = (RectTransform)content.parent;
+                _scrolls[i] = page.GetComponent<UnityEngine.UI.ScrollRect>();
+                float height;
+                switch ((CollectionsTab)i)
                 {
-                    content.anchoredPosition = new Vector2(slideFrom * 70f * (1f - t), content.anchoredPosition.y);
-                    group.alpha = t;
-                }, Ease.OutCubic);
-            }
+                    case CollectionsTab.Yarn:
+                        height = BuildYarn(content);
+                        break;
+                    case CollectionsTab.Achievements:
+                        height = BuildAchievements(content);
+                        break;
+                    default:
+                        height = BuildAlbum(content);
+                        break;
+                }
 
-            var index = (int)_tab;
-            var last = System.Enum.GetValues(typeof(CollectionsTab)).Length - 1;
-            var pager = viewport.gameObject.AddComponent<Pager>();
-            var offset = 0f;
-            pager.Began += () => offset = 0f;
+                content.sizeDelta = new Vector2(W, Mathf.Max(height + 24f, h));
+                AttachPager(page, i);
+            }
+        }
+
+        /// <summary>
+        /// Pager стоит на том же объекте, что и вертикальная прокрутка страницы, и получает те же события.
+        /// Первые точки жеста решают ось: горизонтальный жест листает вкладки и замораживает прокрутку.
+        /// </summary>
+        private void AttachPager(RectTransform page, int index)
+        {
+            var pager = page.gameObject.AddComponent<Pager>();
+            var last = TabTitles.Length - 1;
+            pager.Began += () =>
+            {
+                _axis = 0;
+                _speed = 0f;
+            };
             pager.Moved += dx =>
             {
-                // Туда, где вкладки нет, лента почти не едет.
-                var blocked = (dx > 0 && index == 0) || (dx < 0 && index == last);
-                offset += dx * (blocked ? 0.2f : 0.6f);
-                content.anchoredPosition = new Vector2(offset, content.anchoredPosition.y);
-            };
-            pager.Swiped += dir =>
-            {
-                var target = index - dir;
-                if (dir != 0 && target >= 0 && target <= last)
+                if (_axis == 0 && pager.Total.magnitude > 10f)
                 {
-                    Sfx.Play(Sound.Pick, 0.5f);
-                    App.ShowCollections((CollectionsTab)target, -dir);
+                    _axis = Mathf.Abs(pager.Total.x) > Mathf.Abs(pager.Total.y) ? 1 : 2;
+                    if (_axis == 1)
+                    {
+                        _dragging = true;
+                        _scrolls[index].vertical = false;
+                    }
+                }
+
+                if (_axis != 1)
+                {
                     return;
                 }
 
-                var from = content.anchoredPosition.x;
-                Tweens.Run(viewport, 0.2f, t => content.anchoredPosition = new Vector2(Mathf.Lerp(from, 0f, t), content.anchoredPosition.y), Ease.OutCubic);
+                var outside = _pos < 0f || _pos > last;
+                _pos -= dx / W * (outside ? 0.3f : 1f);
             };
+            pager.Released += velocity =>
+            {
+                _scrolls[index].vertical = true;
+                if (_axis != 1)
+                {
+                    return;
+                }
+
+                _dragging = false;
+                var next = Mathf.RoundToInt(_pos);
+                if (Mathf.Abs(velocity) > 350f)
+                {
+                    next = velocity < 0 ? Mathf.FloorToInt(_pos) + 1 : Mathf.CeilToInt(_pos) - 1;
+                }
+
+                Turn(Mathf.Clamp(next, 0, last));
+            };
+        }
+
+        private void Turn(int index)
+        {
+            index = Mathf.Clamp(index, 0, TabTitles.Length - 1);
+            if (index != _target)
+            {
+                Sfx.Play(Sound.Pick, 0.5f);
+            }
+
+            _target = index;
+        }
+
+        /// <summary>Лента, «перетекающая» плашка активной вкладки и цвет подписей — по текущей позиции.</summary>
+        private void Apply()
+        {
+            _strip.anchoredPosition = new Vector2(-_pos * W, _strip.anchoredPosition.y);
+
+            // Перетекание: передний край плашки уходит к соседней вкладке раньше, задний догоняет позже.
+            var p = Mathf.Clamp(_pos, 0f, TabTitles.Length - 1);
+            var i0 = Mathf.Min(Mathf.FloorToInt(p), TabTitles.Length - 2);
+            var t = p - i0;
+            var x0 = 20f + i0 * _tabW;
+            var x1 = 20f + (i0 + 1) * _tabW;
+            var head = Mathf.Lerp(x0, x1, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.6f)));
+            var tail = Mathf.Lerp(x0, x1, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.4f) / 0.6f)));
+            var left = Mathf.Min(head, tail);
+            var width = Mathf.Max(head, tail) - left + _tabW;
+            _indicator.anchoredPosition = new Vector2(left, -(TabsY + 4));
+            _indicator.sizeDelta = new Vector2(width, 36);
+            _indicatorShadow.anchoredPosition = new Vector2(left, -(TabsY + 6));
+            _indicatorShadow.sizeDelta = new Vector2(width, 36);
+
+            for (var i = 0; i < _tabLabels.Length; i++)
+            {
+                var near = 1f - Mathf.Clamp01(Mathf.Abs(i - _pos));
+                _tabLabels[i].color = Color.Lerp(Palette.Ink2, Palette.Ink, near);
+            }
         }
 
         private void BuildTabs()
         {
-            var tabs = new[]
-            {
-                (CollectionsTab.Album, "Альбом", Pending(CollectionsTab.Album)),
-                (CollectionsTab.Yarn, "Пряжа", Pending(CollectionsTab.Yarn)),
-                (CollectionsTab.Achievements, "Достижения", Pending(CollectionsTab.Achievements)),
-            };
-            // Подложка вкладок темнее фона, активная вкладка — белая с тенью: видно, где ты.
+            // Подложка вкладок темнее фона, активная вкладка — белая плашка с тенью, она перетекает при листании.
             var track = Ui.Box(Root, "Tabs", 22, Palette.LoomBg);
             Ui.Place(track.rectTransform, 16, TabsY, W - 32, 44);
             Ui.Outline(track.rectTransform, 22, Palette.Line, 1.5f);
-            var tabW = (W - 32 - 8) / tabs.Length;
-            for (var i = 0; i < tabs.Length; i++)
-            {
-                var (tab, title, pending) = tabs[i];
-                var active = tab == _tab;
-                var x = 16 + 4 + i * tabW;
-                if (active)
-                {
-                    var shadow = Ui.Box(Root, "TabShadow", 18, Palette.CardShadow);
-                    Ui.Place(shadow.rectTransform, x, TabsY + 6, tabW, 36);
-                }
+            _tabW = (W - 32 - 8) / TabTitles.Length;
+            _indicatorShadow = Ui.Box(Root, "TabShadow", 18, Palette.CardShadow).rectTransform;
+            Ui.Place(_indicatorShadow, 20, TabsY + 6, _tabW, 36);
+            _indicator = Ui.Box(Root, "TabActive", 18, Palette.Card).rectTransform;
+            Ui.Place(_indicator, 20, TabsY + 4, _tabW, 36);
 
-                var face = Ui.Box(Root, "Tab" + tab, 18, active ? Palette.Card : Color.clear, true);
-                Ui.Place(face.rectTransform, x, TabsY + 4, tabW, 36);
-                Ui.Label(face.rectTransform, title, 15, active ? Palette.Ink : Palette.Ink2, 0, 0, tabW, 36);
+            for (var i = 0; i < TabTitles.Length; i++)
+            {
+                var x = 20f + i * _tabW;
+                var face = Ui.Box(Root, "Tab" + i, 18, Color.clear, true);
+                Ui.Place(face.rectTransform, x, TabsY + 4, _tabW, 36);
+                _tabLabels[i] = Ui.Label(face.rectTransform, TabTitles[i], 15, Palette.Ink2, 0, 0, _tabW, 36);
+                var pending = Pending((CollectionsTab)i);
                 if (pending > 0)
                 {
-                    Ui.Badge(face.rectTransform, tabW - 12, 6, pending);
+                    Ui.Badge(face.rectTransform, _tabW - 12, 6, pending);
                 }
 
-                var target = tab;
-                face.gameObject.AddComponent<Tap>().OnClick(() =>
-                {
-                    if (target != _tab)
-                    {
-                        App.ShowCollections(target, target > _tab ? 1 : -1);
-                    }
-                });
+                var index = i;
+                var tap = face.gameObject.AddComponent<Tap>();
+                tap.PressFeedback = false;
+                tap.OnClick(() => Turn(index));
             }
         }
 
@@ -385,7 +467,7 @@ namespace KnittedPicture.Game
         private float AchievementRow(RectTransform content, AchievementInfo a, float y)
         {
             const float rowH = 72f;
-            const float rightW = 96f;
+            const float rightW = 112f;
             var progress = App.Progress;
             var claimed = progress.IsAchievementClaimed(a);
             var can = progress.CanClaimAchievement(a);
@@ -433,27 +515,27 @@ namespace KnittedPicture.Game
             return y + rowH + 10f;
         }
 
-        /// <summary>Награда в одну строку, выровненная по правому краю: «+50 [монета] [бустер]».</summary>
+        /// <summary>
+        /// Награда в строке достижения — колонками: плашка монет одной ширины всегда на одном месте,
+        /// справа от неё — место под значок бустера (пустое, если бустера нет). Так монеты стоят ровно в ряд.
+        /// </summary>
         private static void RewardInline(RectTransform parent, Reward reward, float rightEdge, float cy)
         {
-            var x = rightEdge;
+            const float boosterColumn = 32f;
+            const float chipW = 78f;
             if (reward.Booster != null)
             {
                 var badge = Ui.Image(parent, "Booster", Art.Circle, Palette.PrimarySoft);
-                Ui.PlaceCenter(badge.rectTransform, x - 12, cy, 24, 24);
-                Ui.IconImage(parent, BoosterInfo.Icon(reward.Booster.Value), Palette.Primary, x - 12, cy, 14);
-                x -= 30f;
+                Ui.PlaceCenter(badge.rectTransform, rightEdge - 12, cy, 24, 24);
+                Ui.IconImage(parent, BoosterInfo.Icon(reward.Booster.Value), Palette.Primary, rightEdge - 12, cy, 14);
             }
 
             if (reward.Coins > 0)
             {
-                // Число и монета — одной плашкой, вплотную друг к другу.
-                var text = "+" + reward.Coins;
-                var w = text.Length * 8.5f + 34f;
                 var chip = Ui.Box(parent, "Coins", 12, Palette.CoinSoft).rectTransform;
-                Ui.PlaceCenter(chip, x - w / 2f, cy, w, 24);
-                Ui.Label(chip, text, 14, Palette.Ink, 6, 0, w - 30, 24, true, TextAnchor.MiddleRight);
-                Ui.Coin(chip, w - 14, 12, 17);
+                Ui.PlaceCenter(chip, rightEdge - boosterColumn - chipW / 2f, cy, chipW, 24);
+                Ui.Label(chip, "+" + reward.Coins, 14, Palette.Ink, 6, 0, chipW - 36, 24, true, TextAnchor.MiddleRight);
+                Ui.Coin(chip, chipW - 16, 12, 17);
             }
         }
 

@@ -15,6 +15,9 @@ namespace KnittedPicture.Game
         private float _velocity;
         private Vector2 _start;
 
+        /// <summary>Сдвиг пальца от начала жеста в точках макета: по нему решают, жест горизонтальный или нет.</summary>
+        public Vector2 Total { get; private set; }
+
         public event Action? Began;
 
         /// <summary>Сдвиг пальца по X в точках макета с прошлого кадра.</summary>
@@ -33,6 +36,7 @@ namespace KnittedPicture.Game
         {
             _velocity = 0f;
             _start = eventData.position;
+            Total = Vector2.zero;
             Began?.Invoke();
         }
 
@@ -41,6 +45,7 @@ namespace KnittedPicture.Game
             // Холст поверх экрана: мировые единицы — пиксели, делим на масштаб, получаем точки макета.
             var scale = Mathf.Max(0.0001f, transform.lossyScale.x);
             var dx = eventData.delta.x / scale;
+            Total += eventData.delta / scale;
             var dt = Mathf.Max(0.001f, Time.unscaledDeltaTime);
             _velocity = Mathf.Lerp(_velocity, dx / dt, 0.4f);
             Moved?.Invoke(dx);
