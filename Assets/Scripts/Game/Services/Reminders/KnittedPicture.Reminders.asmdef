@@ -1,0 +1,23 @@
+{
+    "name": "KnittedPicture.Reminders",
+    "rootNamespace": "KnittedPicture.Game",
+    "references": [
+        "KnittedPicture.Core",
+        "Unity.Notifications.Android"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.mobile.notifications",
+            "expression": "1.0.0",
+            "define": "KNITTED_NOTIFICATIONS"
+        }
+    ],
+    "noEngineReferences": false
+}

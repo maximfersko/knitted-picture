@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using KnittedPicture.Core;
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
 using Unity.Notifications.Android;
 using UnityEngine.Android;
 #endif
@@ -14,7 +14,9 @@ namespace KnittedPicture.Game
     /// Напоминания на телефон (локальные, без сервера). Ставятся, когда игру сворачивают или закрывают,
     /// и снимаются, когда игрок вернулся. Немного и по делу: подарок или узор дня завтра вечером,
     /// серия узоров, которую жалко потерять, готовый сундук и мягкое «возвращайся» через три дня.
-    /// На Android — пакет com.unity.mobile.notifications; в редакторе и на других платформах — тихо ничего.
+    /// На Android — пакет com.unity.mobile.notifications; в редакторе, на других платформах и без пакета —
+    /// тихо ничего. Своя сборка (KnittedPicture.Reminders.asmdef) включает код уведомлений только когда пакет
+    /// установлен (versionDefines → KNITTED_NOTIFICATIONS), так что игра собирается и без него.
     /// </summary>
     public static class Reminders
     {
@@ -70,7 +72,7 @@ namespace KnittedPicture.Game
         /// <summary>Игрок вернулся: старые напоминания больше не нужны.</summary>
         public static void CancelAll()
         {
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
             AndroidNotificationCenter.CancelAllNotifications();
 #endif
         }
@@ -78,7 +80,7 @@ namespace KnittedPicture.Game
         /// <summary>Спросить разрешение на уведомления (Android 13+) — один раз, когда игрок уже втянулся.</summary>
         public static void AskPermission()
         {
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
             const string permission = "android.permission.POST_NOTIFICATIONS";
             if (!Permission.HasUserAuthorizedPermission(permission))
             {
@@ -87,7 +89,7 @@ namespace KnittedPicture.Game
 #endif
         }
 
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
         private const string Channel = "reminders";
         private static bool _channel;
 
