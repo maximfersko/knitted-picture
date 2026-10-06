@@ -145,6 +145,8 @@ namespace UnityEngine.UI
 
         public float preferredWidth => 0f;
 
+        public float preferredHeight => 0f;
+
         public bool resizeTextForBestFit { get; set; }
 
         public int resizeTextMinSize { get; set; }

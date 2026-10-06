@@ -84,6 +84,7 @@ namespace KnittedPicture.Game
             _stepTitle = Ui.Label(_stage, string.Empty, 21, Color.white, 16, StepTitleY, _w - 32, 30);
             _description = Ui.Label(_stage, string.Empty, 14, Palette.WithAlpha(Color.white, 0.82f), 24, CardsTop + CardH + 14f, _w - 48, 44, false);
             _description.lineSpacing = 0.95f;
+            Ui.Fit(_description, 11);
 
             var tap = Ui.Button(_stage, "Взять", 24, _h - 96f, _w - 48f, 60f, Palette.Primary, Palette.PrimaryShadow, Color.white, 20);
             _button = (RectTransform)tap.transform;
@@ -533,7 +534,7 @@ namespace KnittedPicture.Game
             : base(app, "ChestScreen")
         {
             Ui.RoundButton(Root, Icon.Back, 16, 8).OnClick(app.ShowHome);
-            Ui.Label(Root, "Сундук и запасы", 22, Palette.Ink, 66, 8, W - 66 - 128, 44);
+            Ui.Fit(Ui.Label(Root, "Сундук и запасы", 22, Palette.Ink, 66, 8, W - 66 - 136, 44), 15);
             Ui.CoinPill(Root, app.Progress.Coins, W - 16, 8);
             var h = H - 64f;
             var content = Ui.Scroll(Root, 0, 64, W, h);

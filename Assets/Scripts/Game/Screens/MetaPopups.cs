@@ -13,6 +13,7 @@ namespace KnittedPicture.Game
         public RewardPopup(App app, string title, Icon icon, Granted granted, Action? closed = null)
             : base(app)
         {
+            Closed = closed;
             var badge = AddIcon(icon, Palette.CoinShadow, Palette.CoinSoft, 84);
             Tweens.Run(badge, 0.5f, t => badge.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 6f) * 12f * (1f - t)));
             Fx.Sparkle(Card, Ui.WorldCenter(badge), Palette.Coin, 12, 60f);
@@ -41,11 +42,7 @@ namespace KnittedPicture.Game
             }
 
             Space(112);
-            AddPrimary("Забрать").OnClick(() =>
-            {
-                Close();
-                closed?.Invoke();
-            });
+            AddPrimary("Забрать").OnClick(Close);
             Finish(8);
             Sfx.Play(Sound.Win, 0.6f);
         }
@@ -125,17 +122,17 @@ namespace KnittedPicture.Game
                 if (reward.Yarn == DailyGift.RandomYarn)
                 {
                     Ui.IconImage(cell, Icon.Gift, Palette.Danger, cellW / 2f, 40, 30);
-                    Ui.Label(cell, $"+{reward.Coins} и моток", 11, Palette.Ink, 0, 56, cellW, 18);
+                    Ui.Fit(Ui.Label(cell, $"+{reward.Coins} и моток", 11, Palette.Ink, 0, 56, cellW, 18), 8);
                 }
                 else if (reward.Booster != null)
                 {
                     Ui.IconImage(cell, BoosterInfo.Icon(reward.Booster.Value), Palette.Primary, cellW / 2f, 40, 26);
-                    Ui.Label(cell, BoosterInfo.Name(reward.Booster.Value), 11, Palette.Ink, 0, 56, cellW, 18);
+                    Ui.Fit(Ui.Label(cell, BoosterInfo.Name(reward.Booster.Value), 11, Palette.Ink, 0, 56, cellW, 18), 8);
                 }
                 else
                 {
                     Ui.Coin(cell, cellW / 2f, 40, 28);
-                    Ui.Label(cell, "+" + reward.Coins, 13, Palette.Ink, 0, 56, cellW, 18);
+                    Ui.Fit(Ui.Label(cell, "+" + reward.Coins, 13, Palette.Ink, 0, 56, cellW, 18), 8);
                 }
 
                 if (claimed)
@@ -239,15 +236,19 @@ namespace KnittedPicture.Game
             var chipX = 24f;
             foreach (var (text, back, ink) in chips)
             {
-                var w = text.Length * 7.2f + 20f;
+                // Ширина — по настоящей ширине текста: плашка не обрезает и не переносит подпись.
+                var chip = Ui.Box(Card, "Chip", 12, back).rectTransform;
+                var label = Ui.Label(chip, text, 12, ink);
+                label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                var w = Mathf.Max(text.Length * 7.2f, label.preferredWidth) + 20f;
                 if (chipX + w > CardWidth - 24f)
                 {
+                    UnityEngine.Object.Destroy(chip.gameObject);
                     break;
                 }
 
-                var chip = Ui.Box(Card, "Chip", 12, back).rectTransform;
                 Ui.Place(chip, chipX, Cursor, w, 26);
-                Ui.Label(chip, text, 12, ink, 0, 0, w, 26);
+                Ui.Stretch(label.rectTransform);
                 chipX += w + 6f;
             }
 
@@ -339,8 +340,7 @@ namespace KnittedPicture.Game
         {
             AddIcon(Icon.Info, Palette.Link, Palette.Hex("#EDE4FF"), 52);
             AddTitle(title, 19);
-            var lines = Mathf.Max(1f, Mathf.Ceil(text.Length / 34f));
-            AddText(text, 14, lines);
+            AddText(text, 14, 1);
             AddPrimary("Понятно", 50).OnClick(Close);
             Finish(4);
         }

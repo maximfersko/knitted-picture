@@ -231,7 +231,7 @@ namespace KnittedPicture.Game
             var width = _level.hard ? 200f : 140f;
             var pill = Ui.Card(Root, "Level", W / 2f - width / 2f, 8, width, 44, 22,
                 _level.hard ? Palette.DangerSoft : Palette.Card, Palette.CardShadow, _level.hard ? 0f : 2f);
-            Ui.Label(pill, text, 17, _level.hard ? Palette.Danger : Palette.Ink, 0, 0, width, 44);
+            Ui.Fit(Ui.Label(pill, text, 17, _level.hard ? Palette.Danger : Palette.Ink, 8, 0, width - 16, 44), 12);
             _coins = Ui.CoinPill(Root, App.Progress.Coins, W - Pad, 8);
         }
 
@@ -286,7 +286,7 @@ namespace KnittedPicture.Game
                     : $"Петли в золотом кольце. Свяжи их, пока горит комбо (×2 и выше), и получишь +{Economy.GoldCoins} монеты за каждую.";
                 chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, title, info)));
                 Ui.IconImage(chip, icon, tint, 18, 14, 18);
-                var label = Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft);
+                var label = Ui.Fit(Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft), 10);
                 if (taps)
                 {
                     _tapsGoal = label;

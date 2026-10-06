@@ -6,10 +6,17 @@ using UnityEngine.EventSystems;
 
 namespace KnittedPicture.Game
 {
-    /// <summary>Нажимаемый элемент: слегка проседает под пальцем, звучит и вызывает действие.</summary>
+    /// <summary>
+    /// Нажимаемый элемент: слегка проседает под пальцем, звучит и вызывает действие.
+    /// Проседание накладывается поверх текущего масштаба: «дышащие» кнопки и клубки тоже
+    /// отзываются на палец, а после отпускания возвращаются к своей анимации, а не к масштабу из Awake.
+    /// </summary>
     public sealed class Tap : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler, IPointerClickHandler
     {
-        private Vector3 _scale = Vector3.one;
+        private const float Pressed = 0.94f;
+
+        private Vector3 _base = Vector3.one;
+        private Vector3 _applied = Vector3.one;
         private bool _pressed;
 
         public event Action? Clicked;
@@ -28,11 +35,6 @@ namespace KnittedPicture.Game
             return this;
         }
 
-        private void Awake()
-        {
-            _scale = transform.localScale;
-        }
-
         public void OnPointerDown(PointerEventData eventData)
         {
             if (!Interactable || !PressFeedback)
@@ -41,7 +43,23 @@ namespace KnittedPicture.Game
             }
 
             _pressed = true;
-            transform.localScale = _scale * 0.94f;
+            Press();
+        }
+
+        private void LateUpdate()
+        {
+            // Анимация за этот кадр поменяла масштаб — проседаем уже от нового.
+            if (_pressed && transform.localScale != _applied)
+            {
+                Press();
+            }
+        }
+
+        private void Press()
+        {
+            _base = transform.localScale;
+            _applied = _base * Pressed;
+            transform.localScale = _applied;
         }
 
         public void OnPointerUp(PointerEventData eventData)
@@ -74,7 +92,10 @@ namespace KnittedPicture.Game
             if (_pressed)
             {
                 _pressed = false;
-                transform.localScale = _scale;
+                if (transform.localScale == _applied)
+                {
+                    transform.localScale = _base;
+                }
             }
         }
     }

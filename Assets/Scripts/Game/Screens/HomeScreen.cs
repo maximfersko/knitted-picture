@@ -156,7 +156,8 @@ namespace KnittedPicture.Game
         private void BuildCollection(float y)
         {
             var progress = App.Progress;
-            var bottom = H - 24f - 84f - 16f - (progress.Streak >= 2 ? 44f : 0f);
+            var showStreak = progress.Streak >= 2 && !progress.AllDone;
+            var bottom = H - 24f - 84f - 16f - (showStreak ? 44f : 0f);
             var available = Mathf.Max(220f, bottom - y);
             var viewport = Ui.Place(Ui.Node(Root, "Carousel"), 0, y, W, available);
             var hit = Ui.Image(viewport, "Hit", null, Color.clear, true);
@@ -214,7 +215,7 @@ namespace KnittedPicture.Game
             ApplyCarousel();
 
             // Серия побед подряд: чем длиннее, тем больше монет — повод не перезапускать.
-            if (progress.Streak >= 2)
+            if (showStreak)
             {
                 var chipW = Mathf.Min(W - 32f, 300f);
                 var chip = Ui.Card(Root, "Streak", (W - chipW) / 2f, bottom + 4f, chipW, 32, 16, Palette.CoinSoft, Palette.CoinSoft, 0f);

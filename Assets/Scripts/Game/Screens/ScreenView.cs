@@ -112,11 +112,20 @@ namespace KnittedPicture.Game
         /// <summary>Где начнётся следующий элемент карточки.</summary>
         protected float Cursor => _cursor;
 
+        /// <summary>
+        /// Что сделать, когда окно закрылось — любым способом: кнопкой, тапом мимо или «назад» на Android.
+        /// Так экран под окном всегда обновится (например, после полученной награды).
+        /// </summary>
+        protected System.Action? Closed { get; set; }
+
         public void Close()
         {
             App.RemovePopup(this);
             Root.GetComponent<CanvasGroup>().blocksRaycasts = false;
             Tweens.Fade(_group, 1f, 0f, 0.15f, Destroy);
+            var closed = Closed;
+            Closed = null;
+            closed?.Invoke();
         }
 
         public void Destroy()
@@ -155,10 +164,21 @@ namespace KnittedPicture.Game
             return label;
         }
 
+        /// <summary>
+        /// Абзац текста. lines — сколько строк ждём; если текст длиннее (длинное описание, узкий экран),
+        /// высота берётся по замеру, и следующий элемент не наезжает на текст.
+        /// </summary>
         protected UnityEngine.UI.Text AddText(string text, float size = 16f, float lines = 2f)
         {
             var height = size * 1.3f * lines;
             var label = Ui.Label(Card, text, size, Palette.Ink2, 24, _cursor, Inner, height);
+            var measured = label.preferredHeight;
+            if (measured > height)
+            {
+                height = measured;
+                label.rectTransform.sizeDelta = new Vector2(Inner, height);
+            }
+
             _cursor += height + 16f;
             return label;
         }

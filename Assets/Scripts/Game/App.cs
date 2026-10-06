@@ -283,11 +283,22 @@ namespace KnittedPicture.Game
             ShowPopup(new RewardedStubPopup(this, done));
         }
 
-        /// <summary>Короткое сообщение сверху, исчезает само.</summary>
+        private RectTransform? _toast;
+
+        /// <summary>
+        /// Короткое сообщение сверху, исчезает само. Новое заменяет предыдущее (а не ложится поверх него),
+        /// высота — по тексту, длинный текст держится на экране дольше.
+        /// </summary>
         public void Toast(string text)
         {
+            if (_toast != null)
+            {
+                Destroy(_toast.gameObject);
+            }
+
             var width = Mathf.Min(Width - 48f, 320f);
             var root = Ui.Place(Ui.Node(PopupLayer, "Toast"), 0, 0, width, 52);
+            _toast = root;
             root.anchorMin = new Vector2(0.5f, 1f);
             root.anchorMax = new Vector2(0.5f, 1f);
             root.pivot = new Vector2(0.5f, 1f);
@@ -296,10 +307,22 @@ namespace KnittedPicture.Game
             Ui.Stretch(face.rectTransform);
             var label = Ui.Label(root, text, 15, Color.white, 12, 0, width - 24, 52);
             label.lineSpacing = 0.9f;
+            var height = Mathf.Max(52f, label.preferredHeight + 18f);
+            root.sizeDelta = new Vector2(width, height);
+            label.rectTransform.sizeDelta = new Vector2(width - 24, height);
             var group = root.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
             Tweens.Fade(group, 0f, 1f, 0.18f);
-            Tweens.Fade(group, 1f, 0f, 0.3f, () => Destroy(root.gameObject), 1.9f);
+            var hold = Mathf.Clamp(1.2f + text.Length * 0.025f, 1.9f, 3.6f);
+            Tweens.Fade(group, 1f, 0f, 0.3f, () =>
+            {
+                if (_toast == root)
+                {
+                    _toast = null;
+                }
+
+                Destroy(root.gameObject);
+            }, hold);
         }
 
         public void SetSound(bool on)

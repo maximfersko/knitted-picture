@@ -206,8 +206,10 @@ namespace KnittedPicture.Game
                 var x = 20f + i * _tabW;
                 var face = Ui.Box(Root, "Tab" + i, 18, Color.clear, true);
                 Ui.Place(face.rectTransform, x, TabsY + 4, _tabW, 36);
-                _tabLabels[i] = Ui.Label(face.rectTransform, TabTitles[i], 15, Palette.Ink2, 0, 0, _tabW, 36);
+                // С бейджем подпись сдвигается влево и ужимается: точка не закрывает «Достижения» на узком экране.
                 var pending = Pending((CollectionsTab)i);
+                var labelW = pending > 0 ? _tabW - 22f : _tabW;
+                _tabLabels[i] = Ui.Fit(Ui.Label(face.rectTransform, TabTitles[i], 15, Palette.Ink2, 0, 0, labelW, 36), 11);
                 if (pending > 0)
                 {
                     Ui.Badge(face.rectTransform, _tabW - 12, 6, pending);
@@ -411,10 +413,12 @@ namespace KnittedPicture.Game
         {
             var back = rarity == Rarity.Common ? Palette.Track : rarity == Rarity.Rare ? Palette.Hex("#EDE4FF") : Palette.CoinSoft;
             var text = YarnCatalog.RarityName(rarity);
-            var w = text.Length * 6.6f + 18f;
             var chip = Ui.Box(parent, "Rarity", 10, back).rectTransform;
+            var label = Ui.Label(chip, text, 11, YarnView.RarityColor(rarity));
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            var w = Mathf.Max(text.Length * 6.6f, label.preferredWidth) + 18f;
             Ui.PlaceCenter(chip, cx, cy, w, 20);
-            Ui.Label(chip, text, 11, YarnView.RarityColor(rarity), 0, 0, w, 20);
+            Ui.Stretch(label.rectTransform);
         }
 
         // ---------- Достижения ----------

@@ -13,6 +13,7 @@ namespace KnittedPicture.Game
     public sealed class Pager : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private float _velocity;
+        private float _lastMove;
         private Vector2 _start;
 
         /// <summary>Сдвиг пальца от начала жеста в точках макета: по нему решают, жест горизонтальный или нет.</summary>
@@ -48,11 +49,19 @@ namespace KnittedPicture.Game
             Total += eventData.delta / scale;
             var dt = Mathf.Max(0.001f, Time.unscaledDeltaTime);
             _velocity = Mathf.Lerp(_velocity, dx / dt, 0.4f);
+            _lastMove = Time.unscaledTime;
             Moved?.Invoke(dx);
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
+            // Палец остановился и только потом отпущен — это не бросок: страница доводится к ближайшей,
+            // а не перелистывается по старой скорости.
+            if (Time.unscaledTime - _lastMove > 0.08f)
+            {
+                _velocity = 0f;
+            }
+
             Released?.Invoke(_velocity);
             var scale = Mathf.Max(0.0001f, transform.lossyScale.x);
             var delta = (eventData.position - _start) / scale;
