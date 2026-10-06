@@ -77,6 +77,9 @@ namespace KnittedPicture.Game
         private RectTransform?[] _tailViews = new RectTransform?[0];
         private float _slotSpool;
 
+        /// <summary>Зазор между слотами станка: толстый клубок в двух соседних слотах встаёт прямо над ним.</summary>
+        private const float SlotGap = 6f;
+
         private RectTransform _comboChip = null!;
         private Image _comboBack = null!;
         private Image _comboBolt = null!;
@@ -488,7 +491,7 @@ namespace KnittedPicture.Game
         {
             Ui.Clear(_loomBg);
             var n = _game.Slots.Count;
-            const float gap = 6f;
+            const float gap = SlotGap;
             var slotW = (W - 2 * Pad - 16f - gap * (n - 1)) / n;
             _slotSpool = Mathf.Min(44f, slotW - 10f);
             _slotFrames = new RectTransform[n];
@@ -680,8 +683,9 @@ namespace KnittedPicture.Game
 
                 if (spool != null && view == null && !_arriving.Contains(spool.Id))
                 {
-                    var created = SpoolView.Create(_slotFrames[i], _slotSpool);
-                    Ui.PlaceCenter(created.Root, _slotFrames[i].sizeDelta.x / 2f, 29f, _slotSpool, _slotSpool);
+                    var size = SpoolSizeAt(i);
+                    var created = SpoolView.Create(_slotFrames[i], size);
+                    Ui.PlaceCenter(created.Root, SpoolX(i), 29f, size, size);
                     created.Bind(spool, _colors[spool.Color], true, false, _game.IsForeign(spool));
                     _slotViews[i] = new SlotSpool(created, spool.Id, spool.Rainbow ? -1 : spool.Color);
                     if (_game.IsForeign(spool) && !_foreignShown)
@@ -705,20 +709,61 @@ namespace KnittedPicture.Game
             _loomLabel.color = free <= 1 ? Palette.Danger : Palette.Ink2;
         }
 
-        /// <summary>Второй слот толстого клубка: подкрашенная рамка и нить к соседнему слоту.</summary>
+        /// <summary>Толстый клубок стоит в этом слоте и в соседнем справа: рисуем его одним широким клубком.</summary>
+        private bool IsWide(int slot) => slot + 1 < _slotFrames.Length && _game.TailOf(slot) == slot + 1;
+
+        /// <summary>Центр клубка по горизонтали внутри рамки слота: у широкого — над зазором между двумя слотами.</summary>
+        private float SpoolX(int slot)
+        {
+            var w = _slotFrames[slot].sizeDelta.x;
+            return IsWide(slot) ? w + SlotGap / 2f : w / 2f;
+        }
+
+        /// <summary>Широкий клубок чуть крупнее обычного: сразу видно, что он толстый.</summary>
+        private float SpoolSizeAt(int slot) => IsWide(slot) ? Mathf.Min(_slotSpool * 1.15f, 50f) : _slotSpool;
+
+        /// <summary>Куда летит клубок на станок: в центр слота, у широкого — между двумя слотами.</summary>
+        private Vector3 SlotTarget(int slot) =>
+            IsWide(slot)
+                ? Vector3.Lerp(Ui.WorldCenter(_slotFrames[slot]), Ui.WorldCenter(_slotFrames[slot + 1]), 0.5f)
+                : Ui.WorldCenter(_slotFrames[slot]);
+
+        /// <summary>
+        /// Второй слот толстого клубка. Если слоты соседние — одна широкая подкрашенная плашка на оба слота,
+        /// клубок стоит посередине. Если толстому достались слоты врозь — подкрашенная рамка и нить к клубку.
+        /// </summary>
         private RectTransform BuildTail(int slot, Spool spool)
         {
-            var frame = _slotFrames[slot];
             var color = spool.Rainbow ? Palette.Coin : _colors[spool.Color];
+            var head = _game.Slots.ToList().IndexOf(spool);
+            if (head >= 0 && head + 1 == slot)
+            {
+                // Плашка живёт в рамке головного слота и рисуется под клубком; рамку — поверх соседней.
+                var headFrame = _slotFrames[head];
+                headFrame.SetAsLastSibling();
+                var hw = headFrame.sizeDelta.x;
+                var wide = Ui.Place(Ui.Node(headFrame, "Wide"), 0, 0, hw * 2f + SlotGap, headFrame.sizeDelta.y);
+                wide.SetAsFirstSibling();
+                Ui.Stretch(Ui.Box(wide, "Fill", 14, Color.Lerp(Palette.Card, color, 0.22f)).rectTransform);
+                var edge = Ui.Image(wide, "Edge", Art.RoundRectOutline(14, 2), Palette.WithAlpha(color, 0.7f));
+                edge.type = Image.Type.Sliced;
+                edge.pixelsPerUnitMultiplier = Art.Density;
+                Ui.Stretch(edge.rectTransform);
+                Tweens.Scale(wide, 0.9f, 1f, 0.2f);
+                return wide;
+            }
+
+            var frame = _slotFrames[slot];
             var root = Ui.Stretch(Ui.Node(frame, "Tail"));
             Ui.Stretch(Ui.Box(root, "Fill", 14, Palette.WithAlpha(color, 0.25f)).rectTransform);
-            var head = _game.Slots.ToList().IndexOf(spool);
+            var outline = Ui.Image(root, "Edge", Art.RoundRectOutline(14, 2), Palette.WithAlpha(color, 0.7f));
+            outline.type = Image.Type.Sliced;
+            outline.pixelsPerUnitMultiplier = Art.Density;
+            Ui.Stretch(outline.rectTransform);
             var toLeft = head >= 0 && head < slot;
             var w = frame.sizeDelta.x;
             var thread = Ui.Box(root, "Thread", 3, color);
             Ui.Place(thread.rectTransform, toLeft ? -8f : w / 2f, 26, w / 2f + 8f, 6);
-            var ball = Ui.Image(root, "Ball", spool.Rainbow ? Art.RainbowBall : Art.YarnBall, spool.Rainbow ? Color.white : color);
-            Ui.PlaceCenter(ball.rectTransform, w / 2f, 29, _slotSpool * 0.5f, _slotSpool * 0.5f);
             Tweens.Scale(root, 0.5f, 1f, 0.2f);
             return root;
         }
@@ -1164,8 +1209,8 @@ namespace KnittedPicture.Game
                 var spool = placed.Spool;
                 var flyer = SpoolView.Create(_fx, _spoolSize);
                 flyer.Bind(spool, _colors[spool.Color], true);
-                var target = Ui.WorldCenter(_slotFrames[placed.Slot]);
-                var scale = _slotSpool / _spoolSize;
+                var target = SlotTarget(placed.Slot);
+                var scale = SpoolSizeAt(placed.Slot) / _spoolSize;
                 Tweens.Run(flyer.Root, LoomGame.WarmupSteps * StepInterval, t =>
                 {
                     flyer.Root.localScale = Vector3.one * Mathf.Lerp(1f, scale, t) * (1f + 0.15f * Ease.Bump(t));
