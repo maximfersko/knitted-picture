@@ -53,7 +53,7 @@ namespace KnittedPicture.Game
         public static Tap Tile(RectTransform parent, LevelData level, TileState state, float x, float y, float size, int stars = 0)
         {
             var root = Ui.Card(parent, "Tile" + level.id, x, y, size, size, 14,
-                state == TileState.Locked ? Palette.Track : Palette.Card, Palette.CardShadow, state == TileState.Locked ? 0f : 2f, true);
+                state == TileState.Locked ? Palette.Track : Palette.Surface, Palette.CardShadow, state == TileState.Locked ? 0f : 2f, true);
             var inner = size - 14f;
             switch (state)
             {

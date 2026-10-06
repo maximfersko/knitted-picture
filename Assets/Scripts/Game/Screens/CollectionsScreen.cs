@@ -58,14 +58,22 @@ namespace KnittedPicture.Game
                 (CollectionsTab.Yarn, "Пряжа", Pending(CollectionsTab.Yarn)),
                 (CollectionsTab.Achievements, "Достижения", Pending(CollectionsTab.Achievements)),
             };
-            var track = Ui.Box(Root, "Tabs", 22, Palette.Track);
+            // Подложка вкладок темнее фона, активная вкладка — белая с тенью: видно, где ты.
+            var track = Ui.Box(Root, "Tabs", 22, Palette.LoomBg);
             Ui.Place(track.rectTransform, 16, TabsY, W - 32, 44);
+            Ui.Outline(track.rectTransform, 22, Palette.Line, 1.5f);
             var tabW = (W - 32 - 8) / tabs.Length;
             for (var i = 0; i < tabs.Length; i++)
             {
                 var (tab, title, pending) = tabs[i];
                 var active = tab == _tab;
                 var x = 16 + 4 + i * tabW;
+                if (active)
+                {
+                    var shadow = Ui.Box(Root, "TabShadow", 18, Palette.CardShadow);
+                    Ui.Place(shadow.rectTransform, x, TabsY + 6, tabW, 36);
+                }
+
                 var face = Ui.Box(Root, "Tab" + tab, 18, active ? Palette.Card : Color.clear, true);
                 Ui.Place(face.rectTransform, x, TabsY + 4, tabW, 36);
                 Ui.Label(face.rectTransform, title, 15, active ? Palette.Ink : Palette.Ink2, 0, 0, tabW, 36);

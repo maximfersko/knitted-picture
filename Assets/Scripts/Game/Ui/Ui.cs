@@ -104,7 +104,24 @@ namespace KnittedPicture.Game
 
             var face = Box(root, "Face", radius, color, raycast);
             Place(face.rectTransform, 0, 0, w, h);
+
+            // Белым карточкам — тонкий контур: на белом окне и на светлом фоне они не теряются.
+            if (color == Palette.Card || color == Palette.Surface)
+            {
+                Outline(root, radius, Palette.Line, 1.5f);
+            }
+
             return root;
+        }
+
+        /// <summary>Контур поверх элемента (растянут на весь родитель).</summary>
+        public static Image Outline(RectTransform parent, float radius, Color color, float stroke)
+        {
+            var outline = Image(parent, "Outline", Art.RoundRectOutline(radius, stroke), color);
+            outline.type = UnityEngine.UI.Image.Type.Sliced;
+            outline.pixelsPerUnitMultiplier = Art.Density;
+            Stretch(outline.rectTransform);
+            return outline;
         }
 
         public static Text Label(RectTransform parent, string text, float size, Color color, bool bold = true,

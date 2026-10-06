@@ -26,6 +26,9 @@ namespace KnittedPicture.Game
             {
                 var (build, caption, captionColor) = items[i];
                 var cell = Ui.Place(Ui.Node(Card, "Item"), x + i * itemW, y, itemW, 104);
+                var tile = Ui.Box(cell, "Tile", 16, Palette.Surface);
+                Ui.Place(tile.rectTransform, 6, 0, itemW - 12, 62);
+                Ui.Outline(tile.rectTransform, 16, Palette.Line, 1.5f);
                 build(cell);
                 var label = Ui.Label(cell, caption, 13, captionColor, 0, 66, itemW, 38, true, TextAnchor.UpperCenter);
                 label.lineSpacing = 0.85f;
@@ -105,10 +108,16 @@ namespace KnittedPicture.Game
                 var rowX = 24 + (Inner - (rowCount * cellW + (rowCount - 1) * gap)) / 2f;
                 var claimed = day < index || (!canClaim && day == index);
                 var isToday = day == index && canClaim;
-                var face = isToday ? Palette.PrimarySoft : claimed ? Palette.Track : Palette.Card;
+                // Сегодня — зелёная рамка, впереди — плитки на подложке, забранные — приглушены.
+                var face = isToday ? Palette.PrimarySoft : claimed ? Palette.Track : Palette.Surface;
                 var cell = Ui.Card(Card, "Day" + day, rowX + col * (cellW + gap), y + row * (cellH + gap), cellW, cellH, 14, face,
-                    isToday ? Palette.Primary : Palette.CardShadow, 2f);
-                Ui.Label(cell, $"День {day + 1}", 12, isToday ? Palette.Primary : Palette.Ink2, 0, 4, cellW, 18);
+                    isToday ? Palette.PrimaryShadow : Palette.CardShadow, isToday ? 3f : 2f);
+                if (isToday)
+                {
+                    Ui.Outline(cell, 14, Palette.Primary, 2.5f);
+                }
+
+                Ui.Label(cell, isToday ? "Сегодня" : $"День {day + 1}", 12, isToday ? Palette.Primary : claimed ? Palette.Ink3 : Palette.Ink2, 0, 4, cellW, 18);
                 var reward = DailyGift.Days[day];
                 if (reward.Yarn == DailyGift.RandomYarn)
                 {
@@ -128,6 +137,8 @@ namespace KnittedPicture.Game
 
                 if (claimed)
                 {
+                    var veil = Ui.Box(cell, "Veil", 14, Palette.WithAlpha(Palette.Track, 0.55f));
+                    Ui.Stretch(veil.rectTransform);
                     var check = Ui.Image(cell, "Done", Art.Circle, Palette.Primary);
                     Ui.PlaceCenter(check.rectTransform, cellW - 12, 12, 20, 20);
                     Ui.IconImage(cell, Icon.Check, Color.white, cellW - 12, 12, 14);
