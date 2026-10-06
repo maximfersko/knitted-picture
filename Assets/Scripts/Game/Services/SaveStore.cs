@@ -10,9 +10,19 @@ namespace KnittedPicture.Game
     {
         private const string Key = "knitted_picture_progress_v1";
 
+        /// <summary>Сохранение уже лежит в PlayerPrefs: загружено или записано в этой сессии.</summary>
+        private static bool _stored;
+
+        /// <summary>
+        /// Сохранение стёрли снаружи, пока игра работала (в редакторе Edit → Clear All PlayerPrefs,
+        /// на телефоне «Очистить данные»). Тогда прогресс в памяти устарел: его нельзя записывать обратно.
+        /// </summary>
+        public static bool WasCleared => _stored && !PlayerPrefs.HasKey(Key);
+
         public static PlayerProgress Load()
         {
             var json = PlayerPrefs.GetString(Key, string.Empty);
+            _stored = !string.IsNullOrEmpty(json);
             if (string.IsNullOrEmpty(json))
             {
                 return new PlayerProgress();
@@ -33,12 +43,14 @@ namespace KnittedPicture.Game
         {
             PlayerPrefs.SetString(Key, JsonUtility.ToJson(progress));
             PlayerPrefs.Save();
+            _stored = true;
         }
 
         public static void Reset()
         {
             PlayerPrefs.DeleteKey(Key);
             PlayerPrefs.Save();
+            _stored = false;
         }
     }
 }

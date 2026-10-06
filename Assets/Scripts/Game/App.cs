@@ -141,15 +141,35 @@ namespace KnittedPicture.Game
 
         private void OnApplicationQuit()
         {
-            Save();
+            if (!SaveStore.WasCleared)
+            {
+                Save();
+            }
+        }
+
+        private void OnApplicationFocus(bool focused)
+        {
+            if (focused && Progress != null && SaveStore.WasCleared)
+            {
+                ResetProgress();
+            }
         }
 
         public void Save()
         {
-            if (Progress != null)
+            if (Progress == null)
             {
-                SaveStore.Save(Progress.Data);
+                return;
             }
+
+            // Сохранение стёрли снаружи — не возвращаем старый прогресс, а начинаем с чистого листа.
+            if (SaveStore.WasCleared)
+            {
+                ResetProgress();
+                return;
+            }
+
+            SaveStore.Save(Progress.Data);
         }
 
         public void ShowHome() => Show(() => new HomeScreen(this));
@@ -159,10 +179,10 @@ namespace KnittedPicture.Game
         /// <summary>Коллекции, открытые на вкладке tab; дальше вкладки листаются внутри экрана.</summary>
         public void ShowCollections(CollectionsTab tab) => Show(() => new CollectionsScreen(this, tab));
 
-        /// <summary>Вступление «как играть»: на первом запуске и из настроек.</summary>
         /// <summary>Сундук и запасы: открыть сундук, посмотреть бустеры и корзинку.</summary>
         public void ShowChest() => Show(() => new ChestScreen(this));
 
+        /// <summary>Вступление «как играть»: на первом запуске и из настроек.</summary>
         public void ShowIntro() => Show(() => new IntroScreen(this));
 
         /// <summary>Вступление закончено или пропущено: новичка сразу в первый уровень.</summary>
@@ -288,12 +308,18 @@ namespace KnittedPicture.Game
             Save();
         }
 
+        /// <summary>
+        /// Стереть прогресс: новое сохранение, все окна закрыты, экраны строятся заново
+        /// (главная, сундук, коллекции читают только Progress — старого состояния не остаётся).
+        /// </summary>
         public void ResetProgress()
         {
+            CloseAllPopups();
             SaveStore.Reset();
             Progress = new ProgressService(new PlayerProgress(), Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
-            Save();
+            HomeScreen.ResetCarousel();
+            SaveStore.Save(Progress.Data);
             ShowIntro();
         }
 

@@ -114,6 +114,33 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Reset_progress_starts_chest_and_meta_from_scratch()
+        {
+            var progress = Fresh();
+            for (var id = 1; id <= 8; id++)
+            {
+                progress.CompleteLevel(id, false, stars: 3);
+            }
+
+            var first = progress.PeekChest();
+            progress.ClaimChest(0, 0);
+            progress.ClaimChest(0, 0);
+            Assert.Equal(2, progress.ChestsOpened);
+
+            // Сброс в игре — новый PlayerProgress: сундук, звёзды, пряжа и награды с нуля.
+            var reset = Fresh();
+            Assert.Equal(0, reset.ChestsOpened);
+            Assert.Equal(0, reset.ChestProgress);
+            Assert.False(reset.CanOpenChest);
+            Assert.False(reset.NextChestBig);
+            Assert.Equal(0, reset.TotalStars);
+            Assert.Equal(0, reset.YarnKinds);
+            Assert.Equal(0, reset.PendingClaims);
+            Assert.Equal(Economy.StartCoins, reset.Coins);
+            Assert.Equal(first.Coins, reset.PeekChest().Coins);
+        }
+
+        [Fact]
         public void Daily_gift_once_a_day_and_streak_resets_after_a_missed_day()
         {
             var progress = Fresh();
