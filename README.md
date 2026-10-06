@@ -29,6 +29,16 @@ Hybrid-casual головоломка: игрок отправляет клубк
 
 Шрифт: по умолчанию встроенный. Чтобы поставить Nunito, положите `Nunito-Black.ttf` как `Assets/Resources/Fonts/Main.ttf`.
 
+## Иконка
+
+Иконка рисуется скриптом `tools/icon/make_icon.py` (нужны `pip install pillow numpy`) и лежит в `Assets/Icons/`:
+
+| Файл | Куда в Unity |
+|---|---|
+| `AppIcon.png` | Player Settings → Icon → Default Icon; Android → Legacy и Round |
+| `AppIconBackground.png` | Android → Adaptive → Background |
+| `AppIconForeground.png` | Android → Adaptive → Foreground (всё важное в безопасной зоне) |
+
 ## Уровни
 
 Исходник уровня (`levels-src/level_001.json`):
@@ -59,7 +69,9 @@ Hybrid-casual головоломка: игрок отправляет клубк
 - `maxForced`, `minDanger`..`maxDanger` — коридоры метрик решений: доля ходов без выбора и доля роковых ходов.
 - `maxRandom` — сколько партий может выиграть игрок, который тапает наугад.
 
-Пересобрать все уровни:
+Подробное руководство по созданию и правке уровней — [docs/LEVELS.md](docs/LEVELS.md).
+
+Пересобрать все уровни (или только часть: `-- --only 16-20`):
 
 ```bash
 dotnet run --project dotnet/KnittedPicture.LevelTool

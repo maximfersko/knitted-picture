@@ -13,6 +13,7 @@ namespace KnittedPicture.Game
     public sealed class Pager : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private float _velocity;
+        private Vector2 _start;
 
         public event Action? Began;
 
@@ -22,9 +23,16 @@ namespace KnittedPicture.Game
         /// <summary>Палец отпущен: скорость по X в точках макета в секунду.</summary>
         public event Action<float>? Released;
 
+        /// <summary>
+        /// Палец отпущен после явного горизонтального жеста: -1 — влево, +1 — вправо, 0 — не свайп
+        /// (коротко или скорее вертикально). Расстояния — в точках макета.
+        /// </summary>
+        public event Action<int>? Swiped;
+
         public void OnBeginDrag(PointerEventData eventData)
         {
             _velocity = 0f;
+            _start = eventData.position;
             Began?.Invoke();
         }
 
@@ -41,6 +49,11 @@ namespace KnittedPicture.Game
         public void OnEndDrag(PointerEventData eventData)
         {
             Released?.Invoke(_velocity);
+            var scale = Mathf.Max(0.0001f, transform.lossyScale.x);
+            var delta = (eventData.position - _start) / scale;
+            var horizontal = Mathf.Abs(delta.x) > 1.4f * Mathf.Abs(delta.y);
+            var far = Mathf.Abs(delta.x) > 70f || Mathf.Abs(_velocity) > 600f;
+            Swiped?.Invoke(horizontal && far ? (delta.x < 0 ? -1 : 1) : 0);
         }
     }
 }

@@ -156,7 +156,8 @@ namespace KnittedPicture.Game
 
         public void ShowAlbum() => ShowCollections(CollectionsTab.Album);
 
-        public void ShowCollections(CollectionsTab tab) => Show(() => new CollectionsScreen(this, tab));
+        /// <summary>Коллекции на вкладке tab. slideFrom: 1 — содержимое въезжает справа, -1 — слева, 0 — без анимации.</summary>
+        public void ShowCollections(CollectionsTab tab, int slideFrom = 0) => Show(() => new CollectionsScreen(this, tab, slideFrom));
 
         /// <summary>Вступление «как играть»: на первом запуске и из настроек.</summary>
         public void ShowIntro() => Show(() => new IntroScreen(this));

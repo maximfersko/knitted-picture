@@ -23,7 +23,7 @@ namespace KnittedPicture.Game
 
         private readonly CollectionsTab _tab;
 
-        public CollectionsScreen(App app, CollectionsTab tab)
+        public CollectionsScreen(App app, CollectionsTab tab, int slideFrom = 0)
             : base(app, "Collections")
         {
             _tab = tab;
@@ -48,6 +48,51 @@ namespace KnittedPicture.Game
             }
 
             content.sizeDelta = new Vector2(W, Mathf.Max(height + 24f, H - ContentY));
+            EnableSwipe((RectTransform)content.parent, slideFrom);
+        }
+
+        /// <summary>
+        /// Свайп между вкладками без зацикливания: содержимое идёт за пальцем, на крайних вкладках — туго.
+        /// Pager стоит на том же объекте, что и вертикальная прокрутка, и получает те же события.
+        /// </summary>
+        private void EnableSwipe(RectTransform viewport, int slideFrom)
+        {
+            var content = (RectTransform)viewport.GetChild(viewport.childCount - 1);
+            var group = viewport.gameObject.AddComponent<CanvasGroup>();
+            if (slideFrom != 0)
+            {
+                Tweens.Run(viewport, 0.25f, t =>
+                {
+                    content.anchoredPosition = new Vector2(slideFrom * 70f * (1f - t), content.anchoredPosition.y);
+                    group.alpha = t;
+                }, Ease.OutCubic);
+            }
+
+            var index = (int)_tab;
+            var last = System.Enum.GetValues(typeof(CollectionsTab)).Length - 1;
+            var pager = viewport.gameObject.AddComponent<Pager>();
+            var offset = 0f;
+            pager.Began += () => offset = 0f;
+            pager.Moved += dx =>
+            {
+                // Туда, где вкладки нет, лента почти не едет.
+                var blocked = (dx > 0 && index == 0) || (dx < 0 && index == last);
+                offset += dx * (blocked ? 0.2f : 0.6f);
+                content.anchoredPosition = new Vector2(offset, content.anchoredPosition.y);
+            };
+            pager.Swiped += dir =>
+            {
+                var target = index - dir;
+                if (dir != 0 && target >= 0 && target <= last)
+                {
+                    Sfx.Play(Sound.Pick, 0.5f);
+                    App.ShowCollections((CollectionsTab)target, -dir);
+                    return;
+                }
+
+                var from = content.anchoredPosition.x;
+                Tweens.Run(viewport, 0.2f, t => content.anchoredPosition = new Vector2(Mathf.Lerp(from, 0f, t), content.anchoredPosition.y), Ease.OutCubic);
+            };
         }
 
         private void BuildTabs()
@@ -87,7 +132,7 @@ namespace KnittedPicture.Game
                 {
                     if (target != _tab)
                     {
-                        App.ShowCollections(target);
+                        App.ShowCollections(target, target > _tab ? 1 : -1);
                     }
                 });
             }
