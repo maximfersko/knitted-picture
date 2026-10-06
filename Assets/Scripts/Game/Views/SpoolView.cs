@@ -115,7 +115,8 @@ namespace KnittedPicture.Game
             _surplus.gameObject.SetActive(surplus && visible);
             _foreign.gameObject.SetActive(foreign);
 
-            _badge.gameObject.SetActive(visible);
+            // Число петель — только у тех, кого можно взять сейчас: задние ряды без цифр, меньше шума.
+            _badge.gameObject.SetActive(visible && front);
             _badgeText.text = spool.Loops.ToString();
 
             _knot.gameObject.SetActive(spool.Knots > 0);

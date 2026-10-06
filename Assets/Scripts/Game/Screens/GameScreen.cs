@@ -19,6 +19,9 @@ namespace KnittedPicture.Game
         private const float Pad = 16f;
         private const int VisibleRows = 3;
 
+        /// <summary>Полоска под клубками для «+N» — сколько ещё ждёт в колонке.</summary>
+        private const float DepthRow = 16f;
+
         /// <summary>Секунд на шаг вязки: каждый клубок делает ~15 петель в секунду.</summary>
         private const float StepInterval = 0.065f;
 
@@ -314,8 +317,8 @@ namespace KnittedPicture.Game
 
             for (var attempt = 0; attempt < 4; attempt++)
             {
-                _fieldH = VisibleRows * (_spoolSize + 10f) + 14f;
-                _fieldY = boostersY - 12f - _fieldH;
+                _fieldH = VisibleRows * (_spoolSize + 10f) + 10f + DepthRow;
+                _fieldY = boostersY - 16f - _fieldH;
                 _loomY = _fieldY - 12f - 96f;
                 if (_loomY - 10f - _top >= 170f || _spoolSize <= 40f)
                 {
@@ -441,9 +444,10 @@ namespace KnittedPicture.Game
         {
             if (!string.IsNullOrEmpty(_level.tip))
             {
-                var width = Mathf.Min(W - 40f, 340f);
-                _tip = Ui.Card(Root, "Tip", (W - width) / 2f, _loomY - 76f, width, 64, 18, Palette.Ink, Palette.Ink, 0f);
-                var label = Ui.Label(_tip, _level.tip, 15, Color.white, 14, 0, width - 28, 64);
+                // Подсказка лежит на пустом станке: в начале он всё равно пуст, а фронт картинки остаётся виден.
+                var width = W - 2 * Pad;
+                _tip = Ui.Card(Root, "Tip", Pad, _loomY + 22f, width, 74, 20, Palette.Ink, Palette.Ink, 0f);
+                var label = Ui.Label(_tip, _level.tip, 15, Color.white, 16, 0, width - 32, 74);
                 label.lineSpacing = 0.9f;
                 var group = _tip.gameObject.AddComponent<CanvasGroup>();
                 group.blocksRaycasts = false;
@@ -626,11 +630,14 @@ namespace KnittedPicture.Game
                     }
                 }
 
+                // Сколько ещё клубков за видимыми — тихой плашкой под колонкой, не поверх клубков.
                 if (column.Count > VisibleRows)
                 {
-                    var (x, y) = FieldPosition(c, VisibleRows - 1);
-                    var more = Ui.Card(_fieldContent, "More", x - 18f, y + _spoolSize / 2f - 10f, 36, 20, 10, Palette.Ink, Palette.Ink, 0f);
-                    Ui.Label(more, "+" + (column.Count - VisibleRows), 12, Color.white, 0, 0, 36, 20);
+                    var (x, _) = FieldPosition(c, 0);
+                    var rowY = 7f + (_spoolSize + 10f) * VisibleRows;
+                    var more = Ui.Box(_fieldContent, "More", 7, Palette.Surface).rectTransform;
+                    Ui.PlaceCenter(more, x, rowY + DepthRow / 2f - 2f, 34, 15);
+                    Ui.Label(more, "+" + (column.Count - VisibleRows), 11, Palette.Ink2, 0, 0, 34, 15);
                 }
             }
         }
@@ -1489,10 +1496,10 @@ namespace KnittedPicture.Game
                 Ui.Place(label.rectTransform, w / 2f - total / 2f + 28f, 0, textW + 4f, 60);
                 label.alignment = TextAnchor.MiddleLeft;
 
-                var badge = Ui.Place(Ui.Node(root, "Badge"), w - 40f, -8f, 46, 22);
-                _badgeBack = Ui.Box(badge, "Back", 11, Palette.Ink);
+                var badge = Ui.Place(Ui.Node(root, "Badge"), w - 38f, -6f, 40, 20);
+                _badgeBack = Ui.Box(badge, "Back", 10, Palette.Ink);
                 Ui.Stretch(_badgeBack.rectTransform);
-                _badgeText = Ui.Label(badge, "", 12, Color.white);
+                _badgeText = Ui.Label(badge, "", 11, Color.white);
                 Ui.Stretch(_badgeText.rectTransform);
                 Tap = root.gameObject.AddComponent<Tap>();
             }

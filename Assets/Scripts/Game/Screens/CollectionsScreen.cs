@@ -28,7 +28,7 @@ namespace KnittedPicture.Game
         {
             _tab = tab;
             Ui.RoundButton(Root, Icon.Back, 16, 8).OnClick(app.ShowHome);
-            Ui.Label(Root, "Коллекции", 24, Palette.Ink, 70, 8, W - 140, 44);
+            Ui.Label(Root, "Коллекции", 22, Palette.Ink, 66, 8, W - 66 - 128, 44);
             Ui.CoinPill(Root, app.Progress.Coins, W - 16, 8);
             BuildTabs();
 
@@ -401,8 +401,9 @@ namespace KnittedPicture.Game
 
             if (reward.Coins > 0)
             {
+                // Число заканчивается за 8 точек до монетки — не наезжает на неё.
                 Ui.Coin(parent, x - 10, cy, 18);
-                Ui.Label(parent, "+" + reward.Coins, 14, Palette.Ink, x - 74, cy - 11, 58, 22, true, TextAnchor.MiddleRight);
+                Ui.Label(parent, "+" + reward.Coins, 14, Palette.Ink, x - 90, cy - 11, 63, 22, true, TextAnchor.MiddleRight);
             }
         }
 

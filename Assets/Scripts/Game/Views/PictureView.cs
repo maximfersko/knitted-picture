@@ -118,7 +118,7 @@ namespace KnittedPicture.Game
 
                 if (_game.IsFabric(x, y))
                 {
-                    image.sprite = Art.StitchCell;
+                    image.sprite = Art.FabricCell;
                     image.color = Color.Lerp(color, Color.white, FabricLighten);
                     continue;
                 }

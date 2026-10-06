@@ -71,6 +71,9 @@ namespace KnittedPicture.Game
 
         public static Sprite PlainCell => Cached("cell", () => BuildCell(false));
 
+        /// <summary>Ткань-основа: та же вязка, но тише — рисунок и фронт заметнее фона.</summary>
+        public static Sprite FabricCell => Cached("fabric", () => BuildCell(true, true));
+
         public static Sprite Icon(Icon icon) => Cached("icon" + icon, () => BuildIcon(icon));
 
         private static Texture2D? _knitPattern;
@@ -263,7 +266,7 @@ namespace KnittedPicture.Game
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
-        private static Sprite BuildCell(bool knit)
+        private static Sprite BuildCell(bool knit, bool soft = false)
         {
             const int size = 48;
             const float radius = 11f;
@@ -283,14 +286,14 @@ namespace KnittedPicture.Game
                     var value = 1f;
                     if (knit)
                     {
-                        value = 0.84f;
+                        value = soft ? 0.93f : 0.84f;
                         var left = DistanceToSegment(x, y, 9f, 11f, 24f, 38f);
                         var right = DistanceToSegment(x, y, 39f, 11f, 24f, 38f);
                         var line = Mathf.Clamp01(5f - Mathf.Min(left, right) + 0.5f);
                         value = Mathf.Lerp(value, 1f, line);
                         if (y > 42f)
                         {
-                            value *= 0.86f;
+                            value *= soft ? 0.95f : 0.86f;
                         }
                     }
 
