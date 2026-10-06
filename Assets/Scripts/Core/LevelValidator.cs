@@ -103,7 +103,7 @@ namespace KnittedPicture.Core
 
             if (stitchesByColor.Sum() == 0)
             {
-                errors.Add("вся картинка — ткань, вязать нечего");
+                errors.Add("вся картинка из ткани, вязать нечего");
             }
 
             foreach (var cell in level.gold ?? new int[0])

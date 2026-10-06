@@ -25,7 +25,7 @@ namespace KnittedPicture.Game
             switch (type)
             {
                 case BoosterType.Slot: return "Ещё одно место на станке, когда клубкам тесно";
-                case BoosterType.Scissors: return "Достают любой клубок с поля — даже из глубины, во льду или под замком — или срезают клубок со станка";
+                case BoosterType.Scissors: return "Достают любой клубок с поля, даже из глубины, во льду или под замком, и срезают клубок со станка";
                 case BoosterType.Undo: return "Возвращает последний ход, если поторопился";
                 case BoosterType.Time: return "Отгоняет моль: +20 секунд к таймеру";
                 default: return string.Empty;
@@ -69,7 +69,7 @@ namespace KnittedPicture.Game
         {
             AddIcon(KnittedPicture.Game.Icon.Video, Palette.Ink, Palette.Track, 64);
             AddTitle("Видео-реклама", 22);
-            AddText("Здесь будет ролик из SDK издателя. Сейчас — заглушка.", 15, 2.2f);
+            AddText("Здесь будет ролик из SDK издателя. Сейчас это заглушка.", 15, 2.2f);
             var fill = Ui.ProgressBar(Card, 24, Cursor, Inner, 10, 0.02f, Palette.Primary);
             Space(30);
             Finish(4);
@@ -201,12 +201,12 @@ namespace KnittedPicture.Game
             if (percent >= 50)
             {
                 // «Почти!» мотивирует попробовать ещё раз сильнее лёгкой победы.
-                var near = AddText($"Довязано {percent}% — почти!", 18, 1);
+                var near = AddText($"Довязано {percent}%, почти!", 18, 1);
                 near.color = Palette.Danger;
             }
 
             AddText(kind == FailKind.Jam
-                ? canRescue ? "Слоты заняты, а нужного цвета на станке нет" : "Станок заполнен до предела — попробуй ещё раз"
+                ? canRescue ? "Слоты заняты, а нужного цвета на станке нет" : "Станок заполнен до предела. Попробуй ещё раз"
                 : "Время вышло. Отгони моль и довяжи картинку", 16, 1.6f);
 
             if (canRescue)
@@ -219,7 +219,7 @@ namespace KnittedPicture.Game
                 {
                     if (app.Progress.Pay(type) == Payment.NotEnough)
                     {
-                        app.Toast("Не хватает монет — можно за видео");
+                        app.Toast("Не хватает монет, можно за видео");
                         return;
                     }
 

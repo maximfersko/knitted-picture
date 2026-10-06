@@ -562,7 +562,7 @@ namespace KnittedPicture.Game
                     if (_game.IsForeign(spool) && !_foreignShown)
                     {
                         _foreignShown = true;
-                        App.Toast("Этой пряжи нет в рисунке — она заняла слот. Срезать её можно ножницами");
+                        App.Toast("Этой пряжи нет в рисунке, она заняла слот. Срезать её можно ножницами");
                     }
                     view = _slotViews[i];
                 }
@@ -968,7 +968,7 @@ namespace KnittedPicture.Game
                     Tweens.Shake((RectTransform)_tapsGoal.transform.parent, 5f, 0.3f);
                 }
 
-                App.Toast("Цель по тапам упущена — третьей звезды не будет");
+                App.Toast("Цель по тапам упущена, третьей звезды не будет");
             }
 
             if (result.Kind == MoveKind.KnotUntied)
@@ -1057,7 +1057,7 @@ namespace KnittedPicture.Game
             {
                 if (_game.IsForeign(spool))
                 {
-                    App.Toast("Чужая пряжа: её нет в рисунке. Срезать — ножницами");
+                    App.Toast("Чужая пряжа: её нет в рисунке. Срезать можно ножницами");
                 }
 
                 return;
@@ -1111,7 +1111,7 @@ namespace KnittedPicture.Game
                         ? "Связанным клубкам нужно 2 свободных слота"
                         : spool != null && spool.Thick
                             ? "Толстому клубку нужно 2 свободных места"
-                            : "На станке нет места — подожди, пока клубок довяжет");
+                            : "На станке нет места. Подожди, пока клубок довяжет");
                     Tweens.Shake(_loomBg, 5f, 0.25f);
                     break;
             }

@@ -97,7 +97,7 @@ namespace KnittedPicture.Core
             new YarnInfo(8, "Букле", "С кудрявыми петельками", "#FFC23C", "#FFE08A", YarnLook.Melange, Rarity.Common),
             new YarnInfo(9, "Меланж", "Три оттенка в одной нитке", "#6CB8FF", "#FF6FA5", YarnLook.Melange, Rarity.Rare),
             new YarnInfo(10, "Люрекс", "Нитка с блёстками", "#8B5CF6", "#FFD86B", YarnLook.Sparkle, Rarity.Rare),
-            new YarnInfo(11, "Радужная", "Секционное крашение — вся радуга", "#FF6FA5", "#6CB8FF", YarnLook.Rainbow, Rarity.Epic),
+            new YarnInfo(11, "Радужная", "Секционное крашение, вся радуга", "#FF6FA5", "#6CB8FF", YarnLook.Rainbow, Rarity.Epic),
         };
 
         public static readonly YarnSet[] Sets =

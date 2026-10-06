@@ -220,7 +220,7 @@ namespace KnittedPicture.Game
             Ui.Label(banner, "Корзинка пряжи", 17, Palette.Ink, 84, 12, cardW - 100, 24, true, TextAnchor.MiddleLeft);
             Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 84, 34, cardW - 100, 18, false, TextAnchor.MiddleLeft);
             Ui.ProgressBar(banner, 84, 56, cardW - 104, 7, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Danger);
-            Ui.Label(banner, "За новые картинки, сундук и подарок дня · повтор — монеты", 11, Palette.Ink3, 84, 66, cardW - 100, 18, false,
+            Ui.Label(banner, "За новые картинки, сундук и подарок дня · повтор даёт монеты", 11, Palette.Ink3, 84, 66, cardW - 100, 18, false,
                 TextAnchor.MiddleLeft);
             y += 92f + 16f;
 
@@ -263,7 +263,7 @@ namespace KnittedPicture.Game
                     if (has)
                     {
                         var info = yarn;
-                        cell.gameObject.AddComponent<Tap>().OnClick(() => App.Toast($"{info.Name} — {info.Description}"));
+                        cell.gameObject.AddComponent<Tap>().OnClick(() => App.Toast($"{info.Name}: {info.Description}"));
                     }
                 }
 

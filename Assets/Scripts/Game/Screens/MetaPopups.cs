@@ -91,7 +91,7 @@ namespace KnittedPicture.Game
         {
             AddIcon(Icon.Gift, Palette.Danger, Palette.DangerSoft, 72);
             AddTitle("Подарок дня", 24);
-            AddText("Заходи каждый день — подарки растут. Пропустишь день — неделя начнётся заново", 14, 2.4f);
+            AddText("Заходи каждый день, и подарки будут расти. Пропустишь день, и неделя начнётся заново", 14, 2.4f);
 
             var today = app.Today;
             var index = app.Progress.DailyIndex(today);
@@ -166,7 +166,7 @@ namespace KnittedPicture.Game
             }
             else
             {
-                AddText("Следующий подарок — завтра", 15, 1);
+                AddText("Следующий подарок будет завтра", 15, 1);
                 AddPrimary("Понятно").OnClick(Close);
             }
 
@@ -182,7 +182,7 @@ namespace KnittedPicture.Game
             if (!app.Progress.CanOpenChest)
             {
                 var left = ProgressService.ChestEvery - app.Progress.ChestProgress;
-                app.Toast($"До сундука ещё {left} ★ — проходи уровни на три звезды");
+                app.Toast($"До сундука ещё {left} ★. Проходи уровни на три звезды");
                 return;
             }
 
@@ -280,7 +280,7 @@ namespace KnittedPicture.Game
             var best = progress.BestTaps(level.id);
             if (level.par > 0 && best > 0)
             {
-                var record = AddText(stars >= 3 ? $"Твой рекорд: {best} тапов — в цель!" : $"Твой рекорд: {best} тапов, цель — {level.par}", 13, 1);
+                var record = AddText(stars >= 3 ? $"Твой рекорд: {best} тапов, в цель!" : $"Твой рекорд: {best} тапов, цель: {level.par}", 13, 1);
                 record.color = stars >= 3 ? Palette.Primary : Palette.Ink2;
             }
             else
@@ -330,7 +330,7 @@ namespace KnittedPicture.Game
             if (!progress.IsAvailable(levelId))
             {
                 Tweens.Shake(tile, 6f, 0.3f);
-                app.Toast($"Уровень {levelId} пока закрыт — сейчас ты на уровне {progress.CurrentLevel}");
+                app.Toast($"Уровень {levelId} пока закрыт. Сейчас ты на уровне {progress.CurrentLevel}");
                 return;
             }
 

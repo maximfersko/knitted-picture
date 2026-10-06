@@ -29,7 +29,7 @@ namespace KnittedPicture.Game
             Tweens.Run(yarn, 3.2f, t => yarn.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 2f) * 4f), null, null, 0, true);
             var titleY = logoY + ball + 6f;
             Ui.Label(Root, "Вязаная картинка", compact ? 28 : 32, Palette.Ink, 16, titleY, W - 32, 40);
-            Ui.Label(Root, "Петля за петлёй — к готовой вещи", 15, Palette.Ink2, 16, titleY + 38f, W - 32, 22, false);
+            Ui.Label(Root, "Петля за петлёй к готовой вещи", 15, Palette.Ink2, 16, titleY + 38f, W - 32, 22, false);
 
             var y = BuildMetaRow(titleY + 76f);
             BuildCollection(y + 16f);

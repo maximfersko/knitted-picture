@@ -149,7 +149,7 @@ namespace KnittedPicture.Game
 
             if (news.Chest)
             {
-                Tweens.Delay(Root, 2.2f, () => app.Toast("Звёздный сундук готов — открой его на главной!"));
+                Tweens.Delay(Root, 2.2f, () => app.Toast("Звёздный сундук готов! Открой его на главной"));
             }
             else if (news.Achievement)
             {
@@ -233,10 +233,10 @@ namespace KnittedPicture.Game
 
             if (stats.OverPar)
             {
-                return $"Третья звезда — за {stats.Par} тапов (было {stats.Taps})";
+                return $"Третья звезда за {stats.Par} тапов (было {stats.Taps})";
             }
 
-            return stats.Helped ? "Третья звезда — без бустеров и спасений" : $"«{level.name}» теперь в альбоме";
+            return stats.Helped ? "Третья звезда: без бустеров и спасений" : $"«{level.name}» теперь в альбоме";
         }
 
         private void BuildStars(float y, int stars)
@@ -311,7 +311,7 @@ namespace KnittedPicture.Game
             var progress = App.Progress;
             var value = Mathf.Min(progress.ChestProgress, ProgressService.ChestEvery);
             Ui.IconImage(card, Icon.Chest, Palette.CoinShadow, 28, y + 16, 24);
-            var text = progress.CanOpenChest ? "Сундук готов — открой на главной!" : $"Звёздный сундук: {value}/{ProgressService.ChestEvery} ★";
+            var text = progress.CanOpenChest ? "Сундук готов! Открой на главной" : $"Звёздный сундук: {value}/{ProgressService.ChestEvery} ★";
             Ui.Label(card, text, 14, progress.CanOpenChest ? Palette.CoinShadow : Palette.Ink2, 50, y + 2, W - 32 - 60, 18, true, TextAnchor.MiddleLeft);
             Ui.ProgressBar(card, 50, y + 24, W - 32 - 66, 7, (float)value / ProgressService.ChestEvery, Palette.Coin);
             return y + 38f;

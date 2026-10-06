@@ -24,7 +24,7 @@ namespace KnittedPicture.Game
             }
             catch (System.ArgumentException)
             {
-                Debug.LogWarning("Сохранение повреждено — начинаем заново");
+                Debug.LogWarning("Сохранение повреждено, начинаем заново");
                 return new PlayerProgress();
             }
         }

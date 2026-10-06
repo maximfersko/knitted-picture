@@ -24,16 +24,16 @@ namespace KnittedPicture.Game
             "Тапни клубок",
             "Станок вяжет сам",
             "Места мало",
-            "Темп — это комбо",
+            "Темп и комбо",
         };
 
         private static readonly string[] Texts =
         {
-            "Клубки пряжи превращаются в картинку — петля за петлёй",
+            "Клубки пряжи превращаются в картинку петля за петлёй",
             "Передний клубок колонки поедет на станок",
-            "Клубок вяжет свой цвет там, где он на фронте — внизу столбиков. Фронт подсвечен ярче",
-            "Нет мест и нет работы — затор. Бери клубки, которым сразу есть дело",
-            "Ставь клубок, пока станок вяжет, — растёт комбо. На ×5 — Разгон: станок вяжет вдвое быстрее",
+            "Клубок вяжет свой цвет на фронте, внизу столбиков. Фронт подсвечен ярче",
+            "Нет мест и нет работы? Это затор. Бери клубки, которым сразу есть дело",
+            "Ставь клубок, пока станок вяжет, и комбо растёт. На ×5 включается Разгон: станок вяжет вдвое быстрее",
         };
 
         private static readonly Color Pink = Palette.Hex("#FF5C93");
@@ -369,7 +369,7 @@ namespace KnittedPicture.Game
             var loomY = 20f + picture.Height + 30f;
             var frames = Loom(scene, 2, loomY);
             var chip = Ui.Card(scene, "Front", _sw / 2f - 92f, loomY - 26f, 184, 22, 11, Palette.Track, Palette.Track, 0f);
-            Ui.Label(chip, "яркие клетки — фронт", 12, Palette.Ink2, 0, 0, 184, 22);
+            Ui.Label(chip, "яркие клетки: фронт", 12, Palette.Ink2, 0, 0, 184, 22);
 
             var views = SlotViews(frames, game, colors);
             var demo = new Demo(game, picture, colors, scene, 0.12f, slot => Ui.WorldCenter(frames[slot]))
