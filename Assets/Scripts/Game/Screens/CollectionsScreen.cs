@@ -374,20 +374,19 @@ namespace KnittedPicture.Game
             var cardW = W - 32f;
             var y = 6f;
 
-            const float bannerH = 128f;
+            const float bannerH = 116f;
             var banner = Ui.Card(content, "Basket", 16, y, cardW, bannerH, 24, Palette.Card, Palette.CardShadow, 3f);
             var circle = Ui.Image(banner, "Back", Art.Circle, Palette.DangerSoft);
-            Ui.PlaceCenter(circle.rectTransform, 44, 40, 56, 56);
+            Ui.PlaceCenter(circle.rectTransform, 44, 32, 48, 48);
             var logo = Ui.Image(banner, "Ball", Art.YarnBall, Palette.Hex("#FF6FA5"));
-            Ui.PlaceCenter(logo.rectTransform, 44, 40, 38, 38);
-            Ui.Label(banner, "Корзинка пряжи", 17, Palette.Ink, 84, 12, cardW - 140, 24, true, TextAnchor.MiddleLeft);
-            Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 84, 34, cardW - 140, 18, false, TextAnchor.MiddleLeft);
-            Ui.ProgressBar(banner, 84, 58, cardW - 104, 7, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Danger);
+            Ui.PlaceCenter(logo.rectTransform, 44, 32, 32, 32);
+            Ui.Label(banner, "Корзинка пряжи", 17, Palette.Ink, 80, 10, cardW - 140, 24, true, TextAnchor.MiddleLeft);
+            Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 80, 32, cardW - 140, 18, false, TextAnchor.MiddleLeft);
             Ui.InfoButton(banner, cardW - 30, 26, "Пряжа и её бонусы",
                 "Моток выпадает за каждую новую картинку, из звёздного сундука и на 7-й день подарков. " +
                 $"С уровня {YarnCatalog.PerksFromLevel} один моток «в работе» даёт бонус: монеты за новую картинку или дороже золотые петли. " +
                 "Повтор поднимает уровень мотка (до 3), а на третьем уровне превращается в монеты. За полный набор дают награду.", 26);
-            ActiveYarnStrip(banner, 12, 76, cardW - 24, () => App.ShowCollections(CollectionsTab.Yarn));
+            ActiveYarnStrip(banner, 12, 64, cardW - 24, () => App.ShowCollections(CollectionsTab.Yarn));
             y += bannerH + 16f;
 
             const float gap = 8f;
@@ -658,15 +657,18 @@ namespace KnittedPicture.Game
             }
 
             RewardStrip.Build(parent, x, y, w, $"Собери все {collection.Count}: монеты, слот и моток", (float)done / collection.Count,
-                progress.CanClaimCollection(index), progress.IsCollectionClaimed(index), "Коллекция собрана!", () =>
-                {
-                    var granted = progress.ClaimCollection(index, app.Random);
-                    app.Save();
-                    if (granted != null)
-                    {
-                        app.ShowPopup(new RewardPopup(app, collection.Name, Icon.Album, granted.Value, refresh));
-                    }
-                });
+                progress.CanClaimCollection(index), progress.IsCollectionClaimed(index), "Коллекция собрана!", () => Claim(app, index, refresh));
+        }
+
+        /// <summary>Забрать награду коллекции и показать её; refresh — перестроить экран после окна.</summary>
+        public static void Claim(App app, int index, System.Action refresh)
+        {
+            var granted = app.Progress.ClaimCollection(index, app.Random);
+            app.Save();
+            if (granted != null)
+            {
+                app.ShowPopup(new RewardPopup(app, Collections.All[index].Name, Icon.Album, granted.Value, refresh));
+            }
         }
     }
 }

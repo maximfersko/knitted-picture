@@ -685,24 +685,23 @@ namespace KnittedPicture.Game
             var progress = App.Progress;
             var cardW = W - 32f;
             var types = (BoosterType[])Enum.GetValues(typeof(BoosterType));
-            const float rowH = 72f;
-            var cardH = 66f + types.Length * rowH + 6f;
+            // Компактный список: значок, название, одна короткая строка и запас. Полное описание — в игре.
+            const float rowH = 60f;
+            const float listY = 46f;
+            var cardH = listY + types.Length * rowH + 6f;
             var card = Ui.Card(content, "Stock", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
             Ui.Label(card, "Запас бустеров", 18, Palette.Ink, 16, 12, cardW - 32, 26, true, TextAnchor.MiddleLeft);
-            Ui.Label(card, "Выручат в трудном уровне", 13, Palette.Ink2, 16, 36, cardW - 32, 20, false, TextAnchor.MiddleLeft);
             for (var i = 0; i < types.Length; i++)
             {
                 var type = types[i];
                 var unlocked = progress.IsUnlocked(type, progress.CurrentLevel);
                 var rowW = cardW - 24f;
-                var row = Ui.Card(card, type.ToString(), 12, 66 + i * rowH, rowW, rowH - 8, 18, Palette.Surface, Palette.Surface, 0f);
+                var row = Ui.Card(card, type.ToString(), 12, listY + i * rowH, rowW, rowH - 8, 16, Palette.Surface, Palette.Surface, 0f);
                 var circle = Ui.Image(row, "Back", Art.Circle, unlocked ? Palette.PrimarySoft : Palette.Track);
-                Ui.PlaceCenter(circle.rectTransform, 34, (rowH - 8) / 2f, 44, 44);
-                Ui.IconImage(row, BoosterInfo.Icon(type), unlocked ? Palette.Primary : Palette.Ink3, 34, (rowH - 8) / 2f, 24);
-                Ui.Label(row, BoosterInfo.Name(type), 15, unlocked ? Palette.Ink : Palette.Ink2, 66, 8, rowW - 66 - 74, 20, true, TextAnchor.MiddleLeft);
-                var description = Ui.Label(row, BoosterInfo.Description(type), 12, Palette.Ink2, 66, 28, rowW - 66 - 74, 30, false, TextAnchor.UpperLeft);
-                description.lineSpacing = 0.9f;
-                Ui.Fit(description, 9);
+                Ui.PlaceCenter(circle.rectTransform, 28, (rowH - 8) / 2f, 36, 36);
+                Ui.IconImage(row, BoosterInfo.Icon(type), unlocked ? Palette.Primary : Palette.Ink3, 28, (rowH - 8) / 2f, 20);
+                Ui.Fit(Ui.Label(row, BoosterInfo.Name(type), 15, unlocked ? Palette.Ink : Palette.Ink2, 56, 5, rowW - 56 - 74, 20, true, TextAnchor.MiddleLeft), 11);
+                Ui.Fit(Ui.Label(row, BoosterInfo.Short(type), 12, Palette.Ink3, 56, 25, rowW - 56 - 74, 18, false, TextAnchor.MiddleLeft), 9);
                 if (unlocked)
                 {
                     Ui.Label(row, "×" + progress.Stock(type), 20, progress.Stock(type) > 0 ? Palette.Ink : Palette.Ink3, rowW - 70, 0, 56, rowH - 8, true,

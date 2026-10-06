@@ -234,7 +234,6 @@ namespace KnittedPicture.Game
                 chips.Add(($"Золото ×{level.gold.Length}", Palette.CoinSoft, Palette.CoinShadow));
             }
 
-            chips.Add(($"Слотов: {level.slots}", Palette.Surface, Palette.Ink));
             var chipX = 24f;
             foreach (var (text, back, ink) in chips)
             {
@@ -287,22 +286,22 @@ namespace KnittedPicture.Game
         private void StarRow(int count, string text, bool done)
         {
             var row = Ui.Box(Card, "StarRow", 14, done ? Palette.PrimarySoft : Palette.Surface).rectTransform;
-            Ui.Place(row, 24, Cursor, Inner, 40);
+            Ui.Place(row, 24, Cursor, Inner, 36);
             for (var i = 0; i < count; i++)
             {
-                Ui.IconImage(row, Icon.Star, done ? Palette.Coin : Palette.Ink3, 16 + i * 13, 20, 14);
+                Ui.IconImage(row, Icon.Star, done ? Palette.Coin : Palette.Ink3, 16 + i * 13, 18, 14);
             }
 
-            var label = Ui.Fit(Ui.Label(row, text, 13, done ? Palette.Ink : Palette.Ink2, 58, 2, Inner - 58 - 44, 36, done, TextAnchor.MiddleLeft), 10);
+            var label = Ui.Fit(Ui.Label(row, text, 13, done ? Palette.Ink : Palette.Ink2, 58, 0, Inner - 58 - 44, 36, done, TextAnchor.MiddleLeft), 10);
             label.lineSpacing = 0.85f;
             var mark = Ui.Image(row, "Mark", done ? Art.Circle : Art.Ring, done ? Palette.Primary : Palette.SlotEmpty);
-            Ui.PlaceCenter(mark.rectTransform, Inner - 22, 20, 24, 24);
+            Ui.PlaceCenter(mark.rectTransform, Inner - 22, 18, 22, 22);
             if (done)
             {
-                Ui.IconImage(row, Icon.Check, Color.white, Inner - 22, 20, 15);
+                Ui.IconImage(row, Icon.Check, Color.white, Inner - 22, 18, 14);
             }
 
-            Space(46f);
+            Space(42f);
         }
 
         /// <summary>Тап по плитке уровня где угодно: закрытый — подсказка, текущий — сразу в игру, пройденный — карточка.</summary>

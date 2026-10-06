@@ -32,6 +32,19 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>Одна короткая строка — для списков, где полное описание перегружает.</summary>
+        public static string Short(BoosterType type)
+        {
+            switch (type)
+            {
+                case BoosterType.Slot: return "Ещё одно место на станке";
+                case BoosterType.Scissors: return "Достать любой клубок или срезать со станка";
+                case BoosterType.Undo: return "Вернуть последний ход";
+                case BoosterType.Time: return "+20 секунд, когда моль близко";
+                default: return string.Empty;
+            }
+        }
+
         public static Icon Icon(BoosterType type)
         {
             switch (type)

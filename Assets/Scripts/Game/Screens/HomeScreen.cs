@@ -29,9 +29,8 @@ namespace KnittedPicture.Game
             Tweens.Run(yarn, 3.2f, t => yarn.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 2f) * 4f), null, null, 0, true);
             var titleY = logoY + ball + 6f;
             Ui.Label(Root, "Вязаная картинка", compact ? 28 : 32, Palette.Ink, 16, titleY, W - 32, 40);
-            Ui.Label(Root, "Петля за петлёй к готовой вещи", 15, Palette.Ink2, 16, titleY + 38f, W - 32, 22, false);
-
-            var y = BuildMetaRow(titleY + 76f);
+            // Без подзаголовка: на главной только то, что нужно для действия.
+            var y = BuildMetaRow(titleY + 52f);
             BuildCollection(y + 16f);
             BuildPlay();
         }
@@ -298,7 +297,7 @@ namespace KnittedPicture.Game
             var tile = Mathf.Min(64f, Mathf.Floor((cardW - 24f - gap * (collection.Count - 1)) / collection.Count));
             var tilesW = collection.Count * tile + (collection.Count - 1) * gap;
             var stripY = 58f + tile + MiniPicture.StarsOverhang + 34f;
-            cardH = stripY + 48f + 14f;
+            cardH = stripY + 6f;
             var card = Ui.Card(_strip, "Collection" + index, index * W + 16f, 0, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
 
             var done = 0;
@@ -310,7 +309,21 @@ namespace KnittedPicture.Game
             }
 
             Ui.Fit(Ui.Label(card, collection.Name, 18, Palette.Ink, 56, 10, cardW - 112, 24), 13);
-            Ui.Fit(Ui.Label(card, $"{done} из {collection.Count} · {stars}/{collection.Count * 3} ★", 13, Palette.Ink2, 56, 32, cardW - 112, 18, false), 10);
+            // Награда коллекции на главной не занимает отдельную полосу: когда её можно забрать,
+            // подпись под названием превращается в золотую кнопку. Прогресс и награда — в альбоме.
+            if (progress.CanClaimCollection(index))
+            {
+                var claim = Ui.Box(card, "Claim", 11, Palette.CoinSoft, true).rectTransform;
+                Ui.PlaceCenter(claim, cardW / 2f, 42, Mathf.Min(cardW - 112, 200), 22);
+                Ui.Outline(claim, 11, Palette.Coin, 1.5f);
+                Ui.Label(claim, "Забрать награду", 12, Palette.CoinShadow, 0, 0, Mathf.Min(cardW - 112, 200), 22);
+                var collectionIndex = index;
+                claim.gameObject.AddComponent<Tap>().OnClick(() => CollectionReward.Claim(App, collectionIndex, App.ShowHome));
+            }
+            else
+            {
+                Ui.Fit(Ui.Label(card, $"{done} из {collection.Count} · {stars}/{collection.Count * 3} ★", 13, Palette.Ink2, 56, 32, cardW - 112, 18, false), 10);
+            }
             var page = index;
             Arrow(card, 10, index > 0, () => Turn(page - 1), false);
             Arrow(card, cardW - 50, index < Collections.All.Length - 1, () => Turn(page + 1), true);
@@ -337,7 +350,6 @@ namespace KnittedPicture.Game
                 name.lineSpacing = 0.85f;
             }
 
-            CollectionReward.Build(App, card, index, 12, stripY, cardW - 24, App.ShowHome);
             return card;
         }
 
