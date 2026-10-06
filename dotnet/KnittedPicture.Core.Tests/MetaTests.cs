@@ -53,6 +53,7 @@ namespace KnittedPicture.Core.Tests
         public void First_yarn_goes_to_work_and_its_perk_grows_with_rarity_and_level()
         {
             var progress = Fresh();
+            progress.Data.nextLevel = YarnCatalog.PerksFromLevel;
             Assert.Equal(-1, progress.ActiveYarn);
             Assert.Equal(0, progress.PerkPower(YarnPerk.Coins));
 
@@ -61,31 +62,49 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(1, progress.PerkPower(YarnPerk.Coins));
             Assert.Equal(0, progress.PerkPower(YarnPerk.Gold));
 
-            progress.AddYarn(7); // Шёлк: хлопок и шёлк, эпическая → комбо
+            progress.AddYarn(7); // Шёлк: хлопок и шёлк, эпическая → золото
             Assert.Equal(0, progress.ActiveYarn);
             Assert.False(progress.SetActiveYarn(3));
             Assert.True(progress.SetActiveYarn(7));
-            Assert.Equal(3, progress.PerkPower(YarnPerk.Combo));
+            Assert.Equal(3, progress.PerkPower(YarnPerk.Gold));
             progress.AddYarn(7);
             progress.AddYarn(7);
-            Assert.Equal(5, progress.PerkPower(YarnPerk.Combo));
+            Assert.Equal(5, progress.PerkPower(YarnPerk.Gold));
 
             Assert.Equal(YarnPerk.Coins, YarnCatalog.PerkOf(0));
-            Assert.Equal(YarnPerk.Rush, YarnCatalog.PerkOf(15));
-            Assert.Equal(5, YarnCatalog.RushStitches(1));
-            Assert.Equal(3, YarnCatalog.RushStitches(5));
+            Assert.Equal(YarnPerk.Gold, YarnCatalog.PerkOf(4));
+            Assert.Equal(YarnPerk.Gold, YarnCatalog.PerkOf(8));
+            Assert.Equal(YarnPerk.Coins, YarnCatalog.PerkOf(15));
+        }
+
+        [Fact]
+        public void Perks_open_later_so_beginners_see_just_a_collection()
+        {
+            var progress = Fresh();
+            progress.AddYarn(3);
+            Assert.False(progress.PerksOpen);
+            Assert.Equal(0, progress.PerkPower(YarnPerk.Coins));
+            Assert.Equal(0, progress.CompleteLevel(1, hard: false).PerkCoins);
+
+            progress.Data.nextLevel = YarnCatalog.PerksFromLevel;
+            Assert.True(progress.PerksOpen);
+            Assert.True(progress.PerkPower(YarnPerk.Coins) > 0);
+            Assert.False(progress.TakePerksIntro(YarnCatalog.PerksFromLevel - 1));
+            Assert.True(progress.TakePerksIntro(YarnCatalog.PerksFromLevel));
+            Assert.False(progress.TakePerksIntro(YarnCatalog.PerksFromLevel));
         }
 
         [Fact]
         public void Coins_perk_pays_on_new_pictures_only()
         {
             var progress = Fresh();
+            progress.Data.nextLevel = YarnCatalog.PerksFromLevel;
             progress.AddYarn(3); // Кашемир: эпическая шерсть, сила 3
-            var first = progress.CompleteLevel(1, hard: false);
+            var first = progress.CompleteLevel(10, hard: false);
             Assert.Equal(YarnCatalog.CoinsBonus(3), first.PerkCoins);
             Assert.Equal(Economy.WinReward + first.PerkCoins + first.YarnCoins, first.Total);
 
-            var replay = progress.CompleteLevel(1, hard: false);
+            var replay = progress.CompleteLevel(10, hard: false);
             Assert.Equal(0, replay.PerkCoins);
         }
 

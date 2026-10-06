@@ -321,12 +321,14 @@ namespace KnittedPicture.Game
 
             var progress = app.Progress;
             var active = progress.ActiveYarn;
-            var strip = Ui.Box(parent, "Active", 14, active >= 0 ? Palette.PrimarySoft : Palette.Surface, active >= 0).rectTransform;
+            var open = progress.PerksOpen;
+            var strip = Ui.Box(parent, "Active", 14, active >= 0 && open ? Palette.PrimarySoft : Palette.Surface, active >= 0).rectTransform;
             Ui.Place(strip, x, y, w, 40);
-            if (active < 0)
+            if (active < 0 || !open)
             {
-                Ui.Fit(Ui.Label(strip, "В работе пока ничего: найди первый моток", 12, Palette.Ink2, 12, 0, w - 24, 40, false,
-                    TextAnchor.MiddleLeft), 9);
+                // До 9-го уровня пряжа — просто красивая коллекция: про бонусы только одна тихая строка.
+                var text = !open ? $"Бонусы пряжи откроются на уровне {YarnCatalog.PerksFromLevel}" : "В работе пока ничего: найди первый моток";
+                Ui.Fit(Ui.Label(strip, text, 12, Palette.Ink2, 12, 0, w - 24, 40, false, TextAnchor.MiddleLeft), 9);
                 return;
             }
 
@@ -383,7 +385,7 @@ namespace KnittedPicture.Game
             Ui.ProgressBar(banner, 84, 58, cardW - 104, 7, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Danger);
             Ui.InfoButton(banner, cardW - 30, 26, "Пряжа и её бонусы",
                 "Моток выпадает за каждую новую картинку, из звёздного сундука и на 7-й день подарков. " +
-                "Один моток «в работе» даёт бонус в каждом уровне: монеты, комбо, золото или разгон. " +
+                $"С уровня {YarnCatalog.PerksFromLevel} один моток «в работе» даёт бонус: монеты за новую картинку или дороже золотые петли. " +
                 "Повтор поднимает уровень мотка (до 3), а на третьем уровне превращается в монеты. За полный набор дают награду.", 26);
             ActiveYarnStrip(banner, 12, 76, cardW - 24, () => App.ShowCollections(CollectionsTab.Yarn));
             y += bannerH + 16f;

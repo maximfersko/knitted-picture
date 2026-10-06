@@ -225,6 +225,11 @@ namespace KnittedPicture.Game
             {
                 ShowPopup(new BoosterIntroPopup(this, intro.Value));
             }
+            else if (Progress.TakePerksIntro(levelId))
+            {
+                Save();
+                ShowPopup(new YarnPerksIntroPopup(this));
+            }
         }
 
         public void OnLevelWon(LevelData level, int stars, LevelStats stats)

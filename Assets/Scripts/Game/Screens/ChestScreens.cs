@@ -333,7 +333,9 @@ namespace KnittedPicture.Game
                 // Выбор со смыслом: что даст моток — новый бонус, следующий уровень или монеты за повтор.
                 var level = App.Progress.YarnLevel(yarn.Id);
                 var perk = YarnCatalog.PerkOf(yarn.Id);
-                _description.text = level == 0
+                _description.text = !App.Progress.PerksOpen
+                    ? (level == 0 ? $"{yarn.Description}. Набор «{set}»" : $"Уже есть: повтор поднимет уровень мотка")
+                    : level == 0
                     ? $"Набор «{set}». Бонус: {YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, 1))}"
                     : level < YarnCatalog.MaxLevel
                         ? $"Уровень {level + 1}: {YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, level + 1))}"
@@ -482,10 +484,13 @@ namespace KnittedPicture.Game
                 Ui.PlaceCenter(chip, w / 2f, 130, w - 16, 22);
                 Ui.Fit(Ui.Label(chip, chipText, 12, isNew ? Palette.Danger : levelUp ? Palette.Primary : Palette.CoinShadow, 0, 0, w - 16, 22), 9);
 
-                // Значок бонуса в углу: сразу видно, чем поможет моток.
-                var perkBack = Ui.Image(front, "Perk", Art.Circle, Palette.Surface);
-                Ui.PlaceCenter(perkBack.rectTransform, 18, 18, 26, 26);
-                YarnCardPopup.PerkIcon(front, YarnCatalog.PerkOf(yarn.Id), 18, 18, 15);
+                // Значок бонуса в углу: сразу видно, чем поможет моток (когда бонусы уже открыты).
+                if (App.Progress.PerksOpen)
+                {
+                    var perkBack = Ui.Image(front, "Perk", Art.Circle, Palette.Surface);
+                    Ui.PlaceCenter(perkBack.rectTransform, 18, 18, 26, 26);
+                    YarnCardPopup.PerkIcon(front, YarnCatalog.PerkOf(yarn.Id), 18, 18, 15);
+                }
                 front.gameObject.SetActive(false);
 
                 // Переворот по очереди, когда все карточки легли.

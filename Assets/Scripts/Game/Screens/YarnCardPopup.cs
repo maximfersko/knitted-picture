@@ -51,7 +51,9 @@ namespace KnittedPicture.Game
             var power = YarnCatalog.Power(yarnId, shownLevel);
             var box = Ui.Box(Card, "Perk", 18, active ? Palette.PrimarySoft : Palette.Surface).rectTransform;
             var boxY = Cursor - 4f;
-            var nextText = !owned
+            var nextText = !progress.PerksOpen
+                ? $"Бонусы пряжи откроются на уровне {YarnCatalog.PerksFromLevel}"
+                : !owned
                 ? "Найди за новую картинку, в сундуке или в подарке дня"
                 : level < YarnCatalog.MaxLevel
                     ? $"Ур. {level + 1}: {YarnCatalog.PerkText(perk, YarnCatalog.Power(yarnId, level + 1))}"
@@ -70,14 +72,15 @@ namespace KnittedPicture.Game
             }
 
             Ui.Label(box, owned ? $"ур. {level}" : "ур. —", 11, Palette.Ink2, Inner - 66, 28, 56, 16, true);
+            var working = owned && progress.PerksOpen;
             var now = Ui.Label(box, (owned ? "" : "При находке: ") + YarnCatalog.PerkText(perk, power), 14,
-                owned ? Palette.Ink : Palette.Ink2, 14, 46, Inner - 28, 34, owned, TextAnchor.MiddleLeft);
+                working ? Palette.Ink : Palette.Ink3, 14, 46, Inner - 28, 34, working, TextAnchor.MiddleLeft);
             now.lineSpacing = 0.9f;
             Ui.Fit(now, 10);
             Ui.Fit(Ui.Label(box, nextText, 12, Palette.Ink3, 14, 82, Inner - 28, 22, false, TextAnchor.MiddleLeft), 9);
             Space(boxH + 12f);
 
-            if (owned && !active)
+            if (owned && !active && progress.PerksOpen)
             {
                 AddText("В работе один моток: его бонус действует в каждом уровне", 12, 1);
                 AddPrimary("Взять в работу", 54).OnClick(() =>
@@ -102,27 +105,59 @@ namespace KnittedPicture.Game
         private static Color RaritySoft(Rarity rarity) =>
             rarity == Rarity.Common ? Palette.Surface : rarity == Rarity.Rare ? Palette.Hex("#EDE4FF") : Palette.CoinSoft;
 
-        private static Color PerkSoft(YarnPerk perk) =>
-            perk == YarnPerk.Coins || perk == YarnPerk.Gold ? Palette.CoinSoft : perk == YarnPerk.Combo ? Palette.Hex("#EDE4FF") : Palette.Hex("#FFE6CC");
+        private static Color PerkSoft(YarnPerk perk) => Palette.CoinSoft;
 
-        /// <summary>Значок бонуса: монета — копилка, часы — ровный ход, звезда — золото, молния — разгон.</summary>
+        /// <summary>Значок бонуса: монета — копилка, звезда — золотые петли.</summary>
         public static void PerkIcon(RectTransform parent, YarnPerk perk, float cx, float cy, float size = 20f)
         {
-            switch (perk)
+            if (perk == YarnPerk.Coins)
             {
-                case YarnPerk.Coins:
-                    Ui.Coin(parent, cx, cy, size);
-                    break;
-                case YarnPerk.Combo:
-                    Ui.IconImage(parent, Icon.Clock, Palette.Link, cx, cy, size);
-                    break;
-                case YarnPerk.Gold:
-                    Ui.IconImage(parent, Icon.Star, Palette.CoinShadow, cx, cy, size);
-                    break;
-                default:
-                    Ui.IconImage(parent, Icon.Bolt, Palette.Hex("#FF9A3C"), cx, cy, size);
-                    break;
+                Ui.Coin(parent, cx, cy, size);
             }
+            else
+            {
+                Ui.IconImage(parent, Icon.Star, Palette.CoinShadow, cx, cy, size);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Один раз, когда бонусы пряжи открываются: что такое моток «в работе», что он даёт сейчас
+    /// и как бонус растёт. Коротко, с карточкой текущего мотка.
+    /// </summary>
+    public sealed class YarnPerksIntroPopup : Popup
+    {
+        public YarnPerksIntroPopup(App app)
+            : base(app)
+        {
+            var progress = app.Progress;
+            var active = progress.ActiveYarn;
+            if (active >= 0)
+            {
+                var yarn = YarnCatalog.All[active];
+                var back = Ui.Image(Card, "Back", Art.Circle, Palette.CoinSoft);
+                Ui.PlaceCenter(back.rectTransform, CardWidth / 2f, Cursor + 40f, 84, 84);
+                var skein = YarnView.Create(Card, yarn, CardWidth / 2f, Cursor + 40f, 64, true);
+                Tweens.Scale(skein, 0.5f, 1f, 0.4f, Ease.OutBack);
+                Space(94f);
+            }
+            else
+            {
+                AddIcon(Icon.Gift, Palette.CoinShadow, Palette.CoinSoft, 72);
+            }
+
+            AddTitle("Бонусы пряжи", 24);
+            AddText("Моток «в работе» теперь помогает в каждом уровне. Повторы поднимают его уровень, и бонус растёт.", 14, 2);
+            if (active >= 0)
+            {
+                var perk = YarnCatalog.PerkOf(active);
+                var text = AddText($"«{YarnCatalog.All[active].Name}»: {YarnCatalog.PerkText(perk, YarnCatalog.Power(active, progress.YarnLevel(active)))}", 15, 1);
+                text.color = Palette.Primary;
+            }
+
+            AddText("Сменить моток можно в Коллекциях → «Пряжа»", 12, 1);
+            AddPrimary("Понятно").OnClick(Close);
+            Finish(8);
         }
     }
 }

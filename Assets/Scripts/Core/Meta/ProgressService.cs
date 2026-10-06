@@ -294,11 +294,27 @@ namespace KnittedPicture.Core
             return true;
         }
 
-        /// <summary>Сила бонуса perk от мотка в работе; 0 — у мотка другой бонус или мотка нет.</summary>
+        /// <summary>Бонусы пряжи уже открыты: игрок дошёл до <see cref="YarnCatalog.PerksFromLevel"/>.</summary>
+        public bool PerksOpen => _data.nextLevel >= YarnCatalog.PerksFromLevel;
+
+        /// <summary>Сила бонуса perk от мотка в работе; 0 — бонусы ещё закрыты, у мотка другой бонус или мотка нет.</summary>
         public int PerkPower(YarnPerk perk)
         {
             var yarn = ActiveYarn;
-            return yarn >= 0 && YarnCatalog.PerkOf(yarn) == perk ? YarnCatalog.Power(yarn, YarnLevel(yarn)) : 0;
+            return PerksOpen && yarn >= 0 && YarnCatalog.PerkOf(yarn) == perk ? YarnCatalog.Power(yarn, YarnLevel(yarn)) : 0;
+        }
+
+        /// <summary>Знакомство с бонусами пряжи — один раз, на уровне, где они открываются.</summary>
+        public bool TakePerksIntro(int levelId)
+        {
+            const int introId = 100;
+            if (levelId != YarnCatalog.PerksFromLevel || _data.introsShown.Contains(introId))
+            {
+                return false;
+            }
+
+            _data.introsShown.Add(introId);
+            return true;
         }
 
         public int YarnKinds

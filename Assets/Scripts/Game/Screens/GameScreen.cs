@@ -128,12 +128,9 @@ namespace KnittedPicture.Game
             _level = level;
             _game = game;
 
-            // Пряжа «в работе» меняет только награды и темп, не правила: уровень остаётся честным.
-            var progress = app.Progress;
-            _tempo = new TempoCombo(
-                TempoCombo.Grace + YarnCatalog.ComboBonus(progress.PerkPower(YarnPerk.Combo)),
-                YarnCatalog.RushStitches(progress.PerkPower(YarnPerk.Rush)));
-            _goldPerLoop = Economy.GoldCoins + YarnCatalog.GoldBonus(progress.PerkPower(YarnPerk.Gold));
+            // Пряжа «в работе» меняет только награды, не правила: уровень остаётся честным.
+            _tempo = new TempoCombo();
+            _goldPerLoop = Economy.GoldCoins + YarnCatalog.GoldBonus(app.Progress.PerkPower(YarnPerk.Gold));
             _colors = level.colors.Select(Palette.Hex).ToArray();
 
             BuildHud();
