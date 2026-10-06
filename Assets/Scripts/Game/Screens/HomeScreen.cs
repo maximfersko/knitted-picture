@@ -35,28 +35,45 @@ namespace KnittedPicture.Game
             BuildPlay();
         }
 
-        /// <summary>Подарок дня, сундук и коллекции — три плитки с отметками.</summary>
+        /// <summary>Подарок дня, сундук, задания дня (с 4-го уровня) и коллекции — плитки с отметками.</summary>
         private float BuildMetaRow(float y)
         {
             var progress = App.Progress;
             const float gap = 8f;
             const float h = 92f;
-            var w = (W - 32f - gap * 2) / 3f;
+            var missions = progress.MissionsOpen;
+            var count = missions ? 4 : 3;
+            var w = (W - 32f - gap * (count - 1)) / count;
+            var x = 16f;
 
             var canDaily = progress.CanClaimDaily(App.Today);
-            var gift = Tile(16, y, w, h, Icon.Gift, Palette.Danger, "Подарок", canDaily ? "забери!" : "завтра", canDaily ? 1 : 0);
+            var gift = Tile(x, y, w, h, Icon.Gift, Palette.Danger, "Подарок", canDaily ? "забери!" : "завтра", canDaily ? 1 : 0);
             gift.OnClick(() => App.ShowPopup(new DailyGiftPopup(App, App.ShowHome)));
+            x += w + gap;
 
             var chestReady = progress.CanOpenChest;
             var chestProgress = Mathf.Min(progress.ChestProgress, ProgressService.ChestEvery);
-            var chest = Tile(16 + w + gap, y, w, h, Icon.Chest, Palette.CoinShadow, "Сундук",
+            var chest = Tile(x, y, w, h, Icon.Chest, Palette.CoinShadow, "Сундук",
                 chestReady ? "открой!" : $"{chestProgress}/{ProgressService.ChestEvery} ★", chestReady ? 1 : 0,
                 (float)chestProgress / ProgressService.ChestEvery);
             chest.OnClick(App.ShowChest);
+            x += w + gap;
+
+            if (missions)
+            {
+                var done = progress.MissionsDone(App.Today);
+                var claimed = progress.MissionsClaimed(App.Today);
+                var ready = progress.CanClaimMissions(App.Today);
+                var tile = Tile(x, y, w, h, Icon.Check, Palette.Primary, "Задания",
+                    ready ? "забери!" : claimed ? "завтра" : $"{done}/{DailyMissions.Count}", ready ? 1 : 0,
+                    claimed ? -1f : (float)done / DailyMissions.Count);
+                tile.OnClick(() => App.ShowPopup(new MissionsPopup(App, App.ShowHome)));
+                x += w + gap;
+            }
 
             var pending = progress.PendingClaims;
             var kinds = progress.YarnKinds;
-            var collections = Tile(16 + 2 * (w + gap), y, w, h, Icon.Trophy, Palette.Link, "Коллекции",
+            var collections = Tile(x, y, w, h, Icon.Trophy, Palette.Link, "Коллекции",
                 $"пряжа {kinds}/{YarnCatalog.Count}", pending);
             collections.OnClick(() => App.ShowCollections(FirstPendingTab()));
 
@@ -92,14 +109,14 @@ namespace KnittedPicture.Game
             var circle = Ui.Image(card, "Back", Art.Circle, Palette.WithAlpha(tint, 0.14f));
             Ui.PlaceCenter(circle.rectTransform, w / 2f, 30, 44, 44);
             var iconImage = Ui.IconImage(card, icon, tint, w / 2f, 30, 26);
-            Ui.Label(card, title, 14, Palette.Ink, 0, 54, w, 18);
+            Ui.Fit(Ui.Label(card, title, 14, Palette.Ink, 2, 54, w - 4, 18), 10);
             if (fill >= 0f && badge == 0)
             {
                 Ui.ProgressBar(card, 14, 76, w - 28, 6, fill, Palette.Coin);
             }
             else
             {
-                Ui.Label(card, caption, 12, badge > 0 ? Palette.Danger : Palette.Ink2, 0, 71, w, 16, badge > 0);
+                Ui.Fit(Ui.Label(card, caption, 12, badge > 0 ? Palette.Danger : Palette.Ink2, 2, 71, w - 4, 16, badge > 0), 9);
             }
 
             if (badge > 0)

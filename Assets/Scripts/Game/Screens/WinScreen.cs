@@ -54,13 +54,20 @@ namespace KnittedPicture.Game
     /// <summary>Что нового открылось этой победой: достижение ждёт в коллекциях, сундук готов.</summary>
     public sealed class WinNews
     {
-        public WinNews(bool achievement, bool chest)
+        public WinNews(bool achievement, bool chest, bool mission = false, bool allMissions = false)
         {
             Achievement = achievement;
             Chest = chest;
+            Mission = mission;
+            AllMissions = allMissions;
         }
 
         public bool Achievement { get; }
+
+        /// <summary>Этой победой выполнено задание дня; все три — награда ждёт.</summary>
+        public bool Mission { get; }
+
+        public bool AllMissions { get; }
 
         public bool Chest { get; }
     }
@@ -142,13 +149,21 @@ namespace KnittedPicture.Game
             FlyAll();
             BuildNext(app, level);
 
-            if (news.Chest)
+            if (news.AllMissions)
+            {
+                Tweens.Delay(Root, 2.2f, () => app.Toast("Все задания дня выполнены! Награда ждёт на главной"));
+            }
+            else if (news.Chest)
             {
                 Tweens.Delay(Root, 2.2f, () => app.Toast("Звёздный сундук готов! Открой его на главной"));
             }
             else if (news.Achievement)
             {
                 Tweens.Delay(Root, 2.2f, () => app.Toast("Новое достижение! Награда ждёт в коллекциях"));
+            }
+            else if (news.Mission)
+            {
+                Tweens.Delay(Root, 2.2f, () => app.Toast($"Задание дня выполнено: {app.Progress.MissionsDone(app.Today)} из {DailyMissions.Count}"));
             }
         }
 

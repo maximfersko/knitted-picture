@@ -50,6 +50,13 @@ namespace KnittedPicture.Core
         public int dailyStreak;
         public int dailyBest;
 
+        /// <summary>Задания дня: на какой день выбраны, какие (вид и цель), сколько сделано, забрана ли награда.</summary>
+        public int missionDay = -10;
+        public List<int> missionKinds = new List<int>();
+        public List<int> missionTargets = new List<int>();
+        public List<int> missionValues = new List<int>();
+        public bool missionsClaimed;
+
         /// <summary>Сколько подарков дня забрано всего: по нему идёт неделя подарков (пропуск — пауза, не сброс).</summary>
         public int dailyClaims;
 

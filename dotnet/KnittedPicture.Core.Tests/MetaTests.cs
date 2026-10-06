@@ -239,6 +239,47 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Daily_missions_are_stable_for_the_day_track_levels_and_pay_once()
+        {
+            var progress = Fresh();
+            Assert.False(progress.MissionsOpen);
+            Assert.Equal(0, progress.RecordMissions(300, 3, true, 5, 3, 10, 500));
+
+            progress.Data.nextLevel = 10;
+            var missions = progress.Missions(300);
+            Assert.Equal(DailyMissions.Count, missions.Count);
+            Assert.Equal(DailyMissions.Count, missions.Select(m => m.Kind).Distinct().Count());
+            Assert.Contains(missions[0].Kind, new[] { MissionKind.Win, MissionKind.Stitches });
+            Assert.Equal(missions.Select(m => m.Text), progress.Missions(300).Select(m => m.Text));
+
+            // Сильная победа закрывает всё, кроме «пройди N уровней», — тот растёт по одному.
+            for (var i = 0; i < 3; i++)
+            {
+                progress.RecordMissions(300, 3, true, 5, 3, 10, 500);
+            }
+
+            Assert.True(progress.CanClaimMissions(300));
+            var coins = progress.Coins;
+            Assert.NotNull(progress.ClaimMissions(300, new Random(1)));
+            Assert.True(progress.Coins > coins);
+            Assert.Null(progress.ClaimMissions(300, new Random(1)));
+
+            // Новый день — новые задания с нуля.
+            Assert.Equal(0, progress.MissionsDone(301));
+            Assert.False(progress.MissionsClaimed(301));
+        }
+
+        [Fact]
+        public void Mission_texts_read_naturally()
+        {
+            Assert.Equal("Пройди 2 уровня", DailyMissions.Text(MissionKind.Win, 2));
+            Assert.Equal("Пройди уровень на три звезды", DailyMissions.Text(MissionKind.ThreeStars, 1));
+            Assert.Equal("Поймай 5 золотых петель", DailyMissions.Text(MissionKind.Gold, 5));
+            Assert.Equal("Включи «Разгон» 3 раза", DailyMissions.Text(MissionKind.Rush, 3));
+            Assert.Equal("Свяжи 200 петель", DailyMissions.Text(MissionKind.Stitches, 200));
+        }
+
+        [Fact]
         public void Daily_gift_once_a_day_and_a_missed_day_only_pauses_the_week()
         {
             var progress = Fresh();
@@ -292,9 +333,12 @@ namespace KnittedPicture.Core.Tests
             Assert.False(progress.CanClaimAchievement(first));
             Assert.Equal(0, progress.PendingClaims);
 
-            progress.RecordLevel(stitches: 1200, rushes: 1, goldCaught: 0, bestCombo: 6);
-            Assert.True(progress.CanClaimAchievement(Achievements.All.First(a => a.Title == "Тысяча петель")));
-            Assert.True(progress.CanClaimAchievement(Achievements.All.First(a => a.Title == "Разгон!")));
+            for (var id = 2; id <= 5; id++)
+            {
+                progress.CompleteLevel(id, false);
+            }
+
+            Assert.True(progress.CanClaimAchievement(Achievements.All.First(a => a.Title == "Пять картинок")));
         }
 
         [Fact]
@@ -329,7 +373,8 @@ namespace KnittedPicture.Core.Tests
         [Fact]
         public void Achievement_and_yarn_ids_match_their_positions()
         {
-            Assert.Equal(Enumerable.Range(0, Achievements.All.Length), Achievements.All.Select(a => a.Id));
+            // Номера достижений не переиспользуются: на них держатся сохранения игроков.
+            Assert.Equal(Achievements.All.Length, Achievements.All.Select(a => a.Id).Distinct().Count());
             Assert.Equal(Enumerable.Range(0, YarnCatalog.Count), YarnCatalog.All.Select(y => y.Id));
             Assert.Equal(YarnCatalog.Count, YarnCatalog.Sets.Sum(s => s.Count));
         }
