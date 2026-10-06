@@ -46,39 +46,50 @@ namespace KnittedPicture.Game
                 AddText(yarn.Description, 14, 1);
             }
 
-            // Характеристика: бонус, уровень точками, что даёт сейчас и что будет дальше.
-            var shownLevel = owned ? level : 1;
-            var power = YarnCatalog.Power(yarnId, shownLevel);
-            var box = Ui.Box(Card, "Perk", 18, active ? Palette.PrimarySoft : Palette.Surface).rectTransform;
-            var boxY = Cursor - 4f;
-            var nextText = !progress.PerksOpen
-                ? $"Бонусы пряжи откроются на уровне {YarnCatalog.PerksFromLevel}"
-                : !owned
-                ? "Найди за новую картинку, в сундуке или в подарке дня"
-                : level < YarnCatalog.MaxLevel
-                    ? $"Ур. {level + 1}: {YarnCatalog.PerkText(perk, YarnCatalog.Power(yarnId, level + 1))}"
-                    : $"Максимальный уровень. Повтор даст {YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
-            const float boxH = 112f;
-            Ui.Place(box, 24, boxY, Inner, boxH);
-            Ui.Outline(box, 18, active ? Palette.Primary : Palette.Line, active ? 2f : 1.5f);
-            var iconBack = Ui.Image(box, "IconBack", Art.Circle, PerkSoft(perk));
-            Ui.PlaceCenter(iconBack.rectTransform, 26, 26, 34, 34);
-            PerkIcon(box, perk, 26, 26);
-            Ui.Fit(Ui.Label(box, YarnCatalog.PerkTitle(perk), 15, Palette.Ink, 50, 12, Inner - 50 - 74, 28, true, TextAnchor.MiddleLeft), 11);
-            for (var i = 0; i < YarnCatalog.MaxLevel; i++)
-            {
-                var dot = Ui.Image(box, "Level", Art.Circle, i < level ? Palette.Primary : Palette.SlotEmpty);
-                Ui.PlaceCenter(dot.rectTransform, Inner - 50 + i * 14f, 20, 10, 10);
-            }
+            // Раздел «Бонус»: что делает моток — одним понятным предложением — и работает ли он сейчас.
+            var open = progress.PerksOpen;
+            var power = YarnCatalog.Power(yarnId, owned ? level : 1);
+            var (status, statusBack, statusInk) = !owned ? ("не найден", Palette.Track, Palette.Ink3)
+                : !open ? ($"с ур. {YarnCatalog.PerksFromLevel}", Palette.Track, Palette.Ink3)
+                : active ? ("работает", Palette.Primary, Color.white)
+                : ("не в работе", Palette.Track, Palette.Ink2);
+            var hint = !owned ? "Найди моток за новую картинку, в сундуке или в подарке дня"
+                : !open ? $"Бонусы пряжи откроются на уровне {YarnCatalog.PerksFromLevel}"
+                : active ? "Действует в каждом уровне, пока моток в работе"
+                : "Возьми моток в работу, чтобы бонус заработал";
+            var working = owned && open && active;
+            BeginSection("Бонус", active && open);
+            var iconBack = Ui.Image(_box!, "IconBack", Art.Circle, PerkSoft(perk));
+            Ui.PlaceCenter(iconBack.rectTransform, 30, _boxY + 14f, 32, 32);
+            PerkIcon(_box!, perk, 30, _boxY + 14f, 18);
+            Ui.Fit(Ui.Label(_box!, YarnCatalog.PerkTitle(perk), 16, Palette.Ink, 54, _boxY, Inner - 54 - 104, 28, true, TextAnchor.MiddleLeft), 11);
+            var pill = Ui.Box(_box!, "Status", 11, statusBack).rectTransform;
+            Ui.Place(pill, Inner - 14 - 94, _boxY + 3f, 94, 22);
+            Ui.Fit(Ui.Label(pill, status, 11, statusInk, 4, 0, 86, 22), 8);
+            _boxY += 36f;
+            SectionText(YarnCatalog.PerkSentence(perk, power), 14, working ? Palette.Ink : Palette.Ink2, true);
+            SectionText(hint, 12, Palette.Ink3, false);
+            EndSection();
 
-            Ui.Label(box, owned ? $"ур. {level}" : "ур. —", 11, Palette.Ink2, Inner - 66, 28, 56, 16, true);
-            var working = owned && progress.PerksOpen;
-            var now = Ui.Label(box, (owned ? "" : "При находке: ") + YarnCatalog.PerkText(perk, power), 14,
-                working ? Palette.Ink : Palette.Ink3, 14, 46, Inner - 28, 34, working, TextAnchor.MiddleLeft);
-            now.lineSpacing = 0.9f;
-            Ui.Fit(now, 10);
-            Ui.Fit(Ui.Label(box, nextText, 12, Palette.Ink3, 14, 82, Inner - 28, 22, false, TextAnchor.MiddleLeft), 9);
-            Space(boxH + 12f);
+            // Раздел «Уровень мотка»: сколько собрано, как поднять и что даст следующий уровень.
+            if (owned)
+            {
+                BeginSection("Уровень мотка", false);
+                Ui.Label(_box!, $"Уровень {level} из {YarnCatalog.MaxLevel}", 14, Palette.Ink, 14, _boxY, 140, 22, true, TextAnchor.MiddleLeft);
+                const float segW = 34f;
+                for (var i = 0; i < YarnCatalog.MaxLevel; i++)
+                {
+                    var seg = Ui.Box(_box!, "Level", 4, i < level ? Palette.Primary : Palette.SlotEmpty).rectTransform;
+                    Ui.Place(seg, Inner - 14 - YarnCatalog.MaxLevel * (segW + 4f) + 4f + i * (segW + 4f), _boxY + 7f, segW, 8);
+                }
+
+                _boxY += 28f;
+                var next = level < YarnCatalog.MaxLevel
+                    ? $"Найди ещё один такой моток: уровень {level + 1}, {YarnCatalog.PerkShort(perk, YarnCatalog.Power(yarnId, level + 1))}"
+                    : $"Максимальный уровень. Каждый следующий такой моток даст {YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
+                SectionText(next, 12, Palette.Ink2, false);
+                EndSection();
+            }
 
             if (owned && !active && progress.PerksOpen)
             {
@@ -100,6 +111,39 @@ namespace KnittedPicture.Game
             }
 
             Finish(6);
+        }
+
+        private RectTransform? _box;
+        private float _boxY;
+        private float _boxTop;
+
+        /// <summary>Начать раздел: подпись над плашкой и сама плашка; высота считается по содержимому.</summary>
+        private void BeginSection(string caption, bool highlight)
+        {
+            var label = Ui.Label(Card, caption.ToUpperInvariant(), 11, Palette.Ink3, 30, Cursor - 6f, Inner - 12, 16, true, TextAnchor.MiddleLeft);
+            label.rectTransform.SetAsLastSibling();
+            Space(14f);
+            _boxTop = Cursor;
+            _box = Ui.Box(Card, "Section", 16, highlight ? Palette.PrimarySoft : Palette.Surface).rectTransform;
+            Ui.Outline(_box, 16, highlight ? Palette.Primary : Palette.Line, highlight ? 2f : 1.5f);
+            _boxY = 12f;
+        }
+
+        /// <summary>Абзац внутри раздела: высота по тексту, ничего не налезает.</summary>
+        private void SectionText(string text, float size, Color color, bool bold)
+        {
+            var label = Ui.Label(_box!, text, size, color, 14, _boxY, Inner - 28, 10, bold, TextAnchor.UpperLeft);
+            label.lineSpacing = 0.95f;
+            var h = Mathf.Max(size + 4f, label.preferredHeight);
+            label.rectTransform.sizeDelta = new Vector2(Inner - 28, h);
+            _boxY += h + 6f;
+        }
+
+        private void EndSection()
+        {
+            var h = _boxY + 6f;
+            Ui.Place(_box!, 24, _boxTop, Inner, h);
+            Space(h + 16f);
         }
 
         private static Color RaritySoft(Rarity rarity) =>

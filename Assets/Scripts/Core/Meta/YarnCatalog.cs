@@ -177,12 +177,42 @@ namespace KnittedPicture.Core
 
         public static string PerkTitle(YarnPerk perk) => perk == YarnPerk.Coins ? "Тёплая копилка" : "Золотые руки";
 
-        /// <summary>Что даёт бонус при этой силе — коротко, для карточки и экрана победы.</summary>
+        /// <summary>«монета», «монеты» или «монет» — по числу.</summary>
+        public static string CoinsWord(int n)
+        {
+            var mod10 = n % 10;
+            var mod100 = n % 100;
+            if (mod10 == 1 && mod100 != 11)
+            {
+                return "монета";
+            }
+
+            return mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? "монеты" : "монет";
+        }
+
+        /// <summary>Что даёт бонус при этой силе — коротко: для полоски «В работе», тостов и строки победы.</summary>
         public static string PerkText(YarnPerk perk, int power)
         {
+            var n = perk == YarnPerk.Coins ? CoinsBonus(power) : GoldBonus(power);
             return perk == YarnPerk.Coins
-                ? $"+{CoinsBonus(power)} монет за каждую новую картинку"
-                : $"+{GoldBonus(power)} монет за каждую золотую петлю";
+                ? $"+{n} {CoinsWord(n)} за каждую новую картинку"
+                : $"+{n} {CoinsWord(n)} сверху за каждую золотую петлю";
+        }
+
+        /// <summary>То же, но совсем коротко: для строки «следующий уровень».</summary>
+        public static string PerkShort(YarnPerk perk, int power)
+        {
+            var n = perk == YarnPerk.Coins ? CoinsBonus(power) : GoldBonus(power);
+            return perk == YarnPerk.Coins ? $"+{n} {CoinsWord(n)} за картинку" : $"+{n} {CoinsWord(n)} за золотую петлю";
+        }
+
+        /// <summary>Понятное предложение для карточки мотка: как именно работает бонус.</summary>
+        public static string PerkSentence(YarnPerk perk, int power)
+        {
+            var n = perk == YarnPerk.Coins ? CoinsBonus(power) : GoldBonus(power);
+            return perk == YarnPerk.Coins
+                ? $"Каждая новая картинка приносит ещё +{n} {CoinsWord(n)}"
+                : $"Каждая золотая петля, пойманная в комбо, даёт ещё +{n} {CoinsWord(n)}";
         }
     }
 }
