@@ -240,7 +240,7 @@ namespace KnittedPicture.Core.Tests
         public void Invalid_level_is_rejected()
         {
             var level = TwoByTwo(slots: 2);
-            level.spools[0].loops = 3;
+            level.spools[0].loops = 1;
 
             var error = Assert.Throws<System.ArgumentException>(() => new LoomGame(level));
             Assert.Contains("цвет 0", error.Message);

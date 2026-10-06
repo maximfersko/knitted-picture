@@ -1,121 +1,122 @@
 {
   "id": 8,
   "name": "Клубничка",
-  "tip": "Новый бустер — ножницы: достают любой клубок, даже из глубины",
+  "tip": "Не все клубки нужны: уложись в цель по тапам — получишь третью звезду",
   "width": 10,
   "height": 10,
   "colors": [
     "#FFF4D6",
     "#FF4F5E",
     "#FFE08A",
-    "#2EBD7E"
+    "#2EBD7E",
+    "#FFFFFF",
+    "#C7303F"
   ],
   "picture": [
     "0000330000",
     "0003333000",
     "0011331100",
-    "0111111110",
-    "0112112110",
-    "0111111110",
-    "0012112100",
-    "0011111100",
-    "0001111000",
-    "0000110000"
+    "0141111110",
+    "0112112150",
+    "0111111150",
+    "0012111550",
+    "0011111500",
+    "0001115000",
+    "0000150000"
   ],
-  "slots": 5,
+  "canvas": [
+    "1111001111",
+    "1110000111",
+    "1100000011",
+    "1000000001",
+    "1000000001",
+    "1000000001",
+    "1100000001",
+    "1100000011",
+    "1110000111",
+    "1111001111"
+  ],
+  "gold": [
+    4,
+    32,
+    63
+  ],
+  "par": 16,
+  "slots": 4,
   "spools": [
     {
       "color": 1,
-      "loops": 8
-    },
-    {
-      "color": 1,
       "loops": 6
     },
     {
-      "loops": 7
-    },
-    {
-      "column": 1,
-      "loops": 8
-    },
-    {
-      "column": 1,
-      "color": 2,
-      "loops": 1
-    },
-    {
-      "column": 1,
-      "color": 1,
-      "loops": 11,
-      "hidden": true
-    },
-    {
-      "column": 1,
-      "loops": 7,
-      "hidden": true
-    },
-    {
-      "column": 2,
-      "loops": 6
-    },
-    {
-      "column": 2,
       "color": 3,
-      "loops": 3,
-      "hidden": true
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 8
-    },
-    {
-      "column": 2,
-      "color": 2,
-      "loops": 1,
-      "hidden": true
-    },
-    {
-      "column": 3,
-      "color": 2,
-      "loops": 2
-    },
-    {
-      "column": 3,
-      "loops": 8
-    },
-    {
-      "column": 3,
       "loops": 3
     },
     {
-      "column": 3,
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 1,
       "color": 3,
+      "loops": 2
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 3
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 3
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 6
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 3,
+      "color": 2,
       "loops": 1
     },
     {
       "column": 3,
-      "loops": 2
+      "color": 2,
+      "loops": 2,
+      "hidden": true
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 6,
+      "hidden": true
     },
     {
       "column": 4,
-      "loops": 5
+      "color": 1,
+      "loops": 9
     },
     {
       "column": 4,
-      "color": 3,
+      "color": 5,
       "loops": 4
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 7
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 2
     }
   ]
 }

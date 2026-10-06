@@ -17,7 +17,16 @@ namespace KnittedPicture.LevelTool
 
         public string[] picture = Array.Empty<string>();
 
-        public int slots = 5;
+        /// <summary>Буквы цветов ткани-основы: эти клетки связаны с начала, вяжется только рисунок.</summary>
+        public string fabric = string.Empty;
+
+        /// <summary>Загадка: эскиз рисунка скрыт.</summary>
+        public bool mystery;
+
+        /// <summary>Сколько золотых петель разбросать по рисунку.</summary>
+        public int gold;
+
+        public int slots = 4;
         public int columns = 4;
 
         /// <summary>Сколько клубков на поле.</summary>
@@ -30,6 +39,20 @@ namespace KnittedPicture.LevelTool
         public int knots;
         public int links;
         public int locks;
+        public int rainbow;
+        public int thick;
+        public int ice;
+
+        /// <summary>Лишние клубки сверх картинки: стоят тапа и места на станке, зато их можно не брать.</summary>
+        public int extra;
+
+        /// <summary>Цель по тапам на третью звезду = лучший найденный путь + столько тапов запаса.</summary>
+        public int parSlack = 1;
+
+        /// <summary>Коридоры качества решений: доля ходов без выбора и доля «роковых» ходов.</summary>
+        public double maxForced = 1.0;
+        public double minDanger;
+        public double maxDanger = 1.0;
 
         /// <summary>Допустимая доля побед бота: так задаётся сложность.</summary>
         public double minWin;

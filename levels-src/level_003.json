@@ -16,27 +16,50 @@
     {
       "key": "w",
       "hex": "#FFFFFF"
+    },
+    {
+      "key": "d",
+      "hex": "#B8323A"
+    },
+    {
+      "key": "c",
+      "hex": "#FFE9C7"
+    },
+    {
+      "key": "l",
+      "hex": "#2EBD7E"
     }
   ],
   "picture": [
     "gggggggg",
     "ggrrrrgg",
     "grwrrwrg",
-    "rrrrrrrr",
-    "gggwwggg",
-    "gggwwggg",
-    "ggwwwwgg",
-    "gggggggg"
+    "rrrrwrrr",
+    "gdcdcdcg",
+    "gggccggg",
+    "ggccccgg",
+    "glglgglg"
   ],
+  "fabric": "g",
+  "mystery": false,
+  "gold": 0,
   "slots": 4,
   "columns": 4,
-  "spools": 8,
+  "spools": 7,
   "swaps": 2,
   "hidden": 0,
   "knots": 0,
   "links": 0,
   "locks": 0,
-  "minWin": 0.65,
-  "maxWin": 0.9,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 0,
+  "parSlack": 1,
+  "minWin": 0.7,
+  "maxWin": 0.92,
+  "maxForced": 1.0,
+  "minDanger": 0.0,
+  "maxDanger": 1.0,
   "seed": 31
 }

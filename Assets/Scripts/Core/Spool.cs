@@ -5,7 +5,18 @@ namespace KnittedPicture.Core
     /// <summary>Клубок: цвет, сколько петель осталось и особые свойства.</summary>
     public sealed class Spool
     {
-        public Spool(int id, int color, int loops, bool hidden = false, int link = 0, int knots = 0, bool locked = false, bool isKey = false)
+        public Spool(
+            int id,
+            int color,
+            int loops,
+            bool hidden = false,
+            int link = 0,
+            int knots = 0,
+            bool locked = false,
+            bool isKey = false,
+            bool rainbow = false,
+            bool thick = false,
+            int ice = 0)
         {
             Id = id;
             Color = color;
@@ -15,6 +26,9 @@ namespace KnittedPicture.Core
             Knots = knots;
             Locked = locked;
             IsKey = isKey;
+            Rainbow = rainbow;
+            Thick = thick;
+            Ice = ice;
         }
 
         /// <summary>Постоянный номер клубка: по нему вид находит свой объект, в том числе после отмены хода.</summary>
@@ -42,13 +56,27 @@ namespace KnittedPicture.Core
 
         public bool IsKey { get; }
 
+        /// <summary>Радужный: вяжет любой цвет на фронте.</summary>
+        public bool Rainbow { get; }
+
+        /// <summary>Толстый: занимает 2 слота и вяжет по 2 петли за шаг.</summary>
+        public bool Thick { get; }
+
+        /// <summary>Сколько петель его цвета осталось связать, чтобы лёд растаял. 0 — не во льду.</summary>
+        public int Ice { get; internal set; }
+
+        public bool Frozen => Ice > 0;
+
+        /// <summary>Сколько слотов занимает на станке.</summary>
+        public int Size => Thick ? 2 : 1;
+
         /// <summary>Шаги до начала вязки после того, как клубок встал на станок (пока он «летит»).</summary>
         public int Warmup { get; internal set; }
 
         /// <summary>Клубок хоть раз простаивал на станке без работы — значит, он не «идеальный».</summary>
         public bool Stalled { get; internal set; }
 
-        internal Spool Clone() => new Spool(Id, Color, Loops, Hidden, Link, Knots, Locked, IsKey)
+        internal Spool Clone() => new Spool(Id, Color, Loops, Hidden, Link, Knots, Locked, IsKey, Rainbow, Thick, Ice)
         {
             Revealed = Revealed,
             Warmup = Warmup,

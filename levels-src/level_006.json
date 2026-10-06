@@ -1,7 +1,7 @@
 {
   "id": 6,
   "name": "Тюльпан",
-  "tip": "Число на клубке — сколько в нём петель",
+  "tip": "Золотые петли дают монеты, если связать их во время комбо",
   "hard": false,
   "timeLimit": 0,
   "palette": [
@@ -20,29 +20,52 @@
     {
       "key": "g",
       "hex": "#2EBD7E"
+    },
+    {
+      "key": "p",
+      "hex": "#FFA3B8"
+    },
+    {
+      "key": "l",
+      "hex": "#1E8A5A"
+    },
+    {
+      "key": "b",
+      "hex": "#C9682A"
     }
   ],
   "picture": [
     "ssssssssss",
     "ssrsrrsrss",
-    "ssrrrrrrss",
+    "ssrprrprss",
     "ssrryyrrss",
     "sssrrrrsss",
     "ssssggssss",
-    "sgggggssss",
-    "ssssgggggs",
-    "ssssggssss",
-    "ssssssssss"
+    "slllggssss",
+    "ssssggllls",
+    "sssbbbbsss",
+    "ssssbbssss"
   ],
-  "slots": 5,
+  "fabric": "s",
+  "mystery": false,
+  "gold": 3,
+  "slots": 4,
   "columns": 4,
-  "spools": 12,
+  "spools": 9,
   "swaps": 3,
   "hidden": 0,
   "knots": 0,
   "links": 0,
   "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 0,
+  "parSlack": 1,
   "minWin": 0.55,
-  "maxWin": 0.9,
+  "maxWin": 0.85,
+  "maxForced": 0.5,
+  "minDanger": 0.0,
+  "maxDanger": 1.0,
   "seed": 61
 }

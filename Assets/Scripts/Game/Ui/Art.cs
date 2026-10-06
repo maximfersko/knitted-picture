@@ -30,6 +30,8 @@ namespace KnittedPicture.Game
         Settings,
         Star,
         Hand,
+        Snowflake,
+        Bolt,
     }
 
     /// <summary>
@@ -56,7 +58,10 @@ namespace KnittedPicture.Game
         public static Sprite Ring => Cached("ring", () => Round(192, (d, r) => Mathf.Clamp01(5.5f - Mathf.Abs(d - (r - 7f)) + 0.5f)));
 
         /// <summary>Клубок: тело чуть темнее, нитки — цвет как есть, низ в тени, тонкий обод.</summary>
-        public static Sprite YarnBall => Cached("yarn", BuildYarnBall);
+        public static Sprite YarnBall => Cached("yarn", () => BuildYarnBall(false));
+
+        /// <summary>Радужный клубок: витки разных цветов, красится белым.</summary>
+        public static Sprite RainbowBall => Cached("rainbow", () => BuildYarnBall(true));
 
         /// <summary>Вязаная петля: «галочка» светлее основы — картинка выглядит связанной.</summary>
         public static Sprite StitchCell => Cached("stitch", () => BuildCell(true));
@@ -104,8 +109,11 @@ namespace KnittedPicture.Game
             }
         }
 
-        /// <summary>Картинка уровня в маленькую текстуру: для альбома и экрана победы.</summary>
-        public static Texture2D PictureTexture(LevelData level, int knitted = int.MaxValue)
+        /// <summary>
+        /// Картинка уровня в маленькую текстуру: для альбома и экрана победы.
+        /// Не связанная — ткань как есть, рисунок бледным эскизом; у загадки рисунка не видно вовсе.
+        /// </summary>
+        public static Texture2D PictureTexture(LevelData level, bool done = true)
         {
             var texture = new Texture2D(level.width, level.height, TextureFormat.RGBA32, false)
             {
@@ -123,10 +131,10 @@ namespace KnittedPicture.Game
                 for (var x = 0; x < level.width; x++)
                 {
                     var color = colors[level.picture[y][x] - '0'];
-                    var stitch = (level.height - 1 - y) * level.width + x;
-                    if (stitch >= knitted)
+                    var fabric = level.canvas != null && level.canvas.Length == level.height && level.canvas[y][x] == '1';
+                    if (!done && !fabric)
                     {
-                        color = Color.Lerp(Color.white, color, 0.22f);
+                        color = level.mystery ? Palette.Track : Color.Lerp(Color.white, color, 0.22f);
                     }
 
                     texture.SetPixel(x, level.height - 1 - y, color);
@@ -196,7 +204,7 @@ namespace KnittedPicture.Game
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
-        private static Sprite BuildYarnBall()
+        private static Sprite BuildYarnBall(bool rainbow)
         {
             const int size = 192;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
@@ -232,6 +240,15 @@ namespace KnittedPicture.Game
                     // Тонкий обод, чтобы белый клубок не терялся на белом.
                     var rim = Mathf.Clamp01(d - (radius - 6f));
                     value *= 1f - 0.22f * rim;
+
+                    if (rainbow)
+                    {
+                        // Полосы радуги по диагонали, поверх — те же тени, витки и блик.
+                        var hue = Mathf.Repeat((x + y * 0.6f) / (size * 1.1f), 1f);
+                        var tint = Color.HSVToRGB(hue, 0.55f, 1f) * Mathf.Clamp01(value);
+                        pixels[py * size + px] = new Color(tint.r, tint.g, tint.b, alpha);
+                        continue;
+                    }
 
                     var v = (byte)(Mathf.Clamp01(value) * 255);
                     pixels[py * size + px] = new Color32(v, v, v, (byte)(alpha * 255));
@@ -365,6 +382,13 @@ namespace KnittedPicture.Game
                     // Указательный палец вверх и ладонь.
                     p.Stroke(4.2f).Line(10, 4, 10, 14).Stroke(3.6f).Line(13.6f, 11, 13.6f, 14.5f).Line(16.8f, 12, 16.8f, 15)
                         .Box(13.4f, 17.4f, 5.6f, 4.6f, 3f, true).Stroke(3.4f).Line(5.6f, 13.6f, 8, 17.5f);
+                    break;
+                case KnittedPicture.Game.Icon.Snowflake:
+                    p.Stroke(2.2f).Line(12, 3, 12, 21).Line(4.2f, 7.5f, 19.8f, 16.5f).Line(4.2f, 16.5f, 19.8f, 7.5f)
+                        .Stroke(1.8f).Line(9.5f, 4.5f, 12, 7).Line(14.5f, 4.5f, 12, 7).Line(9.5f, 19.5f, 12, 17).Line(14.5f, 19.5f, 12, 17);
+                    break;
+                case KnittedPicture.Game.Icon.Bolt:
+                    p.Triangle(14, 2, 5, 13.5f, 12.5f, 13.5f).Triangle(10, 22, 19, 10.5f, 11.5f, 10.5f);
                     break;
                 case KnittedPicture.Game.Icon.Star:
                     for (var i = 0; i < 10; i++)

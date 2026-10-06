@@ -1,9 +1,9 @@
 {
   "id": 15,
   "name": "Сова",
-  "tip": "Финал коллекции: моль, узелки и скрытые клубки. Удачи!",
+  "tip": "Финал: ледяной клубок оттает, когда станок свяжет петли его цвета",
   "hard": true,
-  "timeLimit": 240,
+  "timeLimit": 150,
   "palette": [
     {
       "key": "n",
@@ -28,6 +28,14 @@
     {
       "key": "c",
       "hex": "#F2D3A8"
+    },
+    {
+      "key": "d",
+      "hex": "#6B4226"
+    },
+    {
+      "key": "g",
+      "hex": "#2EBD7E"
     }
   ],
   "picture": [
@@ -43,20 +51,31 @@
     "nooccccccccccoon",
     "nooccoccccoccoon",
     "nnocccccccccconn",
-    "nnnoooooooooonnn",
+    "nnnoooccoooccnnn",
     "nnnnyynnnnyynnnn",
-    "oooooooooooooooo",
+    "dddgdddddgdddddd",
     "nnnnnnnnnnnnnnnn"
   ],
-  "slots": 5,
+  "fabric": "n",
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
   "columns": 5,
-  "spools": 24,
-  "swaps": 6,
-  "hidden": 3,
+  "spools": 17,
+  "swaps": 5,
+  "hidden": 2,
   "knots": 2,
-  "links": 1,
+  "links": 0,
   "locks": 0,
+  "rainbow": 1,
+  "thick": 1,
+  "ice": 3,
+  "extra": 2,
+  "parSlack": 1,
   "minWin": 0.15,
   "maxWin": 0.5,
+  "maxForced": 0.5,
+  "minDanger": 0.05,
+  "maxDanger": 0.35,
   "seed": 151
 }

@@ -40,6 +40,9 @@ namespace KnittedPicture.Core
 
         /// <summary>Связанный клубок ещё не впереди своей колонки.</summary>
         LinkNotReady,
+
+        /// <summary>Клубок во льду: оттает, когда станок свяжет петли его цвета.</summary>
+        Frozen,
     }
 
     /// <summary>Одна связанная петля: где, каким цветом, из какого слота и каким клубком.</summary>
@@ -70,30 +73,42 @@ namespace KnittedPicture.Core
     /// <summary>Клубок довязал все петли и освободил слот.</summary>
     public readonly struct Completion
     {
-        public Completion(int spoolId, int slot, bool perfect)
+        public Completion(int spoolId, int slot, int tailSlot, bool perfect, int leftover)
         {
             SpoolId = spoolId;
             Slot = slot;
+            TailSlot = tailSlot;
             Perfect = perfect;
+            Leftover = leftover;
         }
 
         public int SpoolId { get; }
 
         public int Slot { get; }
 
-        /// <summary>Клубок работал без простоя от начала до конца — повод для комбо.</summary>
+        /// <summary>Второй слот толстого клубка, -1 — у обычного.</summary>
+        public int TailSlot { get; }
+
+        /// <summary>Клубок работал без простоя от начала до конца.</summary>
         public bool Perfect { get; }
+
+        /// <summary>
+        /// Лишняя пряжа: цвет клубка в картинке кончился, и он ушёл со станка недовязанным.
+        /// 0 — клубок довязал все петли.
+        /// </summary>
+        public int Leftover { get; }
     }
 
     /// <summary>Клубок переехал с поля на станок.</summary>
     public readonly struct Placement
     {
-        public Placement(Spool spool, int column, int depth, int slot)
+        public Placement(Spool spool, int column, int depth, int slot, int tailSlot)
         {
             Spool = spool;
             Column = column;
             Depth = depth;
             Slot = slot;
+            TailSlot = tailSlot;
         }
 
         public Spool Spool { get; }
@@ -103,17 +118,21 @@ namespace KnittedPicture.Core
         public int Depth { get; }
 
         public int Slot { get; }
+
+        /// <summary>Второй слот толстого клубка, -1 — у обычного.</summary>
+        public int TailSlot { get; }
     }
 
     /// <summary>Результат одного шага вязки: каждый клубок на станке сделал не больше одной петли.</summary>
     public sealed class StepResult
     {
-        public static readonly StepResult Idle = new StepResult(Array.Empty<Stitch>(), Array.Empty<Completion>(), false, GameStatus.Playing);
+        public static readonly StepResult Idle = new StepResult(Array.Empty<Stitch>(), Array.Empty<Completion>(), Array.Empty<int>(), false, GameStatus.Playing);
 
-        internal StepResult(IReadOnlyList<Stitch> stitches, IReadOnlyList<Completion> completed, bool progress, GameStatus status)
+        internal StepResult(IReadOnlyList<Stitch> stitches, IReadOnlyList<Completion> completed, IReadOnlyList<int> thawed, bool progress, GameStatus status)
         {
             Stitches = stitches;
             Completed = completed;
+            Thawed = thawed;
             Progress = progress;
             Status = status;
         }
@@ -121,6 +140,9 @@ namespace KnittedPicture.Core
         public IReadOnlyList<Stitch> Stitches { get; }
 
         public IReadOnlyList<Completion> Completed { get; }
+
+        /// <summary>Клубки на поле, у которых растаял лёд.</summary>
+        public IReadOnlyList<int> Thawed { get; }
 
         /// <summary>Что-то изменилось: связана петля или клубок «долетел». false — станок стоит.</summary>
         public bool Progress { get; }

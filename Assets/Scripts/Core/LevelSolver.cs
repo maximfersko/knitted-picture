@@ -34,6 +34,61 @@ namespace KnittedPicture.Core
             return path != null && path.Count > 0 ? path[0] : -1;
         }
 
+        /// <summary>
+        /// Наименьшее найденное число тапов до победы (перебор с отсечением по уже найденному лучшему).
+        /// Если перебор упёрся в maxNodes, ответ — лучшее из найденного, а не обязательно минимум.
+        /// -1 — решения не нашлось.
+        /// </summary>
+        public static int FewestTaps(LevelData level, int maxNodes = 400_000)
+        {
+            var game = new LoomGame(level);
+            game.Settle();
+            var best = int.MaxValue;
+            var seen = new Dictionary<string, int>();
+            var nodes = 0;
+            Shortest(game, seen, ref best, ref nodes, maxNodes);
+            return best == int.MaxValue ? -1 : best;
+        }
+
+        private static void Shortest(LoomGame game, Dictionary<string, int> seen, ref int best, ref int nodes, int maxNodes)
+        {
+            if (game.Status == GameStatus.Won)
+            {
+                best = System.Math.Min(best, game.Taps);
+                return;
+            }
+
+            // До победы нужен хотя бы ещё один тап: ветку, которая не обгонит лучшее, можно не смотреть.
+            if (game.Status != GameStatus.Playing || game.Taps + 1 >= best || nodes++ >= maxNodes)
+            {
+                return;
+            }
+
+            var key = game.StateKey();
+            if (seen.TryGetValue(key, out var taps) && taps <= game.Taps)
+            {
+                return;
+            }
+
+            seen[key] = game.Taps;
+            for (var pass = 0; pass < 2; pass++)
+            {
+                for (var column = 0; column < game.ColumnCount; column++)
+                {
+                    var spool = game.Column(column).Count > 0 ? game.Column(column)[0] : null;
+                    var preferred = spool != null && game.HasWork(spool);
+                    if (preferred != (pass == 0) || !game.TapColumn(column).Accepted)
+                    {
+                        continue;
+                    }
+
+                    game.Settle();
+                    Shortest(game, seen, ref best, ref nodes, maxNodes);
+                    game.Undo();
+                }
+            }
+        }
+
         private static bool Search(LoomGame game, HashSet<string> visited, List<int> path, int maxStates)
         {
             if (game.Status == GameStatus.Won)
@@ -47,13 +102,12 @@ namespace KnittedPicture.Core
             }
 
             // Сначала колонки с цветом, который можно вязать сразу: решение находится быстрее.
-            var front = game.FrontColors();
             for (var pass = 0; pass < 2; pass++)
             {
                 for (var column = 0; column < game.ColumnCount; column++)
                 {
                     var spool = game.Column(column).Count > 0 ? game.Column(column)[0] : null;
-                    var preferred = spool != null && front.Contains(spool.Color);
+                    var preferred = spool != null && game.HasWork(spool);
                     if (preferred != (pass == 0) || !game.TapColumn(column).Accepted)
                     {
                         continue;

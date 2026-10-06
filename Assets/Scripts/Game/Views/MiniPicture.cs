@@ -24,7 +24,7 @@ namespace KnittedPicture.Game
             var key = level.id + (faded ? "f" : "");
             if (!Textures.TryGetValue(key, out var texture) || texture == null)
             {
-                texture = Art.PictureTexture(level, faded ? 0 : int.MaxValue);
+                texture = Art.PictureTexture(level, done: !faded);
                 Textures[key] = texture;
             }
 
@@ -62,6 +62,11 @@ namespace KnittedPicture.Game
                     break;
                 case TileState.Current:
                     Create(root, level, size / 2f, size / 2f, inner, faded: true);
+                    if (level.mystery)
+                    {
+                        Ui.Label(root, "?", size * 0.4f, Palette.Ink2, 0, 0, size, size);
+                    }
+
                     var ring = Ui.Image(root, "Ring", Art.RoundRectOutline(14, 3), Palette.Primary);
                     ring.type = Image.Type.Sliced;
                     ring.pixelsPerUnitMultiplier = Art.Density;

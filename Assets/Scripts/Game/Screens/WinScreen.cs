@@ -6,6 +6,42 @@ using UnityEngine.UI;
 
 namespace KnittedPicture.Game
 {
+    /// <summary>Как прошёл уровень: для строк награды и подсказки про третью звезду.</summary>
+    public sealed class LevelStats
+    {
+        public LevelStats(int rushCoins, int goldCoins, int goldCaught, int goldTotal, int taps, int par, int bestCombo, bool helped)
+        {
+            RushCoins = rushCoins;
+            GoldCoins = goldCoins;
+            GoldCaught = goldCaught;
+            GoldTotal = goldTotal;
+            Taps = taps;
+            Par = par;
+            BestCombo = bestCombo;
+            Helped = helped;
+        }
+
+        public int RushCoins { get; }
+
+        public int GoldCoins { get; }
+
+        public int GoldCaught { get; }
+
+        public int GoldTotal { get; }
+
+        public int Taps { get; }
+
+        /// <summary>Цель по тапам, 0 — без цели.</summary>
+        public int Par { get; }
+
+        public int BestCombo { get; }
+
+        /// <summary>Были бустеры или спасение.</summary>
+        public bool Helped { get; }
+
+        public bool OverPar => Par > 0 && Taps > Par;
+    }
+
     /// <summary>
     /// Победа: картинка в пяльцах, звёзды по одной, награда по строкам, монеты летят в счётчик.
     /// Главная кнопка — «Дальше»; видео за двойную награду — тихая вторичная.
@@ -15,7 +51,7 @@ namespace KnittedPicture.Game
         private readonly Text _coins;
         private int _shownCoins;
 
-        public WinScreen(App app, LevelData level, WinReward reward)
+        public WinScreen(App app, LevelData level, WinReward reward, LevelStats stats)
             : base(app, "Win")
         {
             Sfx.Play(Sound.Win);
@@ -42,15 +78,20 @@ namespace KnittedPicture.Game
 
             Ui.Label(Root, reward.NewRecord ? "Новый рекорд!" : "Готово!", 38, Palette.Ink, 16, y, W - 32, 46);
             y += 44f;
-            Ui.Label(Root, $"«{level.name}» теперь в альбоме", 16, Palette.Ink2, 16, y, W - 32, 24, false);
+            Ui.Label(Root, StarsHint(level, reward.Stars, stats), 16, Palette.Ink2, 16, y, W - 32, 24, false);
             y += 34f;
 
             var card = Ui.Card(Root, "Reward", 16, y, W - 32, 0, 20, Palette.Card, Palette.CardShadow);
             var rowY = 12f;
             rowY = Row(card, rowY, "За картинку", reward.BaseCoins);
-            if (reward.ComboCoins > 0)
+            if (stats.RushCoins > 0)
             {
-                rowY = Row(card, rowY, "Комбо", reward.ComboCoins);
+                rowY = Row(card, rowY, $"Разгон · лучшее комбо ×{stats.BestCombo}", stats.RushCoins);
+            }
+
+            if (stats.GoldCoins > 0)
+            {
+                rowY = Row(card, rowY, $"Золотые петли {stats.GoldCaught}/{stats.GoldTotal}", stats.GoldCoins);
             }
 
             if (reward.StreakCoins > 0)
@@ -112,6 +153,22 @@ namespace KnittedPicture.Game
         {
             App.ShowHome();
             return true;
+        }
+
+        /// <summary>Под заголовком: чего не хватило до трёх звёзд, иначе — про альбом.</summary>
+        private static string StarsHint(LevelData level, int stars, LevelStats stats)
+        {
+            if (stars >= 3)
+            {
+                return stats.Par > 0 ? $"Ровно в цель: {stats.Taps} из {stats.Par} тапов" : $"«{level.name}» теперь в альбоме";
+            }
+
+            if (stats.OverPar)
+            {
+                return $"Третья звезда — за {stats.Par} тапов (было {stats.Taps})";
+            }
+
+            return stats.Helped ? "Третья звезда — без бустеров и спасений" : $"«{level.name}» теперь в альбоме";
         }
 
         private void BuildStars(float y, int stars)

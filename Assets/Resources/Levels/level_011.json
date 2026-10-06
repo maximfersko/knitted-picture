@@ -9,127 +9,144 @@
     "#FF9A3C",
     "#FFFFFF",
     "#2B2350",
-    "#FF6FA5"
+    "#FF6FA5",
+    "#D9661F"
   ],
   "picture": [
     "000000000000",
     "010000000010",
-    "011000000110",
+    "014000000410",
+    "011115111110",
+    "012315512310",
     "011111111110",
-    "012311112310",
-    "011111111110",
-    "011114411110",
-    "011111111110",
+    "051114411150",
+    "051112211150",
     "011112211110",
-    "001111111100",
+    "001551155100",
     "000111111000",
     "000000000000"
   ],
-  "slots": 5,
+  "canvas": [
+    "111111111111",
+    "101111111101",
+    "100111111001",
+    "100000000001",
+    "100000000001",
+    "100000000001",
+    "100000000001",
+    "100000000001",
+    "100000000001",
+    "110000000011",
+    "111000000111",
+    "111111111111"
+  ],
+  "gold": [
+    22,
+    54,
+    85
+  ],
+  "par": 24,
+  "slots": 4,
   "spools": [
     {
       "color": 2,
+      "loops": 4
+    },
+    {
+      "color": 5,
       "loops": 2
     },
     {
       "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 8
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 7,
+      "knots": 2
+    },
+    {
+      "column": 1,
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 9
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 8,
+      "knots": 1
+    },
+    {
+      "column": 2,
+      "color": 4,
       "loops": 2
     },
     {
+      "column": 2,
       "color": 1,
-      "loops": 12
+      "loops": 11
     },
     {
+      "column": 2,
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 4
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 4,
+      "knots": 1
+    },
+    {
+      "column": 3,
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 11
+    },
+    {
+      "column": 4,
       "color": 2,
       "loops": 2
     },
     {
-      "loops": 1
-    },
-    {
-      "column": 1,
-      "loops": 7
-    },
-    {
-      "column": 1,
-      "loops": 7
-    },
-    {
-      "column": 1,
-      "loops": 8
-    },
-    {
-      "column": 1,
+      "column": 4,
       "color": 3,
       "loops": 2
     },
     {
-      "column": 2,
-      "color": 1,
-      "loops": 9
-    },
-    {
-      "column": 2,
-      "loops": 9
-    },
-    {
-      "column": 2,
-      "loops": 3
-    },
-    {
-      "column": 2,
+      "column": 4,
       "color": 1,
       "loops": 3
-    },
-    {
-      "column": 3,
-      "loops": 10,
-      "knots": 1
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 9
-    },
-    {
-      "column": 3,
-      "loops": 7
-    },
-    {
-      "column": 3,
-      "loops": 1
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 6,
-      "knots": 1
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 10,
-      "knots": 2
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 6,
-      "knots": 1
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 8
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 9
-    },
-    {
-      "column": 4,
-      "loops": 11
     }
   ]
 }

@@ -187,11 +187,11 @@ namespace KnittedPicture.Game
             }
         }
 
-        public void OnLevelWon(LevelData level, int stars, int comboCoins)
+        public void OnLevelWon(LevelData level, int stars, LevelStats stats)
         {
-            var reward = Progress.CompleteLevel(level.id, level.hard, stars, comboCoins);
+            var reward = Progress.CompleteLevel(level.id, level.hard, stars, stats.RushCoins + stats.GoldCoins);
             Save();
-            Show(() => new WinScreen(this, level, reward));
+            Show(() => new WinScreen(this, level, reward, stats));
         }
 
         /// <summary>«Дальше» после победы: при необходимости реклама, потом следующий уровень.</summary>

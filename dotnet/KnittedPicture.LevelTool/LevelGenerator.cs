@@ -22,6 +22,10 @@ namespace KnittedPicture.LevelTool
             public int Knots;
             public bool Locked;
             public bool Key;
+            public bool Rainbow;
+            public bool Thick;
+            public int Ice;
+            public bool Extra;
         }
 
         public static LevelData Generate(LevelDesign design, int seed)
@@ -34,57 +38,67 @@ namespace KnittedPicture.LevelTool
 
             var width = picture[0].Length;
             var height = picture.Length;
+            var fabricColors = design.fabric.Select(ch => Digit(keys, ch, design.id) - '0').ToHashSet();
+            var canvas = fabricColors.Count == 0
+                ? Array.Empty<string>()
+                : picture.Select(row => new string(row.Select(ch => fabricColors.Contains(ch - '0') ? '1' : '0').ToArray())).ToArray();
 
             // Нарезаем клубки, вяжя картинку по правилам игры: берём цвет с фронта
             // и вяжем им, пока клубок не наберёт свою длину или цвет не кончится на фронте.
             // Полученный порядок клубков проходим даже с одним слотом.
-            var heights = new int[width];
-            var total = width * height;
-            var knitted = 0;
+            var grid = new PictureGrid(width, height, picture, canvas);
+            var rainbowAt = PickIndices(design.rainbow, 2, design.spools - 1, rng);
+            var thickAt = PickIndices(design.thick, 1, design.spools - 1, rng, rainbowAt);
             var order = new List<Draft>();
-            while (knitted < total)
+            while (!grid.IsComplete)
             {
+                var index = order.Count;
+                var rainbow = rainbowAt.Contains(index);
+                var thick = !rainbow && thickAt.Contains(index);
                 var front = new List<int>();
                 for (var x = 0; x < width; x++)
                 {
-                    if (heights[x] < height)
+                    var y = grid.FrontY(x);
+                    if (y >= 0 && !front.Contains(grid.ColorAt(x, y)))
                     {
-                        var c = picture[height - 1 - heights[x]][x] - '0';
-                        if (!front.Contains(c))
-                        {
-                            front.Add(c);
-                        }
+                        front.Add(grid.ColorAt(x, y));
                     }
                 }
 
-                var color = front[rng.Next(front.Count)];
+                // Толстому — самый «длинный» цвет: ему нужно много петель подряд.
+                var color = thick ? front.OrderByDescending(grid.Left).First() : front[rng.Next(front.Count)];
                 var spoolsLeft = Math.Max(1, design.spools - order.Count);
-                var average = (double)(total - knitted) / spoolsLeft;
-                var target = Math.Max(1, (int)Math.Round(average * (0.7 + rng.NextDouble() * 0.6)));
+                var average = (double)(grid.Total - grid.Knitted) / spoolsLeft;
+                var scale = rainbow ? 0.45 : thick ? 2.4 : 1.0;
+                var target = Math.Max(rainbow ? 2 : 1, (int)Math.Round(average * scale * (0.7 + rng.NextDouble() * 0.6)));
                 var loops = 0;
                 while (loops < target)
                 {
-                    var best = -1;
-                    for (var x = 0; x < width; x++)
-                    {
-                        if (heights[x] < height && picture[height - 1 - heights[x]][x] - '0' == color &&
-                            (best < 0 || heights[x] < heights[best]))
-                        {
-                            best = x;
-                        }
-                    }
-
-                    if (best < 0)
+                    var x = grid.FindTarget(rainbow ? PictureGrid.AnyColor : color);
+                    if (x < 0)
                     {
                         break;
                     }
 
-                    heights[best]++;
+                    grid.Knit(x);
                     loops++;
-                    knitted++;
                 }
 
-                order.Add(new Draft { Color = color, Loops = loops, Order = order.Count });
+                order.Add(new Draft { Color = rainbow ? 0 : color, Loops = loops, Order = index, Rainbow = rainbow, Thick = thick && loops >= 8 });
+            }
+
+            var motifColors = Enumerable.Range(0, keys.Count).Where(c => grid.TotalOf(c) > 0).ToList();
+            var averageLoops = order.Average(d => d.Loops);
+            var extras = new List<Draft>();
+            for (var i = 0; i < design.extra; i++)
+            {
+                extras.Add(new Draft
+                {
+                    Color = motifColors[rng.Next(motifColors.Count)],
+                    Loops = Math.Max(2, (int)Math.Round(averageLoops * (0.4 + rng.NextDouble() * 0.6))),
+                    Order = order.Count + i,
+                    Extra = true,
+                });
             }
 
             var columns = Enumerable.Range(0, design.columns).Select(_ => new List<Draft>()).ToList();
@@ -99,6 +113,13 @@ namespace KnittedPicture.LevelTool
 
                 var weights = columns.Select(col => 1.0 / Math.Pow(1 + col.Count, 2)).ToList();
                 columns[Pick(weights, rng)].Add(order[i]);
+            }
+
+            // Лишние клубки — не в первом ряду: сначала игрок видит только нужные.
+            foreach (var extra in extras)
+            {
+                var col = columns[rng.Next(columns.Count)];
+                col.Insert(1 + rng.Next(Math.Max(1, col.Count)), extra);
             }
 
             for (var i = 0; i < design.swaps; i++)
@@ -117,7 +138,10 @@ namespace KnittedPicture.LevelTool
             AddLocks(design.locks, columns, order, rng);
             AddLinks(design.links, columns, order, rng);
             AddKnots(design.knots, order, rng);
+            AddIce(design.ice, order, grid, rng);
             AddHidden(design.hidden, columns, rng);
+
+            var gold = PickGold(design.gold, grid, rng);
 
             return new LevelData
             {
@@ -130,6 +154,9 @@ namespace KnittedPicture.LevelTool
                 height = height,
                 colors = design.palette.Select(p => p.hex).ToArray(),
                 picture = picture,
+                canvas = canvas,
+                gold = gold,
+                mystery = design.mystery,
                 slots = design.slots,
                 spools = columns
                     .SelectMany((col, index) => col.Select(d => new SpoolData
@@ -142,9 +169,54 @@ namespace KnittedPicture.LevelTool
                         knots = d.Knots,
                         locked = d.Locked,
                         key = d.Key,
+                        rainbow = d.Rainbow,
+                        thick = d.Thick,
+                        ice = d.Ice,
                     }))
                     .ToArray(),
             };
+        }
+
+        private static HashSet<int> PickIndices(int count, int from, int to, Random rng, HashSet<int>? exclude = null)
+        {
+            return Enumerable.Range(from, Math.Max(0, to - from))
+                .Where(i => exclude == null || !exclude.Contains(i))
+                .OrderBy(_ => rng.Next())
+                .Take(count)
+                .ToHashSet();
+        }
+
+        /// <summary>Золотые петли: по одной в разных рядах рисунка, чтобы их было видно по всей картинке.</summary>
+        private static int[] PickGold(int count, PictureGrid grid, Random rng)
+        {
+            var cells = new List<int>();
+            for (var y = 0; y < grid.Height; y++)
+            {
+                for (var x = 0; x < grid.Width; x++)
+                {
+                    if (!grid.IsFabric(x, y))
+                    {
+                        cells.Add(y * grid.Width + x);
+                    }
+                }
+            }
+
+            var picked = new List<int>();
+            foreach (var cell in cells.OrderBy(_ => rng.Next()))
+            {
+                if (picked.Count >= count)
+                {
+                    break;
+                }
+
+                if (picked.All(p => Math.Abs(p / grid.Width - cell / grid.Width) >= 2))
+                {
+                    picked.Add(cell);
+                }
+            }
+
+            picked.Sort();
+            return picked.ToArray();
         }
 
         private static char Digit(List<char> keys, char ch, int levelId)
@@ -173,7 +245,7 @@ namespace KnittedPicture.LevelTool
             return weights.Count - 1;
         }
 
-        private static bool IsPlain(Draft d) => d.Link == 0 && d.Knots == 0 && !d.Locked && !d.Key;
+        private static bool IsPlain(Draft d) => d.Link == 0 && d.Knots == 0 && !d.Locked && !d.Key && !d.Rainbow && !d.Thick && d.Ice == 0;
 
         private static void AddLocks(int count, List<List<Draft>> columns, List<Draft> order, Random rng)
         {
@@ -239,9 +311,27 @@ namespace KnittedPicture.LevelTool
             }
         }
 
+        /// <summary>
+        /// Лёд — на клубках, которым по задуманному порядку предшествует достаточно петель
+        /// того же цвета: к моменту, когда клубок нужен, он уже оттает.
+        /// </summary>
+        private static void AddIce(int count, List<Draft> order, PictureGrid grid, Random rng)
+        {
+            var candidates = order
+                .Where(d => IsPlain(d) && !d.Hidden)
+                .Select(d => (draft: d, before: order.Where(o => o.Order < d.Order && !o.Rainbow && o.Color == d.Color).Sum(o => o.Loops)))
+                .Where(c => c.before >= 3)
+                .OrderBy(_ => rng.Next())
+                .Take(count);
+            foreach (var (draft, before) in candidates)
+            {
+                draft.Ice = Math.Min(Math.Min(12, grid.TotalOf(draft.Color)), Math.Max(2, (int)Math.Round(before * (0.4 + rng.NextDouble() * 0.4))));
+            }
+        }
+
         private static void AddHidden(int count, List<List<Draft>> columns, Random rng)
         {
-            var candidates = columns.SelectMany(col => col.Skip(1)).OrderBy(_ => rng.Next()).Take(count);
+            var candidates = columns.SelectMany(col => col.Skip(1)).Where(d => d.Ice == 0).OrderBy(_ => rng.Next()).Take(count);
             foreach (var d in candidates)
             {
                 d.Hidden = true;

@@ -24,7 +24,7 @@ namespace KnittedPicture.Game
             "Тапни клубок",
             "Станок вяжет сам",
             "Места мало",
-            "Вместе — быстрее",
+            "Темп — это комбо",
         };
 
         private static readonly string[] Texts =
@@ -33,7 +33,7 @@ namespace KnittedPicture.Game
             "Передний клубок колонки поедет на станок",
             "Клубок вяжет свой цвет там, где он на фронте — внизу столбиков. Фронт подсвечен ярче",
             "Нет мест и нет работы — затор. Бери клубки, которым сразу есть дело",
-            "Клубки вяжут одновременно и помогают друг другу. Цепочки дают комбо, чистая игра — три звезды",
+            "Ставь клубок, пока станок вяжет, — растёт комбо. На ×5 — Разгон: станок вяжет вдвое быстрее",
         };
 
         private static readonly Color Pink = Palette.Hex("#FF5C93");
@@ -459,7 +459,7 @@ namespace KnittedPicture.Game
             });
         }
 
-        /// <summary>Два клубка вяжут вместе, комбо всплывают, в конце — три звезды.</summary>
+        /// <summary>Клубки ставятся один за другим без простоя — комбо растёт, в конце — три звезды.</summary>
         private void SceneCombo(RectTransform scene)
         {
             var rows = new[] { "101010", "010101", "101010", "010101" };
@@ -469,7 +469,8 @@ namespace KnittedPicture.Game
             var loomY = 56f + picture.Height + 26f;
             var frames = Loom(scene, 2, loomY);
             var views = SlotViews(frames, game, colors);
-            var combo = 0;
+            // Два клубка уже на станке — серия начинается с ×2.
+            var combo = 2;
             var next = 2;
             var demo = new Demo(game, picture, colors, scene, 0.07f, slot => Ui.WorldCenter(frames[slot]))
             {
@@ -478,14 +479,14 @@ namespace KnittedPicture.Game
             };
             demo.Done = done =>
             {
-                combo++;
-                Fx.FloatText(_fx, Ui.WorldCenter((RectTransform)frames[0].parent) + new Vector3(0, 40f * _fx.lossyScale.y, 0),
-                    combo >= 3 ? $"Отлично! ×{combo}" : $"Комбо ×{combo}", combo >= 3 ? Palette.Primary : Palette.Link, 22f);
-                Sfx.Play(Sound.Combo, 0.5f);
                 if (next < game.ColumnCount && game.Column(next).Count > 0)
                 {
                     game.TapColumn(next++);
                     demo.Running = true;
+                    combo++;
+                    Fx.FloatText(_fx, Ui.WorldCenter((RectTransform)frames[0].parent) + new Vector3(0, 40f * _fx.lossyScale.y, 0),
+                        $"Комбо ×{combo}", combo >= 4 ? Palette.Primary : Palette.Link, 22f);
+                    Sfx.Play(Sound.Combo, 0.5f);
                 }
             };
             demo.Won = () =>

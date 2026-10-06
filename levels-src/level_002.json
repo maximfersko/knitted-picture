@@ -6,31 +6,56 @@
   "timeLimit": 0,
   "palette": [
     {
-      "key": "y",
-      "hex": "#FFE08A"
+      "key": "c",
+      "hex": "#DDF1FF"
     },
     {
       "key": "g",
-      "hex": "#2EBD7E"
+      "hex": "#2FA86A"
+    },
+    {
+      "key": "y",
+      "hex": "#FFC23C"
+    },
+    {
+      "key": "r",
+      "hex": "#FF4F5E"
+    },
+    {
+      "key": "b",
+      "hex": "#A0673C"
     }
   ],
   "picture": [
-    "yyggyy",
-    "yggggy",
-    "gggggg",
-    "yyggyy",
-    "yyggyy",
-    "yyyyyy"
+    "cccyccc",
+    "ccgggcc",
+    "cgrgggc",
+    "ccgggcc",
+    "cgggrgc",
+    "ggrgggg",
+    "cccbccc",
+    "cccbccc"
   ],
-  "slots": 3,
+  "fabric": "c",
+  "mystery": false,
+  "gold": 0,
+  "slots": 4,
   "columns": 3,
-  "spools": 6,
-  "swaps": 2,
+  "spools": 7,
+  "swaps": 1,
   "hidden": 0,
   "knots": 0,
   "links": 0,
   "locks": 0,
-  "minWin": 0.75,
-  "maxWin": 0.95,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 0,
+  "parSlack": 1,
+  "minWin": 0.8,
+  "maxWin": 0.97,
+  "maxForced": 1.0,
+  "minDanger": 0.0,
+  "maxDanger": 1.0,
   "seed": 21
 }

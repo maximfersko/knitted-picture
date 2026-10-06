@@ -10,9 +10,11 @@ namespace KnittedPicture.Core
     /// <summary>
     /// Правила игры без движка.
     /// Картинка вяжется столбиками снизу вверх: у каждого столбца свой фронт — самая нижняя
-    /// несвязанная клетка. Игрок отправляет клубки на станок, а станок шаг за шагом вяжет:
-    /// за шаг каждый клубок делает одну петлю своего цвета на любом фронте, где этот цвет есть.
-    /// Так одновременно нужны несколько цветов, а клубки помогают друг другу, открывая новые клетки.
+    /// несвязанная клетка рисунка (ткань-основа связана с начала). Игрок отправляет клубки
+    /// на станок, а станок шаг за шагом вяжет: за шаг каждый клубок делает петлю своего цвета
+    /// на самом низком фронте, где этот цвет есть. Так одновременно нужны несколько цветов,
+    /// а клубки помогают друг другу, открывая новые клетки. Пряжи может быть больше,
+    /// чем нужно: когда цвет в картинке кончается, лишние клубки уходят со станка.
     /// </summary>
     public sealed class LoomGame
     {
@@ -22,9 +24,9 @@ namespace KnittedPicture.Core
         /// <summary>Сколько шагов клубок «летит» на станок, прежде чем начать вязать.</summary>
         public const int WarmupSteps = 3;
 
-        private readonly int[] _pixels;
+        private readonly PictureGrid _grid;
+        private readonly bool[] _gold;
         private readonly Stack<Snapshot> _history = new Stack<Snapshot>();
-        private int[] _heights;
         private List<Spool?> _slots;
         private List<List<Spool>> _columns;
         private GameStatus _status = GameStatus.Playing;
@@ -38,22 +40,18 @@ namespace KnittedPicture.Core
             }
 
             Id = level.id;
-            Width = level.width;
-            Height = level.height;
             ColorCount = level.colors.Length;
             TimeLimit = level.timeLimit;
             TimeLeft = level.timeLimit;
-
-            _pixels = new int[Width * Height];
-            for (var y = 0; y < Height; y++)
+            Mystery = level.mystery;
+            Par = level.par;
+            _grid = PictureGrid.From(level);
+            _gold = new bool[level.width * level.height];
+            foreach (var cell in level.gold ?? Array.Empty<int>())
             {
-                for (var x = 0; x < Width; x++)
-                {
-                    _pixels[y * Width + x] = level.picture[y][x] - '0';
-                }
+                _gold[cell] = true;
             }
 
-            _heights = new int[Width];
             var columnCount = level.spools.Max(s => s.column) + 1;
             _columns = new List<List<Spool>>(columnCount);
             for (var i = 0; i < columnCount; i++)
@@ -64,7 +62,7 @@ namespace KnittedPicture.Core
             var nextId = 0;
             foreach (var s in level.spools)
             {
-                _columns[s.column].Add(new Spool(nextId++, s.color, s.loops, s.hidden, s.link, s.knots, s.locked, s.key));
+                _columns[s.column].Add(new Spool(nextId++, s.color, s.loops, s.hidden, s.link, s.knots, s.locked, s.key, s.rainbow, s.thick, s.ice));
             }
 
             _slots = Enumerable.Repeat<Spool?>(null, level.slots).ToList();
@@ -75,33 +73,36 @@ namespace KnittedPicture.Core
         private LoomGame(LoomGame other)
         {
             Id = other.Id;
-            Width = other.Width;
-            Height = other.Height;
             ColorCount = other.ColorCount;
             TimeLimit = other.TimeLimit;
             TimeLeft = other.TimeLeft;
             TimerStarted = other.TimerStarted;
-            _pixels = other._pixels;
-            _heights = (int[])other._heights.Clone();
-            _slots = other._slots.Select(s => s?.Clone()).ToList();
+            Mystery = other.Mystery;
+            Par = other.Par;
+            Taps = other.Taps;
+            _grid = other._grid.Clone();
+            _gold = other._gold;
+            _slots = CloneSlots(other._slots);
             _columns = other._columns.Select(c => c.Select(s => s.Clone()).ToList()).ToList();
             _status = other._status;
         }
 
         public int Id { get; }
 
-        public int Width { get; }
+        public int Width => _grid.Width;
 
-        public int Height { get; }
+        public int Height => _grid.Height;
 
         public int ColorCount { get; }
 
-        public int TotalStitches => _pixels.Length;
+        /// <summary>Сколько петель нужно связать (клетки ткани не в счёт).</summary>
+        public int TotalStitches => _grid.Total;
 
-        public int KnittedCount => _heights.Sum();
+        public int KnittedCount => _grid.Knitted;
 
         public GameStatus Status => _status;
 
+        /// <summary>Слоты станка. Толстый клубок стоит в двух слотах сразу — см. <see cref="IsTail"/>.</summary>
         public IReadOnlyList<Spool?> Slots => _slots;
 
         public int FreeSlots => _slots.Count(s => s == null);
@@ -118,38 +119,66 @@ namespace KnittedPicture.Core
         /// <summary>Таймер идёт с первого действия игрока, а не с открытия уровня.</summary>
         public bool TimerStarted { get; private set; }
 
-        /// <summary>Есть ли на станке работа: клубок долетает или может связать петлю.</summary>
-        public bool IsBusy => _slots.Any(s => s != null && (s.Warmup > 0 || FindTarget(s.Color) >= 0));
+        /// <summary>Эскиз рисунка скрыт — картинка-загадка.</summary>
+        public bool Mystery { get; }
+
+        /// <summary>Цель на третью звезду: уложиться в столько тапов. 0 — без цели.</summary>
+        public int Par { get; }
+
+        /// <summary>Принятые тапы: клубок на станок, узелок, ножницы.</summary>
+        public int Taps { get; private set; }
+
+        /// <summary>Есть ли на станке работа: клубок долетает, может связать петлю или уходит как лишний.</summary>
+        public bool IsBusy => _slots.Any(s => s != null && (s.Warmup > 0 || HasWork(s) || IsSurplus(s)));
 
         /// <summary>Колонка поля, передний клубок — с индексом 0.</summary>
         public IReadOnlyList<Spool> Column(int index) => _columns[index];
 
         /// <summary>Цвет клетки картинки; y = 0 — верхний ряд.</summary>
-        public int ColorAt(int x, int y) => _pixels[y * Width + x];
+        public int ColorAt(int x, int y) => _grid.ColorAt(x, y);
 
-        /// <summary>Сколько петель связано в столбце картинки (снизу).</summary>
-        public int ColumnHeight(int x) => _heights[x];
+        /// <summary>Клетка ткани-основы: связана с начала уровня.</summary>
+        public bool IsFabric(int x, int y) => _grid.IsFabric(x, y);
 
-        public bool IsKnitted(int x, int y) => y >= Height - _heights[x];
+        public bool IsGold(int x, int y) => _gold[y * Width + x];
+
+        /// <summary>Сколько петель рисунка связано в столбце картинки.</summary>
+        public int ColumnHeight(int x) => _grid.Done(x);
+
+        public bool IsKnitted(int x, int y) => _grid.IsKnitted(x, y);
 
         /// <summary>Ряд фронта столбца: следующая клетка, которая свяжется. -1 — столбец готов.</summary>
-        public int FrontY(int x) => _heights[x] < Height ? Height - 1 - _heights[x] : -1;
+        public int FrontY(int x) => _grid.FrontY(x);
+
+        /// <summary>Ряд клетки, которая свяжется после фронта через depth петель; -1 — таких нет.</summary>
+        public int AheadY(int x, int depth) => _grid.AheadY(x, depth);
+
+        /// <summary>Сколько петель этого цвета ещё не связано.</summary>
+        public int LeftOf(int color) => _grid.Left(color);
+
+        /// <summary>Второй слот толстого клубка: в нём тот же клубок, что и в предыдущем занятом им слоте.</summary>
+        public bool IsTail(int slot)
+        {
+            var spool = _slots[slot];
+            return spool != null && _slots.IndexOf(spool) != slot;
+        }
+
+        /// <summary>Второй слот, который занимает клубок из слота slot; -1 — клубок обычный.</summary>
+        public int TailOf(int slot)
+        {
+            var spool = _slots[slot];
+            return spool != null && spool.Thick ? _slots.LastIndexOf(spool) : -1;
+        }
+
+        /// <summary>Клубку прямо сейчас есть работа на фронте.</summary>
+        public bool HasWork(Spool spool) =>
+            spool.Rainbow ? !_grid.IsComplete : _grid.FindTarget(spool.Color) >= 0;
+
+        /// <summary>Лишняя пряжа: этот цвет в картинке уже кончился.</summary>
+        public bool IsSurplus(Spool spool) => !spool.Rainbow && _grid.Left(spool.Color) == 0;
 
         /// <summary>Цвета, которые прямо сейчас можно вязать хоть в одном столбце.</summary>
-        public HashSet<int> FrontColors()
-        {
-            var result = new HashSet<int>();
-            for (var x = 0; x < Width; x++)
-            {
-                var y = FrontY(x);
-                if (y >= 0)
-                {
-                    result.Add(ColorAt(x, y));
-                }
-            }
-
-            return result;
-        }
+        public HashSet<int> FrontColors() => SoonColors(1);
 
         /// <summary>Цвета на фронте и сразу за ним — для подсказок и ботов.</summary>
         public HashSet<int> SoonColors(int depth)
@@ -159,10 +188,10 @@ namespace KnittedPicture.Core
             {
                 for (var d = 0; d < depth; d++)
                 {
-                    var y = FrontY(x) - d;
-                    if (FrontY(x) >= 0 && y >= 0)
+                    var y = _grid.AheadY(x, d);
+                    if (y >= 0)
                     {
-                        result.Add(ColorAt(x, y));
+                        result.Add(_grid.ColorAt(x, y));
                     }
                 }
             }
@@ -178,28 +207,30 @@ namespace KnittedPicture.Core
 
         /// <summary>
         /// Бустер «Ножницы»: достать клубок с любой глубины колонки.
-        /// Ножницы режут узелки, замок и связку — клубок едет на станок один.
+        /// Ножницы режут узелки, замок, лёд и связку — клубок едет на станок один.
         /// </summary>
         public MoveResult PullSpool(int column, int depth) => Take(column, depth, true);
 
         /// <summary>
-        /// Один шаг вязки: каждый клубок на станке (по порядку слотов) делает одну петлю своего цвета
-        /// в самом низком столбце, где этот цвет на фронте. Пустые клубки уходят.
+        /// Один шаг вязки: каждый клубок на станке (по порядку слотов) делает петлю своего цвета
+        /// в самом низком столбце, где этот цвет на фронте (толстый — две, радужный — любого цвета).
+        /// Пустые клубки уходят; лишние — тоже, когда их цвет в картинке кончился.
         /// </summary>
         public StepResult Step()
         {
             if (_status != GameStatus.Playing)
             {
-                return new StepResult(Array.Empty<Stitch>(), Array.Empty<Completion>(), false, _status);
+                return new StepResult(Array.Empty<Stitch>(), Array.Empty<Completion>(), Array.Empty<int>(), false, _status);
             }
 
             var stitches = new List<Stitch>();
             var completed = new List<Completion>();
+            var thawed = new List<int>();
             var progress = false;
             for (var i = 0; i < _slots.Count; i++)
             {
                 var spool = _slots[i];
-                if (spool == null)
+                if (spool == null || IsTail(i))
                 {
                     continue;
                 }
@@ -211,26 +242,46 @@ namespace KnittedPicture.Core
                     continue;
                 }
 
-                var x = FindTarget(spool.Color);
-                if (x < 0)
+                if (IsSurplus(spool))
+                {
+                    completed.Add(new Completion(spool.Id, i, TailOf(i), false, spool.Loops));
+                    Free(spool);
+                    progress = true;
+                    continue;
+                }
+
+                var knitted = false;
+                for (var k = 0; k < spool.Size && spool.Loops > 0; k++)
+                {
+                    var x = _grid.FindTarget(spool.Rainbow ? PictureGrid.AnyColor : spool.Color);
+                    if (x < 0)
+                    {
+                        break;
+                    }
+
+                    var y = _grid.Knit(x);
+                    var color = _grid.ColorAt(x, y);
+                    spool.Loops--;
+                    stitches.Add(new Stitch(x, y, color, i, spool.Id));
+                    Thaw(color, thawed);
+                    knitted = true;
+                }
+
+                if (!knitted)
                 {
                     spool.Stalled = true;
                     continue;
                 }
 
-                var y = FrontY(x);
-                _heights[x]++;
-                spool.Loops--;
-                stitches.Add(new Stitch(x, y, spool.Color, i, spool.Id));
                 progress = true;
                 if (spool.Loops == 0)
                 {
-                    completed.Add(new Completion(spool.Id, i, !spool.Stalled));
-                    _slots[i] = null;
+                    completed.Add(new Completion(spool.Id, i, TailOf(i), !spool.Stalled, 0));
+                    Free(spool);
                 }
             }
 
-            if (KnittedCount == TotalStitches)
+            if (_grid.IsComplete)
             {
                 _status = GameStatus.Won;
             }
@@ -239,7 +290,7 @@ namespace KnittedPicture.Core
                 _status = GameStatus.Jammed;
             }
 
-            return new StepResult(stitches, completed, progress, _status);
+            return new StepResult(stitches, completed, thawed, progress, _status);
         }
 
         /// <summary>Вязать, пока станок не встанет. Для решателя, ботов и тестов.</summary>
@@ -311,7 +362,8 @@ namespace KnittedPicture.Core
 
             _slots = slots;
             _columns = snapshot.Columns;
-            _heights = snapshot.Heights;
+            _grid.LoadState(snapshot.Done);
+            Taps = snapshot.Taps;
             _status = GameStatus.Playing;
             Reevaluate();
             return true;
@@ -324,11 +376,7 @@ namespace KnittedPicture.Core
         internal string StateKey()
         {
             var sb = new StringBuilder();
-            foreach (var h in _heights)
-            {
-                sb.Append(h).Append('.');
-            }
-
+            _grid.AppendState(sb);
             sb.Append('|');
             foreach (var column in _columns)
             {
@@ -342,19 +390,32 @@ namespace KnittedPicture.Core
                     }
                 }
 
+                for (var d = 0; d < column.Count; d++)
+                {
+                    if (column[d].Ice > 0)
+                    {
+                        sb.Append('i').Append(d).Append(':').Append(column[d].Ice);
+                    }
+                }
+
                 sb.Append(',');
             }
 
             sb.Append('|');
-            foreach (var spool in _slots)
+            for (var i = 0; i < _slots.Count; i++)
             {
+                var spool = _slots[i];
                 if (spool == null)
                 {
                     sb.Append('_');
                 }
+                else if (IsTail(i))
+                {
+                    sb.Append('T');
+                }
                 else
                 {
-                    sb.Append(spool.Color).Append(':').Append(spool.Loops);
+                    sb.Append(spool.Rainbow ? "R" : spool.Color.ToString()).Append(':').Append(spool.Loops);
                 }
 
                 sb.Append(',');
@@ -378,12 +439,17 @@ namespace KnittedPicture.Core
             var spool = _columns[column][depth];
             if (scissors)
             {
-                return FreeSlots > 0 ? RejectReason.None : RejectReason.NoFreeSlot;
+                return FreeSlots >= spool.Size ? RejectReason.None : RejectReason.NoFreeSlot;
             }
 
             if (spool.Locked)
             {
                 return RejectReason.Locked;
+            }
+
+            if (spool.Frozen)
+            {
+                return RejectReason.Frozen;
             }
 
             if (spool.Knots > 0)
@@ -401,7 +467,7 @@ namespace KnittedPicture.Core
                 return FreeSlots >= 2 ? RejectReason.None : RejectReason.NoFreeSlot;
             }
 
-            return FreeSlots > 0 ? RejectReason.None : RejectReason.NoFreeSlot;
+            return FreeSlots >= spool.Size ? RejectReason.None : RejectReason.NoFreeSlot;
         }
 
         private MoveResult Take(int column, int depth, bool scissors)
@@ -414,6 +480,7 @@ namespace KnittedPicture.Core
 
             SaveSnapshot();
             TimerStarted = true;
+            Taps++;
             var spool = _columns[column][depth];
 
             if (!scissors && spool.Knots > 0)
@@ -427,9 +494,10 @@ namespace KnittedPicture.Core
             {
                 spool.Knots = 0;
                 spool.Locked = false;
+                spool.Ice = 0;
                 CutLink(spool);
                 _columns[column].RemoveAt(depth);
-                placed.Add(new Placement(spool, column, depth, PutOnLoom(spool)));
+                placed.Add(PutOnLoom(spool, column, depth));
             }
             else if (spool.Link != 0)
             {
@@ -437,13 +505,13 @@ namespace KnittedPicture.Core
                 var partner = _columns[partnerColumn][0];
                 _columns[column].RemoveAt(0);
                 _columns[partnerColumn].RemoveAt(0);
-                placed.Add(new Placement(spool, column, 0, PutOnLoom(spool)));
-                placed.Add(new Placement(partner, partnerColumn, 0, PutOnLoom(partner)));
+                placed.Add(PutOnLoom(spool, column, 0));
+                placed.Add(PutOnLoom(partner, partnerColumn, 0));
             }
             else
             {
                 _columns[column].RemoveAt(0);
-                placed.Add(new Placement(spool, column, 0, PutOnLoom(spool)));
+                placed.Add(PutOnLoom(spool, column, 0));
             }
 
             var unlocked = new List<int>();
@@ -461,34 +529,65 @@ namespace KnittedPicture.Core
             return MoveResult.Place(placed, unlocked, revealed, _status);
         }
 
-        private int PutOnLoom(Spool spool)
+        /// <summary>Поставить клубок в первый свободный слот; толстому — ещё и соседний (или любой свободный).</summary>
+        private Placement PutOnLoom(Spool spool, int column, int depth)
         {
             var slot = _slots.IndexOf(null);
-            _slots[slot] = spool;
-            spool.Revealed = true;
-            spool.Warmup = WarmupSteps;
-            spool.Stalled = false;
-            return slot;
-        }
-
-        /// <summary>Столбец, где этот цвет на фронте: самый низкий, при равенстве — левый. -1 — нигде.</summary>
-        private int FindTarget(int color)
-        {
-            var best = -1;
-            for (var x = 0; x < Width; x++)
+            if (spool.Thick)
             {
-                if (_heights[x] >= Height || ColorAt(x, Height - 1 - _heights[x]) != color)
+                // Толстому лучше два соседних слота: так он и выглядит одним клубком.
+                for (var i = 0; i + 1 < _slots.Count; i++)
                 {
-                    continue;
-                }
-
-                if (best < 0 || _heights[x] < _heights[best])
-                {
-                    best = x;
+                    if (_slots[i] == null && _slots[i + 1] == null)
+                    {
+                        slot = i;
+                        break;
+                    }
                 }
             }
 
-            return best;
+            _slots[slot] = spool;
+            var tail = -1;
+            if (spool.Thick)
+            {
+                tail = slot + 1 < _slots.Count && _slots[slot + 1] == null ? slot + 1 : _slots.IndexOf(null);
+                _slots[tail] = spool;
+            }
+
+            spool.Revealed = true;
+            spool.Warmup = WarmupSteps;
+            spool.Stalled = false;
+            return new Placement(spool, column, depth, slot, tail);
+        }
+
+        private void Free(Spool spool)
+        {
+            for (var i = 0; i < _slots.Count; i++)
+            {
+                if (ReferenceEquals(_slots[i], spool))
+                {
+                    _slots[i] = null;
+                }
+            }
+        }
+
+        /// <summary>Связали петлю цвета: лёд на клубках этого цвета подтаивает.</summary>
+        private void Thaw(int color, List<int> thawed)
+        {
+            foreach (var column in _columns)
+            {
+                foreach (var spool in column)
+                {
+                    if (spool.Ice > 0 && !spool.Rainbow && spool.Color == color)
+                    {
+                        spool.Ice--;
+                        if (spool.Ice == 0)
+                        {
+                            thawed.Add(spool.Id);
+                        }
+                    }
+                }
+            }
         }
 
         private int FindPartnerColumn(Spool spool, int column)
@@ -546,7 +645,7 @@ namespace KnittedPicture.Core
                 return;
             }
 
-            if (KnittedCount == TotalStitches)
+            if (_grid.IsComplete)
             {
                 _status = GameStatus.Won;
             }
@@ -573,17 +672,22 @@ namespace KnittedPicture.Core
                 }
 
                 var front = _columns[c][0];
-                if (front.Locked)
+                if (front.Locked || front.Frozen)
                 {
                     continue;
                 }
 
-                if (front.Knots > 0 || front.Link == 0)
+                if (front.Knots > 0)
                 {
                     return true;
                 }
 
-                if (free >= 2 && FindPartnerColumn(front, c) >= 0)
+                if (front.Link == 0 && free >= front.Size)
+                {
+                    return true;
+                }
+
+                if (front.Link != 0 && free >= 2 && FindPartnerColumn(front, c) >= 0)
                 {
                     return true;
                 }
@@ -595,25 +699,50 @@ namespace KnittedPicture.Core
         private void SaveSnapshot()
         {
             _history.Push(new Snapshot(
-                _slots.Select(s => s?.Clone()).ToList(),
+                CloneSlots(_slots),
                 _columns.Select(c => c.Select(s => s.Clone()).ToList()).ToList(),
-                (int[])_heights.Clone()));
+                _grid.SaveState(),
+                Taps));
+        }
+
+        /// <summary>Копия слотов: толстый клубок в двух слотах остаётся одним объектом.</summary>
+        private static List<Spool?> CloneSlots(List<Spool?> slots)
+        {
+            var copies = new Dictionary<int, Spool>();
+            return slots.Select(s =>
+            {
+                if (s == null)
+                {
+                    return null;
+                }
+
+                if (!copies.TryGetValue(s.Id, out var copy))
+                {
+                    copy = s.Clone();
+                    copies[s.Id] = copy;
+                }
+
+                return copy;
+            }).ToList();
         }
 
         private sealed class Snapshot
         {
-            public Snapshot(List<Spool?> slots, List<List<Spool>> columns, int[] heights)
+            public Snapshot(List<Spool?> slots, List<List<Spool>> columns, int[] done, int taps)
             {
                 Slots = slots;
                 Columns = columns;
-                Heights = heights;
+                Done = done;
+                Taps = taps;
             }
 
             public List<Spool?> Slots { get; }
 
             public List<List<Spool>> Columns { get; }
 
-            public int[] Heights { get; }
+            public int[] Done { get; }
+
+            public int Taps { get; }
         }
     }
 }

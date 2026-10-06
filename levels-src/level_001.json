@@ -1,36 +1,51 @@
 {
   "id": 1,
   "name": "Сердечко",
-  "tip": "Тапни клубок — он поедет на станок и начнёт вязать картинку",
+  "tip": "Тапни клубок — он поедет на станок и довяжет сердечко на ткани",
   "hard": false,
   "timeLimit": 0,
   "palette": [
     {
       "key": "b",
-      "hex": "#6CB8FF"
+      "hex": "#FFE3EC"
     },
     {
       "key": "p",
-      "hex": "#FF5C93"
+      "hex": "#FF5C8A"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
     }
   ],
   "picture": [
-    "ppbbpp",
-    "pppppp",
-    "pppppp",
-    "bppppb",
-    "bbppbb",
-    "bbbbbb"
+    "bppbppb",
+    "pwppppp",
+    "ppppppp",
+    "bpppppb",
+    "bbpppbb",
+    "bbbpbbb"
   ],
-  "slots": 5,
-  "columns": 4,
+  "fabric": "b",
+  "mystery": false,
+  "gold": 0,
+  "slots": 4,
+  "columns": 3,
   "spools": 4,
   "swaps": 0,
   "hidden": 0,
   "knots": 0,
   "links": 0,
   "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 0,
+  "parSlack": 1,
   "minWin": 0.9,
   "maxWin": 1.0,
+  "maxForced": 1.0,
+  "minDanger": 0.0,
+  "maxDanger": 1.0,
   "seed": 11
 }

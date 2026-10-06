@@ -11,7 +11,8 @@ namespace KnittedPicture.Game
     /// <summary>
     /// Экран уровня: картинка сверху, станок посередине, поле клубков и бустеры внизу.
     /// Время идёт непрерывно: станок вяжет шагами, клубки работают параллельно, а тапать
-    /// можно в любой момент — быстрые и точные цепочки и есть удовольствие от игры.
+    /// можно в любой момент. Комбо — за темп: клубок за клубком, пока станок не простаивает;
+    /// на ×5 включается «Разгон» — станок вяжет вдвое быстрее, петли приносят монеты.
     /// </summary>
     public sealed class GameScreen : ScreenView
     {
@@ -24,12 +25,20 @@ namespace KnittedPicture.Game
         /// <summary>Полёт нитки от клубка к петле.</summary>
         private const float BeadFlight = 0.2f;
 
+        /// <summary>Во сколько раз быстрее вяжет станок в «Разгоне».</summary>
+        private const float RushSpeed = 2f;
+
+        private static readonly Color IceBlue = new Color(0.55f, 0.82f, 1f);
+        private static readonly Color RushColor = new Color(1f, 0.6f, 0.15f);
+
         private readonly LevelData _level;
         private readonly LoomGame _game;
         private readonly Color[] _colors;
         private readonly List<FieldSpool> _field = new List<FieldSpool>();
         private readonly Dictionary<BoosterType, BoosterButton> _boosters = new Dictionary<BoosterType, BoosterButton>();
         private readonly HashSet<int> _arriving = new HashSet<int>();
+        private readonly HashSet<int> _finishedColors = new HashSet<int>();
+        private readonly TempoCombo _tempo = new TempoCombo();
 
         private PictureView _picture = null!;
         private RectTransform _pictureCard = null!;
@@ -38,12 +47,30 @@ namespace KnittedPicture.Game
         private float _progressWidth;
 
         private RectTransform _loomBg = null!;
+        private Image _loomBgImage = null!;
         private Image _loomAlert = null!;
+        private Image _rushGlow = null!;
+        private Text _loomTitle = null!;
         private Text _loomLabel = null!;
         private RectTransform[] _slotFrames = new RectTransform[0];
         private Image[] _slotOutlines = new Image[0];
         private SlotSpool?[] _slotViews = new SlotSpool?[0];
+        private RectTransform?[] _tailViews = new RectTransform?[0];
         private float _slotSpool;
+
+        private RectTransform _comboChip = null!;
+        private Image _comboBack = null!;
+        private Image _comboBolt = null!;
+        private Text _comboText = null!;
+        private RectTransform _comboHeat = null!;
+        private CanvasGroup _comboGroup = null!;
+        private float _rushClock;
+
+        private Text? _tapsGoal;
+        private Text? _goldGoal;
+        private bool _overParShown;
+        private int _goldCaught;
+        private int _goldCoins;
 
         private RectTransform _fieldContent = null!;
         private RectTransform _fx = null!;
@@ -68,8 +95,6 @@ namespace KnittedPicture.Game
         private bool _failShown;
         private bool _scissors;
         private float _idle;
-        private int _combo;
-        private int _comboCoins;
         private int _boostersUsed;
         private int _rescues;
         private RectTransform? _hint;
@@ -91,6 +116,7 @@ namespace KnittedPicture.Game
             }
 
             ComputeLayout();
+            BuildGoals();
             BuildPicture();
             BuildLoom();
             BuildField();
@@ -127,10 +153,11 @@ namespace KnittedPicture.Game
             if (_game.Status == GameStatus.Playing)
             {
                 _stepClock += dt;
+                var interval = _tempo.Rush ? StepInterval / RushSpeed : StepInterval;
                 var guard = 0;
-                while (_stepClock >= StepInterval && guard++ < 4)
+                while (_stepClock >= interval && guard++ < 6)
                 {
-                    _stepClock -= StepInterval;
+                    _stepClock -= interval;
                     var step = _game.Step();
                     Present(step);
                     if (step.Status != GameStatus.Playing)
@@ -147,7 +174,14 @@ namespace KnittedPicture.Game
                 }
             }
 
+            var wasRush = _tempo.Rush;
+            if (_tempo.Update(dt, _game.IsBusy || _arriving.Count > 0))
+            {
+                OnComboBurned(wasRush);
+            }
+
             UpdateLoomAlert(dt);
+            UpdateCombo(dt);
 
             if (!_game.IsBusy && _hint == null && _game.Status == GameStatus.Playing)
             {
@@ -208,9 +242,71 @@ namespace KnittedPicture.Game
             RefreshTimer();
         }
 
+        private bool HasGoals => _game.Par > 0 || _level.gold.Length > 0;
+
+        private float GoalsY => _game.TimeLimit > 0 ? 94f : 60f;
+
+        /// <summary>Цели уровня над картинкой: тапы на третью звезду и золотые петли.</summary>
+        private void BuildGoals()
+        {
+            if (!HasGoals)
+            {
+                return;
+            }
+
+            var chips = new List<(Icon icon, Color tint, bool taps)>();
+            if (_game.Par > 0)
+            {
+                chips.Add((Icon.Hand, Palette.Ink, true));
+            }
+
+            if (_level.gold.Length > 0)
+            {
+                chips.Add((Icon.Star, Palette.Coin, false));
+            }
+
+            const float chipW = 118f;
+            const float gap = 10f;
+            var x = W / 2f - (chips.Count * chipW + (chips.Count - 1) * gap) / 2f;
+            foreach (var (icon, tint, taps) in chips)
+            {
+                var chip = Ui.Card(Root, taps ? "TapsGoal" : "GoldGoal", x, GoalsY, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f);
+                Ui.IconImage(chip, icon, tint, 18, 14, 18);
+                var label = Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft);
+                if (taps)
+                {
+                    _tapsGoal = label;
+                }
+                else
+                {
+                    _goldGoal = label;
+                }
+
+                x += chipW + gap;
+            }
+
+            RefreshGoals();
+        }
+
+        private bool OverPar => _game.Par > 0 && _game.Taps > _game.Par;
+
+        private void RefreshGoals()
+        {
+            if (_tapsGoal != null)
+            {
+                _tapsGoal.text = $"Тапы {_game.Taps}/{_game.Par}";
+                _tapsGoal.color = OverPar ? Palette.Danger : _game.Taps == _game.Par ? Palette.CoinShadow : Palette.Ink;
+            }
+
+            if (_goldGoal != null)
+            {
+                _goldGoal.text = $"Золото {_goldCaught}/{_level.gold.Length}";
+            }
+        }
+
         private void ComputeLayout()
         {
-            _top = _game.TimeLimit > 0 ? 96f : 62f;
+            _top = (_game.TimeLimit > 0 ? 96f : 62f) + (HasGoals ? 34f : 0f);
             var boostersY = H - 10f - 60f;
             _colW = (W - 2 * Pad - 16f) / _game.ColumnCount;
             _spoolSize = Mathf.Min(52f, _colW - 12f);
@@ -255,15 +351,38 @@ namespace KnittedPicture.Game
 
         private void BuildLoom()
         {
-            Ui.Label(Root, "Станок", 13, Palette.Ink2, Pad + 6, _loomY, 120, 20, true, TextAnchor.MiddleLeft);
+            _loomTitle = Ui.Label(Root, "Станок", 13, Palette.Ink2, Pad + 6, _loomY, 120, 20, true, TextAnchor.MiddleLeft);
             _loomLabel = Ui.Label(Root, "", 13, Palette.Ink2, W - Pad - 186, _loomY, 180, 20, true, TextAnchor.MiddleRight);
-            _loomBg = Ui.Box(Root, "Loom", 20, Palette.LoomBg).rectTransform;
+            _loomBgImage = Ui.Box(Root, "Loom", 20, Palette.LoomBg);
+            _loomBg = _loomBgImage.rectTransform;
             Ui.Place(_loomBg, Pad, _loomY + 22f, W - 2 * Pad, 74);
             _loomAlert = Ui.Image(Root, "LoomAlert", Art.RoundRectOutline(20, 3), Color.clear);
             _loomAlert.type = Image.Type.Sliced;
             _loomAlert.pixelsPerUnitMultiplier = Art.Density;
             Ui.Place(_loomAlert.rectTransform, Pad - 2, _loomY + 20f, W - 2 * Pad + 4, 78);
+            _rushGlow = Ui.Image(Root, "RushGlow", Art.RoundRectOutline(24, 5), Color.clear);
+            _rushGlow.type = Image.Type.Sliced;
+            _rushGlow.pixelsPerUnitMultiplier = Art.Density;
+            Ui.Place(_rushGlow.rectTransform, Pad - 6, _loomY + 16f, W - 2 * Pad + 12, 86);
+            BuildComboChip();
             RebuildSlots();
+        }
+
+        /// <summary>Плашка комбо над станком: «Комбо ×3» и полоска — сколько ещё станок может простоять.</summary>
+        private void BuildComboChip()
+        {
+            _comboChip = Ui.Place(Ui.Node(Root, "Combo"), Pad, _loomY - 5f, 150, 26);
+            _comboGroup = _comboChip.gameObject.AddComponent<CanvasGroup>();
+            _comboGroup.blocksRaycasts = false;
+            _comboGroup.alpha = 0f;
+            _comboBack = Ui.Box(_comboChip, "Back", 13, Palette.Link);
+            Ui.Stretch(_comboBack.rectTransform);
+            _comboBolt = Ui.IconImage(_comboChip, Icon.Bolt, Color.white, 16, 13, 16);
+            _comboText = Ui.Label(_comboChip, "", 14, Color.white, 28, 0, 116, 22, true, TextAnchor.MiddleLeft);
+            var track = Ui.Box(_comboChip, "HeatTrack", 1.5f, Palette.WithAlpha(Color.white, 0.3f));
+            Ui.Place(track.rectTransform, 28, 19, 112, 3);
+            _comboHeat = Ui.Box(track.rectTransform, "Heat", 1.5f, Color.white).rectTransform;
+            Ui.Place(_comboHeat, 0, 0, 112, 3);
         }
 
         private void RebuildSlots()
@@ -276,6 +395,7 @@ namespace KnittedPicture.Game
             _slotFrames = new RectTransform[n];
             _slotOutlines = new Image[n];
             _slotViews = new SlotSpool?[n];
+            _tailViews = new RectTransform?[n];
             for (var i = 0; i < n; i++)
             {
                 var frame = Ui.Box(_loomBg, "Slot" + i, 14, Palette.Card);
@@ -325,15 +445,28 @@ namespace KnittedPicture.Game
                 Tweens.Delay(tip, 7f, HideTip);
             }
 
+            var bannerY = _top + 40f;
             if (_level.hard)
             {
-                var banner = Ui.Card(Root, "Hard", W / 2f - 110f, _top + 40f, 220, 56, 28, Palette.Danger, Palette.Danger, 0f);
-                Ui.Label(banner, "Сложный уровень", 20, Color.white, 0, 0, 220, 56);
-                var group = banner.gameObject.AddComponent<CanvasGroup>();
-                group.blocksRaycasts = false;
-                Tweens.Scale(banner, 0.6f, 1f, 0.3f);
-                Tweens.Fade(group, 1f, 0f, 0.4f, () => Object.Destroy(banner.gameObject), 1.6f);
+                Banner("Сложный уровень", Palette.Danger, bannerY);
+                bannerY += 66f;
             }
+
+            if (_level.mystery)
+            {
+                Banner("Загадка: что получится?", Palette.Link, bannerY);
+            }
+        }
+
+        private void Banner(string text, Color color, float y)
+        {
+            const float width = 260f;
+            var banner = Ui.Card(Root, "Banner", W / 2f - width / 2f, y, width, 56, 28, color, color, 0f);
+            Ui.Label(banner, text, 20, Color.white, 0, 0, width, 56);
+            var group = banner.gameObject.AddComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+            Tweens.Scale(banner, 0.6f, 1f, 0.3f);
+            Tweens.Fade(group, 1f, 0f, 0.4f, () => Object.Destroy(banner.gameObject), 1.6f);
         }
 
         // ---------- Обновление ----------
@@ -341,6 +474,7 @@ namespace KnittedPicture.Game
         private void RefreshAll()
         {
             _picture.Refresh();
+            RefreshGoals();
             if (_slotFrames.Length != _game.Slots.Count)
             {
                 RebuildSlots();
@@ -369,6 +503,33 @@ namespace KnittedPicture.Game
             {
                 var spool = _game.Slots[i];
                 var view = _slotViews[i];
+                var tail = _tailViews[i];
+                var isTail = _game.IsTail(i);
+                if (tail != null && (rebuild || !isTail))
+                {
+                    Object.Destroy(tail.gameObject);
+                    _tailViews[i] = null;
+                    tail = null;
+                }
+
+                if (isTail)
+                {
+                    if (view != null)
+                    {
+                        Object.Destroy(view.View.Root.gameObject);
+                        _slotViews[i] = null;
+                    }
+
+                    if (tail == null)
+                    {
+                        _tailViews[i] = BuildTail(i, spool!);
+                    }
+
+                    used++;
+                    _slotOutlines[i].enabled = false;
+                    continue;
+                }
+
                 if (view != null && (rebuild || spool == null || view.SpoolId != spool.Id))
                 {
                     Object.Destroy(view.View.Root.gameObject);
@@ -386,7 +547,7 @@ namespace KnittedPicture.Game
                     var created = SpoolView.Create(_slotFrames[i], _slotSpool);
                     Ui.PlaceCenter(created.Root, _slotFrames[i].sizeDelta.x / 2f, 29f, _slotSpool, _slotSpool);
                     created.Bind(spool, _colors[spool.Color], true);
-                    _slotViews[i] = new SlotSpool(created, spool.Id, spool.Color);
+                    _slotViews[i] = new SlotSpool(created, spool.Id, spool.Rainbow ? -1 : spool.Color);
                     view = _slotViews[i];
                 }
 
@@ -398,9 +559,27 @@ namespace KnittedPicture.Game
                 _slotOutlines[i].enabled = spool == null;
             }
 
-            var free = _slotFrames.Length - used;
+            var free = _game.FreeSlots;
             _loomLabel.text = free == 1 && _slotFrames.Length > 1 ? "Осталось 1 место!" : $"{used} из {_slotFrames.Length}";
             _loomLabel.color = free <= 1 ? Palette.Danger : Palette.Ink2;
+        }
+
+        /// <summary>Второй слот толстого клубка: подкрашенная рамка и нить к соседнему слоту.</summary>
+        private RectTransform BuildTail(int slot, Spool spool)
+        {
+            var frame = _slotFrames[slot];
+            var color = spool.Rainbow ? Palette.Coin : _colors[spool.Color];
+            var root = Ui.Stretch(Ui.Node(frame, "Tail"));
+            Ui.Stretch(Ui.Box(root, "Fill", 14, Palette.WithAlpha(color, 0.25f)).rectTransform);
+            var head = _game.Slots.ToList().IndexOf(spool);
+            var toLeft = head >= 0 && head < slot;
+            var w = frame.sizeDelta.x;
+            var thread = Ui.Box(root, "Thread", 3, color);
+            Ui.Place(thread.rectTransform, toLeft ? -8f : w / 2f, 26, w / 2f + 8f, 6);
+            var ball = Ui.Image(root, "Ball", spool.Rainbow ? Art.RainbowBall : Art.YarnBall, spool.Rainbow ? Color.white : color);
+            Ui.PlaceCenter(ball.rectTransform, w / 2f, 29, _slotSpool * 0.5f, _slotSpool * 0.5f);
+            Tweens.Scale(root, 0.5f, 1f, 0.2f);
+            return root;
         }
 
         private void RefreshField()
@@ -409,7 +588,6 @@ namespace KnittedPicture.Game
             _field.Clear();
             _hint = null;
             _hintHand = null;
-            var front = _game.FrontColors();
             for (var c = 0; c < _game.ColumnCount; c++)
             {
                 var column = _game.Column(c);
@@ -420,7 +598,7 @@ namespace KnittedPicture.Game
                     var view = SpoolView.Create(_fieldContent, _spoolSize);
                     var (x, y) = FieldPosition(c, d);
                     Ui.PlaceCenter(view.Root, x, y, _spoolSize, _spoolSize);
-                    view.Bind(spool, _colors[spool.Color], d == 0 || _scissors);
+                    view.Bind(spool, _colors[spool.Color], d == 0 || _scissors, _game.IsSurplus(spool));
                     var tap = view.Tap;
                     tap.ClickSound = false;
                     var columnIndex = c;
@@ -429,7 +607,7 @@ namespace KnittedPicture.Game
                     _field.Add(new FieldSpool(view, spool.Id, c, d));
 
                     // Передний клубок, которому сразу есть работа, слегка «дышит».
-                    if (d == 0 && spool.IsColorVisible && front.Contains(spool.Color) && !spool.Locked)
+                    if (d == 0 && spool.IsColorVisible && _game.HasWork(spool) && !spool.Locked && !spool.Frozen)
                     {
                         var root = view.Root;
                         Tweens.Run(root, 1.4f, t => root.localScale = Vector3.one * (1f + 0.04f * Ease.Bump(t)), null, null, c * 0.12f, true);
@@ -501,6 +679,7 @@ namespace KnittedPicture.Game
         private void Present(StepResult step)
         {
             var changed = new HashSet<int>();
+            var rush = _tempo.Rush;
             foreach (var stitch in step.Stitches)
             {
                 changed.Add(stitch.X);
@@ -511,16 +690,35 @@ namespace KnittedPicture.Game
                 var color = _colors[stitch.Color];
                 var x = stitch.X;
                 var y = stitch.Y;
-                Fx.Bead(_fx, from, to, color, Mathf.Max(8f, _slotSpool * 0.24f), BeadFlight, () =>
+
+                // Золото засчитывается, если петля связана во время комбо.
+                var gold = _game.IsGold(x, y);
+                var caught = gold && _tempo.Active;
+
+                // В «Разгоне» нитки светятся и толще.
+                var beadColor = rush ? Color.Lerp(color, Color.white, 0.35f) : color;
+                var beadSize = Mathf.Max(8f, _slotSpool * 0.24f) * (rush ? 1.3f : 1f);
+                Fx.Bead(_fx, from, to, beadColor, beadSize, BeadFlight, () =>
                 {
                     if (_picture.Land(x, y))
                     {
-                        Fx.Sparkle(_fx, to, color);
+                        Fx.Sparkle(_fx, to, rush ? RushColor : color);
                         Sfx.Play(Sound.Stitch, 0.5f);
+                    }
+
+                    if (gold)
+                    {
+                        OnGold(x, y, caught);
                     }
 
                     RefreshProgress();
                 });
+
+                if (_tempo.OnStitch())
+                {
+                    Fx.FloatText(_fx, from, "+1", Palette.CoinShadow, 16f);
+                    Sfx.Play(Sound.Coin, 0.25f);
+                }
 
                 if (slot != null)
                 {
@@ -533,11 +731,20 @@ namespace KnittedPicture.Game
                 var slot = _slotViews[done.Slot];
                 if (slot != null)
                 {
-                    Fx.Poof(_fx, Ui.WorldCenter(slot.View.Root), _colors[slot.Color], _slotSpool * 1.3f);
+                    var at = Ui.WorldCenter(slot.View.Root);
+                    if (done.Leftover > 0)
+                    {
+                        // Лишняя пряжа: цвет довязан, клубок уходит недовязанным.
+                        Fx.Poof(_fx, at, Palette.Ink3, _slotSpool);
+                        Fx.FloatText(_fx, at, "лишняя пряжа", Palette.Ink2, 14f);
+                    }
+                    else
+                    {
+                        Fx.Poof(_fx, at, slot.Color >= 0 ? _colors[slot.Color] : Palette.Coin, _slotSpool * 1.3f);
+                    }
                 }
 
-                Sfx.Play(Sound.SpoolDone, 0.7f);
-                OnSpoolDone(done);
+                Sfx.Play(Sound.SpoolDone, done.Leftover > 0 ? 0.35f : 0.7f);
             }
 
             if (step.Stitches.Count > 0 || step.Completed.Count > 0)
@@ -553,30 +760,134 @@ namespace KnittedPicture.Game
             if (step.Stitches.Count > 0)
             {
                 _idle = 0;
+                UpdateFieldIce();
+            }
+
+            // Цвет довязан — клубки этого цвета на поле стали лишними: показать это.
+            var finished = false;
+            foreach (var stitch in step.Stitches)
+            {
+                finished |= _game.LeftOf(stitch.Color) == 0 && _finishedColors.Add(stitch.Color);
+            }
+
+            if (step.Thawed.Count > 0 || finished)
+            {
+                RefreshField();
+            }
+
+            foreach (var id in step.Thawed)
+            {
+                var view = FindFieldView(id);
+                if (view != null)
+                {
+                    Tweens.Punch(view.Root, 0.25f, 0.3f);
+                    Fx.Sparkle(_fx, Ui.WorldCenter(view.Root), IceBlue, 8, 30f);
+                }
+
+                Sfx.Play(Sound.Unlock, 0.7f);
             }
         }
 
-        private void OnSpoolDone(Completion done)
+        /// <summary>Числа на льду тают вместе с петлями — без перестройки поля.</summary>
+        private void UpdateFieldIce()
         {
-            if (!done.Perfect)
+            foreach (var f in _field)
             {
-                _combo = 0;
+                var column = _game.Column(f.Column);
+                if (f.Depth < column.Count && column[f.Depth].Id == f.SpoolId)
+                {
+                    f.View.SetIce(column[f.Depth].Ice);
+                }
+            }
+        }
+
+        private void OnGold(int x, int y, bool caught)
+        {
+            _picture.ResolveGold(x, y, caught);
+            var at = _picture.CellWorld(x, y);
+            if (!caught)
+            {
+                Fx.FloatText(_fx, at, "мимо", Palette.Ink3, 14f);
                 return;
             }
 
-            _combo++;
-            if (_combo < 2)
+            _goldCaught++;
+            _goldCoins += Economy.GoldCoins;
+            Fx.Sparkle(_fx, at, Palette.Coin, 10, 34f);
+            Fx.FloatText(_fx, at, "+" + Economy.GoldCoins, Palette.CoinShadow, 20f);
+            Sfx.Play(Sound.Coin, 0.7f);
+            RefreshGoals();
+            if (_goldGoal != null)
+            {
+                Tweens.Punch(_goldGoal.transform.parent, 0.15f, 0.25f);
+            }
+        }
+
+        // ---------- Комбо за темп ----------
+
+        private void OnComboGrow(int combo)
+        {
+            if (combo < TempoCombo.ActiveFrom)
             {
                 return;
             }
 
             var at = Ui.WorldCenter(_loomBg) + new Vector3(0, 46f * _fx.lossyScale.y, 0);
-            var text = _combo >= 5 ? $"Безупречно! ×{_combo}" : _combo >= 3 ? $"Отлично! ×{_combo}" : $"Комбо ×{_combo}";
-            Fx.FloatText(_fx, at, text, _combo >= 3 ? Palette.Primary : Palette.Link, _combo >= 3 ? 24f : 20f);
-            if (_combo >= Economy.ComboCoinsFrom)
+            if (combo == TempoCombo.RushFrom)
             {
-                _comboCoins++;
-                Sfx.Play(Sound.Combo, 0.6f);
+                Fx.FloatText(_fx, at, "Разгон!", RushColor, 30f);
+                Sfx.Play(Sound.Combo, 0.9f);
+                Tweens.Punch(_loomBg, 0.06f, 0.3f);
+                Fx.Sparkle(_fx, Ui.WorldCenter(_loomBg), RushColor, 12, 140f);
+            }
+            else
+            {
+                Fx.FloatText(_fx, at, combo > TempoCombo.RushFrom ? $"×{combo}" : $"Комбо ×{combo}",
+                    combo > TempoCombo.RushFrom ? RushColor : Palette.Link, combo >= 4 ? 24f : 20f);
+                Sfx.Play(Sound.Combo, 0.45f);
+            }
+
+            Tweens.Punch(_comboChip, 0.18f, 0.22f);
+        }
+
+        private void OnComboBurned(bool wasRush)
+        {
+            if (wasRush)
+            {
+                var at = Ui.WorldCenter(_loomBg) + new Vector3(0, 46f * _fx.lossyScale.y, 0);
+                Fx.FloatText(_fx, at, "Разгон погас", Palette.Ink3, 16f);
+            }
+        }
+
+        /// <summary>Плашка комбо, жар «Разгона» и подсветка станка — каждый кадр.</summary>
+        private void UpdateCombo(float dt)
+        {
+            var active = _tempo.Active;
+            var targetAlpha = active ? 1f : 0f;
+            _comboGroup.alpha = Mathf.MoveTowards(_comboGroup.alpha, targetAlpha, dt * 6f);
+            _loomTitle.enabled = _comboGroup.alpha < 0.5f;
+            if (active)
+            {
+                var rush = _tempo.Rush;
+                _comboText.text = rush ? $"Разгон ×{_tempo.Combo}" : $"Комбо ×{_tempo.Combo}";
+                _comboBack.color = rush ? RushColor : Palette.Link;
+                _comboBolt.enabled = rush;
+                _comboText.rectTransform.anchoredPosition = new Vector2(rush ? 28f : 10f, 0f);
+                _comboHeat.sizeDelta = new Vector2(112f * _tempo.Heat, 3f);
+            }
+
+            if (_tempo.Rush)
+            {
+                _rushClock += dt;
+                var pulse = 0.55f + 0.45f * Ease.Bump(Mathf.Repeat(_rushClock / 0.6f, 1f));
+                _rushGlow.color = Palette.WithAlpha(RushColor, pulse);
+                _loomBgImage.color = Color.Lerp(Palette.LoomBg, Palette.CoinSoft, 0.8f);
+            }
+            else
+            {
+                _rushClock = 0;
+                _rushGlow.color = Color.clear;
+                _loomBgImage.color = Palette.LoomBg;
             }
         }
 
@@ -621,6 +932,18 @@ namespace KnittedPicture.Game
                 HideScissorsBanner();
             }
 
+            RefreshGoals();
+            if (OverPar && !_overParShown)
+            {
+                _overParShown = true;
+                if (_tapsGoal != null)
+                {
+                    Tweens.Shake((RectTransform)_tapsGoal.transform.parent, 5f, 0.3f);
+                }
+
+                App.Toast("Цель по тапам упущена — третьей звезды не будет");
+            }
+
             if (result.Kind == MoveKind.KnotUntied)
             {
                 Sfx.Play(Sound.Knot);
@@ -637,6 +960,7 @@ namespace KnittedPicture.Game
             }
 
             Sfx.Play(Sound.Pick);
+            OnComboGrow(_tempo.OnPlaced());
             var flights = new List<(Placement placed, Vector3 from)>();
             foreach (var placed in result.Placed)
             {
@@ -705,11 +1029,17 @@ namespace KnittedPicture.Game
                 case RejectReason.LinkNotReady:
                     App.Toast("Связанный клубок ещё не впереди своей колонки");
                     break;
+                case RejectReason.Frozen:
+                    var ice = _game.Column(column)[0].Ice;
+                    App.Toast($"Во льду: оттает через {ice} {Plural(ice, "петлю", "петли", "петель")} этого цвета");
+                    break;
                 case RejectReason.NoFreeSlot:
-                    var front = _game.Column(column).Count > 0 ? _game.Column(column)[0] : null;
-                    App.Toast(front != null && front.Link != 0 && !_scissors
+                    var spool = depth < _game.Column(column).Count ? _game.Column(column)[depth] : null;
+                    App.Toast(spool != null && spool.Link != 0 && !_scissors
                         ? "Связанным клубкам нужно 2 свободных слота"
-                        : "На станке нет места — подожди, пока клубок довяжет");
+                        : spool != null && spool.Thick
+                            ? "Толстому клубку нужно 2 свободных места"
+                            : "На станке нет места — подожди, пока клубок довяжет");
                     Tweens.Shake(_loomBg, 5f, 0.25f);
                     break;
             }
@@ -748,8 +1078,10 @@ namespace KnittedPicture.Game
                 {
                     Tweens.Punch(_pictureCard, 0.06f, 0.4f);
                     Fx.Poof(_fx, Ui.WorldCenter(_pictureCard), Palette.Coin, _pictureCard.sizeDelta.x * 0.9f);
-                    var stars = Economy.Stars(_boostersUsed, _rescues);
-                    Tweens.Delay(Root, 0.45f, () => App.OnLevelWon(_level, stars, _comboCoins));
+                    var stars = Economy.Stars(_boostersUsed, _rescues, OverPar);
+                    var stats = new LevelStats(_tempo.RushCoins, _goldCoins, _goldCaught, _level.gold.Length, _game.Taps, _game.Par,
+                        _tempo.Best, _boostersUsed > 0 || _rescues > 0);
+                    Tweens.Delay(Root, 0.45f, () => App.OnLevelWon(_level, stars, stats));
                 });
             });
         }
@@ -758,7 +1090,7 @@ namespace KnittedPicture.Game
         {
             _failShown = true;
             HideHint();
-            _combo = 0;
+            _tempo.Break();
             _hitStop = 0.12f;
             Sfx.Play(Sound.Jam);
             Tweens.Shake(_loomBg, 10f, 0.4f);
@@ -777,6 +1109,7 @@ namespace KnittedPicture.Game
         {
             _failShown = true;
             HideHint();
+            _tempo.Break();
             Sfx.Play(Sound.Jam);
             if (_timerMoth != null)
             {
@@ -870,6 +1203,9 @@ namespace KnittedPicture.Game
                         App.Save();
                         _boostersUsed++;
                         _game.Undo();
+                        _tempo.Break();
+                        _overParShown = OverPar;
+                        _finishedColors.Clear();
                         Sfx.Play(Sound.Pick);
                         RefreshAll();
                     }
@@ -1020,6 +1356,18 @@ namespace KnittedPicture.Game
         }
 
         private SpoolView? FindFieldView(int spoolId) => _field.FirstOrDefault(f => f.SpoolId == spoolId)?.View;
+
+        private static string Plural(int n, string one, string few, string many)
+        {
+            var mod10 = n % 10;
+            var mod100 = n % 100;
+            if (mod10 == 1 && mod100 != 11)
+            {
+                return one;
+            }
+
+            return mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? few : many;
+        }
 
         private sealed class SlotSpool
         {

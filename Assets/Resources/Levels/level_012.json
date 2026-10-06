@@ -1,7 +1,7 @@
 {
   "id": 12,
   "name": "Лисёнок",
-  "tip": "Новый бустер — «Отменить»: вернёт последний ход",
+  "tip": "Радужный клубок вяжет любой цвет на фронте",
   "width": 14,
   "height": 14,
   "colors": [
@@ -10,7 +10,8 @@
     "#FF9FB0",
     "#2B2350",
     "#FFFFFF",
-    "#2EBD7E"
+    "#2EBD7E",
+    "#D9661F"
   ],
   "picture": [
     "00000000000000",
@@ -22,129 +23,128 @@
     "01111444411110",
     "01144433444110",
     "01114444441110",
-    "00111144111100",
-    "00011111111000",
-    "00001111110000",
+    "00161144116100",
+    "00016166161000",
+    "00001611610000",
     "55555555555555",
     "55555555555555"
   ],
-  "slots": 5,
+  "canvas": [
+    "11111111111111",
+    "11001111110011",
+    "10000111100001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "10000000000001",
+    "11000000000011",
+    "11100000000111",
+    "11110000001111",
+    "11111111111111",
+    "11111111111111"
+  ],
+  "gold": [
+    37,
+    66,
+    99,
+    149
+  ],
+  "par": 21,
+  "slots": 4,
   "spools": [
     {
-      "loops": 8
-    },
-    {
-      "loops": 10
-    },
-    {
-      "color": 3,
-      "loops": 1
-    },
-    {
       "color": 4,
-      "loops": 2
+      "loops": 5
     },
     {
-      "color": 3,
+      "color": 6,
       "loops": 1,
       "hidden": true
     },
     {
       "color": 4,
-      "loops": 3,
-      "hidden": true
-    },
-    {
-      "loops": 2,
+      "loops": 7,
       "hidden": true
     },
     {
       "column": 1,
-      "color": 5,
-      "loops": 11
+      "color": 1,
+      "loops": 17
     },
     {
       "column": 1,
       "color": 1,
-      "loops": 14
-    },
-    {
-      "column": 1,
-      "color": 1,
-      "loops": 19,
+      "loops": 8,
       "knots": 1
     },
     {
       "column": 1,
-      "color": 1,
-      "loops": 15
+      "color": 3,
+      "loops": 5
     },
     {
       "column": 1,
       "color": 1,
-      "loops": 2
+      "loops": 4
     },
     {
       "column": 2,
       "color": 1,
-      "loops": 8
+      "loops": 7,
+      "knots": 1
     },
     {
       "column": 2,
-      "color": 5,
+      "loops": 5,
+      "hidden": true,
+      "rainbow": true
+    },
+    {
+      "column": 2,
+      "color": 1,
       "loops": 12
     },
     {
       "column": 2,
-      "loops": 21,
-      "knots": 1
+      "loops": 4,
+      "rainbow": true
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 6
     },
     {
       "column": 3,
-      "color": 5,
+      "color": 3,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "color": 6,
       "loops": 5
     },
     {
       "column": 3,
+      "color": 1,
+      "loops": 18
+    },
+    {
+      "column": 4,
+      "color": 6,
+      "loops": 2
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 4
+    },
+    {
+      "column": 4,
       "color": 4,
-      "loops": 13
-    },
-    {
-      "column": 3,
       "loops": 7
-    },
-    {
-      "column": 3,
-      "loops": 1
-    },
-    {
-      "column": 4,
-      "loops": 11
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 10
-    },
-    {
-      "column": 4,
-      "color": 3,
-      "loops": 2
-    },
-    {
-      "column": 4,
-      "color": 2,
-      "loops": 2
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 14
-    },
-    {
-      "column": 4,
-      "color": 2,
-      "loops": 2
     }
   ]
 }

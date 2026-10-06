@@ -19,6 +19,7 @@ namespace KnittedPicture.LevelTool
     {
         private const int BotRuns = 200;
         private const int MaxSeeds = 400;
+        private const int MaxMeasured = 40;
 
         private static readonly JsonSerializerOptions ReadOptions = new JsonSerializerOptions
         {
@@ -42,47 +43,69 @@ namespace KnittedPicture.LevelTool
             Directory.CreateDirectory(output);
 
             var failed = false;
-            Console.WriteLine("id  название           размер цв клуб кол сл  ходов  бот   сид   механики");
+            Console.WriteLine("id  название           размер петли цв клуб кол сл  тапы/цель  бот   фронт выбор1 роковые  сид   механики");
             foreach (var path in Directory.GetFiles(source, "level_*.json").OrderBy(p => p))
             {
                 var design = JsonSerializer.Deserialize<LevelDesign>(File.ReadAllText(path), ReadOptions)!;
-                var (level, solution, winRate, seed, inRange) = Build(design);
-                if (level == null)
+                var built = Build(design);
+                if (built == null)
                 {
                     Console.WriteLine($"{design.id,2}  {design.name}: не нашлось решаемого поля");
                     failed = true;
                     continue;
                 }
 
+                var level = built.Level;
                 var file = Path.Combine(output, $"level_{design.id:000}.json");
                 File.WriteAllText(file, JsonSerializer.Serialize(level, WriteOptions) + "\n");
 
                 var mechanics = string.Join(" ", new[]
                 {
+                    design.fabric.Length > 0 ? "канва" : null,
+                    design.mystery ? "загадка" : null,
+                    design.gold > 0 ? $"золото×{level.gold.Length}" : null,
+                    design.extra > 0 ? $"лишние×{design.extra}" : null,
                     design.hidden > 0 ? $"скрытые×{design.hidden}" : null,
                     design.knots > 0 ? $"узелки×{design.knots}" : null,
                     design.links > 0 ? $"связки×{design.links}" : null,
                     design.locks > 0 ? $"замки×{design.locks}" : null,
+                    level.spools.Any(sp => sp.rainbow) ? $"радужные×{level.spools.Count(sp => sp.rainbow)}" : null,
+                    level.spools.Any(sp => sp.thick) ? $"толстые×{level.spools.Count(sp => sp.thick)}" : null,
+                    level.spools.Any(sp => sp.ice > 0) ? $"лёд×{level.spools.Count(sp => sp.ice > 0)}" : null,
                     design.timeLimit > 0 ? $"моль {design.timeLimit}с" : null,
                     design.hard ? "сложный" : null,
-                }.Where(s => s != null));
-                var mark = inRange ? " " : "!";
+                }.Where(m => m != null));
+                var mark = built.InRange ? " " : "!";
+                var taps = level.par > 0 ? $"{built.Solution,3}/{level.par,-3}" : $"{built.Solution,3}    ";
+                var stitches = PictureGrid.From(level).Total;
                 Console.WriteLine(
-                    $"{design.id,2}  {design.name,-18} {level.width,2}×{level.height,-2} {level.colors.Length,2} {level.spools.Length,4} {design.columns,3} {level.slots,2} {solution,5}  {winRate,4:P0}{mark} {seed,5}   {mechanics}");
+                    $"{design.id,2}  {design.name,-18} {level.width,2}×{level.height,-2} {stitches,5} {level.colors.Length,2} {level.spools.Length,4} {design.columns,3} {level.slots,2}  {taps,9}  {built.WinRate,4:P0}{mark} {built.Metrics.FrontColors,5:0.0} {built.Metrics.Forced,5:P0} {built.Metrics.Danger,6:P0}  {built.Seed,5}   {mechanics}");
             }
 
             return failed ? 1 : 0;
         }
 
-        private static (LevelData? level, int solution, double winRate, int seed, bool inRange) Build(LevelDesign design)
+        private sealed class Built
         {
-            LevelData? best = null;
-            var bestSolution = 0;
-            var bestRate = 0.0;
-            var bestSeed = 0;
-            var bestDistance = double.MaxValue;
+            public LevelData Level = null!;
+            public int Solution;
+            public double WinRate;
+            public int Seed;
+            public bool InRange;
+            public Metrics Metrics = null!;
+        }
 
-            for (var seed = design.seed; seed < design.seed + MaxSeeds; seed++)
+        /// <summary>
+        /// Перебирает сиды: уровень должен решаться, бот — выигрывать в нужной доле партий,
+        /// а решения — попадать в коридоры (не слишком много очевидных ходов, в меру роковых).
+        /// </summary>
+        private static Built? Build(LevelDesign design)
+        {
+            Built? best = null;
+            var bestDistance = double.MaxValue;
+            var measured = 0;
+
+            for (var seed = design.seed; seed < design.seed + MaxSeeds && measured < MaxMeasured; seed++)
             {
                 var level = LevelGenerator.Generate(design, seed);
                 if (LevelValidator.Validate(level).Count > 0)
@@ -97,13 +120,23 @@ namespace KnittedPicture.LevelTool
                 }
 
                 var rate = Bot.WinRate(level, BotRuns, seed);
-                var distance = rate < design.minWin ? design.minWin - rate : rate > design.maxWin ? rate - design.maxWin : 0;
+                var winDistance = rate < design.minWin ? design.minWin - rate : rate > design.maxWin ? rate - design.maxWin : 0;
+
+                // Метрики дорогие — считаем их, только когда бот уже в коридоре или лучшего пока нет.
+                if (winDistance > 0 && best != null)
+                {
+                    continue;
+                }
+
+                measured++;
+                var metrics = Metrics.Measure(level, solution);
+                var distance = winDistance * 4
+                    + Math.Max(0, metrics.Forced - design.maxForced)
+                    + Math.Max(0, design.minDanger - metrics.Danger)
+                    + Math.Max(0, metrics.Danger - design.maxDanger);
                 if (distance < bestDistance)
                 {
-                    best = level;
-                    bestSolution = solution.Count;
-                    bestRate = rate;
-                    bestSeed = seed;
+                    best = new Built { Level = level, Solution = solution.Count, WinRate = rate, Seed = seed, Metrics = metrics };
                     bestDistance = distance;
                 }
 
@@ -113,7 +146,30 @@ namespace KnittedPicture.LevelTool
                 }
             }
 
-            return (best, bestSolution, bestRate, bestSeed, bestDistance == 0);
+            if (best == null)
+            {
+                return null;
+            }
+
+            best.InRange = bestDistance == 0;
+            best.Level.par = Par(best.Level, design);
+            return best;
+        }
+
+        /// <summary>
+        /// Цель по тапам имеет смысл, только если тапы могут разниться — есть лишняя пряжа.
+        /// Иначе каждый клубок нужен и число тапов одно и то же.
+        /// </summary>
+        private static int Par(LevelData level, LevelDesign design)
+        {
+            var loops = level.spools.Sum(sp => sp.loops);
+            if (loops == PictureGrid.From(level).Total)
+            {
+                return 0;
+            }
+
+            var fewest = LevelSolver.FewestTaps(level);
+            return fewest < 0 ? 0 : fewest + design.parSlack;
         }
 
         private static string FindRoot()

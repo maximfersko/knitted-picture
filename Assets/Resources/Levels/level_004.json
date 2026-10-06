@@ -1,87 +1,97 @@
 {
   "id": 4,
   "name": "Кружка какао",
-  "tip": "Задний клубок не достать, пока не заберёшь передний",
+  "tip": "Ставь клубки, пока станок вяжет: растёт комбо, а на ×5 — Разгон!",
   "width": 8,
   "height": 8,
   "colors": [
     "#C9B8FF",
     "#FF9A3C",
-    "#FFFFFF"
+    "#FFFFFF",
+    "#7A4A2A",
+    "#FFC2D6",
+    "#C9682A",
+    "#FF4F5E"
   ],
   "picture": [
     "00200200",
     "02002000",
-    "01111100",
-    "01111110",
-    "01111110",
-    "01111100",
+    "03433400",
+    "01111150",
+    "01666150",
+    "01161150",
     "00111000",
     "00000000"
   ],
+  "canvas": [
+    "11011011",
+    "10110111",
+    "10000011",
+    "10000001",
+    "10000001",
+    "10000001",
+    "11000111",
+    "11111111"
+  ],
+  "gold": [],
   "slots": 4,
   "spools": [
     {
       "color": 1,
-      "loops": 6
-    },
-    {
-      "color": 1,
-      "loops": 7
-    },
-    {
-      "color": 1,
       "loops": 1
     },
     {
-      "loops": 1
+      "color": 6,
+      "loops": 2
     },
     {
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 3
+    },
+    {
+      "column": 1,
+      "color": 6,
+      "loops": 2
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 3
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 2,
       "color": 2,
-      "loops": 1
-    },
-    {
-      "column": 1,
-      "loops": 6
-    },
-    {
-      "column": 1,
-      "loops": 8
-    },
-    {
-      "column": 1,
       "loops": 2
     },
     {
       "column": 2,
-      "loops": 7
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 5
-    },
-    {
-      "column": 2,
-      "loops": 5
-    },
-    {
-      "column": 2,
       "color": 2,
-      "loops": 3
+      "loops": 2
     },
     {
       "column": 3,
+      "color": 4,
       "loops": 1
     },
     {
       "column": 3,
-      "loops": 5
+      "color": 1,
+      "loops": 4
     },
     {
       "column": 3,
-      "color": 1,
-      "loops": 6
+      "color": 4,
+      "loops": 1
     }
   ]
 }

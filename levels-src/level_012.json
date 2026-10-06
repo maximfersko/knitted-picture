@@ -1,7 +1,7 @@
 {
   "id": 12,
   "name": "Лисёнок",
-  "tip": "Новый бустер — «Отменить»: вернёт последний ход",
+  "tip": "Радужный клубок вяжет любой цвет на фронте",
   "hard": false,
   "timeLimit": 0,
   "palette": [
@@ -28,6 +28,10 @@
     {
       "key": "g",
       "hex": "#2EBD7E"
+    },
+    {
+      "key": "d",
+      "hex": "#D9661F"
     }
   ],
   "picture": [
@@ -40,21 +44,32 @@
     "soooowwwwoooos",
     "soowwwkkwwwoos",
     "sooowwwwwwooos",
-    "ssoooowwooooss",
-    "sssoooooooosss",
-    "ssssoooooossss",
+    "ssodoowwoodoss",
+    "sssododdodosss",
+    "ssssodoodossss",
     "gggggggggggggg",
     "gggggggggggggg"
   ],
-  "slots": 5,
+  "fabric": "sg",
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
   "columns": 5,
-  "spools": 20,
+  "spools": 14,
   "swaps": 5,
   "hidden": 3,
   "knots": 2,
   "links": 0,
   "locks": 0,
+  "rainbow": 2,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "parSlack": 1,
   "minWin": 0.4,
-  "maxWin": 0.7,
+  "maxWin": 0.75,
+  "maxForced": 0.5,
+  "minDanger": 0.05,
+  "maxDanger": 0.3,
   "seed": 121
 }

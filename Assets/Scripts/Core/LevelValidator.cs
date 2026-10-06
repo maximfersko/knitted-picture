@@ -6,8 +6,8 @@ using System.Linq;
 namespace KnittedPicture.Core
 {
     /// <summary>
-    /// Проверка уровня до игры: размеры, цвета, что петель в клубках ровно столько,
-    /// сколько в картинке, и что особые клубки не создают тупиков.
+    /// Проверка уровня до игры: размеры, цвета, канва, что петель в клубках хватает на рисунок
+    /// и что особые клубки не создают очевидных тупиков.
     /// </summary>
     public static class LevelValidator
     {
@@ -16,6 +16,7 @@ namespace KnittedPicture.Core
         public const int MaxColumns = 6;
         public const int MaxKnots = 3;
         public const int MaxTimeLimit = 900;
+        public const int MaxIce = 30;
 
         public static List<string> Validate(LevelData? level)
         {
@@ -49,11 +50,32 @@ namespace KnittedPicture.Core
                 errors.Add($"таймер {level.timeLimit} с вне 0..{MaxTimeLimit}");
             }
 
+            if (level.par < 0)
+            {
+                errors.Add($"цель {level.par} тапов");
+            }
+
             var stitchesByColor = new int[colorCount];
             if (level.picture == null || level.picture.Length != level.height)
             {
                 errors.Add($"в картинке {level.picture?.Length ?? 0} рядов, ожидалось {level.height}");
                 return errors;
+            }
+
+            var canvas = level.canvas ?? new string[0];
+            if (canvas.Length != 0 && canvas.Length != level.height)
+            {
+                errors.Add($"в канве {canvas.Length} рядов, ожидалось {level.height}");
+                return errors;
+            }
+
+            for (var y = 0; y < canvas.Length; y++)
+            {
+                if (canvas[y] == null || canvas[y].Length != level.width || canvas[y].Any(ch => ch != '0' && ch != '1'))
+                {
+                    errors.Add($"канва, ряд {y}: нужно {level.width} символов '0' или '1'");
+                    return errors;
+                }
             }
 
             for (var y = 0; y < level.height; y++)
@@ -72,10 +94,27 @@ namespace KnittedPicture.Core
                     {
                         errors.Add($"ряд {y}, клетка {x}: цвет '{row[x]}' не из палитры");
                     }
-                    else
+                    else if (canvas.Length == 0 || canvas[y][x] == '0')
                     {
                         stitchesByColor[color]++;
                     }
+                }
+            }
+
+            if (stitchesByColor.Sum() == 0)
+            {
+                errors.Add("вся картинка — ткань, вязать нечего");
+            }
+
+            foreach (var cell in level.gold ?? new int[0])
+            {
+                if (cell < 0 || cell >= level.width * level.height)
+                {
+                    errors.Add($"золотая петля {cell} вне картинки");
+                }
+                else if (canvas.Length > 0 && canvas[cell / level.width][cell % level.width] == '1')
+                {
+                    errors.Add($"золотая петля {cell} на ткани");
                 }
             }
 
@@ -87,6 +126,7 @@ namespace KnittedPicture.Core
             }
 
             var loopsByColor = new int[colorCount];
+            var rainbowLoops = 0;
             var maxColumn = -1;
             foreach (var s in spools)
             {
@@ -113,7 +153,29 @@ namespace KnittedPicture.Core
                     errors.Add($"клубок цвета {s.color}: узелков {s.knots}, нужно 0..{MaxKnots}");
                 }
 
-                loopsByColor[s.color] += s.loops;
+                if (s.ice < 0 || s.ice > MaxIce)
+                {
+                    errors.Add($"клубок цвета {s.color}: лёд {s.ice}, нужно 0..{MaxIce}");
+                }
+
+                if (s.ice > 0 && (s.rainbow || s.hidden || s.link != 0 || s.locked || s.key || s.knots > 0))
+                {
+                    errors.Add($"ледяной клубок цвета {s.color} не может быть радужным, скрытым, связанным, с замком, ключом или узелком");
+                }
+
+                if (s.thick && s.link != 0)
+                {
+                    errors.Add($"толстый клубок цвета {s.color} не может быть в связке");
+                }
+
+                if (s.rainbow)
+                {
+                    rainbowLoops += s.loops;
+                }
+                else
+                {
+                    loopsByColor[s.color] += s.loops;
+                }
                 if (s.column > maxColumn)
                 {
                     maxColumn = s.column;
@@ -128,11 +190,26 @@ namespace KnittedPicture.Core
                 }
             }
 
+            // Пряжи может быть больше, чем нужно (лишняя уходит со станка), но не меньше.
             for (var c = 0; c < colorCount; c++)
             {
-                if (loopsByColor[c] != stitchesByColor[c])
+                if (loopsByColor[c] + rainbowLoops < stitchesByColor[c])
                 {
-                    errors.Add($"цвет {c}: в клубках {loopsByColor[c]} петель, в картинке {stitchesByColor[c]}");
+                    errors.Add($"цвет {c}: в клубках {loopsByColor[c]} петель (и {rainbowLoops} радужных), в картинке {stitchesByColor[c]}");
+                }
+            }
+
+            if (loopsByColor.Sum() + rainbowLoops < stitchesByColor.Sum())
+            {
+                errors.Add($"пряжи на {loopsByColor.Sum() + rainbowLoops} петель, а вязать {stitchesByColor.Sum()}");
+            }
+
+            // Лёд тает только от петель своего цвета: если их меньше, чем льда, клубок не оттает никогда.
+            foreach (var s in spools.Where(s => s.ice > 0 && s.color >= 0 && s.color < colorCount))
+            {
+                if (s.ice > stitchesByColor[s.color])
+                {
+                    errors.Add($"ледяной клубок цвета {s.color}: льда {s.ice}, а петель цвета в рисунке {stitchesByColor[s.color]}");
                 }
             }
 

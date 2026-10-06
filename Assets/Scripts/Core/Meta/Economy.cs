@@ -63,8 +63,8 @@ namespace KnittedPicture.Core
 
         public static int Reward(bool hard) => hard ? HardWinReward : WinReward;
 
-        /// <summary>Комбо: начиная с этой длины серии каждый идеальный клубок даёт монету.</summary>
-        public const int ComboCoinsFrom = 3;
+        /// <summary>Золотая петля, связанная во время комбо.</summary>
+        public const int GoldCoins = 3;
 
         /// <summary>Серия побед подряд без перезапуска: +5 монет за каждую победу в серии, максимум +15.</summary>
         public const int StreakStep = 5;
@@ -72,7 +72,19 @@ namespace KnittedPicture.Core
 
         public static int StreakBonus(int streak) => System.Math.Min(System.Math.Max(0, streak - 1) * StreakStep, StreakMax);
 
-        /// <summary>Звёзды: 3 — чисто, 2 — с бустерами, 1 — со спасением после затора или моли.</summary>
-        public static int Stars(int boostersUsed, int rescues) => rescues > 0 ? 1 : boostersUsed > 0 ? 2 : 3;
+        /// <summary>
+        /// Звёзды: 3 — чисто и в цель по тапам; минус звезда за бустеры и минус за перебор тапов;
+        /// 1 — со спасением после затора или моли.
+        /// </summary>
+        public static int Stars(int boostersUsed, int rescues, bool overPar = false)
+        {
+            if (rescues > 0)
+            {
+                return 1;
+            }
+
+            var stars = 3 - (boostersUsed > 0 ? 1 : 0) - (overPar ? 1 : 0);
+            return System.Math.Max(1, stars);
+        }
     }
 }

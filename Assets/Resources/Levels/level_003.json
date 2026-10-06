@@ -7,71 +7,80 @@
   "colors": [
     "#9BE0B4",
     "#FF5A4E",
-    "#FFFFFF"
+    "#FFFFFF",
+    "#B8323A",
+    "#FFE9C7",
+    "#2EBD7E"
   ],
   "picture": [
     "00000000",
     "00111100",
     "01211210",
-    "11111111",
-    "00022000",
-    "00022000",
-    "00222200",
-    "00000000"
+    "11112111",
+    "03434340",
+    "00044000",
+    "00444400",
+    "05050050"
   ],
+  "canvas": [
+    "11111111",
+    "11000011",
+    "10000001",
+    "00000000",
+    "10000001",
+    "11100111",
+    "11000011",
+    "10101101"
+  ],
+  "gold": [],
   "slots": 4,
   "spools": [
     {
-      "loops": 10
+      "color": 4,
+      "loops": 3
     },
     {
       "color": 2,
-      "loops": 2
+      "loops": 1
     },
     {
-      "loops": 2
-    },
-    {
-      "column": 1,
-      "color": 2,
-      "loops": 7
-    },
-    {
-      "column": 1,
       "color": 1,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 3
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 3
+    },
+    {
+      "column": 2,
+      "color": 4,
       "loops": 6
     },
     {
-      "column": 1,
-      "loops": 12
-    },
-    {
-      "column": 1,
-      "loops": 7
-    },
-    {
       "column": 2,
       "color": 2,
-      "loops": 1
+      "loops": 2
     },
     {
       "column": 2,
-      "loops": 7
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 7
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 1
-    },
-    {
-      "column": 3,
       "color": 1,
       "loops": 2
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 9
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 3
     }
   ]
 }

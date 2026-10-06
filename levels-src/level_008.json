@@ -1,7 +1,7 @@
 {
   "id": 8,
   "name": "Клубничка",
-  "tip": "Новый бустер — ножницы: достают любой клубок, даже из глубины",
+  "tip": "Не все клубки нужны: уложись в цель по тапам — получишь третью звезду",
   "hard": false,
   "timeLimit": 0,
   "palette": [
@@ -20,29 +20,48 @@
     {
       "key": "g",
       "hex": "#2EBD7E"
+    },
+    {
+      "key": "w",
+      "hex": "#FFFFFF"
+    },
+    {
+      "key": "d",
+      "hex": "#C7303F"
     }
   ],
   "picture": [
     "ccccggcccc",
     "cccggggccc",
     "ccrrggrrcc",
-    "crrrrrrrrc",
-    "crryrryrrc",
-    "crrrrrrrrc",
-    "ccryrryrcc",
-    "ccrrrrrrcc",
-    "cccrrrrccc",
-    "ccccrrcccc"
+    "crwrrrrrrc",
+    "crryrryrdc",
+    "crrrrrrrdc",
+    "ccryrrrddc",
+    "ccrrrrrdcc",
+    "cccrrrdccc",
+    "ccccrdcccc"
   ],
-  "slots": 5,
+  "fabric": "c",
+  "mystery": false,
+  "gold": 3,
+  "slots": 4,
   "columns": 5,
-  "spools": 14,
-  "swaps": 4,
-  "hidden": 4,
+  "spools": 11,
+  "swaps": 3,
+  "hidden": 2,
   "knots": 0,
   "links": 0,
   "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 2,
+  "parSlack": 1,
   "minWin": 0.45,
-  "maxWin": 0.75,
+  "maxWin": 0.8,
+  "maxForced": 0.5,
+  "minDanger": 0.03,
+  "maxDanger": 0.3,
   "seed": 81
 }

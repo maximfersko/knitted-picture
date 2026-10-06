@@ -1,9 +1,9 @@
 {
   "id": 15,
   "name": "Сова",
-  "tip": "Финал коллекции: моль, узелки и скрытые клубки. Удачи!",
+  "tip": "Финал: ледяной клубок оттает, когда станок свяжет петли его цвета",
   "hard": true,
-  "timeLimit": 240,
+  "timeLimit": 150,
   "width": 16,
   "height": 16,
   "colors": [
@@ -12,7 +12,9 @@
     "#FFFFFF",
     "#2B2350",
     "#FFC23C",
-    "#F2D3A8"
+    "#F2D3A8",
+    "#6B4226",
+    "#2EBD7E"
   ],
   "picture": [
     "0000000000000000",
@@ -27,147 +29,164 @@
     "0115555555555110",
     "0115515555155110",
     "0015555555555100",
-    "0001111111111000",
+    "0001115511155000",
     "0000440000440000",
-    "1111111111111111",
+    "6667666667666666",
     "0000000000000000"
   ],
-  "slots": 5,
+  "canvas": [
+    "1111111111111111",
+    "1110111111110111",
+    "1110011111100111",
+    "1110000000000111",
+    "1100000000000011",
+    "1100000000000011",
+    "1100000000000011",
+    "1100000000000011",
+    "1000000000000001",
+    "1000000000000001",
+    "1000000000000001",
+    "1100000000000011",
+    "1110000000000111",
+    "1111001111001111",
+    "0000000000000000",
+    "1111111111111111"
+  ],
+  "gold": [
+    68,
+    99,
+    129,
+    230
+  ],
+  "par": 28,
+  "slots": 4,
   "spools": [
     {
-      "color": 4,
-      "loops": 2
-    },
-    {
-      "color": 1,
+      "color": 6,
       "loops": 9
     },
     {
-      "loops": 3
-    },
-    {
+      "color": 1,
       "loops": 14
     },
     {
-      "color": 1,
-      "loops": 2
+      "color": 5,
+      "loops": 19,
+      "thick": true
+    },
+    {
+      "color": 5,
+      "loops": 6
     },
     {
       "color": 2,
-      "loops": 14,
-      "link": 1
-    },
-    {
-      "column": 1,
-      "loops": 12
-    },
-    {
-      "column": 1,
-      "loops": 13
-    },
-    {
-      "column": 1,
-      "color": 5,
       "loops": 11
     },
     {
+      "color": 1,
+      "loops": 3
+    },
+    {
       "column": 1,
-      "color": 4,
+      "color": 7,
       "loops": 2
     },
     {
       "column": 1,
-      "loops": 26
+      "color": 1,
+      "loops": 14
     },
     {
       "column": 1,
       "color": 2,
-      "loops": 2
+      "loops": 1,
+      "ice": 10
     },
     {
-      "column": 2,
+      "column": 1,
       "color": 1,
-      "loops": 13
-    },
-    {
-      "column": 2,
-      "color": 4,
-      "loops": 2,
+      "loops": 8,
+      "hidden": true,
       "knots": 1
     },
     {
-      "column": 2,
-      "color": 5,
-      "loops": 4,
-      "knots": 2
+      "column": 1,
+      "color": 1,
+      "loops": 1
     },
     {
       "column": 2,
-      "color": 3,
+      "color": 4,
+      "loops": 1,
+      "ice": 2
+    },
+    {
+      "column": 2,
+      "color": 1,
       "loops": 2
     },
     {
       "column": 2,
       "color": 1,
-      "loops": 21
+      "loops": 11,
+      "hidden": true
     },
     {
-      "column": 3,
-      "color": 1,
-      "loops": 9
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 13
-    },
-    {
-      "column": 3,
-      "loops": 14
-    },
-    {
-      "column": 3,
-      "loops": 1
-    },
-    {
-      "column": 4,
+      "column": 2,
+      "color": 4,
       "loops": 4
     },
     {
-      "column": 4,
-      "color": 5,
-      "loops": 5,
-      "hidden": true
-    },
-    {
-      "column": 4,
-      "color": 5,
-      "loops": 16
-    },
-    {
-      "column": 4,
+      "column": 3,
       "color": 4,
-      "loops": 2,
-      "hidden": true
+      "loops": 3
     },
     {
-      "column": 4,
-      "loops": 15
+      "column": 3,
+      "color": 2,
+      "loops": 4,
+      "knots": 1
     },
     {
-      "column": 4,
+      "column": 3,
+      "color": 1,
+      "loops": 8,
+      "ice": 12
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "color": 1,
       "loops": 5
     },
     {
       "column": 4,
-      "color": 1,
-      "loops": 19,
-      "link": 1
+      "color": 6,
+      "loops": 5
     },
     {
       "column": 4,
-      "loops": 1,
-      "hidden": true
+      "loops": 4,
+      "rainbow": true
+    },
+    {
+      "column": 4,
+      "color": 4,
+      "loops": 6
+    },
+    {
+      "column": 4,
+      "color": 5,
+      "loops": 14
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 1
     }
   ]
 }

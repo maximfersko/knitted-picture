@@ -31,7 +31,6 @@ namespace KnittedPicture.LevelTool
             var game = new LoomGame(level);
             for (var step = 0; step < 1000 && game.Status == GameStatus.Playing; step++)
             {
-                var front = game.FrontColors();
                 var soon = game.SoonColors(2);
                 var options = new List<int>();
                 var weights = new List<double>();
@@ -52,7 +51,11 @@ namespace KnittedPicture.LevelTool
                     {
                         weight = 1.5;
                     }
-                    else if (front.Contains(spool.Color))
+                    else if (game.IsSurplus(spool))
+                    {
+                        weight = 0.5;
+                    }
+                    else if (game.HasWork(spool))
                     {
                         weight = 8;
                     }

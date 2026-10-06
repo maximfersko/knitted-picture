@@ -34,8 +34,23 @@ namespace KnittedPicture.Core
         /// <summary>Картинка сверху вниз: строка на ряд, символ '0'..'9' — индекс цвета.</summary>
         public string[] picture = Array.Empty<string>();
 
+        /// <summary>
+        /// Канва: строки как у картинки, '1' — клетка ткани-основы, она связана с самого начала;
+        /// '0' — клетка рисунка, её вяжут клубки. Пусто — вязать всю картинку.
+        /// </summary>
+        public string[] canvas = Array.Empty<string>();
+
+        /// <summary>Золотые петли: индексы клеток (ряд × ширина + столбец). Бонус, если связать их во время комбо.</summary>
+        public int[] gold = Array.Empty<int>();
+
+        /// <summary>Загадка: эскиз рисунка скрыт, видно только фронт и силуэт на ткани.</summary>
+        public bool mystery;
+
+        /// <summary>Третья звезда — если уложиться в столько тапов; 0 — без цели.</summary>
+        public int par;
+
         /// <summary>Сколько слотов на станке в начале уровня.</summary>
-        public int slots = 5;
+        public int slots = 4;
 
         /// <summary>Клубки на поле. Внутри колонки первый в списке — передний, его можно тапнуть.</summary>
         public SpoolData[] spools = Array.Empty<SpoolData>();
@@ -62,5 +77,14 @@ namespace KnittedPicture.Core
 
         /// <summary>Клубок с ключом: когда встаёт на станок, открывает все замки.</summary>
         public bool key;
+
+        /// <summary>Радужный: вяжет любой цвет на фронте. Поле color не используется.</summary>
+        public bool rainbow;
+
+        /// <summary>Толстый: занимает 2 слота и вяжет по 2 петли за шаг.</summary>
+        public bool thick;
+
+        /// <summary>Ледяной: не тапается, пока станок не свяжет столько петель его цвета. 0 — без льда.</summary>
+        public int ice;
     }
 }
