@@ -1,8 +1,7 @@
 {
   "id": 5,
   "name": "Мордочка котика",
-  "tip": "Сложный уровень: на станке всего 3 слота",
-  "hard": true,
+  "tip": "",
   "width": 8,
   "height": 8,
   "colors": [
@@ -35,69 +34,74 @@
   ],
   "gold": [],
   "band": 2,
-  "par": 13,
-  "slots": 3,
+  "par": 15,
+  "slots": 4,
   "spools": [
     {
       "color": 2,
       "loops": 2
     },
     {
-      "color": 1,
-      "loops": 1
-    },
-    {
-      "color": 1,
-      "loops": 8
-    },
-    {
-      "column": 1,
-      "color": 5,
-      "loops": 6
-    },
-    {
-      "column": 1,
-      "color": 1,
-      "loops": 5
-    },
-    {
-      "column": 1,
       "color": 2,
       "loops": 2
     },
     {
+      "color": 1,
+      "loops": 3
+    },
+    {
       "column": 1,
       "color": 3,
       "loops": 2
     },
     {
-      "column": 2,
-      "color": 4,
-      "loops": 2
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 5
-    },
-    {
-      "column": 2,
-      "loops": 2
-    },
-    {
-      "column": 3,
+      "column": 1,
       "color": 3,
       "loops": 2
     },
     {
-      "column": 3,
+      "column": 1,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 2,
+      "color": 5,
+      "loops": 5
+    },
+    {
+      "column": 2,
       "color": 1,
       "loops": 5
     },
     {
+      "column": 2,
+      "loops": 5
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 6
+    },
+    {
       "column": 3,
       "color": 1,
-      "loops": 8
+      "loops": 4
+    },
+    {
+      "column": 3,
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 10
     }
   ]
 }

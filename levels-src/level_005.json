@@ -1,8 +1,8 @@
 {
   "id": 5,
   "name": "Мордочка котика",
-  "tip": "Сложный уровень: на станке всего 3 слота",
-  "hard": true,
+  "tip": "",
+  "hard": false,
   "timeLimit": 0,
   "palette": [
     {
@@ -44,7 +44,7 @@
   "band": 2,
   "mystery": false,
   "gold": 0,
-  "slots": 3,
+  "slots": 4,
   "columns": 4,
   "spools": 9,
   "swaps": 4,
@@ -58,9 +58,9 @@
   "extra": 0,
   "junk": 1,
   "parSlack": 1,
-  "minWin": 0.3,
-  "maxWin": 0.6,
-  "maxRandom": 0.12,
+  "minWin": 0.5,
+  "maxWin": 0.75,
+  "maxRandom": 0.2,
   "maxForced": 1.0,
   "minDanger": 0.0,
   "maxDanger": 1.0,

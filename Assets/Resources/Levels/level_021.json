@@ -34,8 +34,8 @@
     "111100011111"
   ],
   "gold": [
-    18,
-    45,
+    30,
+    57,
     79
   ],
   "band": 3,
@@ -43,91 +43,89 @@
   "slots": 5,
   "spools": [
     {
-      "color": 1,
-      "loops": 5
+      "color": 5,
+      "loops": 2
     },
     {
       "color": 3,
-      "loops": 3,
+      "loops": 5
+    },
+    {
+      "color": 1,
+      "loops": 6,
       "hidden": true
     },
     {
+      "color": 1,
+      "loops": 1
+    },
+    {
       "column": 1,
-      "color": 5,
+      "color": 1,
+      "loops": 6
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 5,
+      "knots": 1
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 4
+    },
+    {
+      "column": 2,
+      "loops": 5,
+      "hidden": true
+    },
+    {
+      "column": 2,
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 2,
+      "color": 6,
       "loops": 1,
       "knots": 1
     },
     {
-      "column": 1,
-      "color": 5,
-      "loops": 1
-    },
-    {
-      "column": 1,
-      "color": 2,
-      "loops": 5,
-      "knots": 2
-    },
-    {
-      "column": 1,
-      "color": 6,
-      "loops": 1
-    },
-    {
-      "column": 2,
-      "color": 3,
-      "loops": 1
-    },
-    {
-      "column": 2,
-      "loops": 2
-    },
-    {
-      "column": 2,
-      "color": 3,
-      "loops": 2,
-      "hidden": true
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 8
-    },
-    {
       "column": 3,
-      "color": 4,
+      "color": 5,
       "loops": 3
     },
     {
       "column": 3,
-      "color": 1,
+      "color": 5,
       "loops": 2
     },
     {
       "column": 3,
-      "color": 5,
+      "color": 1,
       "loops": 6
     },
     {
-      "column": 3,
-      "color": 1,
-      "loops": 11
-    },
-    {
-      "column": 3,
-      "color": 5,
-      "loops": 2,
-      "hidden": true
-    },
-    {
       "column": 4,
-      "color": 3,
+      "color": 5,
       "loops": 4
     },
     {
       "column": 4,
-      "color": 4,
+      "color": 2,
       "loops": 1
+    },
+    {
+      "column": 4,
+      "color": 5,
+      "loops": 3
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 5,
+      "hidden": true
     }
   ]
 }

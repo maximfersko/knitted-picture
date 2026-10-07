@@ -55,7 +55,7 @@ namespace KnittedPicture.Core
             {
                 case BoosterType.Slot: return 5;
                 case BoosterType.Scissors: return 8;
-                case BoosterType.Time: return 10;
+                case BoosterType.Time: return 17;
                 case BoosterType.Undo: return 12;
                 default: return 1;
             }
@@ -68,18 +68,17 @@ namespace KnittedPicture.Core
 
 
         /// <summary>
-        /// Звёзды: 3 — чисто и в цель по тапам; минус звезда за бустеры и минус за перебор тапов;
-        /// 1 — со спасением после затора или моли.
+        /// Звёзды: 3 — без бустеров, 2 — с бустерами, 1 — со спасением после затора или моли.
+        /// Цели по тапам нет: на этом станке почти каждый тап — нужный клубок, цель не отличала хорошую игру от плохой.
         /// </summary>
-        public static int Stars(int boostersUsed, int rescues, bool overPar = false)
+        public static int Stars(int boostersUsed, int rescues)
         {
             if (rescues > 0)
             {
                 return 1;
             }
 
-            var stars = 3 - (boostersUsed > 0 ? 1 : 0) - (overPar ? 1 : 0);
-            return System.Math.Max(1, stars);
+            return boostersUsed > 0 ? 2 : 3;
         }
     }
 }

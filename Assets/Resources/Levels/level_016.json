@@ -1,7 +1,7 @@
 {
   "id": 16,
   "name": "Пончик",
-  "tip": "Новая коллекция «Вкусняшки»: картинки крупнее, чужой пряжи больше",
+  "tip": "Ледяной клубок оттает, когда станок свяжет петли его цвета",
   "width": 12,
   "height": 9,
   "colors": [
@@ -36,43 +36,43 @@
     "111000000111"
   ],
   "gold": [
-    3,
-    40,
-    63
+    17,
+    49,
+    92
   ],
   "band": 3,
-  "par": 21,
+  "par": 26,
   "slots": 5,
   "spools": [
     {
       "color": 1,
-      "loops": 4
+      "loops": 3
     },
     {
       "color": 1,
-      "loops": 6
+      "loops": 6,
+      "ice": 3
     },
     {
-      "color": 4,
+      "color": 3,
+      "loops": 5
+    },
+    {
+      "color": 5,
+      "loops": 1
+    },
+    {
+      "color": 1,
       "loops": 2
     },
     {
-      "color": 6,
-      "loops": 1
-    },
-    {
       "color": 3,
+      "loops": 2,
+      "ice": 12
+    },
+    {
+      "color": 4,
       "loops": 1
-    },
-    {
-      "color": 1,
-      "loops": 7,
-      "link": 1
-    },
-    {
-      "column": 1,
-      "color": 3,
-      "loops": 9
     },
     {
       "column": 1,
@@ -81,34 +81,32 @@
     },
     {
       "column": 1,
-      "color": 4,
-      "loops": 1,
-      "link": 1
-    },
-    {
-      "column": 1,
-      "color": 5,
-      "loops": 1
-    },
-    {
-      "column": 2,
-      "color": 1,
+      "color": 6,
       "loops": 2
     },
     {
-      "column": 2,
-      "color": 1,
+      "column": 1,
       "loops": 4
     },
     {
-      "column": 2,
+      "column": 1,
       "color": 1,
       "loops": 3
     },
     {
       "column": 2,
+      "color": 2,
+      "loops": 5
+    },
+    {
+      "column": 2,
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "column": 2,
       "color": 3,
-      "loops": 12
+      "loops": 7
     },
     {
       "column": 2,
@@ -116,18 +114,24 @@
       "loops": 2
     },
     {
-      "column": 3,
-      "color": 2,
-      "loops": 6
-    },
-    {
-      "column": 3,
-      "loops": 4
-    },
-    {
-      "column": 3,
-      "color": 5,
+      "column": 2,
+      "color": 6,
       "loops": 1
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 7
     },
     {
       "column": 3,
@@ -137,22 +141,27 @@
     {
       "column": 4,
       "color": 2,
-      "loops": 4
-    },
-    {
-      "column": 4,
-      "color": 6,
-      "loops": 2
-    },
-    {
-      "column": 4,
-      "color": 6,
-      "loops": 2
+      "loops": 5
     },
     {
       "column": 4,
       "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 2
+    },
+    {
+      "column": 4,
+      "color": 3,
       "loops": 1
+    },
+    {
+      "column": 4,
+      "color": 5,
+      "loops": 3
     }
   ]
 }

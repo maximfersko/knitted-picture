@@ -294,24 +294,15 @@ namespace KnittedPicture.Game
             // Разбор звёзд: каждая строка — условие и отметка, получено ли.
             Ui.Label(Card, "Как получить звёзды", 14, Palette.Ink, 24, Cursor, Inner - 40, 20, true, TextAnchor.MiddleLeft);
             Ui.InfoButton(Card, 24 + Inner - 13, Cursor + 10, "Повтор уровня",
-                $"Повтор даёт +{KnittedPicture.Core.Economy.ReplayReward} монет. Сохраняется лучший результат: звёзды и рекорд по тапам. " +
-                "Третья звезда засчитывается, если оба условия выполнены за одно прохождение.", 24);
+                $"Повтор даёт +{KnittedPicture.Core.Economy.ReplayReward} монет. Сохраняется лучший результат по звёздам. " +
+                "Три звезды: пройти без бустеров и без спасения за одно прохождение.", 24);
             Space(28f);
-            var third = level.par > 0 ? $"Без бустеров и не больше {level.par} тапов" : "Без бустеров";
+            const string third = "Без бустеров";
             StarRow(1, "Довязать картинку", stars >= 1);
             StarRow(2, "Без спасения после затора или моли", stars >= 2);
             StarRow(3, third, stars >= 3);
 
-            var best = progress.BestTaps(level.id);
-            if (level.par > 0 && best > 0)
-            {
-                var record = AddText(stars >= 3 ? $"Твой рекорд: {best} тапов, в цель!" : $"Твой рекорд: {best} тапов, цель: {level.par}", 13, 1);
-                record.color = stars >= 3 ? Palette.Primary : Palette.Ink2;
-            }
-            else
-            {
-                Space(6f);
-            }
+            Space(6f);
 
             AddPrimary(stars >= 3 ? "Перевязать" : "Перевязать на три звезды").OnClick(() => app.StartLevel(level.id));
             AddLink("Закрыть").OnClick(Close);

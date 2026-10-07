@@ -1,9 +1,8 @@
 {
   "id": 15,
   "name": "Сова",
-  "tip": "Финал: ледяной клубок оттает, когда станок свяжет петли его цвета",
+  "tip": "Финал коллекции: здесь встречается всё, что ты уже знаешь",
   "hard": true,
-  "timeLimit": 150,
   "width": 16,
   "height": 16,
   "colors": [
@@ -53,50 +52,31 @@
     "1111111111111111"
   ],
   "gold": [
-    100,
-    157,
-    196,
-    233
+    82,
+    115,
+    165,
+    199
   ],
-  "band": 2,
+  "band": 3,
   "par": 28,
-  "slots": 4,
+  "slots": 5,
   "spools": [
     {
-      "color": 7,
-      "loops": 5
-    },
-    {
-      "color": 4,
-      "loops": 4,
-      "hidden": true
-    },
-    {
-      "color": 1,
-      "loops": 6,
-      "hidden": true
-    },
-    {
-      "color": 3,
+      "color": 6,
       "loops": 2
     },
     {
-      "color": 1,
-      "loops": 24,
-      "ice": 12
+      "color": 2,
+      "loops": 14
     },
     {
-      "column": 1,
-      "loops": 5
+      "color": 5,
+      "loops": 10,
+      "knots": 1
     },
     {
-      "column": 1,
-      "color": 1,
-      "loops": 4
-    },
-    {
-      "column": 1,
-      "loops": 6
+      "color": 5,
+      "loops": 11
     },
     {
       "column": 1,
@@ -105,69 +85,80 @@
     },
     {
       "column": 1,
-      "loops": 3
+      "loops": 2
+    },
+    {
+      "column": 1,
+      "loops": 5,
+      "rainbow": true
     },
     {
       "column": 1,
       "color": 1,
-      "loops": 16
+      "loops": 12,
+      "thick": true
     },
     {
-      "column": 1,
+      "column": 2,
       "color": 1,
       "loops": 1
     },
     {
       "column": 2,
-      "color": 5,
-      "loops": 11,
-      "ice": 12
-    },
-    {
-      "column": 2,
-      "color": 5,
-      "loops": 3,
+      "color": 1,
+      "loops": 12,
       "knots": 2
     },
     {
       "column": 2,
-      "color": 4,
-      "loops": 4
-    },
-    {
-      "column": 2,
-      "color": 2,
+      "color": 1,
       "loops": 12
     },
     {
-      "column": 3,
-      "color": 6,
-      "loops": 7
-    },
-    {
-      "column": 3,
-      "loops": 5,
-      "rainbow": true
-    },
-    {
-      "column": 3,
-      "color": 5,
-      "loops": 15
-    },
-    {
-      "column": 3,
-      "color": 2,
+      "column": 2,
+      "color": 3,
       "loops": 2
     },
     {
-      "column": 3,
+      "column": 2,
       "color": 1,
       "loops": 4
     },
     {
-      "column": 4,
+      "column": 3,
       "color": 6,
-      "loops": 7
+      "loops": 12
+    },
+    {
+      "column": 3,
+      "loops": 3
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 10
+    },
+    {
+      "column": 3,
+      "color": 6,
+      "loops": 6,
+      "hidden": true
+    },
+    {
+      "column": 3,
+      "color": 6,
+      "loops": 6,
+      "hidden": true
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 8
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 2
     },
     {
       "column": 4,
@@ -177,14 +168,17 @@
     {
       "column": 4,
       "color": 1,
-      "loops": 14,
-      "knots": 1
+      "loops": 14
+    },
+    {
+      "column": 4,
+      "color": 4,
+      "loops": 4
     },
     {
       "column": 4,
       "color": 2,
-      "loops": 2,
-      "ice": 8
+      "loops": 2
     }
   ]
 }

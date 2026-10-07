@@ -54,11 +54,11 @@
   "extra": 3,
   "junk": 1,
   "parSlack": 1,
-  "minWin": 0.4,
-  "maxWin": 0.78,
-  "maxRandom": 0.08,
+  "minWin": 0.65,
+  "maxWin": 0.85,
+  "maxRandom": 0.3,
   "maxForced": 0.55,
-  "minDanger": 0.05,
+  "minDanger": 0.02,
   "maxDanger": 0.35,
   "seed": 461
 }

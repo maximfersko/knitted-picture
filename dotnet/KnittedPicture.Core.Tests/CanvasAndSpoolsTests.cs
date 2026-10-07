@@ -368,12 +368,12 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Stars_drop_for_boosters_and_for_going_over_par()
+        public void Stars_drop_for_boosters_and_for_rescues()
         {
-            Assert.Equal(3, Economy.Stars(0, 0, overPar: false));
-            Assert.Equal(2, Economy.Stars(0, 0, overPar: true));
-            Assert.Equal(1, Economy.Stars(1, 0, overPar: true));
-            Assert.Equal(1, Economy.Stars(0, 1, overPar: false));
+            Assert.Equal(3, Economy.Stars(0, 0));
+            Assert.Equal(2, Economy.Stars(1, 0));
+            Assert.Equal(1, Economy.Stars(0, 1));
+            Assert.Equal(1, Economy.Stars(2, 1));
         }
     }
 }

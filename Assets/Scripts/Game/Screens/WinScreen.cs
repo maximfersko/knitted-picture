@@ -10,7 +10,7 @@ namespace KnittedPicture.Game
     /// <summary>Как прошёл уровень: для строк награды и подсказки про третью звезду.</summary>
     public sealed class LevelStats
     {
-        public LevelStats(int rushCoins, int goldCoins, int goldCaught, int goldTotal, int taps, int par, int bestCombo, bool helped,
+        public LevelStats(int rushCoins, int goldCoins, int goldCaught, int goldTotal, int taps, int bestCombo, bool helped,
             int stitches, int rushes)
         {
             Stitches = stitches;
@@ -20,7 +20,6 @@ namespace KnittedPicture.Game
             GoldCaught = goldCaught;
             GoldTotal = goldTotal;
             Taps = taps;
-            Par = par;
             BestCombo = bestCombo;
             Helped = helped;
         }
@@ -35,9 +34,6 @@ namespace KnittedPicture.Game
 
         public int Taps { get; }
 
-        /// <summary>Цель по тапам, 0 — без цели.</summary>
-        public int Par { get; }
-
         public int BestCombo { get; }
 
         /// <summary>Сколько петель связано и сколько раз включался «Разгон» — для достижений.</summary>
@@ -47,8 +43,6 @@ namespace KnittedPicture.Game
 
         /// <summary>Были бустеры или спасение.</summary>
         public bool Helped { get; }
-
-        public bool OverPar => Par > 0 && Taps > Par;
     }
 
     /// <summary>Что нового открылось этой победой: достижение ждёт в коллекциях, сундук готов.</summary>
@@ -238,15 +232,10 @@ namespace KnittedPicture.Game
         {
             if (stars >= 3)
             {
-                return stats.Par > 0 ? $"Ровно в цель: {stats.Taps} из {stats.Par} тапов" : $"«{level.name}» теперь в альбоме";
+                return $"«{level.name}» теперь в альбоме";
             }
 
-            if (stats.OverPar)
-            {
-                return $"Третья звезда за {stats.Par} тапов (было {stats.Taps})";
-            }
-
-            return stats.Helped ? "Третья звезда: без бустеров и спасений" : $"«{level.name}» теперь в альбоме";
+            return stats.Helped ? "Третья звезда: пройти без бустеров и спасений" : $"«{level.name}» теперь в альбоме";
         }
 
         private void BuildStars(float y, int stars)

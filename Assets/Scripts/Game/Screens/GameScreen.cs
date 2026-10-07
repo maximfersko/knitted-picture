@@ -88,9 +88,7 @@ namespace KnittedPicture.Game
         private CanvasGroup _comboGroup = null!;
         private float _rushClock;
 
-        private Text? _tapsGoal;
         private Text? _goldGoal;
-        private bool _overParShown;
 
         private bool _foreignShown
         {
@@ -164,8 +162,6 @@ namespace KnittedPicture.Game
             _level = level;
             _game = game;
             _run = run;
-            _overParShown = OverPar;
-
             // Пряжа «в работе» меняет только награды, не правила: уровень остаётся честным.
             _goldPerLoop = Economy.GoldCoins + YarnCatalog.GoldBonus(app.Progress.PerkPower(YarnPerk.Gold));
             _colors = level.colors.Select(Palette.Hex).ToArray();
@@ -337,11 +333,11 @@ namespace KnittedPicture.Game
             RefreshTimer();
         }
 
-        private bool HasGoals => _game.Par > 0 || _level.gold.Length > 0;
+        private bool HasGoals => _level.gold.Length > 0;
 
         private float GoalsY => _game.TimeLimit > 0 ? 94f : 60f;
 
-        /// <summary>Цели уровня над картинкой: тапы на третью звезду и золотые петли.</summary>
+        /// <summary>Цель уровня над картинкой: золотые петли (одна плашка по центру).</summary>
         private void BuildGoals()
         {
             if (!HasGoals)
@@ -349,57 +345,19 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            var chips = new List<(Icon icon, Color tint, bool taps)>();
-            if (_game.Par > 0)
-            {
-                chips.Add((Icon.Hand, Palette.Ink, true));
-            }
+            const float chipW = 150f;
+            var chip = Ui.Card(Root, "GoldGoal", W / 2f - chipW / 2f, GoalsY, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f, true);
 
-            if (_level.gold.Length > 0)
-            {
-                chips.Add((Icon.Star, Palette.Coin, false));
-            }
-
-            const float chipW = 118f;
-            const float gap = 10f;
-            var x = W / 2f - (chips.Count * chipW + (chips.Count - 1) * gap) / 2f;
-            foreach (var (icon, tint, taps) in chips)
-            {
-                var chip = Ui.Card(Root, taps ? "TapsGoal" : "GoldGoal", x, GoalsY, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f, true);
-
-                // Тап по цели — короткая справка; игра на это время стоит.
-                var title = taps ? "Цель по тапам" : "Золотые петли";
-                var info = taps
-                    ? $"Уложись в {_game.Par} тапов без бустеров, и получишь третью звезду. Считаются тапы по клубкам и узелкам."
-                    : $"Петли в золотом кольце. Свяжи их, пока горит комбо (×2 и выше), и получишь +{_goldPerLoop} монет за каждую.";
-                chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, title, info)));
-                Ui.IconImage(chip, icon, tint, 18, 14, 18);
-                var label = Ui.Fit(Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft), 10);
-                if (taps)
-                {
-                    _tapsGoal = label;
-                }
-                else
-                {
-                    _goldGoal = label;
-                }
-
-                x += chipW + gap;
-            }
-
+            // Тап по цели — короткая справка; игра на это время стоит.
+            var info = $"Петли в золотом кольце. Свяжи их, пока горит комбо (кольца яркие), и получишь +{_goldPerLoop} монет за каждую.";
+            chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, "Золотые петли", info)));
+            Ui.IconImage(chip, Icon.Star, Palette.Coin, 18, 14, 18);
+            _goldGoal = Ui.Fit(Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft), 10);
             RefreshGoals();
         }
 
-        private bool OverPar => _game.Par > 0 && _game.Taps > _game.Par;
-
         private void RefreshGoals()
         {
-            if (_tapsGoal != null)
-            {
-                _tapsGoal.text = $"Тапы {_game.Taps}/{_game.Par}";
-                _tapsGoal.color = OverPar ? Palette.Danger : _game.Taps == _game.Par ? Palette.CoinShadow : Palette.Ink;
-            }
-
             if (_goldGoal != null)
             {
                 _goldGoal.text = $"Золото {_goldCaught}/{_level.gold.Length}";
@@ -1235,16 +1193,6 @@ namespace KnittedPicture.Game
             }
 
             RefreshGoals();
-            if (OverPar && !_overParShown)
-            {
-                _overParShown = true;
-                if (_tapsGoal != null)
-                {
-                    Tweens.Shake((RectTransform)_tapsGoal.transform.parent, 5f, 0.3f);
-                }
-
-                App.Toast("Цель по тапам упущена, третьей звезды не будет");
-            }
 
             if (result.Kind == MoveKind.KnotUntied)
             {
@@ -1425,8 +1373,8 @@ namespace KnittedPicture.Game
                 {
                     Tweens.Punch(_pictureCard, 0.06f, 0.4f);
                     Fx.Poof(_fx, Ui.WorldCenter(_pictureCard), Palette.Coin, _pictureCard.sizeDelta.x * 0.9f);
-                    var stars = Economy.Stars(_boostersUsed, _rescues, OverPar);
-                    var stats = new LevelStats(_tempo.RushCoins, _goldCoins, _goldCaught, _level.gold.Length, _game.Taps, _game.Par,
+                    var stars = Economy.Stars(_boostersUsed, _rescues);
+                    var stats = new LevelStats(_tempo.RushCoins, _goldCoins, _goldCaught, _level.gold.Length, _game.Taps,
                         _tempo.Best, _boostersUsed > 0 || _rescues > 0, _game.TotalStitches, _tempo.RushCount);
                     Tweens.Delay(Root, 0.45f, () =>
                     {
@@ -1632,7 +1580,6 @@ namespace KnittedPicture.Game
                         App.Save();
                         _game.Undo();
                         _tempo.Break();
-                        _overParShown = OverPar;
                         _finishedColors.Clear();
                         RestoreUndoneGold();
                         Sfx.Play(Sound.Pick);
@@ -1827,7 +1774,7 @@ namespace KnittedPicture.Game
 
         /// <summary>
         /// Подсказка уровня — лёгкая выноска рядом с тем, о чём она: над особым клубком на поле
-        /// (с «?», узелком, замком, льдом…), под целью по тапам или золотом, над картинкой.
+        /// (с «?», узелком, замком, льдом…), под целью по золоту, над картинкой.
         /// Белая, небольшая, со стрелкой; не перехватывает тапы, исчезает сама или с первым ходом.
         /// Вернуть её можно тапом по плашке уровня.
         /// </summary>
@@ -1946,7 +1893,7 @@ namespace KnittedPicture.Game
 
         /// <summary>
         /// К чему относится подсказка: по словам в ней ищем особый клубок на видимой части поля,
-        /// цель по тапам или золоту, картинку. below — выноска под целью (цели наверху), иначе над ней.
+        /// цель по золоту, картинку. below — выноска под целью (цели наверху), иначе над ней.
         /// null — общий совет, выноска ложится на пустой станок.
         /// </summary>
         private (RectTransform? target, bool below) TipTarget(string tip)
@@ -2004,11 +1951,6 @@ namespace KnittedPicture.Game
             if (tip.Contains("золот") && _goldGoal != null)
             {
                 return ((RectTransform)_goldGoal.transform.parent, true);
-            }
-
-            if (tip.Contains("тапам") && _tapsGoal != null)
-            {
-                return ((RectTransform)_tapsGoal.transform.parent, true);
             }
 
             if (tip.Contains("фронт"))

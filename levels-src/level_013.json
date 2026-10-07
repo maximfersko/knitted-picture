@@ -48,7 +48,7 @@
   ],
   "fabric": "i",
   "band": 2,
-  "mystery": true,
+  "mystery": false,
   "gold": 3,
   "slots": 4,
   "columns": 5,

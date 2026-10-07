@@ -42,7 +42,7 @@ namespace KnittedPicture.Game
             "Ставь клубок, пока станок вяжет, и комбо растёт. На ×5 включается Разгон: станок вяжет вдвое быстрее",
             "Тапни любой клубок и узнай, как он работает",
             "Тапни бустер и посмотри, что он делает. Бустеры дают в подарках, сундуках и за монеты",
-            "Три звезды: без бустеров и в цель по тапам. Звёзды копят сундук, а новые картинки дарят пряжу",
+            "Три звезды: без бустеров и спасений. Звёзды копят сундук, а новые картинки дарят пряжу",
         };
 
         /// <summary>Сцены, где игрок сам тапает элементы: тап по пустому месту сцены их не листает.</summary>
@@ -851,7 +851,7 @@ namespace KnittedPicture.Game
             {
                 (1, "Довязать картинку"),
                 (2, "Без спасения после затора"),
-                (3, "Без бустеров и в цель по тапам"),
+                (3, "Без бустеров"),
             };
             const float rowH = 40f;
             var y = 20f;
@@ -892,12 +892,12 @@ namespace KnittedPicture.Game
             }
 
             y += 3 * (rowH + 6f) + 12f;
-            var chips = new[] { (Icon.Hand, Palette.Ink, "Тапы 12/14"), (Icon.Star, Palette.Coin, "Золото 2/3") };
-            const float chipW = 124f;
+            var chips = new[] { (Icon.Star, Palette.Coin, "Золото 2/3") };
+            const float chipW = 150f;
             for (var i = 0; i < chips.Length; i++)
             {
                 var (icon, tint, label) = chips[i];
-                var chip = Ui.Card(scene, "Goal", _sw / 2f - chipW - 5f + i * (chipW + 10f), y, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f);
+                var chip = Ui.Card(scene, "Goal", _sw / 2f - chipW / 2f, y, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f);
                 Ui.IconImage(chip, icon, tint, 18, 14, 18);
                 Ui.Label(chip, label, 13, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft);
                 chip.localScale = Vector3.zero;
