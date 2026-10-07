@@ -49,7 +49,7 @@ namespace KnittedPicture.Core
 
         /// <summary>
         /// Собрать сундук номер chestNumber (с нуля). Мотки тянутся по тем же весам, что и везде:
-        /// редкие реже, ненайденные втрое чаще. В большом — хотя бы один редкий или эпический.
+        /// редкие реже, ненайденные в полтора раза чаще. В большом — хотя бы один редкий или эпический.
         /// </summary>
         public static ChestContents Roll(int chestNumber, int level, System.Func<int, bool> hasYarn)
         {
@@ -91,7 +91,7 @@ namespace KnittedPicture.Core
                         continue;
                     }
 
-                    weights[i] = YarnCatalog.Weight(rarity) * (hasYarn(i) ? 1 : 3);
+                    weights[i] = YarnCatalog.RollWeight(rarity, hasYarn(i));
                     total += weights[i];
                 }
 

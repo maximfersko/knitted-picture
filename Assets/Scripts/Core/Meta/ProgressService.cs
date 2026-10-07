@@ -389,16 +389,29 @@ namespace KnittedPicture.Core
             return _data.yarns[yarn] == 1;
         }
 
-        /// <summary>Случайный моток: редкие выпадают реже, недостающие — втрое чаще.</summary>
+        /// <summary>
+        /// Случайный моток: редкие выпадают реже, ненайденные в полтора раза чаще. Если двенадцать мотков
+        /// подряд не было эпического, следующий — эпический (защита от невезения).
+        /// </summary>
         public int RollYarn(System.Random rng)
         {
+            var epicOnly = _data.yarnsSinceEpic >= YarnCatalog.EpicPity;
             var total = 0;
             var weights = new int[YarnCatalog.Count];
             for (var i = 0; i < weights.Length; i++)
             {
-                weights[i] = YarnCatalog.Weight(YarnCatalog.All[i].Rarity) * (HasYarn(i) ? 1 : 3);
+                var rarity = YarnCatalog.All[i].Rarity;
+                weights[i] = epicOnly && rarity != Rarity.Epic ? 0 : YarnCatalog.RollWeight(rarity, HasYarn(i));
                 total += weights[i];
             }
+
+            var pick = PickWeighted(weights, total, rng);
+            _data.yarnsSinceEpic = YarnCatalog.All[pick].Rarity == Rarity.Epic ? 0 : _data.yarnsSinceEpic + 1;
+            return pick;
+        }
+
+        private static int PickWeighted(int[] weights, int total, System.Random rng)
+        {
 
             var roll = rng.Next(total);
             for (var i = 0; i < weights.Length; i++)
@@ -740,11 +753,25 @@ namespace KnittedPicture.Core
                 _data.streak++;
             }
 
-            // За новую картинку — моток в корзинку.
+            // За новую картинку — моток с шансом: первые картинки и сложные уровни всегда, остальные
+            // 35%, а после каждой пустой победы шанс растёт; четвёртая подряд — наверняка.
             var yarn = new Granted(default, false, 0);
+            var dropped = false;
+            var nextChance = 0;
             if (firstTime)
             {
-                yarn = Grant(new Reward(0, null, 0, DailyGift.RandomYarn), new System.Random(levelId * 97 + _data.totalWins));
+                var rng = new System.Random(levelId * 97 + _data.totalWins);
+                if (rng.Next(100) < YarnCatalog.DropChance(levelId, hard, _data.yarnDry))
+                {
+                    yarn = Grant(new Reward(0, null, 0, DailyGift.RandomYarn), rng);
+                    dropped = true;
+                    _data.yarnDry = 0;
+                }
+                else
+                {
+                    _data.yarnDry++;
+                    nextChance = YarnCatalog.DropChance(levelId + 1, false, _data.yarnDry);
+                }
             }
 
             var reward = new WinReward(
@@ -753,10 +780,11 @@ namespace KnittedPicture.Core
                 _data.streak,
                 stars,
                 stars > previousStars && !firstTime,
-                firstTime ? yarn.Reward.Yarn : -1,
+                dropped ? yarn.Reward.Yarn : -1,
                 yarn.NewYarn,
                 yarn.DuplicateCoins,
-                firstTime ? YarnCatalog.CoinsBonus(PerkPower(YarnPerk.Coins)) : 0);
+                firstTime ? YarnCatalog.CoinsBonus(PerkPower(YarnPerk.Coins)) : 0,
+                nextChance);
             _data.coins += reward.BaseCoins + reward.ComboCoins + reward.PerkCoins;
             _data.totalWins++;
             _data.winsSinceInterstitial++;
@@ -780,8 +808,9 @@ namespace KnittedPicture.Core
     public readonly struct WinReward
     {
         public WinReward(int baseCoins, int comboCoins, int streak, int stars, bool newRecord,
-            int yarn = -1, bool newYarn = false, int yarnCoins = 0, int perkCoins = 0)
+            int yarn = -1, bool newYarn = false, int yarnCoins = 0, int perkCoins = 0, int nextYarnChance = 0)
         {
+            NextYarnChance = nextYarnChance;
             PerkCoins = perkCoins;
             Yarn = yarn;
             NewYarn = newYarn;
@@ -809,6 +838,9 @@ namespace KnittedPicture.Core
         public int Yarn { get; }
 
         public bool NewYarn { get; }
+
+        /// <summary>Моток в этот раз не выпал: шанс на следующей новой картинке, в процентах (0 — неприменимо).</summary>
+        public int NextYarnChance { get; }
 
         /// <summary>Монеты за повторный моток (уже начислены вместе с ним).</summary>
         public int YarnCoins { get; }

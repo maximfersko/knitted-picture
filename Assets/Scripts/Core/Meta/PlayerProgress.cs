@@ -68,6 +68,12 @@ namespace KnittedPicture.Core
 
         public int chestsOpened;
 
+        /// <summary>Новых картинок подряд без мотка: с каждой шанс растёт, на четвёртой моток гарантирован.</summary>
+        public int yarnDry;
+
+        /// <summary>Случайных мотков подряд без эпического: на двенадцатом эпический гарантирован.</summary>
+        public int yarnsSinceEpic;
+
         /// <summary>Моток «в работе»: его бонус действует в уровнях. -1 — ещё нет.</summary>
         public int activeYarn = -1;
         public List<int> achievementsClaimed = new List<int>();

@@ -24,6 +24,55 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Yarn_chance_grows_after_empty_wins_and_is_sure_on_the_fourth()
+        {
+            Assert.Equal(100, YarnCatalog.DropChance(1, false, 0));
+            Assert.Equal(100, YarnCatalog.DropChance(YarnCatalog.SureFirstLevels, false, 0));
+            Assert.Equal(100, YarnCatalog.DropChance(10, hard: true, 0));
+            Assert.Equal(35, YarnCatalog.DropChance(4, false, 0));
+            Assert.Equal(50, YarnCatalog.DropChance(4, false, 1));
+            Assert.Equal(65, YarnCatalog.DropChance(4, false, 2));
+            Assert.Equal(100, YarnCatalog.DropChance(4, false, 3));
+        }
+
+        [Fact]
+        public void New_pictures_never_go_four_in_a_row_without_yarn_and_the_win_tells_the_next_chance()
+        {
+            var progress = new ProgressService(new PlayerProgress(), levelCount: 60);
+            var dry = 0;
+            var drops = 0;
+            for (var level = 1; level <= 60; level++)
+            {
+                var reward = progress.CompleteLevel(level, hard: level % 5 == 0);
+                if (reward.Yarn >= 0)
+                {
+                    dry = 0;
+                    drops++;
+                    Assert.Equal(0, reward.NextYarnChance);
+                }
+                else
+                {
+                    dry++;
+                    Assert.True(dry < YarnCatalog.DropPity);
+                    Assert.InRange(reward.NextYarnChance, YarnCatalog.DropBasePercent + 1, 100);
+                }
+            }
+
+            // Мотков заметно меньше, чем картинок, но не единицы.
+            Assert.InRange(drops, 25, 50);
+        }
+
+        [Fact]
+        public void Twelve_yarns_without_an_epic_make_the_next_one_epic()
+        {
+            var progress = Fresh();
+            progress.Data.yarnsSinceEpic = YarnCatalog.EpicPity;
+            var yarn = progress.RollYarn(new Random(3));
+            Assert.Equal(Rarity.Epic, YarnCatalog.All[yarn].Rarity);
+            Assert.Equal(0, progress.Data.yarnsSinceEpic);
+        }
+
+        [Fact]
         public void Duplicate_yarn_levels_up_first_and_turns_into_coins_at_max_level()
         {
             var progress = Fresh();

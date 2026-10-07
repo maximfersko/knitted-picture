@@ -333,12 +333,27 @@ namespace KnittedPicture.Game
         private const float TileH = 62f;
         private const float TileGap = 10f;
 
-        /// <summary>Под монетами — две плитки рядом: моток (новый, новый уровень или повтор) и прогресс сундука.</summary>
+        /// <summary>Под монетами — две плитки рядом: моток (новый, новый уровень, повтор или «не выпал, шанс растёт») и прогресс сундука.</summary>
         private void BuildTiles(WinReward reward, float y)
         {
             var hasYarn = reward.Yarn >= 0;
-            var tileW = hasYarn ? (W - 32f - TileGap) / 2f : W - 32f;
+            var missed = !hasYarn && reward.NextYarnChance > 0;
+            var tileW = hasYarn || missed ? (W - 32f - TileGap) / 2f : W - 32f;
             var x = 16f;
+            if (missed)
+            {
+                // Моток не выпал: честно показать, что шанс растёт (на четвёртой картинке подряд — наверняка).
+                var tile = Ui.Card(Root, "YarnTile", x, y, tileW, TileH, 18, Palette.Surface, Palette.CardShadow, 3f);
+                var ball = Ui.Image(tile, "Ball", Art.YarnBall, Palette.Track);
+                Ui.PlaceCenter(ball.rectTransform, 30, TileH / 2f, 34, 34);
+                Ui.Label(tile, "?", 16, Palette.Ink3, 13, TileH / 2f - 17f, 34, 34);
+                Ui.Fit(Ui.Label(tile, reward.NextYarnChance >= 100 ? "Моток в следующий раз" : "Моток не выпал", 12, Palette.Ink2,
+                    54, 10, tileW - 62, 18, true, TextAnchor.MiddleLeft), 9);
+                Ui.Fit(Ui.Label(tile, reward.NextYarnChance >= 100 ? "наверняка" : $"дальше шанс {reward.NextYarnChance}%", 15, Palette.Ink,
+                    54, 28, tileW - 62, 22, true, TextAnchor.MiddleLeft), 10);
+                x += tileW + TileGap;
+            }
+
             if (hasYarn)
             {
                 var yarn = YarnCatalog.All[reward.Yarn];

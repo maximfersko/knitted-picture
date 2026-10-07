@@ -141,7 +141,40 @@ namespace KnittedPicture.Core
         }
 
         /// <summary>Вес выпадения: обычная — часто, эпическая — редко.</summary>
-        public static int Weight(Rarity rarity) => rarity == Rarity.Common ? 6 : rarity == Rarity.Rare ? 3 : 1;
+        /// <summary>Вес при розыгрыше: обычная 10, редкая 4, эпическая 1 (эпическая — около 5% розыгрышей).</summary>
+        public static int Weight(Rarity rarity) => rarity == Rarity.Common ? 10 : rarity == Rarity.Rare ? 4 : 1;
+
+        /// <summary>
+        /// Вес мотка с учётом того, есть ли он уже: ненайденные в полтора раза чаще (×3 против ×2).
+        /// Мягкая защита от повторов: корзинка собирается, но не за пару вечеров.
+        /// </summary>
+        public static int RollWeight(Rarity rarity, bool owned) => Weight(rarity) * (owned ? 2 : 3);
+
+        // ---------- Шансы мотка за новую картинку ----------
+
+        /// <summary>Первые картинки всегда с мотком: игрок знакомится с корзинкой.</summary>
+        public const int SureFirstLevels = 3;
+
+        /// <summary>Шанс мотка за новую картинку после пустой победы растёт: 35%, 50%, 65%, а четвёртая — наверняка.</summary>
+        public const int DropBasePercent = 35;
+
+        public const int DropStepPercent = 15;
+
+        public const int DropPity = 4;
+
+        /// <summary>Двенадцать случайных мотков без эпического — следующий эпический.</summary>
+        public const int EpicPity = 12;
+
+        /// <summary>Шанс мотка за новую картинку, в процентах. Сложный уровень и первые картинки — всегда.</summary>
+        public static int DropChance(int levelId, bool hard, int dry)
+        {
+            if (hard || levelId <= SureFirstLevels || dry + 1 >= DropPity)
+            {
+                return 100;
+            }
+
+            return System.Math.Min(100, DropBasePercent + DropStepPercent * dry);
+        }
 
         public static string RarityName(Rarity rarity) => rarity == Rarity.Common ? "обычная" : rarity == Rarity.Rare ? "редкая" : "эпическая";
 
