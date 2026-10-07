@@ -25,6 +25,9 @@ namespace KnittedPicture.Game
         private readonly Image _thickRing;
         private readonly RectTransform _ice;
         private readonly Text _iceText;
+        private readonly Image _iceDot;
+        private readonly Image _fabric;
+        private readonly RectTransform _double;
         private readonly RectTransform _surplus;
         private readonly RectTransform _foreign;
         private readonly CanvasGroup _group;
@@ -45,6 +48,10 @@ namespace KnittedPicture.Game
             _ball = Ui.Image(root, "Ball", Art.YarnBall, Color.white, true);
             Ui.PlaceCenter(_ball.rectTransform, size / 2f, size / 2f, size, size);
 
+            // Чужая пряжа цвета ткани: поверх клубка узор полотна.
+            _fabric = Ui.Image(root, "Fabric", Art.FabricOverlay, Color.white);
+            Ui.PlaceCenter(_fabric.rectTransform, size / 2f, size / 2f, size, size);
+
             _question = Ui.Label(root, "?", size * 0.5f, Palette.Ink, 0, 0, size, size);
 
             _lock = Ui.PlaceCenter(Ui.Node(root, "Lock"), size / 2f, size / 2f, size * 0.62f, size * 0.62f);
@@ -59,6 +66,13 @@ namespace KnittedPicture.Game
             Ui.Stretch(frost.rectTransform);
             Ui.IconImage(_ice, Icon.Snowflake, Palette.Hex("#3D8FD1"), size * 0.52f, size * 0.36f, size * 0.42f);
             _iceText = Ui.Label(_ice, "", size * 0.3f, Palette.Hex("#1F5F96"), 0, size * 0.56f, size * 1.04f, size * 0.4f);
+
+            // Цвет клубка подо льдом: точка в углу, чтобы было видно, петли какого цвета его растопят.
+            var dot = size * 0.3f;
+            var dotRing = Ui.Image(_ice, "DotRing", Art.Circle, Color.white);
+            Ui.PlaceCenter(dotRing.rectTransform, size * 0.86f, size * 0.18f, dot + 4f, dot + 4f);
+            _iceDot = Ui.Image(_ice, "Dot", Art.Circle, Color.white);
+            Ui.PlaceCenter(_iceDot.rectTransform, size * 0.86f, size * 0.18f, dot, dot);
 
             var badgeH = Mathf.Round(size * 0.42f);
             _badge = Ui.Place(Ui.Node(root, "Badge"), size - badgeH * 0.95f, size - badgeH * 0.75f, badgeH * 1.15f, badgeH);
@@ -78,6 +92,12 @@ namespace KnittedPicture.Game
             _surplus = Ui.Place(Ui.Node(root, "Surplus"), -badgeH * 0.2f, size - badgeH * 0.8f, badgeH, badgeH);
             Ui.Stretch(Ui.Image(_surplus, "Back", Art.Circle, Palette.Primary).rectTransform);
             Ui.IconImage(_surplus, Icon.Check, Color.white, badgeH / 2f, badgeH / 2f, badgeH * 0.7f);
+
+            // Толстый клубок займёт два места: метка «×2» слева внизу.
+            _double = Ui.Place(Ui.Node(root, "Double"), -badgeH * 0.3f, size - badgeH * 0.8f, badgeH * 1.25f, badgeH);
+            Ui.Stretch(Ui.Box(_double, "Back", badgeH / 2f, Palette.Ink).rectTransform);
+            var twice = Ui.Label(_double, "×2", badgeH * 0.55f, Color.white);
+            Ui.Stretch(twice.rectTransform);
 
             _foreign = Ui.Place(Ui.Node(root, "Foreign"), -badgeH * 0.2f, size - badgeH * 0.8f, badgeH, badgeH);
             Ui.Stretch(Ui.Image(_foreign, "Back", Art.Circle, Palette.Danger).rectTransform);
@@ -112,8 +132,11 @@ namespace KnittedPicture.Game
             _thickRing.color = visible && !spool.Rainbow ? Color.Lerp(color, Palette.Ink, 0.25f) : Palette.Ink3;
 
             SetIce(spool.Ice);
+            _iceDot.color = visible ? color : Palette.Hidden;
             _surplus.gameObject.SetActive(surplus && visible);
             _foreign.gameObject.SetActive(foreign);
+            _fabric.gameObject.SetActive(false);
+            _double.gameObject.SetActive(spool.Thick && !surplus && !foreign);
 
             // Число петель — только у тех, кого можно взять сейчас: задние ряды без цифр, меньше шума.
             _badge.gameObject.SetActive(visible && front);
@@ -137,6 +160,18 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Клубок на станке ждёт: его цвета сейчас нет на фронте (или фронт держит натяжение). Бледнее, чтобы было видно, что он не вяжет.</summary>
+        /// <summary>Чужая пряжа на поле: узор ткани поверх клубка (сам крестик — только на станке).</summary>
+        public void SetFabric(bool fabric)
+        {
+            _fabric.gameObject.SetActive(fabric);
+        }
+
+        /// <summary>Метку «×2» на станке не показываем: там толстый клубок и так стоит на двух местах.</summary>
+        public void HideDouble()
+        {
+            _double.gameObject.SetActive(false);
+        }
+
         public void SetWaiting(bool waiting)
         {
             _group.alpha = waiting ? 0.5f : 1f;
@@ -157,6 +192,8 @@ namespace KnittedPicture.Game
             _ice.gameObject.SetActive(false);
             _surplus.gameObject.SetActive(false);
             _foreign.gameObject.SetActive(false);
+            _fabric.gameObject.SetActive(false);
+            _double.gameObject.SetActive(false);
         }
     }
 }

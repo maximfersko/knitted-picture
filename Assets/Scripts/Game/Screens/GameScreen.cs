@@ -263,6 +263,7 @@ namespace KnittedPicture.Game
 
             UpdateLoomAlert(dt);
             UpdateCombo(dt);
+            _picture.SetGoldLive(_tempo.Active);
 
             if (!_game.IsBusy && _hint == null && _game.Status == GameStatus.Playing && _hintFailedAt != _game.Taps)
             {
@@ -690,6 +691,8 @@ namespace KnittedPicture.Game
                     var created = SpoolView.Create(_slotFrames[i], size);
                     Ui.PlaceCenter(created.Root, SpoolX(i), 29f, size, size);
                     created.Bind(spool, _colors[spool.Color], true, false, _game.IsForeign(spool));
+                    created.SetFabric(_game.IsForeign(spool));
+                    created.HideDouble();
                     _slotViews[i] = new SlotSpool(created, spool.Id, spool.Rainbow ? -1 : spool.Color);
                     if (_game.IsForeign(spool) && !_foreignShown)
                     {
@@ -789,6 +792,7 @@ namespace KnittedPicture.Game
                     var (x, y) = FieldPosition(c, d);
                     Ui.PlaceCenter(view.Root, x, y, _spoolSize, _spoolSize);
                     view.Bind(spool, _colors[spool.Color], d == 0 || _scissors, _game.IsSurplus(spool));
+                    view.SetFabric(spool.IsColorVisible && _game.IsForeign(spool));
                     var tap = view.Tap;
                     tap.ClickSound = false;
                     var columnIndex = c;
@@ -812,6 +816,76 @@ namespace KnittedPicture.Game
                     var more = Ui.Box(_fieldContent, "More", 7, Palette.Surface).rectTransform;
                     Ui.PlaceCenter(more, x, rowY + DepthRow / 2f - 2f, 34, 15);
                     Ui.Label(more, "+" + (column.Count - VisibleRows), 11, Palette.Ink2, 0, 0, 34, 15);
+                }
+            }
+
+            DrawLinkThreads();
+        }
+
+        /// <summary>
+        /// Связанные клубки на поле соединены тонкой нитью (под клубками): видно, кто с кем в паре,
+        /// даже когда пар несколько.
+        /// </summary>
+        private void DrawLinkThreads()
+        {
+            var pairs = new Dictionary<int, List<FieldSpool>>();
+            foreach (var f in _field)
+            {
+                var column = _game.Column(f.Column);
+                if (f.Depth >= column.Count || column[f.Depth].Id != f.SpoolId || column[f.Depth].Link == 0)
+                {
+                    continue;
+                }
+
+                var link = column[f.Depth].Link;
+                if (!pairs.TryGetValue(link, out var list))
+                {
+                    list = new List<FieldSpool>();
+                    pairs[link] = list;
+                }
+
+                list.Add(f);
+            }
+
+            foreach (var list in pairs.Values)
+            {
+                if (list.Count != 2)
+                {
+                    continue;
+                }
+
+                var (ax, ay) = FieldPosition(list[0].Column, list[0].Depth);
+                var (bx, by) = FieldPosition(list[1].Column, list[1].Depth);
+                var dx = bx - ax;
+                var dy = by - ay;
+                var length = Mathf.Sqrt(dx * dx + dy * dy);
+                var thread = Ui.Box(_fieldContent, "LinkThread", 1.5f, Palette.WithAlpha(Palette.Link, 0.55f)).rectTransform;
+                Ui.PlaceCenter(thread, (ax + bx) / 2f, (ay + by) / 2f, length, 3f);
+
+                // Координаты поля идут сверху вниз, поэтому угол со знаком минус.
+                thread.localRotation = Quaternion.Euler(0f, 0f, -Mathf.Atan2(dy, dx) * Mathf.Rad2Deg);
+                thread.SetAsFirstSibling();
+            }
+        }
+
+        /// <summary>Отказ связанному клубку: подсветить его пару, которую надо освободить первой.</summary>
+        private void PunchLinkPartner(int column, int depth)
+        {
+            var col = _game.Column(column);
+            if (depth >= col.Count || col[depth].Link == 0)
+            {
+                return;
+            }
+
+            var spool = col[depth];
+            foreach (var f in _field)
+            {
+                var other = _game.Column(f.Column);
+                if (f.Depth < other.Count && other[f.Depth].Id == f.SpoolId && other[f.Depth].Id != spool.Id && other[f.Depth].Link == spool.Link)
+                {
+                    Tweens.Punch(f.View.Root, 0.25f, 0.35f);
+                    Fx.Sparkle(_fx, Ui.WorldCenter(f.View.Root), Palette.Link, 8, 30f);
+                    return;
                 }
             }
         }
@@ -1299,7 +1373,8 @@ namespace KnittedPicture.Game
                     App.Toast("Под замком: сначала поставь на станок клубок с ключом");
                     break;
                 case RejectReason.LinkNotReady:
-                    App.Toast("Связанный клубок ещё не впереди своей колонки");
+                    App.Toast("Его пара ещё не впереди своей колонки: сначала освободи её");
+                    PunchLinkPartner(column, depth);
                     break;
                 case RejectReason.Frozen:
                     var ice = _game.Column(column)[0].Ice;

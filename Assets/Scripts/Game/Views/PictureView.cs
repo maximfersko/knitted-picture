@@ -30,6 +30,9 @@ namespace KnittedPicture.Game
         private readonly Image[] _cells;
         private readonly HashSet<int> _pending = new HashSet<int>();
         private readonly Dictionary<int, Image> _gold = new Dictionary<int, Image>();
+
+        /// <summary>Золото ловится только во время комбо: тогда кольца яркие и пульсируют, иначе тусклые.</summary>
+        private bool _goldLive = true;
         private readonly float _cell;
         private readonly float _step;
 
@@ -281,12 +284,29 @@ namespace KnittedPicture.Game
 
         private void AddGoldRing(int x, int y)
         {
-            var ring = Ui.Image(Root, "Gold", Art.Ring, Palette.Coin);
+            var ring = Ui.Image(Root, "Gold", Art.Ring, GoldColor(_goldLive));
             Ui.PlaceCenter(ring.rectTransform, x * _step + _cell / 2f, y * _step + _cell / 2f, _cell * 0.9f, _cell * 0.9f);
             var rt = ring.rectTransform;
-            Tweens.Run(rt, 1.2f, t => rt.localScale = Vector3.one * (1f + 0.12f * Ease.Bump(t)), null, null, (x + y) * 0.07f, true);
+            Tweens.Run(rt, 1.2f, t => rt.localScale = Vector3.one * (_goldLive ? 1f + 0.14f * Ease.Bump(t) : 0.92f), null, null, (x + y) * 0.07f, true);
             _gold[Key(x, y)] = ring;
         }
+
+        /// <summary>Комбо включилось или сгорело: золотые кольца загораются или тускнеют.</summary>
+        public void SetGoldLive(bool live)
+        {
+            if (_goldLive == live)
+            {
+                return;
+            }
+
+            _goldLive = live;
+            foreach (var ring in _gold.Values)
+            {
+                ring.color = GoldColor(live);
+            }
+        }
+
+        private static Color GoldColor(bool live) => live ? Palette.Coin : Palette.WithAlpha(Palette.CoinShadow, 0.4f);
 
         /// <summary>Петля связана в модели, нитка летит — клетка пока «в пути».</summary>
         public void MarkPending(int x, int y)

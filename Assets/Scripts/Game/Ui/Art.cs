@@ -64,6 +64,12 @@ namespace KnittedPicture.Game
         /// <summary>Клубок: шар, намотанный нитью, с перевязью наискосок и кончиком нити. Красится цветом пряжи.</summary>
         public static Sprite YarnBall => Cached("yarn", () => BuildYarnBall(false));
 
+        /// <summary>
+        /// Узор ткани поверх клубка (белые «галочки» вязки в круге клубка): так выглядит чужая пряжа
+        /// цвета ткани — тот же узор, что у готовой ткани на картинке.
+        /// </summary>
+        public static Sprite FabricOverlay => Cached("fabricOverlay", BuildFabricOverlay);
+
         /// <summary>Радужный клубок: витки разных цветов, красится белым.</summary>
         public static Sprite RainbowBall => Cached("rainbow", () => BuildYarnBall(true));
 
@@ -382,6 +388,40 @@ namespace KnittedPicture.Game
             }
 
             return best;
+        }
+
+        private static Sprite BuildFabricOverlay()
+        {
+            const int size = 192;
+            const float c = size / 2f;
+            const float radius = c - 8f;
+            const float tile = 30f;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[size * size];
+            for (var py = 0; py < size; py++)
+            {
+                for (var px = 0; px < size; px++)
+                {
+                    var x = px + 0.5f;
+                    var y = size - py - 0.5f;
+                    var d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c));
+                    var inside = Mathf.Clamp01(radius - 3f - d + 0.5f);
+
+                    // Ряды «галочек» со сдвигом через ряд, как петли на полотне.
+                    var row = Mathf.Floor(y / tile);
+                    var shift = row % 2 == 0 ? 0f : tile / 2f;
+                    var tx = Mathf.Repeat(x + shift, tile);
+                    var ty = y - row * tile;
+                    var left = DistanceToSegment(tx, ty, 6f, 7f, tile / 2f, tile - 6f);
+                    var right = DistanceToSegment(tx, ty, tile - 6f, 7f, tile / 2f, tile - 6f);
+                    var line = Mathf.Clamp01(3.2f - Mathf.Min(left, right) + 0.5f);
+                    pixels[py * size + px] = new Color32(255, 255, 255, (byte)(line * inside * 0.7f * 255));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
         private static Sprite BuildRays(int size, int count)
