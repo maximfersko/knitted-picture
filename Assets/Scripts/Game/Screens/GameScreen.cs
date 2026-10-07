@@ -153,6 +153,9 @@ namespace KnittedPicture.Game
         private RectTransform? _hint;
         private RectTransform? _hintHand;
         private RectTransform? _tip;
+
+        /// <summary>Подсказку не гасить от тапа (объяснение правила посреди игры), только по таймеру.</summary>
+        private bool _tipKeep;
         private RectTransform? _scissorsBanner;
 
         public GameScreen(App app, LevelData level, LoomGame game, LevelRun run)
@@ -947,6 +950,7 @@ namespace KnittedPicture.Game
             {
                 // Натяжение: сдвинулся нижний фронт — у других столбцов могли включиться фронты.
                 _picture.RefreshColumns();
+                MaybeTensionTip();
             }
             else
             {
@@ -1121,7 +1125,11 @@ namespace KnittedPicture.Game
             }
 
             _idle = 0;
-            HideTip();
+            if (!_tipKeep)
+            {
+                HideTip();
+            }
+
             HideHint();
             // Без ножниц работает только передний клубок. Тап по клубку из глубины раньше отправлял
             // передний — неожиданный ход, лишний тап к цели и, бывает, затор. Теперь — только подсказка.
@@ -1413,7 +1421,9 @@ namespace KnittedPicture.Game
                 else if (_game.ScissorsWouldHelp && App.Progress.IsBoosterOpen(BoosterType.Scissors, BoosterLevel))
                 {
                     rescue = BoosterType.Scissors;
-                    reason = "Станок занят, а картинка ждёт другой цвет. Ножницы срежут лишний клубок со станка или достанут нужный с поля";
+                    reason = _picture.TensionHolding
+                        ? "Столбики выше пунктира ждут нижний ряд, а его цвета на станке нет. Ножницы срежут лишний клубок со станка или достанут нужный с поля"
+                        : "Станок занят, а картинка ждёт другой цвет. Ножницы срежут лишний клубок со станка или достанут нужный с поля";
                 }
                 else
                 {
@@ -1746,15 +1756,46 @@ namespace KnittedPicture.Game
         /// Белая, небольшая, со стрелкой; не перехватывает тапы, исчезает сама или с первым ходом.
         /// Вернуть её можно тапом по плашке уровня.
         /// </summary>
+        /// <summary>Подсказка уровня — в начале, пока не сделан первый тап.</summary>
         private void ShowTip()
         {
-            if (_ended || _tip != null || _game.Taps > 0)
+            if (_game.Taps > 0)
             {
                 return;
             }
 
-            var tipText = _level.tip;
-            var (target, below) = TipTarget(tipText.ToLowerInvariant());
+            ShowTip(_level.tip, null, false);
+        }
+
+        /// <summary>
+        /// Натяжение впервые остановило столбик: объяснить правило прямо на пунктире. Один раз за игру;
+        /// подсказка не гаснет от следующего тапа, чтобы её успели прочитать.
+        /// </summary>
+        private void MaybeTensionTip()
+        {
+            var line = _picture.TensionLine;
+            if (line == null || _ended || _tip != null || App.HasPopups || !App.Progress.TakeTensionIntro())
+            {
+                return;
+            }
+
+            App.Save();
+            ShowTip("Полотно растёт ровно: выше пунктира столбики ждут, пока довяжут подсвеченные клетки внизу", line, false);
+            _tipKeep = true;
+        }
+
+        private void ShowTip(string tipText, RectTransform? target, bool below)
+        {
+            if (_ended || _tip != null || string.IsNullOrEmpty(tipText))
+            {
+                return;
+            }
+
+            _tipKeep = false;
+            if (target == null)
+            {
+                (target, below) = TipTarget(tipText.ToLowerInvariant());
+            }
             var maxW = Mathf.Min(W - 2 * Pad, 320f);
             var root = Ui.Node(Root, "Tip");
             _tip = root;
@@ -1912,6 +1953,7 @@ namespace KnittedPicture.Game
 
             var tip = _tip;
             _tip = null;
+            _tipKeep = false;
             var group = tip.GetComponent<CanvasGroup>();
             Tweens.Fade(group, group.alpha, 0f, 0.2f, () => Object.Destroy(tip.gameObject));
         }

@@ -205,6 +205,12 @@ namespace KnittedPicture.Core
         /// <summary>Натяжение полотна: на сколько рядов фронт может обогнать самый нижний. 0 — без ограничения.</summary>
         public int Band => _grid.Band;
 
+        /// <summary>Ряд самого отстающего фронта (самый нижний); -1 — картинка готова.</summary>
+        public int LowestFront => _grid.LowestFront();
+
+        /// <summary>Столбец ждёт соседей: фронт есть, но натяжение не даёт его вязать.</summary>
+        public bool IsHeld(int x) => _grid.FrontY(x) >= 0 && _grid.ActiveFrontY(x) < 0;
+
         /// <summary>Цвета на фронте и сразу за ним — для подсказок и ботов.</summary>
         public HashSet<int> SoonColors(int depth)
         {

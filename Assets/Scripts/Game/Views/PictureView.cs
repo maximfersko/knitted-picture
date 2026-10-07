@@ -33,6 +33,11 @@ namespace KnittedPicture.Game
         private readonly float _cell;
         private readonly float _step;
 
+        // Натяжение полотна: пунктир, выше которого столбики ждут, и подсветка клеток, которые их держат.
+        private RectTransform? _tension;
+        private RectTransform? _lagLayer;
+        private Image[]? _lagRings;
+
         public PictureView(RectTransform parent, LoomGame game, Color[] colors, float cell, float gap)
         {
             _game = game;
@@ -64,10 +69,21 @@ namespace KnittedPicture.Game
                 }
             }
 
+            if (game.Band > 0)
+            {
+                BuildTension();
+            }
+
             Refresh();
         }
 
         public RectTransform Root { get; }
+
+        /// <summary>Натяжение прямо сейчас держит хотя бы один столбик (пунктир виден).</summary>
+        public bool TensionHolding { get; private set; }
+
+        /// <summary>Пунктир натяжения, если он сейчас виден: к нему привязывается подсказка.</summary>
+        public RectTransform? TensionLine => TensionHolding ? _tension : null;
 
         public float Width => _game.Width * _step - (_step - _cell);
 
@@ -83,6 +99,8 @@ namespace KnittedPicture.Game
             {
                 RefreshColumn(x);
             }
+
+            UpdateTension();
         }
 
         /// <summary>Перерисовать все столбцы, не трогая петли «в пути» (натяжение меняет активные фронты).</summary>
@@ -92,6 +110,8 @@ namespace KnittedPicture.Game
             {
                 RefreshColumn(x);
             }
+
+            UpdateTension();
         }
 
         public void RefreshColumn(int x)
@@ -146,6 +166,89 @@ namespace KnittedPicture.Game
                 else
                 {
                     image.color = Palette.WithAlpha(color, SketchAlpha);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Натяжение полотна видно глазами: когда столбик упирается в предел, поперёк картинки
+        /// появляется пунктир (выше него не вяжется), а клетки самого нижнего ряда, которые держат
+        /// остальных, мягко пульсируют рамкой. Когда никто не ждёт, ничего не показывается.
+        /// </summary>
+        private void BuildTension()
+        {
+            _lagLayer = Ui.Stretch(Ui.Node(Root, "Lagging"));
+            var lagGroup = _lagLayer.gameObject.AddComponent<CanvasGroup>();
+            lagGroup.blocksRaycasts = false;
+            var radius = Mathf.Max(3f, _cell * 0.24f);
+            _lagRings = new Image[_game.Width];
+            for (var x = 0; x < _game.Width; x++)
+            {
+                var ring = Ui.Image(_lagLayer, "Lag", Art.RoundRectOutline(radius, 2), Palette.Ink);
+                ring.type = Image.Type.Sliced;
+                ring.pixelsPerUnitMultiplier = Art.Density;
+                ring.enabled = false;
+                _lagRings[x] = ring;
+            }
+
+            Tweens.Run(_lagLayer, 1.2f, t => lagGroup.alpha = 0.3f + 0.7f * Ease.Bump(t), null, null, 0f, true);
+
+            // Пунктир — «натянутая нить» с булавками по краям.
+            var width = Width + 8f;
+            _tension = Ui.Node(Root, "Tension");
+            Ui.Place(_tension, -4f, 0f, width, 8f);
+            var dashColor = Palette.WithAlpha(Palette.Ink, 0.6f);
+            const float dash = 6f;
+            const float space = 4f;
+            for (var dx = 4f; dx < width - 4f; dx += dash + space)
+            {
+                var piece = Ui.Box(_tension, "Dash", 1.25f, dashColor);
+                Ui.Place(piece.rectTransform, dx, 2.75f, Mathf.Min(dash, width - 4f - dx), 2.5f);
+            }
+
+            foreach (var px in new[] { 0f, width })
+            {
+                var pin = Ui.Image(_tension, "Pin", Art.Circle, Palette.Ink);
+                Ui.PlaceCenter(pin.rectTransform, px, 4f, 8f, 8f);
+            }
+
+            _tension.gameObject.SetActive(false);
+            _lagLayer.gameObject.SetActive(false);
+        }
+
+        private void UpdateTension()
+        {
+            if (_tension == null || _lagLayer == null || _lagRings == null)
+            {
+                return;
+            }
+
+            var held = false;
+            for (var x = 0; x < _game.Width && !held; x++)
+            {
+                held = _game.IsHeld(x);
+            }
+
+            TensionHolding = held;
+            _tension.gameObject.SetActive(held);
+            _lagLayer.gameObject.SetActive(held);
+            if (!held)
+            {
+                return;
+            }
+
+            // Столбики с фронтом выше ряда limit ждут: пунктир проходит по верхнему краю этого ряда.
+            var lowest = _game.LowestFront;
+            var limit = lowest - _game.Band;
+            var gap = _step - _cell;
+            Ui.Place(_tension, -4f, limit * _step - gap / 2f - 4f, Width + 8f, 8f);
+            for (var x = 0; x < _game.Width; x++)
+            {
+                var ring = _lagRings[x];
+                ring.enabled = _game.FrontY(x) == lowest;
+                if (ring.enabled)
+                {
+                    Ui.Place(ring.rectTransform, x * _step - 2f, lowest * _step - 2f, _cell + 4f, _cell + 4f);
                 }
             }
         }

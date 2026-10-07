@@ -335,6 +335,11 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(-1, game.ActiveFrontY(0));
             Assert.Equal(GameStatus.Playing, game.Status);
 
+            // Для пунктира на картинке: левый столбец ждёт, правый держит его, отстающий ряд — нижний.
+            Assert.True(game.IsHeld(0));
+            Assert.False(game.IsHeld(1));
+            Assert.Equal(3, game.LowestFront);
+
             game.TapColumn(1);
             game.Settle();
             Assert.Equal(GameStatus.Won, game.Status);

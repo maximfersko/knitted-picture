@@ -95,6 +95,14 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Tension_intro_is_shown_once()
+        {
+            var progress = Fresh();
+            Assert.True(progress.TakeTensionIntro());
+            Assert.False(progress.TakeTensionIntro());
+        }
+
+        [Fact]
         public void Coins_perk_pays_on_new_pictures_only()
         {
             var progress = Fresh();

@@ -326,6 +326,21 @@ namespace KnittedPicture.Core
             return PerksOpen && yarn >= 0 && YarnCatalog.PerkOf(yarn) == perk ? YarnCatalog.Power(yarn, YarnLevel(yarn)) : 0;
         }
 
+        /// <summary>
+        /// Знакомство с натяжением полотна — один раз, в тот момент, когда оно впервые остановило столбик.
+        /// </summary>
+        public bool TakeTensionIntro()
+        {
+            const int introId = 101;
+            if (_data.introsShown.Contains(introId))
+            {
+                return false;
+            }
+
+            _data.introsShown.Add(introId);
+            return true;
+        }
+
         /// <summary>Знакомство с бонусами пряжи — один раз, на уровне, где они открываются.</summary>
         public bool TakePerksIntro(int levelId)
         {
