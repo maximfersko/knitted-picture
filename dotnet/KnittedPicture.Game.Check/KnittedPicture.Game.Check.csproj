@@ -9,7 +9,7 @@
     <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <DefineConstants>$(DefineConstants);ENABLE_LEGACY_INPUT_MANAGER</DefineConstants>
+    <DefineConstants>$(DefineConstants);ENABLE_LEGACY_INPUT_MANAGER;$(UnityPlatform)</DefineConstants>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);CS0067;CS0649</NoWarn>
   </PropertyGroup>

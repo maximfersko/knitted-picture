@@ -206,3 +206,16 @@ namespace UnityEngine.UI
     {
     }
 }
+
+#if UNITY_ANDROID
+namespace UnityEngine
+{
+    // В справочных сборках из NuGet нет Handheld (он есть только в сборке под телефон).
+    public static class Handheld
+    {
+        public static void Vibrate()
+        {
+        }
+    }
+}
+#endif
