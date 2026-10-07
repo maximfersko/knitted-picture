@@ -57,12 +57,12 @@
   "ice": 0,
   "extra": 3,
   "junk": 1,
-  "parSlack": 1,
   "minWin": 0.4,
   "maxWin": 0.78,
   "maxRandom": 0.12,
   "maxForced": 0.55,
   "minDanger": 0.05,
   "maxDanger": 0.35,
+  "maxEarlyJam": 0.25,
   "seed": 391
 }

@@ -120,6 +120,9 @@ namespace KnittedPicture.Game
 
         private RectTransform? _timerMoth;
         private Text? _timerText;
+
+        /// <summary>Моль в последней четверти пути: финишный рывок.</summary>
+        private bool _mothNear;
         private float _timerX;
         private float _timerW;
 
@@ -901,6 +904,19 @@ namespace KnittedPicture.Game
             var seconds = Mathf.CeilToInt(left);
             _timerText.text = $"{seconds / 60}:{seconds % 60:00}";
             _timerText.color = fraction < 0.25f ? Palette.Danger : Palette.Ink;
+
+            // Последняя четверть: моль близко. Один раз — надпись и отклик, дальше моль дрожит до конца.
+            var near = fraction < 0.25f && _game.TimerStarted && _game.Status == GameStatus.Playing;
+            if (near && !_mothNear)
+            {
+                Fx.FloatText(_fx, Ui.WorldCenter(_timerMoth), "Моль близко!", Palette.Danger, 18f);
+                Tweens.Punch(_timerMoth, 0.3f, 0.35f);
+                Sfx.Play(Sound.Deny, 0.5f);
+                Haptics.Play(Haptic.Medium);
+            }
+
+            _mothNear = near;
+            _timerMoth.localRotation = near ? Quaternion.Euler(0f, 0f, Mathf.Sin(Time.unscaledTime * 14f) * 10f) : Quaternion.identity;
         }
 
         /// <summary>Рамка станка: оранжевая, когда осталось одно место, красная — когда мест нет.</summary>

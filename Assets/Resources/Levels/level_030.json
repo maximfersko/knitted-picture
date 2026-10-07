@@ -3,7 +3,7 @@
   "name": "Зонтик",
   "tip": "",
   "hard": true,
-  "timeLimit": 110,
+  "timeLimit": 50,
   "width": 14,
   "height": 13,
   "colors": [
@@ -44,45 +44,50 @@
     "11111101111111"
   ],
   "gold": [
-    8,
-    54,
-    70
+    9,
+    37,
+    150
   ],
   "band": 2,
-  "par": 19,
   "slots": 4,
   "spools": [
     {
       "color": 4,
+      "loops": 3
+    },
+    {
+      "color": 4,
       "loops": 2
     },
     {
       "color": 2,
-      "loops": 4
-    },
-    {
-      "color": 1,
-      "loops": 7,
-      "knots": 1
+      "loops": 5
     },
     {
       "color": 2,
-      "loops": 8
+      "loops": 7
+    },
+    {
+      "color": 2,
+      "loops": 16
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 2
     },
     {
       "column": 1,
       "color": 4,
-      "loops": 2,
-      "ice": 3
+      "loops": 4
     },
     {
-      "column": 1,
-      "color": 3,
-      "loops": 6
-    },
-    {
-      "column": 1,
+      "column": 2,
       "color": 1,
+      "loops": 3
+    },
+    {
+      "column": 2,
       "loops": 4
     },
     {
@@ -92,49 +97,42 @@
     },
     {
       "column": 2,
-      "color": 1,
-      "loops": 4
+      "color": 2,
+      "loops": 5,
+      "knots": 1
     },
     {
-      "column": 2,
-      "color": 1,
-      "loops": 4
+      "column": 3,
+      "color": 3,
+      "loops": 7
     },
     {
-      "column": 2,
+      "column": 3,
       "color": 1,
-      "loops": 4,
+      "loops": 3,
+      "ice": 11
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 8,
       "ice": 12
     },
     {
-      "column": 3,
-      "color": 3,
-      "loops": 2
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 9
-    },
-    {
-      "column": 3,
-      "color": 2,
-      "loops": 18
-    },
-    {
       "column": 4,
-      "color": 4,
-      "loops": 4
+      "color": 1,
+      "loops": 8
     },
     {
       "column": 4,
       "color": 1,
-      "loops": 6,
+      "loops": 12,
       "knots": 1
     },
     {
       "column": 4,
-      "loops": 4
+      "color": 3,
+      "loops": 1
     }
   ]
 }

@@ -3,7 +3,7 @@
   "name": "Арбуз",
   "tip": "Моль ползёт к картинке: довяжи, пока она не добралась. Времени с запасом",
   "hard": false,
-  "timeLimit": 150,
+  "timeLimit": 60,
   "palette": [
     {
       "key": ".",
@@ -57,12 +57,12 @@
   "ice": 0,
   "extra": 2,
   "junk": 1,
-  "parSlack": 1,
   "minWin": 0.4,
   "maxWin": 0.78,
   "maxRandom": 0.2,
   "maxForced": 0.55,
   "minDanger": 0.05,
   "maxDanger": 0.35,
+  "maxEarlyJam": 0.25,
   "seed": 171
 }

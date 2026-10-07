@@ -38,96 +38,95 @@
   ],
   "gold": [
     61,
-    102,
-    133
+    107,
+    134
   ],
   "band": 2,
-  "par": 16,
   "slots": 4,
   "spools": [
     {
-      "color": 2,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "color": 1,
       "loops": 1
     },
     {
-      "color": 1,
-      "loops": 5
+      "loops": 4
     },
     {
-      "color": 1,
-      "loops": 10,
-      "thick": true
-    },
-    {
-      "loops": 3
-    },
-    {
-      "column": 1,
-      "color": 2,
-      "loops": 3
-    },
-    {
-      "column": 1,
-      "color": 2,
-      "loops": 5
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 11,
-      "thick": true
-    },
-    {
-      "column": 2,
       "color": 4,
-      "loops": 1
+      "loops": 5
     },
     {
-      "column": 2,
+      "column": 1,
+      "color": 2,
+      "loops": 6
+    },
+    {
+      "column": 1,
       "color": 1,
-      "loops": 3
+      "loops": 18,
+      "thick": true
     },
     {
-      "column": 3,
-      "color": 3,
-      "loops": 7
-    },
-    {
-      "column": 3,
-      "color": 3,
-      "loops": 7
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 8
-    },
-    {
-      "column": 3,
-      "color": 5,
-      "loops": 2,
-      "link": 1
-    },
-    {
-      "column": 4,
+      "column": 1,
       "color": 1,
       "loops": 4
     },
     {
-      "column": 4,
+      "column": 1,
+      "color": 5,
+      "loops": 2
+    },
+    {
+      "column": 2,
       "color": 1,
-      "loops": 5
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 4
+    },
+    {
+      "column": 2,
+      "color": 4,
+      "loops": 1,
+      "link": 1
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 6
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 2
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 3
     },
     {
       "column": 4,
-      "color": 1,
+      "color": 3,
+      "loops": 4
+    },
+    {
+      "column": 4,
+      "color": 5,
       "loops": 1,
       "link": 1
     },
     {
       "column": 4,
-      "color": 5,
-      "loops": 3
+      "color": 1,
+      "loops": 10,
+      "thick": true
     }
   ]
 }

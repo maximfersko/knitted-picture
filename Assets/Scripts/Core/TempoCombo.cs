@@ -13,7 +13,7 @@ namespace KnittedPicture.Core
     public sealed class TempoCombo
     {
         /// <summary>Сколько секунд станок может простоять, прежде чем серия сгорит.</summary>
-        public const float Grace = 1.0f;
+        public const float Grace = 2.0f;
 
         /// <summary>Серия, с которой начинается «Разгон».</summary>
         public const int RushFrom = 5;
@@ -21,7 +21,7 @@ namespace KnittedPicture.Core
         /// <summary>Серия, с которой комбо видно игроку и считается для золотых петель.</summary>
         public const int ActiveFrom = 2;
 
-        public const int RushStitchesPerCoin = 6;
+        public const int RushStitchesPerCoin = 8;
 
         private int _rushStitches;
 

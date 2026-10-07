@@ -58,9 +58,6 @@ namespace KnittedPicture.LevelTool
         /// <summary>Лишние клубки сверх картинки: стоят тапа и места на станке, зато их можно не брать.</summary>
         public int extra;
 
-        /// <summary>Цель по тапам на третью звезду = лучший найденный путь + столько тапов запаса.</summary>
-        public int parSlack = 1;
-
         /// <summary>Коридоры качества решений: доля ходов без выбора и доля «роковых» ходов.</summary>
         public double maxForced = 1.0;
         public double minDanger;
@@ -68,6 +65,12 @@ namespace KnittedPicture.LevelTool
 
         /// <summary>Сколько партий может выиграть игрок, который тапает наугад: выше — уровень проходится без мыслей.</summary>
         public double maxRandom = 1.0;
+
+        /// <summary>
+        /// Сколько партий «среднего игрока» может оборваться затором, пока не связана и треть картинки.
+        /// Сложность пусть живёт ближе к концу: ранний проигрыш ощущается лотереей, поздний — «почти!».
+        /// </summary>
+        public double maxEarlyJam = 1.0;
 
         /// <summary>Допустимая доля побед бота: так задаётся сложность.</summary>
         public double minWin;

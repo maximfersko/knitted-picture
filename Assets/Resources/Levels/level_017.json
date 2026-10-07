@@ -2,7 +2,7 @@
   "id": 17,
   "name": "Арбуз",
   "tip": "Моль ползёт к картинке: довяжи, пока она не добралась. Времени с запасом",
-  "timeLimit": 150,
+  "timeLimit": 60,
   "width": 12,
   "height": 8,
   "colors": [
@@ -34,17 +34,19 @@
     "111100001111"
   ],
   "gold": [
-    3,
-    52,
-    80
+    21,
+    46,
+    88
   ],
   "band": 2,
-  "par": 18,
   "slots": 4,
   "spools": [
     {
-      "color": 4,
-      "loops": 2
+      "loops": 4
+    },
+    {
+      "color": 3,
+      "loops": 13
     },
     {
       "color": 4,
@@ -52,50 +54,31 @@
     },
     {
       "column": 1,
-      "color": 2,
-      "loops": 2
-    },
-    {
-      "column": 1,
-      "color": 3,
-      "loops": 5
-    },
-    {
-      "column": 1,
-      "loops": 4
-    },
-    {
-      "column": 1,
-      "loops": 3,
-      "rainbow": true
-    },
-    {
-      "column": 2,
       "color": 1,
       "loops": 4
     },
     {
-      "column": 2,
-      "color": 3,
-      "loops": 9
-    },
-    {
-      "column": 2,
-      "color": 5,
-      "loops": 2
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 4
-    },
-    {
-      "column": 3,
+      "column": 1,
       "color": 3,
       "loops": 8
     },
     {
-      "column": 3,
+      "column": 1,
+      "color": 4,
+      "loops": 3
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 7
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 8
+    },
+    {
+      "column": 2,
       "color": 3,
       "loops": 7
     },
@@ -105,24 +88,34 @@
       "loops": 2
     },
     {
-      "column": 4,
-      "color": 2,
-      "loops": 6
+      "column": 3,
+      "loops": 3,
+      "rainbow": true
     },
     {
       "column": 4,
-      "color": 5,
+      "color": 2,
+      "loops": 7
+    },
+    {
+      "column": 4,
+      "color": 3,
       "loops": 5
     },
     {
       "column": 4,
-      "color": 3,
-      "loops": 13
+      "color": 4,
+      "loops": 3
     },
     {
       "column": 4,
-      "color": 3,
-      "loops": 6
+      "color": 2,
+      "loops": 5
+    },
+    {
+      "column": 4,
+      "color": 5,
+      "loops": 2
     }
   ]
 }

@@ -52,9 +52,6 @@ namespace KnittedPicture.Core
         /// </summary>
         public int band;
 
-        /// <summary>Третья звезда — если уложиться в столько тапов; 0 — без цели.</summary>
-        public int par;
-
         /// <summary>Сколько слотов на станке в начале уровня.</summary>
         public int slots = 4;
 

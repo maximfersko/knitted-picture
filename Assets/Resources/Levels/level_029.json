@@ -46,78 +46,71 @@
     "111000000111"
   ],
   "gold": [
-    18,
-    70,
-    147
+    69,
+    101,
+    152
   ],
   "band": 3,
-  "par": 25,
   "slots": 5,
   "spools": [
     {
-      "loops": 2
+      "color": 5,
+      "loops": 3,
+      "key": true
     },
     {
       "color": 2,
-      "loops": 1,
+      "loops": 4
+    },
+    {
+      "color": 3,
+      "loops": 8,
       "hidden": true
+    },
+    {
+      "color": 3,
+      "loops": 9
     },
     {
       "color": 1,
-      "loops": 6
-    },
-    {
-      "color": 3,
-      "loops": 6,
-      "hidden": true
-    },
-    {
-      "column": 1,
-      "color": 3,
-      "loops": 4
+      "loops": 9
     },
     {
       "column": 1,
       "color": 6,
       "loops": 2,
-      "key": true
+      "locked": true
     },
     {
       "column": 1,
       "color": 6,
-      "loops": 4
+      "loops": 2
     },
     {
       "column": 1,
       "color": 2,
-      "loops": 3,
+      "loops": 2,
       "locked": true
     },
     {
       "column": 1,
       "color": 3,
-      "loops": 7,
+      "loops": 18,
       "locked": true
     },
     {
-      "column": 1,
-      "color": 2,
-      "loops": 3
-    },
-    {
-      "column": 1,
-      "color": 2,
+      "column": 2,
+      "color": 3,
       "loops": 1
     },
     {
       "column": 2,
-      "color": 2,
-      "loops": 8
+      "loops": 4
     },
     {
       "column": 2,
-      "color": 5,
-      "loops": 3
+      "color": 1,
+      "loops": 2
     },
     {
       "column": 2,
@@ -126,8 +119,8 @@
     },
     {
       "column": 2,
-      "color": 1,
-      "loops": 2
+      "color": 2,
+      "loops": 3
     },
     {
       "column": 3,
@@ -136,25 +129,20 @@
     },
     {
       "column": 3,
-      "color": 2,
-      "loops": 16
-    },
-    {
-      "column": 3,
-      "color": 6,
-      "loops": 2,
-      "locked": true
-    },
-    {
-      "column": 3,
       "color": 1,
-      "loops": 2,
+      "loops": 8,
       "hidden": true
     },
     {
       "column": 3,
-      "color": 3,
-      "loops": 6
+      "color": 2,
+      "loops": 8,
+      "hidden": true
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 7
     },
     {
       "column": 4,
@@ -164,16 +152,16 @@
     {
       "column": 4,
       "color": 1,
-      "loops": 10
+      "loops": 4
     },
     {
       "column": 4,
-      "color": 3,
-      "loops": 9
+      "color": 2,
+      "loops": 7
     },
     {
       "column": 4,
-      "color": 3,
+      "color": 2,
       "loops": 8
     }
   ]

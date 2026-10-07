@@ -3,7 +3,7 @@
   "name": "Снеговик",
   "tip": "",
   "hard": true,
-  "timeLimit": 120,
+  "timeLimit": 95,
   "width": 14,
   "height": 14,
   "colors": [
@@ -55,7 +55,6 @@
     162
   ],
   "band": 3,
-  "par": 31,
   "slots": 5,
   "spools": [
     {

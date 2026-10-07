@@ -50,11 +50,6 @@ namespace KnittedPicture.Core
                 errors.Add($"таймер {level.timeLimit} с вне 0..{MaxTimeLimit}");
             }
 
-            if (level.par < 0)
-            {
-                errors.Add($"цель {level.par} тапов");
-            }
-
             var stitchesByColor = new int[colorCount];
             if (level.picture == null || level.picture.Length != level.height)
             {

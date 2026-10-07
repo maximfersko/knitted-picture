@@ -44,7 +44,6 @@ namespace KnittedPicture.Core
             TimeLimit = level.timeLimit;
             TimeLeft = level.timeLimit;
             Mystery = level.mystery;
-            Par = level.par;
             _grid = PictureGrid.From(level);
             _gold = new bool[level.width * level.height];
             foreach (var cell in level.gold ?? Array.Empty<int>())
@@ -78,7 +77,6 @@ namespace KnittedPicture.Core
             TimeLeft = other.TimeLeft;
             TimerStarted = other.TimerStarted;
             Mystery = other.Mystery;
-            Par = other.Par;
             Taps = other.Taps;
             _grid = other._grid.Clone();
             _gold = other._gold;
@@ -121,9 +119,6 @@ namespace KnittedPicture.Core
 
         /// <summary>Эскиз рисунка скрыт — картинка-загадка.</summary>
         public bool Mystery { get; }
-
-        /// <summary>Цель на третью звезду: уложиться в столько тапов. 0 — без цели.</summary>
-        public int Par { get; }
 
         /// <summary>Принятые тапы: клубок на станок, узелок, ножницы.</summary>
         public int Taps { get; private set; }

@@ -3,7 +3,7 @@
   "name": "Зонтик",
   "tip": "",
   "hard": true,
-  "timeLimit": 110,
+  "timeLimit": 50,
   "palette": [
     {
       "key": ".",
@@ -58,12 +58,12 @@
   "ice": 2,
   "extra": 2,
   "junk": 1,
-  "parSlack": 1,
   "minWin": 0.15,
-  "maxWin": 0.45,
+  "maxWin": 0.3,
   "maxRandom": 0.05,
   "maxForced": 0.55,
   "minDanger": 0.05,
   "maxDanger": 0.35,
+  "maxEarlyJam": 0.35,
   "seed": 301
 }

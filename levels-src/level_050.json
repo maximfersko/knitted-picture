@@ -3,7 +3,7 @@
   "name": "Дракончик",
   "tip": "Финал: всё, чему ты научилась. Удачи!",
   "hard": true,
-  "timeLimit": 155,
+  "timeLimit": 85,
   "palette": [
     {
       "key": ".",
@@ -72,7 +72,6 @@
   "ice": 3,
   "extra": 3,
   "junk": 1,
-  "parSlack": 1,
   "minWin": 0.15,
   "maxWin": 0.45,
   "maxRandom": 0.05,

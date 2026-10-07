@@ -11,19 +11,34 @@ namespace KnittedPicture.LevelTool
     /// </summary>
     public static class Bot
     {
-        public static double WinRate(LevelData level, int runs, int seed)
+        /// <summary>Затор раньше этой доли картинки — «ранний»: игрок проиграл, толком не начав.</summary>
+        public const double EarlyJamProgress = 0.3;
+
+        public static double WinRate(LevelData level, int runs, int seed) => Profile(level, runs, seed).Win;
+
+        /// <summary>
+        /// Доля побед «среднего игрока» и доля его партий, оборванных ранним затором.
+        /// Ранний затор ощущается лотереей; затор под конец — «почти получилось», он зовёт сыграть ещё.
+        /// </summary>
+        public static (double Win, double EarlyJam) Profile(LevelData level, int runs, int seed)
         {
             var rng = new Random(seed);
             var wins = 0;
+            var early = 0;
             for (var run = 0; run < runs; run++)
             {
-                if (Play(level, rng))
+                var game = Play(level, rng);
+                if (game.Status == GameStatus.Won)
                 {
                     wins++;
                 }
+                else if (game.Status == GameStatus.Jammed && game.KnittedCount < game.TotalStitches * EarlyJamProgress)
+                {
+                    early++;
+                }
             }
 
-            return (double)wins / runs;
+            return ((double)wins / runs, (double)early / runs);
         }
 
         /// <summary>
@@ -66,7 +81,7 @@ namespace KnittedPicture.LevelTool
             return (double)wins / runs;
         }
 
-        private static bool Play(LevelData level, Random rng)
+        private static LoomGame Play(LevelData level, Random rng)
         {
             var game = new LoomGame(level);
             for (var step = 0; step < 1000 && game.Status == GameStatus.Playing; step++)
@@ -137,7 +152,7 @@ namespace KnittedPicture.LevelTool
                 game.Settle();
             }
 
-            return game.Status == GameStatus.Won;
+            return game;
         }
     }
 }

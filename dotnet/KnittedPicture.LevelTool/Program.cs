@@ -81,7 +81,7 @@ namespace KnittedPicture.LevelTool
             });
 
             var failed = false;
-            Console.WriteLine("id  название           размер петли цв клуб кол сл  тапы/цель  бот  наугад фронт выбор1 роковые  сид   механики");
+            Console.WriteLine("id  название           размер петли цв клуб кол сл тапы  бот  наугад ранний фронт выбор1 роковые  сид   механики");
             for (var i = 0; i < designs.Count; i++)
             {
                 var design = designs[i];
@@ -116,10 +116,9 @@ namespace KnittedPicture.LevelTool
                     design.hard ? "сложный" : null,
                 }.Where(m => m != null));
                 var mark = built.InRange ? " " : "!";
-                var taps = level.par > 0 ? $"{built.Solution,3}/{level.par,-3}" : $"{built.Solution,3}    ";
                 var stitches = PictureGrid.From(level).Total;
                 Console.WriteLine(
-                    $"{design.id,2}  {design.name,-18} {level.width,2}×{level.height,-2} {stitches,5} {level.colors.Length,2} {level.spools.Length,4} {design.columns,3} {level.slots,2}  {taps,9}  {built.WinRate,4:P0}{mark} {built.RandomRate,5:P0} {built.Metrics.FrontColors,5:0.0} {built.Metrics.Forced,5:P0} {built.Metrics.Danger,6:P0}  {built.Seed,5}   {mechanics}");
+                    $"{design.id,2}  {design.name,-18} {level.width,2}×{level.height,-2} {stitches,5} {level.colors.Length,2} {level.spools.Length,4} {design.columns,3} {level.slots,2} {built.Solution,4}  {built.WinRate,4:P0}{mark} {built.RandomRate,5:P0} {built.EarlyJam,6:P0} {built.Metrics.FrontColors,5:0.0} {built.Metrics.Forced,5:P0} {built.Metrics.Danger,6:P0}  {built.Seed,5}   {mechanics}");
             }
 
             return failed ? 1 : 0;
@@ -131,6 +130,7 @@ namespace KnittedPicture.LevelTool
             public int Solution;
             public double WinRate;
             public double RandomRate;
+            public double EarlyJam;
             public int Seed;
             public bool InRange;
             public Metrics Metrics = null!;
@@ -155,10 +155,11 @@ namespace KnittedPicture.LevelTool
                 }
 
                 // Сначала дешёвые боты (доли секунды), а решатель и метрики (секунды) — только для подходящих.
-                var rate = Bot.WinRate(level, BotRuns, seed);
+                var (rate, early) = Bot.Profile(level, BotRuns, seed);
                 var random = Bot.RandomWinRate(level, BotRuns, seed);
                 var winDistance = (rate < design.minWin ? design.minWin - rate : rate > design.maxWin ? rate - design.maxWin : 0)
-                    + Math.Max(0, random - design.maxRandom);
+                    + Math.Max(0, random - design.maxRandom)
+                    + Math.Max(0, early - design.maxEarlyJam);
                 if (winDistance > 0 && best != null && winDistance * 4 >= bestDistance)
                 {
                     continue;
@@ -178,7 +179,7 @@ namespace KnittedPicture.LevelTool
                     + Math.Max(0, metrics.Danger - design.maxDanger);
                 if (distance < bestDistance)
                 {
-                    best = new Built { Level = level, Solution = solution.Count, WinRate = rate, RandomRate = random, Seed = seed, Metrics = metrics };
+                    best = new Built { Level = level, Solution = solution.Count, WinRate = rate, RandomRate = random, EarlyJam = early, Seed = seed, Metrics = metrics };
                     bestDistance = distance;
                 }
 
@@ -194,24 +195,7 @@ namespace KnittedPicture.LevelTool
             }
 
             best.InRange = bestDistance == 0;
-            best.Level.par = Par(best.Level, design);
             return best;
-        }
-
-        /// <summary>
-        /// Цель по тапам имеет смысл, только если тапы могут разниться — есть лишняя пряжа.
-        /// Иначе каждый клубок нужен и число тапов одно и то же.
-        /// </summary>
-        private static int Par(LevelData level, LevelDesign design)
-        {
-            var loops = level.spools.Sum(sp => sp.loops);
-            if (loops == PictureGrid.From(level).Total)
-            {
-                return 0;
-            }
-
-            var fewest = LevelSolver.FewestTaps(level);
-            return fewest < 0 ? 0 : fewest + design.parSlack;
         }
 
         private static string FindRoot()

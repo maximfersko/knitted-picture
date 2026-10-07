@@ -138,7 +138,7 @@
 | Событие | Параметры | Зачем |
 |---|---|---|
 | `level_start` | level, attempt, pattern, warm_tier, slots | воронка, попытки |
-| `level_win` | level, attempt, taps, par, stars, boosters, rescues, seconds, best_combo, rushes, gold | сложность, звёзды |
+| `level_win` | level, attempt, taps, stars, boosters, rescues, seconds, best_combo, rushes, gold | сложность, звёзды |
 | `level_fail` | level, attempt, kind (jam/moth), percent, taps, seconds | где застревают |
 | `level_quit` | level, attempt, percent, from (pause/fail) | тихий отток |
 | `booster_use` | type, source (stock/coins/free/video), level | экономика помощи |
@@ -635,7 +635,7 @@
 
 #### Риски
 - Генерированные уровни однообразны. Решение: пул «рецептов» (наборы особых клубков) с ротацией, библиотека картинок пополняется пакетами.
-- Подбор сложности воспринимается как обман. Решение: открыто описать в правилах; цель по тапам считает решатель.
+- Подбор сложности воспринимается как обман. Решение: открыто описать в правилах; проходимость каждого уровня проверяет решатель.
 
 ---
 

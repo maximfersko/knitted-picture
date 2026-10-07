@@ -55,7 +55,6 @@
   "ice": 0,
   "extra": 0,
   "junk": 2,
-  "parSlack": 1,
   "minWin": 0.5,
   "maxWin": 0.8,
   "maxRandom": 0.3,

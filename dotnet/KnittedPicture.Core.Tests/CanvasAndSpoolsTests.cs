@@ -346,6 +346,20 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Tempo_combo_survives_a_player_who_thinks_a_second_and_a_half()
+        {
+            // Станок довязывает клубок за полсекунды, дальше ждёт игрока: серия не должна сгорать за обычное раздумье.
+            var combo = new TempoCombo();
+            for (var i = 0; i < TempoCombo.RushFrom; i++)
+            {
+                combo.OnPlaced();
+                Assert.False(combo.Update(1.5f, working: false));
+            }
+
+            Assert.True(combo.Rush);
+        }
+
+        [Fact]
         public void Tempo_combo_grows_while_the_loom_works_and_burns_after_idle()
         {
             var combo = new TempoCombo();

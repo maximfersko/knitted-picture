@@ -3,7 +3,7 @@
   "name": "Дракончик",
   "tip": "Финал: всё, чему ты научилась. Удачи!",
   "hard": true,
-  "timeLimit": 155,
+  "timeLimit": 85,
   "width": 16,
   "height": 15,
   "colors": [
@@ -57,7 +57,6 @@
     229
   ],
   "band": 3,
-  "par": 30,
   "slots": 5,
   "spools": [
     {

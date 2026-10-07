@@ -3,7 +3,7 @@
   "name": "Снеговик",
   "tip": "",
   "hard": true,
-  "timeLimit": 120,
+  "timeLimit": 95,
   "palette": [
     {
       "key": ".",
@@ -71,7 +71,6 @@
   "ice": 2,
   "extra": 3,
   "junk": 1,
-  "parSlack": 1,
   "minWin": 0.15,
   "maxWin": 0.45,
   "maxRandom": 0.05,
