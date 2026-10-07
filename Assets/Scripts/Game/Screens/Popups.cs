@@ -147,6 +147,13 @@ namespace KnittedPicture.Game
                     Close();
                     app.ShowPopup(new SettingsPopup(app));
                 });
+            var haptics = app.Progress.Data.hapticsOn;
+            AddSecondary(haptics ? "Вибрация: включена" : "Вибрация: выключена", KnittedPicture.Game.Icon.Hand).OnClick(() =>
+            {
+                app.SetHaptics(!app.Progress.Data.hapticsOn);
+                Close();
+                app.ShowPopup(new SettingsPopup(app));
+            });
             var reminders = app.Progress.Data.remindersOn;
             AddSecondary(reminders ? "Напоминания: включены" : "Напоминания: выключены", KnittedPicture.Game.Icon.Clock).OnClick(() =>
             {

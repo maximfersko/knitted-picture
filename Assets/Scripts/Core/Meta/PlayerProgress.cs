@@ -88,6 +88,9 @@ namespace KnittedPicture.Core
 
         public bool soundOn = true;
 
+        /// <summary>Вибрация (тактильный отклик) включена.</summary>
+        public bool hapticsOn = true;
+
         /// <summary>Напоминания на телефон включены; спрашивали ли уже разрешение у системы.</summary>
         public bool remindersOn = true;
         public bool remindersAsked;

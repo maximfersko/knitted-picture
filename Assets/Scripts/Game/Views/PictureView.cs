@@ -339,6 +339,45 @@ namespace KnittedPicture.Game
 
         public Vector3 CellWorld(int x, int y) => Ui.WorldCenter(_cells[y * _game.Width + x].rectTransform);
 
+        /// <summary>
+        /// Цвет довязан: его клетки пробегает светлая волна снизу вверх — маленький праздник посреди уровня.
+        /// Возвращает центр довязанного цвета на экране (для надписи) или null, если клеток нет.
+        /// </summary>
+        public Vector3? CelebrateColor(int color)
+        {
+            const float perRow = 0.035f;
+            var sum = Vector3.zero;
+            var count = 0;
+            for (var y = _game.Height - 1; y >= 0; y--)
+            {
+                for (var x = 0; x < _game.Width; x++)
+                {
+                    if (_game.IsFabric(x, y) || _game.ColorAt(x, y) != color)
+                    {
+                        continue;
+                    }
+
+                    var image = _cells[y * _game.Width + x];
+                    var baseColor = _colors[color];
+                    var delay = (_game.Height - 1 - y) * perRow;
+                    Tweens.Run(image.rectTransform, 0.3f, t =>
+                    {
+                        var bump = Ease.Bump(t);
+                        image.color = Color.Lerp(baseColor, Color.white, 0.6f * bump);
+                        image.rectTransform.localScale = Vector3.one * (1f + 0.18f * bump);
+                    }, null, () =>
+                    {
+                        image.color = baseColor;
+                        image.rectTransform.localScale = Vector3.one;
+                    }, delay);
+                    sum += Ui.WorldCenter(image.rectTransform);
+                    count++;
+                }
+            }
+
+            return count > 0 ? sum / count : (Vector3?)null;
+        }
+
         /// <summary>Победная волна: ряды снизу вверх вспыхивают белым и возвращаются.</summary>
         public void Wave(Action done)
         {

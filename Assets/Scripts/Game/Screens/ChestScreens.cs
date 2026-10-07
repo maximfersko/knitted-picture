@@ -101,6 +101,7 @@ namespace KnittedPicture.Game
             Tweens.Run(chest, 0.42f, t => chest.anchoredPosition = rest + new Vector2(0, 420f * (1f - t * t)), null, () =>
             {
                 Sfx.Play(Sound.Knot, 0.8f);
+                Haptics.Play(Haptic.Medium);
                 Fx.Sparkle(_stage, chest.TransformPoint(new Vector3(-70f, -60f, 0)), Color.white, 5, 40f);
                 Fx.Sparkle(_stage, chest.TransformPoint(new Vector3(70f, -60f, 0)), Color.white, 5, 40f);
                 Tweens.Run(chest, 0.4f, t =>
@@ -280,6 +281,7 @@ namespace KnittedPicture.Game
                 visual.localRotation = Quaternion.identity;
                 visual.anchoredPosition = rest;
                 Sfx.Play(Sound.Pick, 0.6f);
+                Haptics.Play(Haptic.Tap);
                 Tweens.Run(visual, 0.24f, t =>
                 {
                     var squash = Ease.Bump(t) * 0.1f * (1f - t);
@@ -570,6 +572,7 @@ namespace KnittedPicture.Game
             _description.rectTransform.anchoredPosition = new Vector2(24, -(CardsTop + 10f));
             Fx.Sparkle(_stage, Ui.WorldCenter(chip), Palette.Coin, 10, 60f);
             Sfx.Play(Sound.Win, 0.5f);
+            Haptics.Play(Haptic.Success);
             Tweens.Delay(_stage, 0.5f, () => ShowButton("Готово"));
             _confirm = () =>
             {

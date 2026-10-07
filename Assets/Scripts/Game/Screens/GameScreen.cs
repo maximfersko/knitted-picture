@@ -41,6 +41,9 @@ namespace KnittedPicture.Game
         /// <summary>Во сколько раз быстрее вяжет станок в «Разгоне».</summary>
         private const float RushSpeed = 2f;
 
+        /// <summary>Сколько секунд бездействия (станок стоит, ходов нет) до подсказки на уровнях с 6-го.</summary>
+        private const float IdleNudge = 20f;
+
         private static readonly Color IceBlue = new Color(0.55f, 0.82f, 1f);
         private static readonly Color RushColor = new Color(1f, 0.6f, 0.15f);
 
@@ -264,7 +267,8 @@ namespace KnittedPicture.Game
             if (!_game.IsBusy && _hint == null && _game.Status == GameStatus.Playing && _hintFailedAt != _game.Taps)
             {
                 _idle += dt;
-                var threshold = _level.id <= 3 ? 1.5f : _level.id <= 5 ? 8f : -1f;
+                // Дальше — мягкий толчок, если игрок долго не делает ничего: 20 секунд без хода, станок стоит.
+                var threshold = _level.id <= 3 ? 1.5f : _level.id <= 5 ? 8f : IdleNudge;
                 if (threshold > 0 && _idle > threshold)
                 {
                     ShowHint();
@@ -669,6 +673,21 @@ namespace KnittedPicture.Game
                 _slotOutlines[i].enabled = spool == null;
             }
 
+            // Плашка толстого клубка бледнеет вместе с ним: ждёт весь «широкий клубок».
+            for (var i = 0; i < _tailViews.Length; i++)
+            {
+                var plate = _tailViews[i];
+                var owner = i < _game.Slots.Count ? _game.Slots[i] : null;
+                if (plate == null || owner == null)
+                {
+                    continue;
+                }
+
+                var group = plate.GetComponent<CanvasGroup>() ?? plate.gameObject.AddComponent<CanvasGroup>();
+                group.blocksRaycasts = false;
+                group.alpha = !_game.IsForeign(owner) && !_game.HasWork(owner) ? 0.5f : 1f;
+            }
+
             var free = _game.FreeSlots;
             _loomLabel.text = free == 1 && _slotFrames.Length > 1 ? "Осталось 1 место!" : $"{used} из {_slotFrames.Length}";
             _loomLabel.color = free <= 1 ? Palette.Danger : Palette.Ink2;
@@ -971,6 +990,7 @@ namespace KnittedPicture.Game
                 }
 
                 Sfx.Play(Sound.SpoolDone, done.Leftover > 0 ? 0.35f : 0.7f);
+                Haptics.Play(Haptic.Tap);
             }
 
             if (step.Stitches.Count > 0 || step.Completed.Count > 0)
@@ -1002,7 +1022,11 @@ namespace KnittedPicture.Game
             var finished = false;
             foreach (var stitch in step.Stitches)
             {
-                finished |= _game.LeftOf(stitch.Color) == 0 && _finishedColors.Add(stitch.Color);
+                if (_game.LeftOf(stitch.Color) == 0 && _finishedColors.Add(stitch.Color))
+                {
+                    finished = true;
+                    CelebrateColor(stitch.Color);
+                }
             }
 
             if (step.Thawed.Count > 0 || finished)
@@ -1021,6 +1045,37 @@ namespace KnittedPicture.Game
 
                 Sfx.Play(Sound.Unlock, 0.7f);
             }
+        }
+
+        /// <summary>
+        /// Цвет довязан: когда долетят последние нитки, его клетки пробегает волна, над ними — «Цвет готов!»,
+        /// звук и ощутимый отклик. Последний цвет не празднуем отдельно — там сразу победная волна.
+        /// </summary>
+        private void CelebrateColor(int color)
+        {
+            if (_game.Status == GameStatus.Won)
+            {
+                return;
+            }
+
+            Tweens.Delay(Root, BeadFlight + 0.05f, () =>
+            {
+                if (_ended)
+                {
+                    return;
+                }
+
+                var at = _picture.CelebrateColor(color);
+                if (at == null)
+                {
+                    return;
+                }
+
+                Fx.FloatText(_fx, at.Value, "Цвет готов!", Color.Lerp(_colors[color], Palette.Ink, 0.45f), 22f);
+                Fx.Sparkle(_fx, at.Value, _colors[color], 10, 50f);
+                Sfx.Play(Sound.Star, 0.55f);
+                Haptics.Play(Haptic.Medium);
+            });
         }
 
         /// <summary>Числа на льду тают вместе с петлями — без перестройки поля.</summary>
@@ -1059,6 +1114,7 @@ namespace KnittedPicture.Game
             Fx.Sparkle(_fx, at, Palette.Coin, 10, 34f);
             Fx.FloatText(_fx, at, "+" + _goldPerLoop, Palette.CoinShadow, 20f);
             Sfx.Play(Sound.Coin, 0.7f);
+            Haptics.Play(Haptic.Soft);
             RefreshGoals();
             if (_goldGoal != null)
             {
@@ -1080,6 +1136,7 @@ namespace KnittedPicture.Game
             {
                 Fx.FloatText(_fx, at, "Разгон!", RushColor, 30f);
                 Sfx.Play(Sound.Combo, 0.9f);
+                Haptics.Play(Haptic.Medium);
                 Tweens.Punch(_loomBg, 0.06f, 0.3f);
                 Fx.Sparkle(_fx, Ui.WorldCenter(_loomBg), RushColor, 12, 140f);
             }
@@ -1174,6 +1231,7 @@ namespace KnittedPicture.Game
                 }
 
                 Sfx.Play(Sound.Deny, 0.6f);
+                Haptics.Play(Haptic.Soft);
                 App.Toast("Сначала уходит передний клубок. Достать из глубины можно ножницами");
                 return;
             }
@@ -1197,6 +1255,7 @@ namespace KnittedPicture.Game
             if (result.Kind == MoveKind.KnotUntied)
             {
                 Sfx.Play(Sound.Knot);
+                Haptics.Play(Haptic.Tap);
                 RefreshField();
                 RefreshBoosters();
                 var view = FindFieldView(result.Knotted!.Id);
@@ -1210,6 +1269,7 @@ namespace KnittedPicture.Game
             }
 
             Sfx.Play(Sound.Pick);
+            Haptics.Play(Haptic.Tap);
             OnComboGrow(_tempo.OnPlaced());
             var flights = new List<(Placement placed, Vector3 from)>();
             foreach (var placed in result.Placed)
@@ -1299,6 +1359,7 @@ namespace KnittedPicture.Game
             HideScissorsBanner();
             Fx.Poof(_fx, at, Palette.Ink3, _slotSpool * 1.4f);
             Sfx.Play(Sound.Knot);
+            Haptics.Play(Haptic.Medium);
             SyncLoom();
             RefreshField();
             RefreshBoosters();
@@ -1309,6 +1370,7 @@ namespace KnittedPicture.Game
         private void Deny(int column, int depth, RejectReason reason)
         {
             Sfx.Play(Sound.Deny);
+            Haptics.Play(Haptic.Soft);
             var view = _field.FirstOrDefault(f => f.Column == column && f.Depth == depth);
             if (view != null)
             {
@@ -1369,6 +1431,7 @@ namespace KnittedPicture.Game
                 _picture.Refresh();
                 RefreshProgress();
                 Sfx.Play(Sound.Unlock);
+                Haptics.Play(Haptic.Success);
                 _picture.Wave(() =>
                 {
                     Tweens.Punch(_pictureCard, 0.06f, 0.4f);
@@ -1399,6 +1462,7 @@ namespace KnittedPicture.Game
             _tempo.Break();
             _hitStop = 0.12f;
             Sfx.Play(Sound.Jam);
+            Haptics.Play(Haptic.Warning);
             Tweens.Shake(_loomBg, 10f, 0.4f);
             Tweens.Shake(Root, 4f, 0.25f);
             foreach (var outline in _slotOutlines)
@@ -1417,6 +1481,7 @@ namespace KnittedPicture.Game
             HideHint();
             _tempo.Break();
             Sfx.Play(Sound.Jam);
+            Haptics.Play(Haptic.Warning);
             if (_timerMoth != null)
             {
                 Tweens.Punch(_timerMoth, 0.4f, 0.4f);

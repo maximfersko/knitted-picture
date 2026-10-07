@@ -93,6 +93,7 @@ namespace KnittedPicture.Game
             Levels = new LevelRepository();
             Progress = new ProgressService(SaveStore.Load(), Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
+            Haptics.Enabled = Progress.Data.hapticsOn;
             Ads = new StubAds(this);
 
             EnsureCamera();
@@ -413,6 +414,14 @@ namespace KnittedPicture.Game
             Save();
         }
 
+        public void SetHaptics(bool on)
+        {
+            Progress.Data.hapticsOn = on;
+            Haptics.Enabled = on;
+            Save();
+            Haptics.Play(Haptic.Medium);
+        }
+
         /// <summary>
         /// Стереть прогресс: новое сохранение, все окна закрыты, экраны строятся заново
         /// (главная, сундук, коллекции читают только Progress — старого состояния не остаётся).
@@ -423,6 +432,7 @@ namespace KnittedPicture.Game
             SaveStore.Reset();
             Progress = new ProgressService(new PlayerProgress(), Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
+            Haptics.Enabled = Progress.Data.hapticsOn;
             HomeScreen.ResetCarousel();
             SaveStore.Save(Progress.Data);
             ShowIntro();
