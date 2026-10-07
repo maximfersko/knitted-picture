@@ -20,22 +20,154 @@ namespace KnittedPicture.Game
             Ui.RoundButton(Root, Icon.Settings, 16, 8).OnClick(() => app.ShowPopup(new SettingsPopup(app)));
             Ui.CoinPill(Root, progress.Coins, W - 16, 8);
 
-            // Логотип: большой подробный клубок с мягкой тенью и название.
-            // В спрайте шар чуть выше середины (снизу место для нити), поэтому сам спрайт крупнее шара.
+            // Логотип: большой клубок пряжи «в работе» со спицами, мягкая тень, название.
             var compact = H < 740f;
             var ball = compact ? 72f : 96f;
             var logoY = compact ? 50f : 56f;
-            var shadow = Ui.Image(Root, "LogoShadow", Art.Glow, Palette.WithAlpha(Palette.Ink, 0.22f));
-            Ui.PlaceCenter(shadow.rectTransform, W / 2f, logoY + ball * 0.9f, ball * 0.78f, ball * 0.16f);
-            var yarn = Ui.Image(Root, "Logo", Art.YarnBallLarge, Palette.Hex("#FF6FA5"));
-            Ui.PlaceCenter(yarn.rectTransform, W / 2f, logoY + ball / 2f, ball, ball);
-            Tweens.Run(yarn, 3.2f, t => yarn.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 2f) * 4f), null, null, 0, true);
+            BuildLogo(logoY, ball);
             var titleY = logoY + ball + 6f;
             Ui.Label(Root, "Вязаная картинка", compact ? 28 : 32, Palette.Ink, 16, titleY, W - 32, 40);
+            var chip = BuildYarnChip(titleY + 44f);
             // Без подзаголовка: на главной только то, что нужно для действия.
-            var y = BuildMetaRow(titleY + 52f);
+            var y = BuildMetaRow(titleY + 52f + chip);
             BuildCollection(y + 16f);
             BuildPlay();
+        }
+
+        /// <summary>
+        /// Клубок на главной — это пряжа «в работе» из коллекции: её цвет, меланж вторым цветом,
+        /// искры у блестящей и эпической, радужный — радуга. Нашёл новый моток — и главная другая.
+        /// Сзади две бамбуковые спицы: сразу видно, что игра про вязание.
+        /// Тап — клубок сжимается, подпрыгивает и чуть откатывается; каждый седьмой тап — кувырок с искрами.
+        /// </summary>
+        private void BuildLogo(float logoY, float ball)
+        {
+            var info = App.Progress.ActiveYarn >= 0 ? YarnCatalog.All[App.Progress.ActiveYarn] : null;
+            var main = info != null ? Palette.Hex(info.Hex) : Palette.Hex("#FF6FA5");
+            var cy = logoY + ball / 2f;
+
+            // Тень на полу — отдельно: клубок подпрыгивает, а она остаётся и сжимается.
+            var shadow = Ui.Image(Root, "LogoShadow", Art.Glow, Palette.WithAlpha(Palette.Ink, 0.22f));
+            Ui.PlaceCenter(shadow.rectTransform, W / 2f, logoY + ball * 0.9f, ball * 0.78f, ball * 0.16f);
+
+            // logo — прыжки и сжатие по тапу; sway — вечное лёгкое покачивание вместе со спицами.
+            var logo = Ui.PlaceCenter(Ui.Node(Root, "Logo"), W / 2f, cy, ball, ball);
+            var hit = Ui.Image(logo, "Hit", null, Color.clear, true);
+            Ui.Stretch(hit.rectTransform);
+            var sway = Ui.Stretch(Ui.Node(logo, "Sway"));
+            Tweens.Run(sway, 3.2f, t => sway.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 2f) * 4f), null, null, 0, true);
+
+            // Спицы крест-накрест за клубком: бусины сверху, острия торчат снизу. Центр — середина шара
+            // (в спрайте шар чуть выше середины: снизу место для нити).
+            var ballCenter = ball / 2f - ball * 12f / 320f;
+            foreach (var angle in new[] { -135f, 135f })
+            {
+                var needle = Ui.Image(sway, "Needle", Art.KnittingNeedle, Color.white);
+                Ui.PlaceCenter(needle.rectTransform, ball / 2f, ballCenter, ball * 0.12f, ball * 1.42f);
+                needle.rectTransform.localRotation = Quaternion.Euler(0, 0, angle);
+            }
+
+            var rainbow = info != null && info.Look == YarnLook.Rainbow;
+            var yarn = Ui.Image(sway, "Ball", rainbow ? Art.YarnBallLargeRainbow : Art.YarnBallLarge, rainbow ? Color.white : main);
+            Ui.Stretch(yarn.rectTransform);
+            if (info != null && info.Look == YarnLook.Melange)
+            {
+                Ui.Stretch(Ui.Image(sway, "Melange", Art.YarnBallLargeMelange, Palette.Hex(info.Hex2)).rectTransform);
+            }
+
+            if (info != null && (info.Look == YarnLook.Sparkle || info.Rarity == Rarity.Epic))
+            {
+                var spark = info.Look == YarnLook.Sparkle ? Palette.Hex(info.Hex2) : Palette.Coin;
+                var spots = new[] { (0.24f, 0.24f, 0.18f), (0.8f, 0.34f, 0.14f), (0.68f, 0.8f, 0.16f) };
+                for (var i = 0; i < spots.Length; i++)
+                {
+                    var (x, y, size) = spots[i];
+                    var star = Ui.Image(sway, "Spark", Art.Icon(Icon.Star), spark);
+                    Ui.PlaceCenter(star.rectTransform, ball * x, ball * y, ball * size, ball * size);
+                    var rt = star.rectTransform;
+                    Tweens.Run(rt, 1.4f, t => rt.localScale = Vector3.one * (0.6f + 0.5f * Ease.Bump(t)), null, null, i * 0.35f, true);
+                }
+            }
+
+            var basePosition = logo.anchoredPosition;
+            var shadowRect = shadow.rectTransform;
+            var shadowSize = shadowRect.sizeDelta;
+            var busy = false;
+            var taps = 0;
+            var tap = logo.gameObject.AddComponent<Tap>();
+            tap.PressFeedback = false;
+            tap.ClickSound = false;
+            tap.OnClick(() =>
+            {
+                if (busy)
+                {
+                    return;
+                }
+
+                busy = true;
+                taps++;
+                var flip = taps % 7 == 0;
+                Sfx.Play(flip ? Sound.Star : Sound.Pick);
+                Haptics.Play(flip ? Haptic.Medium : Haptic.Tap);
+                if (flip)
+                {
+                    Fx.Sparkle(Root, Ui.WorldCenter(logo), main, 10, ball * 0.7f);
+                }
+
+                var side = taps % 2 == 0 ? 1f : -1f;
+                Tweens.Run(logo, flip ? 0.8f : 0.6f, t =>
+                {
+                    // Сжатие перед прыжком, вытягивание в полёте, сжатие при приземлении.
+                    var squash = t < 0.12f ? t / 0.12f : Mathf.Max(0f, 1f - (t - 0.12f) / 0.08f);
+                    var stretch = Ease.Bump(Mathf.Clamp01((t - 0.12f) / 0.32f));
+                    var land = Ease.Bump(Mathf.Clamp01((t - 0.62f) / 0.2f));
+                    var sx = (1f + 0.12f * squash) * (1f - 0.06f * stretch) * (1f + 0.08f * land);
+                    var sy = (1f - 0.12f * squash) * (1f + 0.08f * stretch) * (1f - 0.08f * land);
+                    logo.localScale = new Vector3(sx, sy, 1f);
+
+                    var air = Ease.Bump(Mathf.Clamp01((t - 0.12f) / 0.5f));
+                    logo.anchoredPosition = basePosition + new Vector2(side * 6f * air, ball * 0.16f * air);
+                    logo.localRotation = Quaternion.Euler(0, 0, flip ? -360f * side * Ease.InOutCubic(Mathf.Clamp01((t - 0.1f) / 0.6f)) : -14f * side * air);
+
+                    // Чем выше клубок, тем меньше и бледнее тень.
+                    shadowRect.sizeDelta = shadowSize * (1f - 0.3f * air);
+                }, null, () =>
+                {
+                    logo.localScale = Vector3.one;
+                    logo.anchoredPosition = basePosition;
+                    logo.localRotation = Quaternion.identity;
+                    shadowRect.sizeDelta = shadowSize;
+                    busy = false;
+                });
+            });
+        }
+
+        /// <summary>
+        /// Плашка под названием: какая пряжа «в работе» и что она даёт. Тап — карточка мотка.
+        /// Нет пряжи в работе — плашки нет. Возвращает, сколько места она заняла.
+        /// </summary>
+        private float BuildYarnChip(float y)
+        {
+            var progress = App.Progress;
+            var id = progress.ActiveYarn;
+            if (id < 0)
+            {
+                return 0f;
+            }
+
+            var info = YarnCatalog.All[id];
+            var perk = YarnCatalog.PerkOf(id);
+            var power = progress.PerkPower(perk);
+            var text = progress.PerksOpen && power > 0 ? $"{info.Name} в работе · {YarnCatalog.PerkShort(perk, power)}" : $"{info.Name} в работе";
+            const float h = 28f;
+            var w = Mathf.Min(W - 48f, 320f);
+            var chip = Ui.Box(Root, "YarnChip", h / 2f, Palette.Card, true);
+            Ui.Place(chip.rectTransform, (W - w) / 2f, y, w, h);
+            var face = chip.rectTransform;
+            YarnView.Create(face, info, 16f, h / 2f, 20f, true);
+            Ui.Fit(Ui.Label(face, text, 13, Palette.Ink, 30f, 0f, w - 40f, h), 9);
+            chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new YarnCardPopup(App, id, App.ShowHome)));
+            return h + 8f;
         }
 
         /// <summary>Подарок дня, сундук, задания дня (с 4-го уровня) и коллекции — плитки с отметками.</summary>

@@ -65,7 +65,16 @@ namespace KnittedPicture.Game
         public static Sprite YarnBall => Cached("yarn", () => BuildYarnBall(false));
 
         /// <summary>Большой подробный клубок для главного экрана: слои намотки, кручёная нить, ворс. Красится цветом пряжи.</summary>
-        public static Sprite YarnBallLarge => Cached("yarnLarge", BuildDetailedYarnBall);
+        public static Sprite YarnBallLarge => Cached("yarnLarge", () => BuildDetailedYarnBall(LargeBall.Plain));
+
+        /// <summary>Каждая вторая нитка большого клубка (остальное прозрачно): поверх основного — меланж вторым цветом.</summary>
+        public static Sprite YarnBallLargeMelange => Cached("yarnLargeMelange", () => BuildDetailedYarnBall(LargeBall.EveryOther));
+
+        /// <summary>Большой радужный клубок: каждая нитка своего цвета, красится белым.</summary>
+        public static Sprite YarnBallLargeRainbow => Cached("yarnLargeRainbow", () => BuildDetailedYarnBall(LargeBall.Rainbow));
+
+        /// <summary>Вязальная спица: остриём вверх, бусина-набалдашник внизу. Цвета запечены, красить белым.</summary>
+        public static Sprite KnittingNeedle => Cached("needle", BuildNeedle);
 
         /// <summary>
         /// Узор ткани поверх клубка (белые «галочки» вязки в круге клубка): так выглядит чужая пряжа
@@ -358,7 +367,14 @@ namespace KnittedPicture.Game
         /// тень на нижние), нить кручёная — по ней бегут косые витки прядей, у каждой нитки свой оттенок,
         /// по краю ворс и выбившиеся волоски, кончик нити тоже кручёный. Серый, красится цветом пряжи.
         /// </summary>
-        private static Sprite BuildDetailedYarnBall()
+        private enum LargeBall
+        {
+            Plain,
+            EveryOther,
+            Rainbow,
+        }
+
+        private static Sprite BuildDetailedYarnBall(LargeBall kind)
         {
             const int size = 320;
             const float c = size / 2f;
@@ -400,6 +416,7 @@ namespace KnittedPicture.Game
                     var fuzz = 0.9f * (Hash(Mathf.Floor((angle + Mathf.PI) * 70f)) - 0.5f) + 0.5f * Mathf.Sin(angle * 23f);
                     var alpha = Mathf.Clamp01((radius + fuzz - d) / 2.2f + 0.5f);
                     var value = 0f;
+                    var strandIndex = 0f;
                     if (alpha > 0f)
                     {
                         var rr = Mathf.Min(r2, 1f);
@@ -436,6 +453,7 @@ namespace KnittedPicture.Game
                         var twist = 1f - 0.11f * SmoothStep(0.2f, 1f, ply) * profile;
 
                         var tone = 0.94f + 0.08f * Hash(index * 7.13f + layer * 31.7f);
+                        strandIndex = index + layer * 100f;
                         value = (0.62f + 0.38f * profile) * twist * tone * shade;
 
                         // Кромка пояса: нитки у края чуть темнее, пояс выглядит толще.
@@ -453,7 +471,17 @@ namespace KnittedPicture.Game
                         value *= 1f - 0.22f * SmoothStep(radius - 12f, radius, d);
                     }
 
-                    var color = Color.white * Mathf.Clamp01(value);
+                    var color = kind == LargeBall.Rainbow
+                        ? Color.HSVToRGB(Mathf.Repeat(strandIndex * 0.11f, 1f), 0.5f, 1f) * Mathf.Clamp01(value)
+                        : Color.white * Mathf.Clamp01(value);
+                    if (kind == LargeBall.EveryOther)
+                    {
+                        // Меланж: вторым цветом только каждая вторая нитка, ни волосков, ни кончика.
+                        alpha *= Mathf.Repeat(strandIndex, 2f) >= 1f ? 1f : 0f;
+                        color.a = alpha;
+                        pixels[py * size + px] = color;
+                        continue;
+                    }
 
                     // Выбившиеся волоски у края.
                     var hair = DistanceToPolyline(hairs, x, y, 2f);
@@ -474,8 +502,9 @@ namespace KnittedPicture.Game
                         var round = Mathf.Sqrt(Mathf.Clamp01(1f - across * across));
                         var twistTail = 1f - 0.08f * SmoothStep(0.3f, 1f, Mathf.Sin((x * 0.55f + y * 0.55f) * 0.9f));
                         var tailValue = (0.66f + 0.3f * round) * twistTail;
+                        var tailColor = kind == LargeBall.Rainbow ? Color.HSVToRGB(0f, 0.5f, 1f) : Color.white;
                         var total = tailAlpha + alpha * (1f - tailAlpha);
-                        color = (Color.white * tailValue * tailAlpha + color * alpha * (1f - tailAlpha)) / Mathf.Max(total, 0.0001f);
+                        color = (tailColor * tailValue * tailAlpha + color * alpha * (1f - tailAlpha)) / Mathf.Max(total, 0.0001f);
                         alpha = total;
                     }
 
@@ -487,6 +516,64 @@ namespace KnittedPicture.Game
             texture.SetPixels32(pixels);
             texture.Apply();
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        /// <summary>
+        /// Спица: тонкий круглый бамбуковый стержень (светлая середина, тени по бокам, блик), сверху заострён,
+        /// снизу розовая бусина-набалдашник с бликом.
+        /// </summary>
+        private static Sprite BuildNeedle()
+        {
+            const int width = 40;
+            const int height = 400;
+            const float rod = 7f;
+            const float knob = 16f;
+            const float cx = width / 2f;
+            const float knobY = knob + 2f;
+            const float tipLength = 46f;
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[width * height];
+            var rodColor = new Color(0.9f, 0.7f, 0.47f);
+            var knobColor = new Color(1f, 0.44f, 0.65f);
+            for (var py = 0; py < height; py++)
+            {
+                for (var px = 0; px < width; px++)
+                {
+                    var x = px + 0.5f;
+                    var y = py + 0.5f;
+
+                    // Стержень сужается к острию наверху.
+                    var halfWidth = y > height - tipLength ? rod * Mathf.Sqrt(Mathf.Clamp01((height - 2f - y) / tipLength)) : rod;
+                    var u = (x - cx) / Mathf.Max(halfWidth, 0.01f);
+                    var rodAlpha = y > knobY && y < height - 1f ? Mathf.Clamp01(halfWidth - Mathf.Abs(x - cx) + 0.5f) : 0f;
+                    var shade = 0.72f + 0.28f * Mathf.Sqrt(Mathf.Clamp01(1f - u * u)) + 0.2f * Mathf.Exp(-(u + 0.35f) * (u + 0.35f) * 18f);
+                    var color = rodColor * shade;
+                    var alpha = rodAlpha;
+
+                    // Бусина: шар с бликом сверху слева.
+                    var kd = Mathf.Sqrt((x - cx) * (x - cx) + (y - knobY) * (y - knobY));
+                    var knobAlpha = Mathf.Clamp01(knob - kd + 0.5f);
+                    if (knobAlpha > 0f)
+                    {
+                        var nx = (x - cx) / knob;
+                        var ny = (y - knobY) / knob;
+                        var nz = Mathf.Sqrt(Mathf.Clamp01(1f - nx * nx - ny * ny));
+                        var light = Mathf.Clamp01(-0.45f * nx + 0.55f * ny + 0.7f * nz);
+                        var spot = Mathf.Pow(light, 24f) * 0.6f;
+                        var knobShade = knobColor * (0.62f + 0.42f * light) + Color.white * spot;
+                        color = knobShade * knobAlpha + color * alpha * (1f - knobAlpha);
+                        alpha = knobAlpha + alpha * (1f - knobAlpha);
+                        color /= Mathf.Max(alpha, 0.0001f);
+                    }
+
+                    color.a = alpha;
+                    pixels[py * width + px] = color;
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f), 100f);
         }
 
         /// <summary>Псевдослучайное число 0..1 по координате — одинаковое при каждой сборке.</summary>
