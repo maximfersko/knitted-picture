@@ -1,0 +1,20 @@
+{
+    "name": "KnittedPicture.Haptics",
+    "rootNamespace": "KnittedPicture.Game",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.modules.androidjni",
+            "expression": "1.0.0",
+            "define": "KNITTED_ANDROIDJNI"
+        }
+    ],
+    "noEngineReferences": false
+}

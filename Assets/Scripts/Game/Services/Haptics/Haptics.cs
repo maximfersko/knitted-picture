@@ -29,6 +29,9 @@ namespace KnittedPicture.Game
     /// Тактильный отклик. Половину мобильных игр играют без звука, и вибрация берёт на себя его роль:
     /// тап «чувствуется», завершение цвета и победа — ощутимы. На iPhone — системные генераторы отклика
     /// (Plugins/iOS/KnittedHaptics.mm), на Android — короткий импульс вибромотора. В редакторе ничего не делает.
+    /// Своя сборка (KnittedPicture.Haptics.asmdef) нужна ради KNITTED_ANDROIDJNI: тонкая вибрация на Android
+    /// требует встроенного модуля Android JNI. Если он выключен в Package Manager, игра всё равно собирается,
+    /// а на Android остаётся только системная вибрация на победу и затор.
     /// </summary>
     public static class Haptics
     {
@@ -67,8 +70,13 @@ namespace KnittedPicture.Game
 
 #if UNITY_IOS && !UNITY_EDITOR
             KnittedHaptic((int)haptic);
-#elif UNITY_ANDROID && !UNITY_EDITOR
+#elif UNITY_ANDROID && !UNITY_EDITOR && KNITTED_ANDROIDJNI
             PlayAndroid(haptic);
+#elif UNITY_ANDROID && !UNITY_EDITOR
+            if (haptic >= Haptic.Success)
+            {
+                Handheld.Vibrate();
+            }
 #endif
         }
 
@@ -77,7 +85,7 @@ namespace KnittedPicture.Game
         private static extern void KnittedHaptic(int kind);
 #endif
 
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR && KNITTED_ANDROIDJNI
         private static AndroidJavaObject? _vibrator;
         private static int _sdk;
 

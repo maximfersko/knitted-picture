@@ -88,7 +88,8 @@ dotnet run --project dotnet/KnittedPicture.LevelTool
 dotnet test dotnet/KnittedPicture.Core.Tests     # правила, экономика, все уровни решаемы
 dotnet build dotnet/KnittedPicture.Game.Check    # код игры компилируется
 dotnet build dotnet/KnittedPicture.Game.Check -p:UnityPlatform=UNITY_ANDROID   # и код под Android
+dotnet build dotnet/KnittedPicture.Game.Check "-p:UnityPlatform=UNITY_ANDROID%3BKNITTED_ANDROIDJNI"   # Android с модулем JNI
 dotnet build dotnet/KnittedPicture.Game.Check -p:UnityPlatform=UNITY_IOS       # и код под iOS
 ```
 
-`KnittedPicture.Game.Check` компилирует `Assets/Scripts/Game` против справочных сборок Unity из NuGet и заглушек uGUI. Он ловит ошибки компиляции, но не заменяет запуск в редакторе. Код под `#if UNITY_ANDROID` / `#if UNITY_IOS` проверяется только с `-p:UnityPlatform=…`. Вибрации на Android нужен встроенный модуль `com.unity.modules.androidjni` в `Packages/manifest.json`.
+`KnittedPicture.Game.Check` компилирует `Assets/Scripts/Game` против справочных сборок Unity из NuGet и заглушек uGUI. Он ловит ошибки компиляции, но не заменяет запуск в редакторе. Код под `#if UNITY_ANDROID` / `#if UNITY_IOS` проверяется только с `-p:UnityPlatform=…`. Тонкой вибрации на Android нужен встроенный модуль `com.unity.modules.androidjni` (он в `Packages/manifest.json`). Вибрация лежит в своей сборке `KnittedPicture.Haptics` с define `KNITTED_ANDROIDJNI`: без модуля игра всё равно собирается, просто на Android остаётся только системная вибрация на победу и затор.
