@@ -64,6 +64,9 @@ namespace KnittedPicture.Game
         /// <summary>Клубок: шар, намотанный нитью, с перевязью наискосок и кончиком нити. Красится цветом пряжи.</summary>
         public static Sprite YarnBall => Cached("yarn", () => BuildYarnBall(false));
 
+        /// <summary>Большой подробный клубок для главного экрана: слои намотки, кручёная нить, ворс. Красится цветом пряжи.</summary>
+        public static Sprite YarnBallLarge => Cached("yarnLarge", BuildDetailedYarnBall);
+
         /// <summary>
         /// Узор ткани поверх клубка (белые «галочки» вязки в круге клубка): так выглядит чужая пряжа
         /// цвета ткани — тот же узор, что у готовой ткани на картинке.
@@ -218,6 +221,32 @@ namespace KnittedPicture.Game
                 new Vector4(border, border, border, border));
         }
 
+        /// <summary>
+        /// Свечение по краю экрана (для Image.Type.Sliced с pixelsPerUnitMultiplier = Density):
+        /// у самого края ярко, к середине на ширину width плавно гаснет, середина прозрачная.
+        /// </summary>
+        public static Sprite EdgeGlow(float width) => Cached("edge" + width, () =>
+        {
+            var border = Mathf.Max(2, Mathf.CeilToInt(width * Density));
+            var size = border * 2 + 4;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[size * size];
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var edge = Mathf.Min(Mathf.Min(x, size - 1 - x), Mathf.Min(y, size - 1 - y));
+                    var t = Mathf.Clamp01(1f - edge / (float)border);
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)(t * t * 255));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect,
+                new Vector4(border, border, border, border));
+        });
+
         private static Sprite Round(int size, System.Func<float, float, float> alphaAt)
         {
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
@@ -324,6 +353,192 @@ namespace KnittedPicture.Game
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
+        /// <summary>
+        /// Большой клубок для главного экрана: четыре слоя намотки крест-накрест (каждый верхний бросает
+        /// тень на нижние), нить кручёная — по ней бегут косые витки прядей, у каждой нитки свой оттенок,
+        /// по краю ворс и выбившиеся волоски, кончик нити тоже кручёный. Серый, красится цветом пряжи.
+        /// </summary>
+        private static Sprite BuildDetailedYarnBall()
+        {
+            const int size = 320;
+            const float c = size / 2f;
+            const float radius = c - 22f;
+
+            // Шар чуть выше середины: снизу место для нити, которая ложится на пол.
+            const float cy = c + 12f;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[size * size];
+            // Слои снизу вверх: ось витков, полуширина пояса (по синусу широты), толщина нитки.
+            var axes = new[]
+            {
+                new Vector3(0.25f, 0.95f, 0.2f).normalized,
+                new Vector3(0.95f, -0.15f, 0.35f).normalized,
+                new Vector3(-0.55f, -0.8f, 0.3f).normalized,
+                new Vector3(-0.9f, 0.35f, 0.3f).normalized,
+            };
+            var bands = new[] { 2f, 0.5f, 0.42f, 0.4f };
+            var widths = new[] { 0.13f, 0.12f, 0.12f, 0.115f };
+            var light = new Vector3(-0.45f, 0.6f, 0.66f).normalized;
+            var half = (light + Vector3.forward).normalized;
+            var tail = DetailTail(c, cy, radius);
+            const float tailWidth = 7f;
+            var hairs = StrayHairs(c, cy, radius);
+
+            for (var py = 0; py < size; py++)
+            {
+                for (var px = 0; px < size; px++)
+                {
+                    var x = px + 0.5f;
+                    var y = py + 0.5f;
+                    var nx = (x - c) / radius;
+                    var ny = (y - cy) / radius;
+                    var r2 = nx * nx + ny * ny;
+                    var d = Mathf.Sqrt(r2) * radius;
+
+                    // Ворс: край не ровный, а пушистый — высота ворса меняется по углу.
+                    var angle = Mathf.Atan2(ny, nx);
+                    var fuzz = 0.9f * (Hash(Mathf.Floor((angle + Mathf.PI) * 70f)) - 0.5f) + 0.5f * Mathf.Sin(angle * 23f);
+                    var alpha = Mathf.Clamp01((radius + fuzz - d) / 2.2f + 0.5f);
+                    var value = 0f;
+                    if (alpha > 0f)
+                    {
+                        var rr = Mathf.Min(r2, 1f);
+                        var n = new Vector3(Mathf.Min(1f, nx), Mathf.Min(1f, ny), Mathf.Sqrt(Mathf.Max(0f, 1f - rr)));
+
+                        // Верхний слой, под которым лежит точка, и тень от слоёв над ним.
+                        var layer = 0;
+                        var shade = 1f;
+                        for (var i = axes.Length - 1; i >= 0; i--)
+                        {
+                            var t = Mathf.Abs(Vector3.Dot(n, axes[i]));
+                            if (t < bands[i])
+                            {
+                                layer = i;
+                                break;
+                            }
+
+                            // Тень от пояса сверху на лежащее ниже.
+                            shade *= 1f - 0.3f * (1f - SmoothStep(bands[i], bands[i] + 0.1f, t));
+                        }
+
+                        var axis = axes[layer];
+                        var tl = Vector3.Dot(n, axis);
+                        var k = Mathf.Asin(Mathf.Clamp(tl, -1f, 1f)) / widths[layer];
+                        var index = Mathf.Floor(k);
+                        var across = k - index;
+                        var profile = Mathf.Sqrt(Mathf.Max(0f, Mathf.Sin(Mathf.PI * across)));
+
+                        // Вдоль нитки — долгота вокруг оси; по ней бегут косые витки прядей.
+                        var u = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.forward).normalized;
+                        var v = Vector3.Cross(axis, u);
+                        var along = Mathf.Atan2(Vector3.Dot(n, v), Vector3.Dot(n, u));
+                        var ply = Mathf.Sin((along * 34f + across * 2.4f + index * 1.7f) * Mathf.PI);
+                        var twist = 1f - 0.11f * SmoothStep(0.2f, 1f, ply) * profile;
+
+                        var tone = 0.94f + 0.08f * Hash(index * 7.13f + layer * 31.7f);
+                        value = (0.62f + 0.38f * profile) * twist * tone * shade;
+
+                        // Кромка пояса: нитки у края чуть темнее, пояс выглядит толще.
+                        if (layer > 0)
+                        {
+                            value *= 1f - 0.18f * SmoothStep(bands[layer] - 0.05f, bands[layer], Mathf.Abs(tl));
+                        }
+
+                        // Мелкий ворс по всей поверхности.
+                        value *= 0.97f + 0.06f * Hash(px * 0.37f + py * 1.91f);
+
+                        var lambert = Mathf.Clamp01(Vector3.Dot(n, light));
+                        var shine = Mathf.Pow(Mathf.Clamp01(Vector3.Dot(n, half)), 14f) * 0.18f * profile;
+                        value = value * (0.64f + 0.36f * lambert) * 1.2f + shine;
+                        value *= 1f - 0.22f * SmoothStep(radius - 12f, radius, d);
+                    }
+
+                    var color = Color.white * Mathf.Clamp01(value);
+
+                    // Выбившиеся волоски у края.
+                    var hair = DistanceToPolyline(hairs, x, y, 2f);
+                    var hairAlpha = Mathf.Clamp01(0.8f - hair) * 0.45f;
+                    if (hairAlpha > 0f && alpha < 1f)
+                    {
+                        var total = hairAlpha + alpha * (1f - hairAlpha);
+                        color = (Color.white * 0.9f * hairAlpha + color * alpha * (1f - hairAlpha)) / Mathf.Max(total, 0.0001f);
+                        alpha = total;
+                    }
+
+                    // Кончик нити: кручёный, как и нитки клубка.
+                    var tailDistance = DistanceToPolyline(tail, x, y, tailWidth + 1f);
+                    var tailAlpha = Mathf.Clamp01(tailWidth - tailDistance + 0.5f);
+                    if (tailAlpha > 0f)
+                    {
+                        var across = tailDistance / tailWidth;
+                        var round = Mathf.Sqrt(Mathf.Clamp01(1f - across * across));
+                        var twistTail = 1f - 0.08f * SmoothStep(0.3f, 1f, Mathf.Sin((x * 0.55f + y * 0.55f) * 0.9f));
+                        var tailValue = (0.66f + 0.3f * round) * twistTail;
+                        var total = tailAlpha + alpha * (1f - tailAlpha);
+                        color = (Color.white * tailValue * tailAlpha + color * alpha * (1f - tailAlpha)) / Mathf.Max(total, 0.0001f);
+                        alpha = total;
+                    }
+
+                    color.a = alpha;
+                    pixels[py * size + px] = color;
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        /// <summary>Псевдослучайное число 0..1 по координате — одинаковое при каждой сборке.</summary>
+        private static float Hash(float n)
+        {
+            var s = Mathf.Sin(n * 12.9898f) * 43758.547f;
+            return s - Mathf.Floor(s);
+        }
+
+        /// <summary>Кончик нити большого клубка: спускается слева внизу и ложится на пол.</summary>
+        private static List<Vector2> DetailTail(float cx, float cy, float radius)
+        {
+            var anchors = new[] { (232f, -14f), (236f, 0f), (242f, 10f), (252f, 17f), (264f, 20f), (276f, 21f), (287f, 20f) };
+            var points = new List<Vector2>();
+            foreach (var (angle, offset) in anchors)
+            {
+                var a = angle * Mathf.Deg2Rad;
+                points.Add(new Vector2(cx + Mathf.Cos(a) * (radius + offset), cy + Mathf.Sin(a) * (radius + offset)));
+            }
+
+            return CatmullRom(points);
+        }
+
+        /// <summary>Несколько выбившихся волосков: короткие дуги наружу из края клубка.</summary>
+        private static List<Vector2> StrayHairs(float cx, float cy, float radius)
+        {
+            var line = new List<Vector2>();
+            for (var i = 0; i < 14; i++)
+            {
+                var a = (i * 137.5f + 20f) * Mathf.Deg2Rad;
+                if (Mathf.Sin(a) < -0.6f && Mathf.Cos(a) < 0.3f)
+                {
+                    continue; // там кончик нити
+                }
+
+                var length = 5f + 5f * Hash(i * 3.3f);
+                var bend = (Hash(i * 5.1f) - 0.5f) * 0.6f;
+                for (var s = 0; s <= 4; s++)
+                {
+                    var t = s / 4f;
+                    var r = radius - 2f + length * t;
+                    var aa = a + bend * t;
+                    line.Add(new Vector2(cx + Mathf.Cos(aa) * r, cy + Mathf.Sin(aa) * r));
+                }
+
+                // Разрыв: следующий волосок — отдельная ломаная.
+                line.Add(new Vector2(float.NaN, float.NaN));
+            }
+
+            return line;
+        }
+
         /// <summary>Нитка в сечении: 1 — середина нитки, ниже — бороздка между соседними. Номер нитки — для радуги.</summary>
         private static float Strand(float t, float width, out float index)
         {
@@ -350,6 +565,12 @@ namespace KnittedPicture.Game
                 points.Add(new Vector2(c + Mathf.Cos(a) * (radius + offset), c + Mathf.Sin(a) * (radius + offset)));
             }
 
+            return CatmullRom(points);
+        }
+
+        /// <summary>Гладкая кривая через опорные точки (Катмулл — Ром), 16 шагов на отрезок.</summary>
+        private static List<Vector2> CatmullRom(List<Vector2> points)
+        {
             var curve = new List<Vector2>();
             for (var i = 0; i + 1 < points.Count; i++)
             {
@@ -377,7 +598,9 @@ namespace KnittedPicture.Game
             {
                 var a = line[i];
                 var b = line[i + 1];
-                if (x < Mathf.Min(a.x, b.x) - limit || x > Mathf.Max(a.x, b.x) + limit || y < Mathf.Min(a.y, b.y) - limit || y > Mathf.Max(a.y, b.y) + limit)
+
+                // NaN — разрыв ломаной (так в одну линию складываются отдельные волоски).
+                if (float.IsNaN(a.x) || float.IsNaN(b.x) || x < Mathf.Min(a.x, b.x) - limit || x > Mathf.Max(a.x, b.x) + limit || y < Mathf.Min(a.y, b.y) - limit || y > Mathf.Max(a.y, b.y) + limit)
                 {
                     continue;
                 }

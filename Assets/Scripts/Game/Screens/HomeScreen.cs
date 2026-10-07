@@ -20,11 +20,14 @@ namespace KnittedPicture.Game
             Ui.RoundButton(Root, Icon.Settings, 16, 8).OnClick(() => app.ShowPopup(new SettingsPopup(app)));
             Ui.CoinPill(Root, progress.Coins, W - 16, 8);
 
-            // Логотип: клубок и название.
+            // Логотип: большой подробный клубок с мягкой тенью и название.
+            // В спрайте шар чуть выше середины (снизу место для нити), поэтому сам спрайт крупнее шара.
             var compact = H < 740f;
-            var ball = compact ? 64f : 84f;
-            var logoY = compact ? 56f : 66f;
-            var yarn = Ui.Image(Root, "Logo", Art.YarnBall, Palette.Hex("#FF6FA5"));
+            var ball = compact ? 72f : 96f;
+            var logoY = compact ? 50f : 56f;
+            var shadow = Ui.Image(Root, "LogoShadow", Art.Glow, Palette.WithAlpha(Palette.Ink, 0.22f));
+            Ui.PlaceCenter(shadow.rectTransform, W / 2f, logoY + ball * 0.9f, ball * 0.78f, ball * 0.16f);
+            var yarn = Ui.Image(Root, "Logo", Art.YarnBallLarge, Palette.Hex("#FF6FA5"));
             Ui.PlaceCenter(yarn.rectTransform, W / 2f, logoY + ball / 2f, ball, ball);
             Tweens.Run(yarn, 3.2f, t => yarn.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 2f) * 4f), null, null, 0, true);
             var titleY = logoY + ball + 6f;

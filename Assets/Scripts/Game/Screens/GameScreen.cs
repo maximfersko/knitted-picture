@@ -123,6 +123,17 @@ namespace KnittedPicture.Game
 
         /// <summary>Моль в последней четверти пути: финишный рывок.</summary>
         private bool _mothNear;
+
+        private Image? _timerMothImage;
+
+        /// <summary>Красное свечение по краю экрана: пульсирует, когда моль близко, и сильнее в последние секунды.</summary>
+        private Image? _mothEdge;
+
+        /// <summary>Последняя секунда, на которую уже был «тик» отсчёта (вибрация и щелчок).</summary>
+        private int _lastTickSecond = -1;
+
+        /// <summary>С какого остатка секунд начинается отсчёт: тик каждую секунду.</summary>
+        private const float CountdownFrom = 10f;
         private float _timerX;
         private float _timerW;
 
@@ -184,6 +195,15 @@ namespace KnittedPicture.Game
             BuildLoom();
             BuildField();
             BuildBoosters();
+            if (_game.TimeLimit > 0)
+            {
+                // Поверх поля, но под эффектами и окнами: край экрана краснеет, когда время на исходе.
+                _mothEdge = Ui.Image(Root, "MothEdge", Art.EdgeGlow(40), Color.clear);
+                _mothEdge.type = Image.Type.Sliced;
+                _mothEdge.pixelsPerUnitMultiplier = Art.Density;
+                Ui.Stretch(_mothEdge.rectTransform);
+            }
+
             _fx = Ui.Stretch(Ui.Node(Root, "Fx"));
             RefreshAll();
 
@@ -335,8 +355,13 @@ namespace KnittedPicture.Game
             Ui.PlaceCenter(yarn.rectTransform, 26, y + 13, 24, 24);
             var track = Ui.Box(Root, "TimerTrack", 5, Palette.Track);
             Ui.Place(track.rectTransform, _timerX, y + 8, _timerW, 10);
-            _timerMoth = Ui.IconImage(Root, Icon.Moth, Palette.Ink, _timerX + _timerW, y + 13, 28).rectTransform;
+            _timerMothImage = Ui.IconImage(Root, Icon.Moth, Palette.Ink, _timerX + _timerW, y + 13, 28);
+            _timerMoth = _timerMothImage.rectTransform;
             _timerText = Ui.Label(Root, "", 16, Palette.Ink, W - Pad - 56, y, 56, 26, true, TextAnchor.MiddleRight);
+
+            // Опора справа посередине: на сердцебиении цифры растут от своего края, а не уезжают.
+            _timerText.rectTransform.pivot = new Vector2(1f, 0.5f);
+            _timerText.rectTransform.anchoredPosition = new Vector2(W - Pad, -(y + 13f));
             RefreshTimer();
         }
 
@@ -917,6 +942,30 @@ namespace KnittedPicture.Game
 
             _mothNear = near;
             _timerMoth.localRotation = near ? Quaternion.Euler(0f, 0f, Mathf.Sin(Time.unscaledTime * 14f) * 10f) : Quaternion.identity;
+
+            // Сердцебиение: на каждой новой секунде короткий толчок, к концу сильнее.
+            var countdown = near && left <= CountdownFrom;
+            var sinceTick = 1f - (left - Mathf.Floor(left));
+            var pulse = near ? Mathf.Exp(-sinceTick * 6f) : 0f;
+            _timerText.rectTransform.localScale = Vector3.one * (1f + (countdown ? 0.35f : 0.18f) * pulse);
+            if (_timerMothImage != null)
+            {
+                _timerMothImage.color = near ? Color.Lerp(Palette.Ink, Palette.Danger, 0.5f + 0.5f * pulse) : Palette.Ink;
+            }
+
+            if (_mothEdge != null)
+            {
+                var edge = countdown ? 0.3f + 0.4f * pulse : near ? 0.14f * pulse : 0f;
+                _mothEdge.color = Palette.WithAlpha(Palette.Danger, edge);
+            }
+
+            // Последние 10 секунд: тик каждую секунду — вибрация (последние 5 — заметнее) и щелчок.
+            if (countdown && seconds != _lastTickSecond)
+            {
+                _lastTickSecond = seconds;
+                Haptics.Play(seconds <= 5 ? Haptic.Medium : Haptic.Soft);
+                Sfx.Play(Sound.Click, seconds <= 5 ? 0.9f : 0.6f);
+            }
         }
 
         /// <summary>Рамка станка: оранжевая, когда осталось одно место, красная — когда мест нет.</summary>
