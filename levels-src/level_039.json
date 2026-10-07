@@ -64,5 +64,6 @@
   "minDanger": 0.05,
   "maxDanger": 0.35,
   "maxEarlyJam": 0.25,
+  "minFollower": 0.7,
   "seed": 391
 }

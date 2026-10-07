@@ -72,6 +72,21 @@ namespace KnittedPicture.LevelTool
         /// </summary>
         public double maxEarlyJam = 1.0;
 
+        /// <summary>
+        /// Коридор побед игрока «по подсветке» (всегда берёт клубок, которому сразу есть работа).
+        /// Обычный уровень: честная игра почти всегда проходит (minFollower ≈ 0,7).
+        /// Сложный: подсветка одна не спасает (maxFollower ≈ 0,4).
+        /// </summary>
+        public double minFollower;
+        public double maxFollower = 1.0;
+
+        /// <summary>
+        /// Коридор побед игрока, который знает приёмы (короткие первыми, узелки заранее).
+        /// Сложный уровень: приёмы помогают, но не решают всё (≈ 0,2..0,6) — без «стен» и без уровней на один трюк.
+        /// </summary>
+        public double minSkilled;
+        public double maxSkilled = 1.0;
+
         /// <summary>Допустимая доля побед бота: так задаётся сложность.</summary>
         public double minWin;
         public double maxWin = 1.0;

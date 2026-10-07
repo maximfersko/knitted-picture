@@ -81,7 +81,7 @@ namespace KnittedPicture.LevelTool
             });
 
             var failed = false;
-            Console.WriteLine("id  название           размер петли цв клуб кол сл тапы  бот  наугад ранний фронт выбор1 роковые  сид   механики");
+            Console.WriteLine("id  название           размер петли цв клуб кол сл тапы  бот  наугад ранний подсв приёмы фронт выбор1 роковые  сид   механики");
             for (var i = 0; i < designs.Count; i++)
             {
                 var design = designs[i];
@@ -118,7 +118,7 @@ namespace KnittedPicture.LevelTool
                 var mark = built.InRange ? " " : "!";
                 var stitches = PictureGrid.From(level).Total;
                 Console.WriteLine(
-                    $"{design.id,2}  {design.name,-18} {level.width,2}×{level.height,-2} {stitches,5} {level.colors.Length,2} {level.spools.Length,4} {design.columns,3} {level.slots,2} {built.Solution,4}  {built.WinRate,4:P0}{mark} {built.RandomRate,5:P0} {built.EarlyJam,6:P0} {built.Metrics.FrontColors,5:0.0} {built.Metrics.Forced,5:P0} {built.Metrics.Danger,6:P0}  {built.Seed,5}   {mechanics}");
+                    $"{design.id,2}  {design.name,-18} {level.width,2}×{level.height,-2} {stitches,5} {level.colors.Length,2} {level.spools.Length,4} {design.columns,3} {level.slots,2} {built.Solution,4}  {built.WinRate,4:P0}{mark} {built.RandomRate,5:P0} {built.EarlyJam,6:P0} {built.Follower,5:P0} {built.Skilled,6:P0} {built.Metrics.FrontColors,5:0.0} {built.Metrics.Forced,5:P0} {built.Metrics.Danger,6:P0}  {built.Seed,5}   {mechanics}");
             }
 
             return failed ? 1 : 0;
@@ -131,6 +131,8 @@ namespace KnittedPicture.LevelTool
             public double WinRate;
             public double RandomRate;
             public double EarlyJam;
+            public double Follower;
+            public double Skilled;
             public int Seed;
             public bool InRange;
             public Metrics Metrics = null!;
@@ -160,6 +162,9 @@ namespace KnittedPicture.LevelTool
                 var winDistance = (rate < design.minWin ? design.minWin - rate : rate > design.maxWin ? rate - design.maxWin : 0)
                     + Math.Max(0, random - design.maxRandom)
                     + Math.Max(0, early - design.maxEarlyJam);
+                var follower = Bot.FollowerWinRate(level, BotRuns, seed);
+                var skilled = Bot.SkilledWinRate(level, BotRuns, seed);
+                winDistance += Corridor(follower, design.minFollower, design.maxFollower) + Corridor(skilled, design.minSkilled, design.maxSkilled);
                 if (winDistance > 0 && best != null && winDistance * 4 >= bestDistance)
                 {
                     continue;
@@ -179,7 +184,7 @@ namespace KnittedPicture.LevelTool
                     + Math.Max(0, metrics.Danger - design.maxDanger);
                 if (distance < bestDistance)
                 {
-                    best = new Built { Level = level, Solution = solution.Count, WinRate = rate, RandomRate = random, EarlyJam = early, Seed = seed, Metrics = metrics };
+                    best = new Built { Level = level, Solution = solution.Count, WinRate = rate, RandomRate = random, EarlyJam = early, Follower = follower, Skilled = skilled, Seed = seed, Metrics = metrics };
                     bestDistance = distance;
                 }
 
@@ -197,6 +202,9 @@ namespace KnittedPicture.LevelTool
             best.InRange = bestDistance == 0;
             return best;
         }
+
+        private static double Corridor(double value, double min, double max) =>
+            value < min ? min - value : value > max ? value - max : 0;
 
         private static string FindRoot()
         {

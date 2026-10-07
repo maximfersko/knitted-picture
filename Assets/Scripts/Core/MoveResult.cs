@@ -5,6 +5,22 @@ using System.Collections.Generic;
 
 namespace KnittedPicture.Core
 {
+    /// <summary>Чему научить игрока после затора: приём, которым его можно было обойти.</summary>
+    public enum JamAdvice
+    {
+        /// <summary>Станок занят пряжей цвета ткани: её не нужно брать.</summary>
+        ForeignYarn,
+
+        /// <summary>Клубки ждут столбиков выше пунктира: сначала нижний ряд.</summary>
+        Tension,
+
+        /// <summary>Впереди узелки: их стоит развязывать заранее, пока станок вяжет.</summary>
+        Knots,
+
+        /// <summary>Общее правило: короткие клубки первыми, они быстрее освобождают станок.</summary>
+        ShortFirst,
+    }
+
     public enum GameStatus
     {
         Playing,

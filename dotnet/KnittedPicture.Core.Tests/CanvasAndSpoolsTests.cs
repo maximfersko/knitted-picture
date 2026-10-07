@@ -302,9 +302,57 @@ namespace KnittedPicture.Core.Tests
             game.TapColumn(0);
             game.Settle();
             Assert.Equal(GameStatus.Jammed, game.Status);
+            Assert.Equal(JamAdvice.ForeignYarn, game.Advice());
 
             Assert.True(game.CutFromLoom(0));
             Assert.Equal(GameStatus.Playing, game.Status);
+        }
+
+        [Fact]
+        public void Jam_advice_names_tension_when_the_loom_waits_above_the_dashed_line()
+        {
+            // Левый столбец обгоняет правый на ряд и встаёт; его клубок ждёт, а станок на одно место.
+            var game = new LoomGame(new LevelData
+            {
+                width = 2,
+                height = 4,
+                colors = new[] { "#000000", "#FFFFFF" },
+                picture = new[] { "01", "01", "01", "01" },
+                band = 1,
+                slots = 1,
+                spools = new[]
+                {
+                    new SpoolData { column = 0, color = 0, loops = 4 },
+                    new SpoolData { column = 1, color = 1, loops = 4 },
+                },
+            });
+
+            game.TapColumn(0);
+            game.Settle();
+
+            Assert.Equal(GameStatus.Jammed, game.Status);
+            Assert.Equal(JamAdvice.Tension, game.Advice());
+        }
+
+        [Fact]
+        public void Jam_advice_suggests_untying_knots_early_otherwise_short_spools_first()
+        {
+            // Клубок верхнего цвета занял единственный слот раньше времени.
+            var knotted = new LoomGame(Strip(1,
+                new SpoolData { column = 0, color = 1, loops = 4 },
+                new SpoolData { column = 1, color = 0, loops = 4, knots = 1 }));
+            knotted.TapColumn(0);
+            knotted.Settle();
+            Assert.Equal(GameStatus.Jammed, knotted.Status);
+            Assert.Equal(JamAdvice.Knots, knotted.Advice());
+
+            var plain = new LoomGame(Strip(1,
+                new SpoolData { column = 0, color = 1, loops = 4 },
+                new SpoolData { column = 1, color = 0, loops = 4 }));
+            plain.TapColumn(0);
+            plain.Settle();
+            Assert.Equal(GameStatus.Jammed, plain.Status);
+            Assert.Equal(JamAdvice.ShortFirst, plain.Advice());
         }
 
         [Fact]

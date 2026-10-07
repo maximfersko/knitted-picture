@@ -3,7 +3,7 @@
   "name": "Снеговик",
   "tip": "",
   "hard": true,
-  "timeLimit": 95,
+  "timeLimit": 85,
   "palette": [
     {
       "key": ".",
@@ -77,5 +77,9 @@
   "maxForced": 0.55,
   "minDanger": 0.05,
   "maxDanger": 0.35,
+  "maxFollower": 0.4,
+  "minSkilled": 0.2,
+  "maxSkilled": 0.6,
+  "maxEarlyJam": 0.35,
   "seed": 401
 }

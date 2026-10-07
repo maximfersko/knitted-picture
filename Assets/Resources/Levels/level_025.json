@@ -3,7 +3,7 @@
   "name": "Кораблик",
   "tip": "",
   "hard": true,
-  "timeLimit": 70,
+  "timeLimit": 75,
   "width": 14,
   "height": 12,
   "colors": [
@@ -45,43 +45,42 @@
     "00110011001100"
   ],
   "gold": [
-    62,
-    94,
-    166
+    63,
+    103,
+    129
   ],
   "band": 3,
   "slots": 5,
   "spools": [
     {
-      "color": 4,
-      "loops": 8
+      "color": 7,
+      "loops": 7,
+      "knots": 1
     },
     {
-      "color": 1,
+      "color": 5,
       "loops": 1,
-      "link": 1
-    },
-    {
-      "loops": 5
+      "hidden": true
     },
     {
       "color": 3,
-      "loops": 6
+      "loops": 1
     },
     {
-      "color": 1,
+      "column": 1,
+      "color": 4,
       "loops": 3
     },
     {
       "column": 1,
       "color": 4,
-      "loops": 8
+      "loops": 7,
+      "link": 1
     },
     {
       "column": 1,
-      "color": 1,
-      "loops": 10,
-      "knots": 1
+      "color": 3,
+      "loops": 1
     },
     {
       "column": 1,
@@ -89,78 +88,96 @@
       "loops": 1
     },
     {
-      "column": 2,
-      "color": 5,
-      "loops": 1
-    },
-    {
-      "column": 2,
-      "color": 5,
-      "loops": 3
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 1
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 2,
-      "knots": 1
-    },
-    {
-      "column": 3,
-      "color": 7,
-      "loops": 4
-    },
-    {
-      "column": 3,
-      "color": 5,
-      "loops": 1,
-      "hidden": true,
-      "link": 1
-    },
-    {
-      "column": 3,
-      "color": 7,
-      "loops": 4
-    },
-    {
-      "column": 3,
-      "color": 4,
-      "loops": 5
-    },
-    {
-      "column": 3,
-      "color": 4,
-      "loops": 5
-    },
-    {
-      "column": 4,
+      "column": 1,
       "color": 1,
       "loops": 2
     },
     {
+      "column": 2,
+      "color": 7,
+      "loops": 1
+    },
+    {
+      "column": 2,
+      "color": 4,
+      "loops": 7,
+      "knots": 1
+    },
+    {
+      "column": 2,
+      "loops": 2
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 3
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 3
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 4,
+      "link": 1
+    },
+    {
+      "column": 3,
+      "color": 2,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "color": 4,
+      "loops": 8
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 10
+    },
+    {
       "column": 4,
       "color": 6,
-      "loops": 4
+      "loops": 2
     },
     {
       "column": 4,
       "color": 4,
-      "loops": 5
+      "loops": 6
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 1,
+      "hidden": true
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 1
     },
     {
       "column": 4,
       "color": 2,
-      "loops": 11,
-      "hidden": true
+      "loops": 10
     },
     {
       "column": 4,
       "color": 6,
       "loops": 3
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 1
     }
   ]
 }

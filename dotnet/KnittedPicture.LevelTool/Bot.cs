@@ -42,6 +42,109 @@ namespace KnittedPicture.LevelTool
         }
 
         /// <summary>
+        /// Доля побед игрока, который идёт «по подсветке»: берёт передний клубок, которому сразу есть работа
+        /// (в игре такие клубки «дышат»), а если таких нет — узелок, скрытый или цвет, нужный вот-вот.
+        /// Если на обычном уровне такая честная игра часто проигрывает, уровень ощущается нечестным.
+        /// </summary>
+        public static double FollowerWinRate(LevelData level, int runs, int seed) => Rate(level, runs, seed * 13 + 5, skilled: false);
+
+        /// <summary>
+        /// Доля побед игрока, который знает два приёма: короткие клубки первыми (быстрее освобождают станок)
+        /// и узелки развязывать заранее, пока станок занят. На сложном уровне приёмы должны помогать,
+        /// но не решать его целиком; на «стене» без приёма не обойтись даже знающему.
+        /// </summary>
+        public static double SkilledWinRate(LevelData level, int runs, int seed) => Rate(level, runs, seed * 17 + 9, skilled: true);
+
+        private static double Rate(LevelData level, int runs, int seed, bool skilled)
+        {
+            var rng = new Random(seed);
+            var wins = 0;
+            for (var run = 0; run < runs; run++)
+            {
+                var game = new LoomGame(level);
+                for (var step = 0; step < 1000 && game.Status == GameStatus.Playing; step++)
+                {
+                    var options = new List<int>();
+                    for (var c = 0; c < game.ColumnCount; c++)
+                    {
+                        if (game.CanTap(c))
+                        {
+                            options.Add(c);
+                        }
+                    }
+
+                    if (options.Count == 0)
+                    {
+                        break;
+                    }
+
+                    game.TapColumn(skilled ? Skilled(game, options, rng) : Follower(game, options, rng));
+                    game.Settle();
+                }
+
+                if (game.Status == GameStatus.Won)
+                {
+                    wins++;
+                }
+            }
+
+            return (double)wins / runs;
+        }
+
+        private static int Follower(LoomGame game, List<int> options, Random rng)
+        {
+            var soon = game.SoonColors(2);
+            double Score(int c)
+            {
+                var spool = game.Column(c)[0];
+                if (spool.Knots > 0)
+                {
+                    return 2;
+                }
+
+                if (!spool.IsColorVisible)
+                {
+                    return 1.5;
+                }
+
+                if (game.IsForeign(spool))
+                {
+                    return 0;
+                }
+
+                if (game.IsSurplus(spool))
+                {
+                    return 0.5;
+                }
+
+                return game.HasWork(spool) ? 10 : soon.Contains(spool.Color) ? 3 : 1;
+            }
+
+            var best = options.Max(Score);
+            var top = options.Where(c => Score(c) == best).ToList();
+            return top[rng.Next(top.Count)];
+        }
+
+        private static int Skilled(LoomGame game, List<int> options, Random rng)
+        {
+            var working = options.Where(c => game.Column(c)[0].Knots == 0 && game.Column(c)[0].IsColorVisible && game.HasWork(game.Column(c)[0])).ToList();
+            var knots = options.Where(c => game.Column(c)[0].Knots > 0).ToList();
+            if (knots.Count > 0 && (working.Count == 0 || rng.NextDouble() < 0.5))
+            {
+                return knots[rng.Next(knots.Count)];
+            }
+
+            if (working.Count == 0)
+            {
+                return Follower(game, options, rng);
+            }
+
+            var shortest = working.Min(c => game.Column(c)[0].Loops);
+            var top = working.Where(c => game.Column(c)[0].Loops == shortest).ToList();
+            return top[rng.Next(top.Count)];
+        }
+
+        /// <summary>
         /// Доля побед игрока, который тапает наугад: любой доступный клубок с равной вероятностью.
         /// Если она высокая, уровень проходится без мыслей.
         /// </summary>

@@ -232,7 +232,8 @@ namespace KnittedPicture.Game
     public sealed class FailPopup : Popup
     {
         public FailPopup(App app, FailKind kind, BoosterType? rescue, string reason, int percent, Action<BoosterType> rescued,
-            Action restart, Action home, bool freeRescue = false, string? streakWarning = null, Color[]? needed = null)
+            Action restart, Action home, bool freeRescue = false, string? streakWarning = null, Color[]? needed = null,
+            string? advice = null)
             : base(app, bottomSheet: true)
         {
             AddIcon(kind == FailKind.Jam ? KnittedPicture.Game.Icon.Knot : KnittedPicture.Game.Icon.Moth, Palette.Danger, Palette.DangerSoft, 64);
@@ -270,6 +271,13 @@ namespace KnittedPicture.Game
                 Space(ball + 10f);
             }
 
+            // Приём на следующую попытку: проигрыш учит, а не просто наказывает.
+            if (!string.IsNullOrEmpty(advice))
+            {
+                var tip = AddText(advice!, 14, 2.4f);
+                tip.color = Palette.Link;
+            }
+
             if (rescue != null)
             {
                 var type = rescue.Value;
@@ -302,7 +310,7 @@ namespace KnittedPicture.Game
                     {
                         if (!ok)
                         {
-                            app.ShowPopup(new FailPopup(app, kind, rescue, reason, percent, rescued, restart, home, freeRescue, streakWarning, needed));
+                            app.ShowPopup(new FailPopup(app, kind, rescue, reason, percent, rescued, restart, home, freeRescue, streakWarning, needed, advice));
                             return;
                         }
 

@@ -1544,8 +1544,25 @@ namespace KnittedPicture.Game
             var needed = kind == FailKind.Jam && rescue != null
                 ? _game.FrontColors().OrderBy(c => c).Select(c => _colors[c]).ToArray()
                 : null;
+            // Совет на следующую попытку: приём, которым этот затор можно было обойти.
+            var advice = kind == FailKind.Jam ? AdviceText(_game.Advice()) : null;
             App.ShowPopup(new FailPopup(App, kind, rescue, reason, percent, Rescue, Restart, LeaveHome,
-                rescue == BoosterType.Scissors && _run.FreeScissors > 0, StreakWarning(), needed));
+                rescue == BoosterType.Scissors && _run.FreeScissors > 0, StreakWarning(), needed, advice));
+        }
+
+        private static string AdviceText(JamAdvice advice)
+        {
+            switch (advice)
+            {
+                case JamAdvice.ForeignYarn:
+                    return "Совет: клубки с узором ткани картинке не нужны. Не бери их, они только занимают слот";
+                case JamAdvice.Tension:
+                    return "Совет: сначала довязывай нижний ряд. Пока он отстаёт, столбики выше пунктира ждут, а их клубки зря занимают станок";
+                case JamAdvice.Knots:
+                    return "Совет: развязывай узелки заранее, пока станок вяжет. Тап по узелку не занимает слот";
+                default:
+                    return "Совет: бери сначала короткие клубки, число на клубке. Они быстрее освобождают станок";
+            }
         }
 
         private void Rescue(BoosterType type)

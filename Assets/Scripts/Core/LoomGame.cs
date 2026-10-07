@@ -225,6 +225,46 @@ namespace KnittedPicture.Core
             return result;
         }
 
+        /// <summary>
+        /// Совет после затора — самая конкретная причина, которую игрок мог обойти:
+        /// чужая пряжа на станке, клубки ждут натяжения, впереди узелки; иначе общее «короткие первыми».
+        /// Боты показали, что эти приёмы и отличают знающего игрока от того, кто просто идёт по подсветке.
+        /// </summary>
+        public JamAdvice Advice()
+        {
+            var onLoom = _slots.Where(s => s != null).Select(s => s!).Distinct().ToList();
+            if (onLoom.Any(IsForeign))
+            {
+                return JamAdvice.ForeignYarn;
+            }
+
+            if (Band > 0 && onLoom.Any(s => !s.Rainbow && WaitsForTension(s.Color)))
+            {
+                return JamAdvice.Tension;
+            }
+
+            if (_columns.Any(c => c.Count > 0 && c[0].Knots > 0))
+            {
+                return JamAdvice.Knots;
+            }
+
+            return JamAdvice.ShortFirst;
+        }
+
+        /// <summary>Цвет стоит на фронте столбца, который держит натяжение полотна.</summary>
+        private bool WaitsForTension(int color)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                if (IsHeld(x) && _grid.ColorAt(x, _grid.FrontY(x)) == color)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Затор: поможет ли ещё один слот (иначе спасение «+1 слот» бесполезно).</summary>
         public bool SlotWouldHelp => _slots.Count < MaxSlots && !_grid.IsComplete && CanAct(FreeSlots + 1);
 
