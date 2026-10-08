@@ -196,25 +196,88 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Карусель коллекций между плитками и «Играть». Лента карточек едет за пальцем и плавно
+        /// Карусель коллекций между клубком и «Играть». Лента карточек едет за пальцем и плавно
         /// доводится до ближайшей; соседние карточки чуть меньше и бледнее. Под лентой — точки,
         /// активная «перетекает» к следующей. Тап по картинке — карточка уровня, текущий — сразу игра.
         /// </summary>
         private void BuildCollection(float y, float bottom)
         {
-            // Только коллекция текущего уровня: без ленты, стрелок и точек. Остальные — во вкладке «Альбом».
             var progress = App.Progress;
             var available = Mathf.Max(220f, bottom - y);
-            var viewport = Ui.Place(Ui.Node(Root, "Collection"), 0, y, W, available);
-            _strip = Ui.Place(Ui.Node(viewport, "Strip"), 0, 0, W, available);
-            var index = Mathf.Clamp(IndexOf(Collections.Of(progress.CurrentLevel)), 0, Collections.All.Length - 1);
-            var card = BuildPageCard(index, out var cardH, true);
-            _cards.Add(card);
-            var top = Mathf.Max(4f, (available - cardH) / 2f);
-            Ui.PlaceCenter(card, W / 2f, top + cardH / 2f, W - 32f, cardH);
-            _page = null;
-            _target = 0;
-            _pos = 0;
+            var viewport = Ui.Place(Ui.Node(Root, "Carousel"), 0, y, W, available);
+            var hit = Ui.Image(viewport, "Hit", null, Color.clear, true);
+            Ui.Stretch(hit.rectTransform);
+            viewport.gameObject.AddComponent<RectMask2D>();
+            _strip = Ui.Place(Ui.Node(viewport, "Strip"), 0, 0, W * Collections.All.Length, available);
+
+            var cardH = 0f;
+            for (var i = 0; i < Collections.All.Length; i++)
+            {
+                _cards.Add(BuildPageCard(i, out cardH));
+            }
+
+            // Карточки и точки — по центру свободного места.
+            const float dotsGap = 18f;
+            var blockH = cardH + dotsGap + 8f;
+            var top = Mathf.Max(4f, (available - blockH) / 2f);
+            for (var i = 0; i < _cards.Count; i++)
+            {
+                // Центр карточки — опорная точка: соседние уменьшаются к центру, а не к углу.
+                Ui.PlaceCenter(_cards[i], i * W + W / 2f, top + cardH / 2f, W - 32f, cardH);
+            }
+
+            BuildDots(viewport, top + cardH + dotsGap);
+
+            var pager = viewport.gameObject.AddComponent<Pager>();
+            pager.Began += () =>
+            {
+                _dragging = true;
+                _speed = 0f;
+            };
+            pager.Moved += dx =>
+            {
+                // За краями лента идёт туже — понятно, что дальше коллекций нет.
+                var outside = _pos < 0f || _pos > _cards.Count - 1;
+                _pos -= dx / W * (outside ? 0.35f : 1f);
+                ApplyCarousel();
+            };
+            pager.Released += velocity =>
+            {
+                _dragging = false;
+                var next = Mathf.RoundToInt(_pos);
+                if (Mathf.Abs(velocity) > 350f)
+                {
+                    next = velocity < 0 ? Mathf.FloorToInt(_pos) + 1 : Mathf.CeilToInt(_pos) - 1;
+                }
+
+                Turn(Mathf.Clamp(next, 0, _cards.Count - 1));
+            };
+
+            _target = Mathf.Clamp(_page ?? IndexOf(Collections.Of(progress.CurrentLevel)), 0, _cards.Count - 1);
+            _page = _target;
+            _pos = _target;
+            ApplyCarousel();
+        }
+
+        private void BuildDots(RectTransform parent, float y)
+        {
+            var n = Collections.All.Length;
+            const float step = 18f;
+            _dotX = new float[n];
+            for (var i = 0; i < n; i++)
+            {
+                _dotX[i] = W / 2f + (i - (n - 1) / 2f) * step;
+                var dot = Ui.Box(parent, "Dot", 4, Palette.SlotEmpty, true);
+                Ui.PlaceCenter(dot.rectTransform, _dotX[i], y, 22, 22);
+                dot.color = Color.clear;
+                var visible = Ui.Box(dot.rectTransform, "Visible", 4, Palette.SlotEmpty);
+                Ui.PlaceCenter(visible.rectTransform, 11, 11, 8, 8);
+                var target = i;
+                dot.gameObject.AddComponent<Tap>().OnClick(() => Turn(target));
+            }
+
+            _indicator = Ui.Box(parent, "Indicator", 4, Palette.Ink).rectTransform;
+            Ui.Place(_indicator, _dotX[0] - 11f, y - 4f, 22, 8);
         }
 
         private static int IndexOf(CollectionInfo collection) => System.Array.IndexOf(Collections.All, collection);
@@ -260,7 +323,7 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Карточка одной коллекции: шапка со стрелками, картинки с подписями, награда.</summary>
-        private RectTransform BuildPageCard(int index, out float cardH, bool single = false)
+        private RectTransform BuildPageCard(int index, out float cardH)
         {
             var progress = App.Progress;
             var collection = Collections.All[index];
@@ -270,7 +333,7 @@ namespace KnittedPicture.Game
             var tilesW = collection.Count * tile + (collection.Count - 1) * gap;
             var stripY = 58f + tile + MiniPicture.StarsOverhang + 34f;
             cardH = stripY + 6f;
-            var card = Ui.Card(_strip, "Collection" + index, (single ? 0 : index * W) + 16f, 0, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
+            var card = Ui.Card(_strip, "Collection" + index, index * W + 16f, 0, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
 
             var done = 0;
             var stars = 0;
@@ -296,12 +359,9 @@ namespace KnittedPicture.Game
             {
                 Ui.Fit(Ui.Label(card, $"{done} из {collection.Count} · {stars}/{collection.Count * 3} ★", 13, Palette.Ink2, 56, 32, cardW - 112, 18, false), 10);
             }
-            if (!single)
-            {
-                var page = index;
-                Arrow(card, 10, index > 0, () => Turn(page - 1), false);
-                Arrow(card, cardW - 50, index < Collections.All.Length - 1, () => Turn(page + 1), true);
-            }
+            var page = index;
+            Arrow(card, 10, index > 0, () => Turn(page - 1), false);
+            Arrow(card, cardW - 50, index < Collections.All.Length - 1, () => Turn(page + 1), true);
 
             var x0 = (cardW - tilesW) / 2f;
             for (var i = 0; i < collection.Count; i++)
