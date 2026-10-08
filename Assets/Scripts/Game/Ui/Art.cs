@@ -208,59 +208,6 @@ namespace KnittedPicture.Game
             return sprite;
         }
 
-        /// <summary>
-        /// Строчка по краю плашки, как шов на ткани: пунктир по скруглённому прямоугольнику с отступом inset.
-        /// Для Image.Type.Tiled с pixelsPerUnitMultiplier = Density: углы рисуются целиком, а середина
-        /// сторон — один стежок, который Unity повторяет по длине, поэтому стежки не растягиваются.
-        /// </summary>
-        public static Sprite Stitch(float radius, float inset) => Cached("stitch" + radius + "_" + inset, () =>
-        {
-            const float stroke = 1.6f;
-            const float dash = 5f;
-            const float period = 9f;
-            var b = Mathf.Max(2, Mathf.CeilToInt(radius * Density)) + 1;
-            var p = Mathf.RoundToInt(period * Density);
-            var size = b * 2 + p;
-            var half = size / 2f;
-            var rr = Mathf.Max(2f, (radius - inset) * Density);
-            var edge = half - inset * Density;
-            var s = stroke * Density;
-            var keep = dash / period / 2f;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-            var pixels = new Color32[size * size];
-            for (var y = 0; y < size; y++)
-            {
-                for (var x = 0; x < size; x++)
-                {
-                    var qx = Mathf.Abs(x + 0.5f - half) - edge + rr;
-                    var qy = Mathf.Abs(y + 0.5f - half) - edge + rr;
-                    var d = Mathf.Sqrt(Mathf.Max(qx, 0) * Mathf.Max(qx, 0) + Mathf.Max(qy, 0) * Mathf.Max(qy, 0))
-                            + Mathf.Min(Mathf.Max(qx, qy), 0) - rr;
-                    var alpha = Mathf.Clamp01(s / 2f - Mathf.Abs(d) + 0.5f);
-
-                    // В средней полосе — один стежок по центру плитки, остальное — промежуток.
-                    var inX = x >= b && x < b + p;
-                    var inY = y >= b && y < b + p;
-                    if (inX && !inY && Mathf.Abs((x - b + 0.5f) / p - 0.5f) > keep)
-                    {
-                        alpha = 0f;
-                    }
-
-                    if (inY && !inX && Mathf.Abs((y - b + 0.5f) / p - 0.5f) > keep)
-                    {
-                        alpha = 0f;
-                    }
-
-                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)(alpha * 255));
-                }
-            }
-
-            texture.SetPixels32(pixels);
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect,
-                new Vector4(b, b, b, b));
-        });
-
         private static Sprite SlicedBox(float radius, float stroke)
         {
             var r = Mathf.Max(2, Mathf.CeilToInt(radius * Density));

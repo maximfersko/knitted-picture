@@ -138,18 +138,6 @@ namespace KnittedPicture.Game
             return root;
         }
 
-        /// <summary>Строчка-пунктир по краю плашки, как шов на ткани (см. Art.Stitch).</summary>
-        public static Image Stitch(RectTransform parent, float radius, Color color, float inset = 5f)
-        {
-            var stitch = Image(parent, "Stitch", Art.Stitch(radius, inset), color);
-            stitch.type = UnityEngine.UI.Image.Type.Tiled;
-            // Середина пустая: без fillCenter Unity не плодит сотни плиток внутри плашки.
-            stitch.fillCenter = false;
-            stitch.pixelsPerUnitMultiplier = Art.Density;
-            Stretch(stitch.rectTransform);
-            return stitch;
-        }
-
         /// <summary>Блик сверху: свет падает сверху, и плоская кнопка становится выпуклой.</summary>
         public static Image Shine(RectTransform parent, float w, float h, float radius)
         {
@@ -266,9 +254,8 @@ namespace KnittedPicture.Game
         {
             var radius = Mathf.Min(22f, h / 2f);
             var root = Card(parent, "Button", x, y, w, h, radius, color, shadow, 5f, true);
-            // «Вязаная» кнопка: блик сверху и строчка по краю светлым по цвету кнопки.
+            // Блик сверху: кнопка выпуклая, как будто свет падает сверху.
             Shine(root, w, h, radius);
-            Stitch(root, radius, new Color(1f, 1f, 1f, 0.42f), h < 44f ? 3.5f : 5f);
             var label = Label(root, text, fontSize, textColor);
             Place(label.rectTransform, 0, 0, w, h);
             return root.gameObject.AddComponent<Tap>();
