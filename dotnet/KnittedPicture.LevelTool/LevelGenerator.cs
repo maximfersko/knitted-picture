@@ -47,7 +47,10 @@ namespace KnittedPicture.LevelTool
             // и вяжем им, пока клубок не наберёт свою длину или цвет не кончится на фронте.
             // Полученный порядок клубков проходим даже с одним слотом.
             var grid = new PictureGrid(width, height, picture, canvas, design.band);
-            var rainbowAt = PickIndices(design.rainbow, 2, design.spools - 1, rng);
+            // Радужные клубки — помощь сверх рисунка, а не часть нарезки: радужный сам выбирает,
+            // какой цвет вязать, и если бы он был обязательным, его петли, потраченные не туда,
+            // молча делали бы уровень непроходимым. Поэтому каждому цвету хватает своих клубков.
+            var rainbowAt = new HashSet<int>();
             var thickAt = PickIndices(design.thick, 1, design.spools - 1, rng, rainbowAt);
             var order = new List<Draft>();
             while (!grid.IsComplete)
@@ -97,6 +100,18 @@ namespace KnittedPicture.LevelTool
                     Color = motifColors[rng.Next(motifColors.Count)],
                     Loops = Math.Max(2, (int)Math.Round(averageLoops * (0.4 + rng.NextDouble() * 0.6))),
                     Order = order.Count + i,
+                    Extra = true,
+                });
+            }
+
+            for (var i = 0; i < design.rainbow; i++)
+            {
+                extras.Add(new Draft
+                {
+                    Color = 0,
+                    Loops = Math.Max(2, (int)Math.Round(averageLoops * (0.35 + rng.NextDouble() * 0.25))),
+                    Order = order.Count + extras.Count,
+                    Rainbow = true,
                     Extra = true,
                 });
             }

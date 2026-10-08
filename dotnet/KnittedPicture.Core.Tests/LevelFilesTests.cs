@@ -60,6 +60,24 @@ namespace KnittedPicture.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Каждому цвету рисунка хватает своих клубков: радужный — только помощь сверх нарезки.
+        /// Радужный сам выбирает, что вязать, и если бы на него рассчитывали, он мог бы потратить
+        /// петли не туда — уровень молча стал бы непроходимым без ошибки игрока.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(LevelFiles))]
+        public void Every_color_has_enough_of_its_own_yarn(string fileName)
+        {
+            var level = Load(fileName);
+            var grid = PictureGrid.From(level);
+            for (var color = 0; color < level.colors.Length; color++)
+            {
+                var supply = level.spools.Where(s => !s.rainbow && s.color == color).Sum(s => s.loops);
+                Assert.True(supply >= grid.TotalOf(color), $"цвет {color}: клубков на {supply} петель, а клеток {grid.TotalOf(color)}");
+            }
+        }
+
         [Fact]
         public void Level_ids_match_file_order()
         {

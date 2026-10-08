@@ -54,6 +54,9 @@ namespace KnittedPicture.Game
         private readonly Dictionary<BoosterType, BoosterButton> _boosters = new Dictionary<BoosterType, BoosterButton>();
         private readonly HashSet<int> _arriving = new HashSet<int>();
         private readonly HashSet<int> _finishedColors = new HashSet<int>();
+
+        /// <summary>Ножницы взяты из окна затора: срез засчитается как спасение.</summary>
+        private bool _scissorsRescue;
         /// <summary>Счёт уровня, который переживает перестройку экрана (поворот, смена безопасной зоны).</summary>
         private readonly LevelRun _run;
 
@@ -1426,6 +1429,9 @@ namespace KnittedPicture.Game
                 }
             }
 
+            // Полёт длится ровно столько, сколько станок «разогревает» клубок: в «Разгоне» шаги вдвое короче,
+            // и раньше клубок начинал вязать из пустого слота, ещё не долетев.
+            var flight = LoomGame.WarmupSteps * (_tempo.Rush ? StepInterval / RushSpeed : StepInterval);
             foreach (var (placed, from) in flights)
             {
                 var spool = placed.Spool;
@@ -1433,11 +1439,11 @@ namespace KnittedPicture.Game
                 flyer.Bind(spool, _colors[spool.Color], true);
                 var target = SlotTarget(placed.Slot);
                 var scale = SpoolSizeAt(placed.Slot) / _spoolSize;
-                Tweens.Run(flyer.Root, LoomGame.WarmupSteps * StepInterval, t =>
+                Tweens.Run(flyer.Root, flight, t =>
                 {
                     flyer.Root.localScale = Vector3.one * Mathf.Lerp(1f, scale, t) * (1f + 0.15f * Ease.Bump(t));
                 }, null, null);
-                Tweens.Move(flyer.Root, from, target, LoomGame.WarmupSteps * StepInterval, Ease.OutCubic, () =>
+                Tweens.Move(flyer.Root, from, target, flight, Ease.OutCubic, () =>
                 {
                     Object.Destroy(flyer.Root.gameObject);
                     _arriving.Remove(spool.Id);
@@ -1488,6 +1494,7 @@ namespace KnittedPicture.Game
             var head = _game.Slots.ToList().IndexOf(spool);
             var view = _slotViews[head];
             var at = view != null ? Ui.WorldCenter(view.View.Root) : Ui.WorldCenter(_slotFrames[slot]);
+            var back = _game.ReturnsToField(spool);
             if (!_game.CutFromLoom(slot))
             {
                 return;
@@ -1497,11 +1504,21 @@ namespace KnittedPicture.Game
             _scissors = false;
             HideScissorsBanner();
             Fx.Poof(_fx, at, Palette.Ink3, _slotSpool * 1.4f);
+            if (back)
+            {
+                // Нужный рисунку клубок не пропадает: он вернулся вперёд своей колонки.
+                App.Toast("Клубок вернулся на поле: его пряжа ещё нужна рисунку");
+            }
             Sfx.Play(Sound.Knot);
             Haptics.Play(Haptic.Medium);
             SyncLoom();
             RefreshField();
             RefreshBoosters();
+            if (back)
+            {
+                PunchField(spool.Id);
+            }
+
             _coins.text = App.Progress.Coins.ToString();
             CheckStatus();
         }
@@ -1617,6 +1634,7 @@ namespace KnittedPicture.Game
         private void OnTimeUp()
         {
             _failShown = true;
+            SetScissors(false);
             HideHint();
             _tempo.Break();
             Sfx.Play(Sound.Jam);
@@ -1702,6 +1720,7 @@ namespace KnittedPicture.Game
             if (type == BoosterType.Scissors)
             {
                 // Ножницы оплачиваются, когда ими режут; затор снимается этим ходом.
+                _scissorsRescue = true;
                 SetScissors(true);
                 return;
             }
@@ -1883,6 +1902,13 @@ namespace KnittedPicture.Game
         /// <summary>Ножницы сработали: сначала тратятся бесплатные от серии (без потери звезды), потом запас или монеты.</summary>
         private void PayScissors()
         {
+            // Ножницы из окна затора — это спасение, как «+1 слот»: одна звезда, а не две.
+            if (_scissorsRescue)
+            {
+                _scissorsRescue = false;
+                _rescues++;
+            }
+
             if (_run.FreeScissors > 0)
             {
                 _run.FreeScissors--;
@@ -1906,6 +1932,12 @@ namespace KnittedPicture.Game
             if (_scissors == on)
             {
                 return;
+            }
+
+            if (!on)
+            {
+                // Передумал резать — спасение не засчитываем.
+                _scissorsRescue = false;
             }
 
             _scissors = on;

@@ -40,65 +40,70 @@
   ],
   "gold": [
     5,
-    41,
-    66,
-    82
+    43,
+    71,
+    96
   ],
   "band": 2,
   "slots": 4,
   "spools": [
     {
       "color": 3,
-      "loops": 8
+      "loops": 5
     },
     {
+      "loops": 4
+    },
+    {
+      "color": 2,
+      "loops": 12
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 6,
+      "link": 1
+    },
+    {
+      "column": 1,
+      "color": 4,
+      "loops": 3
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 3,
+      "link": 2
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 7
+    },
+    {
+      "column": 2,
       "loops": 3,
       "rainbow": true
     },
     {
-      "loops": 5
+      "column": 2,
+      "color": 5,
+      "loops": 3
     },
     {
-      "column": 1,
-      "color": 4,
-      "loops": 2
-    },
-    {
-      "column": 1,
-      "color": 4,
-      "loops": 2,
-      "link": 2
-    },
-    {
-      "column": 1,
-      "color": 2,
-      "loops": 2
-    },
-    {
-      "column": 1,
+      "column": 3,
       "color": 1,
-      "loops": 7
+      "loops": 12
     },
     {
-      "column": 1,
+      "column": 3,
       "color": 2,
-      "loops": 5,
-      "link": 1
-    },
-    {
-      "column": 2,
-      "color": 3,
-      "loops": 8
-    },
-    {
-      "column": 2,
-      "color": 3,
-      "loops": 2
-    },
-    {
-      "column": 2,
-      "color": 4,
-      "loops": 1
+      "loops": 3
     },
     {
       "column": 3,
@@ -107,34 +112,14 @@
       "link": 2
     },
     {
-      "column": 3,
-      "color": 5,
-      "loops": 2
-    },
-    {
-      "column": 3,
-      "color": 2,
-      "loops": 5
-    },
-    {
       "column": 4,
       "color": 3,
-      "loops": 2
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 5,
+      "loops": 6,
       "link": 1
     },
     {
       "column": 4,
       "color": 3,
-      "loops": 7
-    },
-    {
-      "column": 4,
-      "color": 5,
       "loops": 1
     }
   ]

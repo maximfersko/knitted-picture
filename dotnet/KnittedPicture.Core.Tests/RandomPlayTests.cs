@@ -67,8 +67,12 @@ namespace KnittedPicture.Core.Tests
                         if (!pulled)
                         {
                             var slot = Enumerable.Range(0, game.Slots.Count).First(i => game.Slots[i] != null);
-                            discarded += game.Slots[slot]!.Loops;
-                            history.Push((Snap(game), discarded - game.Slots[slot]!.Loops));
+                            var cut = game.Slots[slot]!;
+
+                            // Нужный клубок возвращается на поле со своими петлями, срезается только чужая и лишняя пряжа.
+                            var lost = game.ReturnsToField(cut) ? 0 : cut.Loops;
+                            history.Push((Snap(game), discarded));
+                            discarded += lost;
                             Assert.True(game.CutFromLoom(slot));
                         }
 

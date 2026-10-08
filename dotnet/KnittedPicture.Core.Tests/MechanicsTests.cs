@@ -19,6 +19,73 @@ namespace KnittedPicture.Core.Tests
         };
 
         [Fact]
+        public void Scissors_on_the_loom_return_a_needed_spool_to_the_front_of_its_column()
+        {
+            // Клубок верхнего цвета занял слот раньше времени; срезать его — не значит потерять пряжу.
+            var game = new LoomGame(Strip(
+                new SpoolData { column = 0, color = 1, loops = 4 },
+                new SpoolData { column = 1, color = 0, loops = 4 },
+                new SpoolData { column = 1, color = 0, loops = 1 }));
+            game.TapColumn(0);
+            game.Settle();
+            var spool = game.Slots[0]!;
+            Assert.True(game.ReturnsToField(spool));
+
+            Assert.True(game.CutFromLoom(0));
+
+            Assert.Null(game.Slots[0]);
+            Assert.Same(spool, game.Column(0)[0]);
+            Assert.Equal(4, spool.Loops);
+            Assert.True(game.CanTap(0));
+            Assert.True(game.Undo());
+            Assert.Equal(spool.Id, game.Slots[0]!.Id);
+        }
+
+        [Fact]
+        public void Scissors_on_the_loom_drop_foreign_yarn_for_good()
+        {
+            var level = new LevelData
+            {
+                width = 3,
+                height = 3,
+                colors = new[] { "#FFFFFF", "#FF0000", "#0000FF" },
+                picture = new[] { "000", "020", "010" },
+                canvas = new[] { "111", "101", "101" },
+                slots = 2,
+                spools = new[]
+                {
+                    new SpoolData { column = 0, color = 0, loops = 3 },
+                    new SpoolData { column = 1, color = 1, loops = 1 },
+                    new SpoolData { column = 2, color = 2, loops = 1 },
+                },
+            };
+            var game = new LoomGame(level);
+            game.TapColumn(0);
+            game.Settle();
+            Assert.False(game.ReturnsToField(game.Slots[0]!));
+
+            Assert.True(game.CutFromLoom(0));
+
+            Assert.Empty(game.Column(0));
+        }
+
+        [Fact]
+        public void A_linked_spool_cut_back_to_the_field_is_no_longer_linked()
+        {
+            var game = new LoomGame(Strip(
+                new SpoolData { column = 0, color = 1, loops = 2, link = 1 },
+                new SpoolData { column = 1, color = 1, loops = 2, link = 1 },
+                new SpoolData { column = 2, color = 0, loops = 4 }));
+            game.TapColumn(0);
+            game.Settle();
+
+            Assert.True(game.CutFromLoom(0));
+
+            Assert.Equal(0, game.Column(0)[0].Link);
+            Assert.True(game.CanTap(0));
+        }
+
+        [Fact]
         public void Scissors_get_out_of_a_jam_that_an_extra_slot_cannot_fix()
         {
             // Лёд на клубке цвета 1 тает только от петель цвета 1, а их вяжет лишь он сам: тупик.

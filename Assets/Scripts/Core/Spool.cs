@@ -73,12 +73,16 @@ namespace KnittedPicture.Core
         /// <summary>Шаги до начала вязки после того, как клубок встал на станок (пока он «летит»).</summary>
         public int Warmup { get; internal set; }
 
+        /// <summary>Колонка, из которой клубок уехал на станок: ножницы возвращают нужный клубок туда. -1 — ещё не уезжал.</summary>
+        public int Origin { get; internal set; } = -1;
+
         /// <summary>Клубок хоть раз простаивал на станке без работы — значит, он не «идеальный».</summary>
         public bool Stalled { get; internal set; }
 
         internal Spool Clone() => new Spool(Id, Color, Loops, Hidden, Link, Knots, Locked, IsKey, Rainbow, Thick, Ice)
         {
             Revealed = Revealed,
+            Origin = Origin,
             Warmup = Warmup,
             Stalled = Stalled,
         };

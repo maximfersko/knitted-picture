@@ -59,5 +59,6 @@
   "maxForced": 0.55,
   "minDanger": 0.05,
   "maxDanger": 0.35,
+  "maxEarlyJam": 0.25,
   "seed": 431
 }

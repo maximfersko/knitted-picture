@@ -440,7 +440,9 @@ namespace KnittedPicture.Core
         }
 
         /// <summary>
-        /// Ножницы по станку: срезать клубок со слота (например, чужую пряжу).
+        /// Ножницы по станку освобождают слот. Чужая и лишняя пряжа срезается совсем, а нужный клубок
+        /// возвращается на поле — вперёд своей колонки, с оставшимися петлями. Раньше нужный клубок
+        /// срезался вместе с пряжей, и уровень мог молча стать непроходимым.
         /// Можно и при заторе — тогда игра продолжается.
         /// </summary>
         public bool CutFromLoom(int slot)
@@ -451,11 +453,26 @@ namespace KnittedPicture.Core
             }
 
             SaveSnapshot();
-            Free(_slots[slot]!);
+            var spool = _slots[slot]!;
+            var back = ReturnsToField(spool);
+            Free(spool);
+            if (back)
+            {
+                // Пара осталась на станке: связка больше не держит, иначе клубок застрял бы на поле навсегда.
+                spool.Link = 0;
+                spool.Warmup = 0;
+                spool.Stalled = false;
+                _columns[spool.Origin].Insert(0, spool);
+            }
+
             _status = GameStatus.Playing;
             Reevaluate();
             return true;
         }
+
+        /// <summary>Срезанный ножницами со станка клубок вернётся на поле (он ещё нужен рисунку), а не исчезнет.</summary>
+        public bool ReturnsToField(Spool spool) =>
+            !IsForeign(spool) && !IsSurplus(spool) && spool.Origin >= 0 && spool.Origin < _columns.Count;
 
         /// <summary>Отменить последний ход (бустер «Отменить»): вместе с ним откатывается и связанное после него.</summary>
         public bool Undo()
@@ -668,6 +685,7 @@ namespace KnittedPicture.Core
             }
 
             spool.Revealed = true;
+            spool.Origin = column;
             spool.Warmup = WarmupSteps;
             spool.Stalled = false;
             return new Placement(spool, column, depth, slot, tail);
