@@ -148,6 +148,7 @@ namespace KnittedPicture.Game
             _lock.gameObject.SetActive(spool.Locked);
             _key.gameObject.SetActive(spool.IsKey);
             _linkRing.gameObject.SetActive(spool.Link != 0);
+            _linkRing.color = Palette.LinkPair(spool.Link);
 
             _group.alpha = front ? surplus ? 0.75f : 1f : 0.5f;
         }
@@ -159,7 +160,6 @@ namespace KnittedPicture.Game
             _iceText.text = ice.ToString();
         }
 
-        /// <summary>Клубок на станке ждёт: его цвета сейчас нет на фронте (или фронт держит натяжение). Бледнее, чтобы было видно, что он не вяжет.</summary>
         /// <summary>Чужая пряжа на поле: узор ткани поверх клубка (сам крестик — только на станке).</summary>
         public void SetFabric(bool fabric)
         {
@@ -172,6 +172,7 @@ namespace KnittedPicture.Game
             _double.gameObject.SetActive(false);
         }
 
+        /// <summary>Клубок на станке ждёт: его цвета сейчас нет на фронте (или фронт держит натяжение). Бледнее, чтобы было видно, что он не вяжет.</summary>
         public void SetWaiting(bool waiting)
         {
             _group.alpha = waiting ? 0.5f : 1f;

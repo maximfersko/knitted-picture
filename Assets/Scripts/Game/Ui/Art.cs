@@ -77,7 +77,7 @@ namespace KnittedPicture.Game
         public static Sprite KnittingNeedle => Cached("needle", BuildNeedle);
 
         /// <summary>
-        /// Узор ткани поверх клубка (белые «галочки» вязки в круге клубка): так выглядит чужая пряжа
+        /// Узор ткани поверх клубка (светлая сетка канвы в круге клубка): так выглядит чужая пряжа
         /// цвета ткани — тот же узор, что у готовой ткани на картинке.
         /// </summary>
         public static Sprite FabricOverlay => Cached("fabricOverlay", BuildFabricOverlay);
@@ -91,7 +91,11 @@ namespace KnittedPicture.Game
         public static Sprite PlainCell => Cached("cell", () => BuildCell(false));
 
         /// <summary>Ткань-основа: та же вязка, но тише — рисунок и фронт заметнее фона.</summary>
-        public static Sprite FabricCell => Cached("fabric", () => BuildCell(true, true));
+        /// <summary>
+        /// Клетка ткани-основы: гладкая канва из переплетённых нитей, без петель-«галочек».
+        /// Так фон не путается со связанным рисунком: видно, что он готов с самого начала и вязать его не нужно.
+        /// </summary>
+        public static Sprite FabricCell => Cached("canvas", BuildCanvasCell);
 
         public static Sprite Icon(Icon icon) => Cached("icon" + icon, () => BuildIcon(icon));
 
@@ -717,15 +721,11 @@ namespace KnittedPicture.Game
                     var d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c));
                     var inside = Mathf.Clamp01(radius - 3f - d + 0.5f);
 
-                    // Ряды «галочек» со сдвигом через ряд, как петли на полотне.
-                    var row = Mathf.Floor(y / tile);
-                    var shift = row % 2 == 0 ? 0f : tile / 2f;
-                    var tx = Mathf.Repeat(x + shift, tile);
-                    var ty = y - row * tile;
-                    var left = DistanceToSegment(tx, ty, 6f, 7f, tile / 2f, tile - 6f);
-                    var right = DistanceToSegment(tx, ty, tile - 6f, 7f, tile / 2f, tile - 6f);
-                    var line = Mathf.Clamp01(3.2f - Mathf.Min(left, right) + 0.5f);
-                    pixels[py * size + px] = new Color32(255, 255, 255, (byte)(line * inside * 0.7f * 255));
+                    // Та же канва, что у ткани на картинке: светлые нити вдоль и поперёк.
+                    var gx = Mathf.Abs(Mathf.Repeat(x, tile / 2f) - tile / 4f);
+                    var gy = Mathf.Abs(Mathf.Repeat(y, tile / 2f) - tile / 4f);
+                    var line = Mathf.Clamp01(2.2f - Mathf.Min(gx, gy) + 0.5f);
+                    pixels[py * size + px] = new Color32(255, 255, 255, (byte)(line * inside * 0.75f * 255));
                 }
             }
 
@@ -873,6 +873,42 @@ namespace KnittedPicture.Game
 
                     var v = (byte)(value * 255);
                     pixels[py * size + px] = new Color32(v, v, v, (byte)(alpha * 255));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        private static Sprite BuildCanvasCell()
+        {
+            const int size = 48;
+            const float radius = 11f;
+            const float pitch = 8f;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[size * size];
+            for (var py = 0; py < size; py++)
+            {
+                for (var px = 0; px < size; px++)
+                {
+                    var x = px + 0.5f;
+                    var y = py + 0.5f;
+                    var qx = Mathf.Abs(x - 24f) - 24f + radius;
+                    var qy = Mathf.Abs(y - 24f) - 24f + radius;
+                    var d = Mathf.Sqrt(Mathf.Max(qx, 0) * Mathf.Max(qx, 0) + Mathf.Max(qy, 0) * Mathf.Max(qy, 0))
+                            + Mathf.Min(Mathf.Max(qx, qy), 0) - radius;
+                    var alpha = Mathf.Clamp01(0.5f - d);
+
+                    // Полотняное переплетение: нити вдоль и поперёк, в клетках между ними — чуть темнее.
+                    var u = Mathf.Repeat(x, pitch) / pitch;
+                    var v = Mathf.Repeat(y, pitch) / pitch;
+                    var warp = Mathf.Sin(Mathf.PI * u);
+                    var weft = Mathf.Sin(Mathf.PI * v);
+                    var over = (Mathf.Floor(x / pitch) + Mathf.Floor(y / pitch)) % 2f == 0f;
+                    var value = 0.9f + 0.08f * (over ? warp : weft);
+                    var v8 = (byte)(value * 255);
+                    pixels[py * size + px] = new Color32(v8, v8, v8, (byte)(alpha * 255));
                 }
             }
 

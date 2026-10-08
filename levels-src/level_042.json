@@ -7,15 +7,15 @@
   "palette": [
     {
       "key": ".",
-      "hex": "#F3EDE3"
+      "hex": "#D2CCC2"
     },
     {
       "key": "c",
-      "hex": "#FFC23C"
+      "hex": "#FFC842"
     },
     {
       "key": "C",
-      "hex": "#E59E12"
+      "hex": "#DF9805"
     },
     {
       "key": "r",

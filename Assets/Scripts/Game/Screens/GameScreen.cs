@@ -864,13 +864,61 @@ namespace KnittedPicture.Game
                 var dx = bx - ax;
                 var dy = by - ay;
                 var length = Mathf.Sqrt(dx * dx + dy * dy);
-                var thread = Ui.Box(_fieldContent, "LinkThread", 1.5f, Palette.WithAlpha(Palette.Link, 0.55f)).rectTransform;
+                var link = _game.Column(list[0].Column)[list[0].Depth].Link;
+                var thread = Ui.Box(_fieldContent, "LinkThread", 1.5f, Palette.WithAlpha(Palette.LinkPair(link), 0.6f)).rectTransform;
                 Ui.PlaceCenter(thread, (ax + bx) / 2f, (ay + by) / 2f, length, 3f);
 
                 // Координаты поля идут сверху вниз, поэтому угол со знаком минус.
                 thread.localRotation = Quaternion.Euler(0f, 0f, -Mathf.Atan2(dy, dx) * Mathf.Rad2Deg);
                 thread.SetAsFirstSibling();
             }
+        }
+
+        /// <summary>
+        /// Где пара связанного клубка и что мешает: связанные едут на станок только вдвоём,
+        /// когда оба впереди своих колонок. Без этого отказ выглядел как баг.
+        /// </summary>
+        private string LinkPartnerText(int column, int depth)
+        {
+            var (partnerColumn, partnerDepth) = FindLinkPartner(column, depth);
+            if (partnerColumn < 0)
+            {
+                return "Связанные клубки едут на станок только вдвоём";
+            }
+
+            var where = $"в {partnerColumn + 1}-й колонке";
+            if (partnerDepth > 0)
+            {
+                return $"Связанные едут вдвоём. Пара (кольцо того же цвета) {where}, перед ней {partnerDepth} {Plural(partnerDepth, "клубок", "клубка", "клубков")}";
+            }
+
+            var partner = _game.Column(partnerColumn)[0];
+            var block = partner.Locked ? "под замком" : partner.Knots > 0 ? "с узелком" : partner.Frozen ? "во льду" : "не готова";
+            return $"Связанные едут вдвоём. Пара (кольцо того же цвета) {where} пока {block}";
+        }
+
+        private (int Column, int Depth) FindLinkPartner(int column, int depth)
+        {
+            var col = _game.Column(column);
+            if (depth >= col.Count || col[depth].Link == 0)
+            {
+                return (-1, -1);
+            }
+
+            var spool = col[depth];
+            for (var c = 0; c < _game.ColumnCount; c++)
+            {
+                var other = _game.Column(c);
+                for (var d = 0; d < other.Count; d++)
+                {
+                    if (other[d].Id != spool.Id && other[d].Link == spool.Link)
+                    {
+                        return (c, d);
+                    }
+                }
+            }
+
+            return (-1, -1);
         }
 
         /// <summary>Отказ связанному клубку: подсветить его пару, которую надо освободить первой.</summary>
@@ -889,7 +937,7 @@ namespace KnittedPicture.Game
                 if (f.Depth < other.Count && other[f.Depth].Id == f.SpoolId && other[f.Depth].Id != spool.Id && other[f.Depth].Link == spool.Link)
                 {
                     Tweens.Punch(f.View.Root, 0.25f, 0.35f);
-                    Fx.Sparkle(_fx, Ui.WorldCenter(f.View.Root), Palette.Link, 8, 30f);
+                    Fx.Sparkle(_fx, Ui.WorldCenter(f.View.Root), Palette.LinkPair(spool.Link), 8, 30f);
                     return;
                 }
             }
@@ -1448,7 +1496,7 @@ namespace KnittedPicture.Game
                     App.Toast("Под замком: сначала поставь на станок клубок с ключом");
                     break;
                 case RejectReason.LinkNotReady:
-                    App.Toast("Его пара ещё не впереди своей колонки: сначала освободи её");
+                    App.Toast(LinkPartnerText(column, depth));
                     PunchLinkPartner(column, depth);
                     break;
                 case RejectReason.Frozen:

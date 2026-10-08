@@ -26,6 +26,40 @@ namespace KnittedPicture.Core.Tests
             Assert.NotNull(LevelSolver.Solve(level));
         }
 
+        /// <summary>
+        /// Цвета клубков и рисунка в одном уровне должны легко различаться: игрок сравнивает клубок
+        /// с клеткой. Иначе близкие зелёные или коричневые путаются (фидбэк тестировщика), а чужая
+        /// пряжа цвета ткани сливается с белым рисунком. Разница — ΔE в Lab (CIE76), не меньше 18.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(LevelFiles))]
+        public void Colors_in_a_level_are_easy_to_tell_apart(string fileName)
+        {
+            var level = Load(fileName);
+            var used = new HashSet<int>(level.spools.Where(s => !s.rainbow).Select(s => s.color));
+            for (var y = 0; y < level.height; y++)
+            {
+                for (var x = 0; x < level.width; x++)
+                {
+                    var fabric = level.canvas.Length == level.height && level.canvas[y][x] == '1';
+                    if (!fabric)
+                    {
+                        used.Add(level.picture[y][x] - '0');
+                    }
+                }
+            }
+
+            var colors = used.OrderBy(c => c).ToList();
+            for (var i = 0; i < colors.Count; i++)
+            {
+                for (var j = i + 1; j < colors.Count; j++)
+                {
+                    var distance = DeltaE(level.colors[colors[i]], level.colors[colors[j]]);
+                    Assert.True(distance >= 18.0, $"{level.colors[colors[i]]} и {level.colors[colors[j]]}: ΔE {distance:0.0}");
+                }
+            }
+        }
+
         [Fact]
         public void Level_ids_match_file_order()
         {
@@ -68,6 +102,31 @@ namespace KnittedPicture.Core.Tests
             };
 
             Assert.Null(LevelSolver.Solve(level));
+        }
+
+        private static double DeltaE(string a, string b)
+        {
+            var p = Lab(a);
+            var q = Lab(b);
+            return System.Math.Sqrt((p.L - q.L) * (p.L - q.L) + (p.A - q.A) * (p.A - q.A) + (p.B - q.B) * (p.B - q.B));
+        }
+
+        private static (double L, double A, double B) Lab(string hex)
+        {
+            double Channel(int i)
+            {
+                var c = System.Convert.ToInt32(hex.Substring(i, 2), 16) / 255.0;
+                return c <= 0.04045 ? c / 12.92 : System.Math.Pow((c + 0.055) / 1.055, 2.4);
+            }
+
+            double F(double t) => t > 0.008856 ? System.Math.Pow(t, 1.0 / 3.0) : 7.787 * t + 16.0 / 116.0;
+            var r = Channel(1);
+            var g = Channel(3);
+            var b = Channel(5);
+            var x = F((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047);
+            var y = F(0.2126 * r + 0.7152 * g + 0.0722 * b);
+            var z = F((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+            return (116 * y - 16, 500 * (x - y), 200 * (y - z));
         }
 
         private static LevelData Load(string fileName) =>

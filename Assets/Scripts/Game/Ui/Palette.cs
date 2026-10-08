@@ -35,6 +35,12 @@ namespace KnittedPicture.Game
         public static readonly Color Danger = Hex("#E0306E");
         public static readonly Color DangerSoft = Hex("#FFDDE9");
         public static readonly Color Link = Hex("#8B5CF6");
+
+        /// <summary>Цвета пар связанных клубков: у каждой пары свой, чтобы было видно, кто с кем связан.</summary>
+        private static readonly Color[] LinkPairs = { Hex("#8B5CF6"), Hex("#0EA5A4"), Hex("#F97316"), Hex("#2563EB") };
+
+        /// <summary>Цвет пары связанных клубков по номеру связки (1, 2, 3…).</summary>
+        public static Color LinkPair(int link) => LinkPairs[(System.Math.Max(1, link) - 1) % LinkPairs.Length];
         public static readonly Color Hidden = Hex("#CFC8EA");
         public static readonly Color Wood = Hex("#F2C48D");
         public static readonly Color WoodDark = Hex("#D9955A");

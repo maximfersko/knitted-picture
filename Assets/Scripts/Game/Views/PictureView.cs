@@ -10,17 +10,20 @@ using Object = UnityEngine.Object;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Картинка на станке. Ткань-основа связана с начала и чуть светлее рисунка, связанные петли
-    /// рисунка — с фактурой вязки; фронт каждого столбца (что вяжется следующим) яркий, клетка
-    /// за ним — бледнее, остальное — едва видный эскиз (у загадки — пустые «дырки» в ткани).
+    /// Картинка на станке. Ткань-основа связана с начала: гладкая канва без петель, чуть светлее рисунка.
+    /// Связанные петли рисунка — с фактурой вязки; следующая петля каждого столбика — в полном цвете
+    /// и в рамке (столбики вяжутся снизу вверх), клетка за ней — бледнее, остальное — эскиз
+    /// (у загадки — пустые «дырки» в ткани).
     /// Петля становится вязаной, когда к ней долетает нитка (до этого она «в пути»).
     /// Золотые петли отмечены кольцом, пока не связаны.
     /// </summary>
     public sealed class PictureView
     {
-        private const float FrontAlpha = 0.62f;
-        private const float NextAlpha = 0.3f;
-        private const float SketchAlpha = 0.12f;
+        // Следующая петля каждого столбика — в полном цвете и в рамке: оттенок, который нужен,
+        // сравнивается с клубком один в один (бледные клетки путали близкие зелёные и коричневые).
+        private const float FrontAlpha = 1f;
+        private const float NextAlpha = 0.42f;
+        private const float SketchAlpha = 0.2f;
 
         /// <summary>Насколько ткань светлее рисунка: картинка «проявляется» на ней.</summary>
         private const float FabricLighten = 0.22f;
@@ -28,6 +31,9 @@ namespace KnittedPicture.Game
         private readonly LoomGame _game;
         private readonly Color[] _colors;
         private readonly Image[] _cells;
+
+        /// <summary>Рамка на клетке, которая свяжется следующей в столбике (по одной на столбик).</summary>
+        private readonly Image[] _fronts;
         private readonly HashSet<int> _pending = new HashSet<int>();
         private readonly Dictionary<int, Image> _gold = new Dictionary<int, Image>();
 
@@ -59,6 +65,18 @@ namespace KnittedPicture.Game
                     Ui.Place(image.rectTransform, x * _step, y * _step, cell, cell);
                     _cells[y * game.Width + x] = image;
                 }
+            }
+
+            // Рамки следующих петель: видно, что столбик вяжется снизу вверх и куда ляжет петля.
+            _fronts = new Image[game.Width];
+            for (var x = 0; x < game.Width; x++)
+            {
+                var mark = Ui.Image(Root, "Next", Art.RoundRectOutline(Mathf.Max(3f, cell * 0.22f), 1.6f), Color.white);
+                mark.type = Image.Type.Sliced;
+                mark.pixelsPerUnitMultiplier = Art.Density;
+                Ui.Place(mark.rectTransform, x * _step + 2f, 0f, cell - 4f, cell - 4f);
+                mark.enabled = false;
+                _fronts[x] = mark;
             }
 
             for (var y = 0; y < game.Height; y++)
@@ -122,6 +140,17 @@ namespace KnittedPicture.Game
             var front = _game.FrontY(x);
             var active = _game.ActiveFrontY(x) >= 0;
             var next = _game.AheadY(x, 1);
+            var mark = _fronts[x];
+            mark.enabled = active && front >= 0;
+            if (mark.enabled)
+            {
+                var frontColor = _colors[_game.ColorAt(x, front)];
+                mark.rectTransform.anchoredPosition = new Vector2(x * _step + 2f, -(front * _step + 2f));
+
+                // На светлой клетке белая рамка не видна — тогда тёмная.
+                mark.color = Luminance(frontColor) > 0.78f ? Palette.WithAlpha(Palette.Ink, 0.45f) : Palette.WithAlpha(Color.white, 0.9f);
+            }
+
             for (var y = 0; y < _game.Height; y++)
             {
                 var image = _cells[y * _game.Width + x];
@@ -172,6 +201,8 @@ namespace KnittedPicture.Game
                 }
             }
         }
+
+        private static float Luminance(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
 
         /// <summary>
         /// Натяжение полотна видно глазами: когда столбик упирается в предел, поперёк картинки
