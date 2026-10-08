@@ -36,6 +36,8 @@ namespace KnittedPicture.Game
         Chest,
         Trophy,
         Info,
+        Vibrate,
+        Bell,
     }
 
     /// <summary>
@@ -1008,6 +1010,16 @@ namespace KnittedPicture.Game
                     break;
                 case KnittedPicture.Game.Icon.Info:
                     p.Stroke(2.4f).Circle(12, 12, 9).Disc(12, 7.6f, 1.6f).Stroke(2.6f).Line(12, 11, 12, 16.8f);
+                    break;
+                case KnittedPicture.Game.Icon.Vibrate:
+                    // Телефон и черточки дрожи по бокам.
+                    p.Box(12, 12, 4.5f, 8, 1.8f, false).Line(10.5f, 16.8f, 13.5f, 16.8f)
+                        .Line(3.5f, 9, 3.5f, 15).Line(20.5f, 9, 20.5f, 15);
+                    break;
+                case KnittedPicture.Game.Icon.Bell:
+                    // Колокольчик: купол, юбка, язычок.
+                    p.Arc(12, 11, 6, 180, 360).Line(6, 11, 6, 16).Line(18, 11, 18, 16).Line(4, 17, 20, 17)
+                        .Line(12, 3, 12, 5).Disc(12, 20, 1.8f);
                     break;
                 case KnittedPicture.Game.Icon.Gift:
                     p.Box(12, 15.5f, 7.5f, 5.5f, 1.5f, false).Box(12, 9.5f, 9, 2.5f, 1.2f, false).Line(12, 7, 12, 21)

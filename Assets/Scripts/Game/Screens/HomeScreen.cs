@@ -7,9 +7,8 @@ using UnityEngine.UI;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Главная: логотип, ряд «зачем заходить» (подарок дня, звёздный сундук, коллекции —
-    /// с красными точками, когда что-то ждёт), текущая коллекция и большая кнопка «Играть»
-    /// с эскизом следующей картинки.
+    /// Главная: клубок «в работе», лента коллекций, ряд событий (подарок, задания, сундук, узор дня —
+    /// с красными точками, когда что-то ждёт) и большая кнопка «Играть» с эскизом следующей картинки.
     /// </summary>
     public sealed class HomeScreen : ScreenView
     {
@@ -20,20 +19,21 @@ namespace KnittedPicture.Game
             Ui.RoundButton(Root, Icon.Settings, 16, 8).OnClick(() => app.ShowPopup(new SettingsPopup(app)));
             Ui.CoinPill(Root, progress.Coins, W - 16, 8);
 
-            // Главная по образцу лучших казуальных игр и гайдлайнов iOS/Android: наверху настройки и монеты,
-            // в центре «герой» — клубок пряжи «в работе», по бокам круглые значки событий, ниже текущая
-            // коллекция, внизу (в зоне большого пальца) одна большая кнопка «Играть» и панель вкладок.
-            var compact = H < 740f;
-            var ball = compact ? 88f : 112f;
-            const float heroTop = 58f;
-            var railH = compact ? 76f : 84f;
-            var heroH = Mathf.Max(ball, railH * 2f);
-            BuildLogo(heroTop + (heroH - ball) / 2f, ball);
-            BuildRails(heroTop, railH);
-
+            // Главная под одну руку: всё, что нажимают каждый день, — в нижних двух третях экрана, куда
+            // достаёт большой палец. Снизу вверх: вкладки, «Играть», ряд событий (подарок, задания, сундук,
+            // узор дня), лента коллекций. Наверху то, что не нажимают часто: настройки, монеты и клубок
+            // «в работе» — он занимает оставшееся место и не оставляет пустоты.
             var playY = H - TabBar.Height - 12f - 84f;
-            BuildCollection(heroTop + heroH + 10f, playY - 12f);
             BuildPlay(playY);
+            const float railH = 80f;
+            var railY = playY - 10f - railH;
+            BuildRails(railY, railH);
+            var collectionTop = BuildCollection(railY - 4f);
+
+            const float heroTop = 58f;
+            var heroH = collectionTop - heroTop;
+            var ball = Mathf.Clamp(heroH - 40f, 56f, 170f);
+            BuildLogo(heroTop + (heroH - ball) / 2f, ball);
             TabBar.Create(app, Root, W, H, MainTab.Home);
         }
 
@@ -200,26 +200,26 @@ namespace KnittedPicture.Game
         /// доводится до ближайшей; соседние карточки чуть меньше и бледнее. Под лентой — точки,
         /// активная «перетекает» к следующей. Тап по картинке — карточка уровня, текущий — сразу игра.
         /// </summary>
-        private void BuildCollection(float y, float bottom)
+        /// <returns>Верх ленты: над ним остаётся место для клубка.</returns>
+        private float BuildCollection(float bottom)
         {
             var progress = App.Progress;
-            var available = Mathf.Max(220f, bottom - y);
+            var cardH = PageCardHeight();
+            const float dotsGap = 18f;
+            var available = cardH + dotsGap + 12f;
+            var y = bottom - available;
             var viewport = Ui.Place(Ui.Node(Root, "Carousel"), 0, y, W, available);
             var hit = Ui.Image(viewport, "Hit", null, Color.clear, true);
             Ui.Stretch(hit.rectTransform);
             viewport.gameObject.AddComponent<RectMask2D>();
             _strip = Ui.Place(Ui.Node(viewport, "Strip"), 0, 0, W * Collections.All.Length, available);
 
-            var cardH = 0f;
             for (var i = 0; i < Collections.All.Length; i++)
             {
-                _cards.Add(BuildPageCard(i, out cardH));
+                _cards.Add(BuildPageCard(i, out _));
             }
 
-            // Карточки и точки — по центру свободного места.
-            const float dotsGap = 18f;
-            var blockH = cardH + dotsGap + 8f;
-            var top = Mathf.Max(4f, (available - blockH) / 2f);
+            const float top = 4f;
             for (var i = 0; i < _cards.Count; i++)
             {
                 // Центр карточки — опорная точка: соседние уменьшаются к центру, а не к углу.
@@ -257,6 +257,22 @@ namespace KnittedPicture.Game
             _page = _target;
             _pos = _target;
             ApplyCarousel();
+            return y;
+        }
+
+        /// <summary>Высота карточки коллекции (как в BuildPageCard) — ленту ставим над рядом событий.</summary>
+        private float PageCardHeight()
+        {
+            var cardW = W - 32f;
+            const float gap = 8f;
+            var count = 5;
+            foreach (var c in Collections.All)
+            {
+                count = Mathf.Max(count, c.Count);
+            }
+
+            var tile = Mathf.Min(64f, Mathf.Floor((cardW - 24f - gap * (count - 1)) / count));
+            return 58f + tile + MiniPicture.StarsOverhang + 34f + 6f;
         }
 
         private void BuildDots(RectTransform parent, float y)
@@ -412,25 +428,28 @@ namespace KnittedPicture.Game
         /// Круглые значки событий по бокам от клубка: слева «Подарок» и «Задания», справа «Сундук» и «Узор дня».
         /// Подпись жирная и красная точка — только там, где что-то ждёт. Это не вкладки, а действия на главной.
         /// </summary>
+        /// <summary>
+        /// Ряд событий над «Играть»: подарок, задания, сундук, узор дня — в зоне большого пальца,
+        /// поровну по ширине. Что ещё не открыто по уровню, в ряд не попадает.
+        /// </summary>
         private void BuildRails(float top, float railH)
         {
             var progress = App.Progress;
-            const float side = 46f;
-            var canDaily = progress.CanClaimDaily(App.Today);
-            Rail(side, top, railH, Icon.Gift, Palette.Danger, "Подарок", canDaily,
-                () => App.ShowPopup(new DailyGiftPopup(App, App.ShowHome)));
+            var items = new System.Collections.Generic.List<(Icon icon, Color tint, string title, bool waiting, System.Action open)>
+            {
+                (Icon.Gift, Palette.Danger, "Подарок", progress.CanClaimDaily(App.Today),
+                    () => App.ShowPopup(new DailyGiftPopup(App, App.ShowHome))),
+            };
             if (progress.MissionsOpen)
             {
-                var ready = progress.CanClaimMissions(App.Today);
-                Rail(side, top + railH, railH, Icon.Check, Palette.Primary, "Задания", ready,
-                    () => App.ShowPopup(new MissionsPopup(App, App.ShowHome)));
+                items.Add((Icon.Check, Palette.Primary, "Задания", progress.CanClaimMissions(App.Today),
+                    () => App.ShowPopup(new MissionsPopup(App, App.ShowHome))));
             }
 
-            Rail(W - side, top, railH, Icon.Chest, Palette.CoinShadow, "Сундук", progress.CanOpenChest, App.ShowChest);
+            items.Add((Icon.Chest, Palette.CoinShadow, "Сундук", progress.CanOpenChest, App.ShowChest));
             if (progress.PatternOpen)
             {
-                var done = progress.PatternDone(App.Today);
-                Rail(W - side, top + railH, railH, Icon.Star, Palette.Link, "Узор дня", !done, () =>
+                items.Add((Icon.Star, Palette.Link, "Узор дня", !progress.PatternDone(App.Today), () =>
                 {
                     if (progress.PatternDone(App.Today))
                     {
@@ -440,7 +459,16 @@ namespace KnittedPicture.Game
                     }
 
                     App.StartPattern();
-                });
+                }));
+            }
+
+            // Поровну по ширине, но не шире 96 на значок: при двух-трёх значках они не разбегаются к краям.
+            var step = Mathf.Min(96f, (W - 32f) / items.Count);
+            var x0 = W / 2f - step * (items.Count - 1) / 2f;
+            for (var i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                Rail(x0 + i * step, top, railH, item.icon, item.tint, item.title, item.waiting, item.open);
             }
         }
 

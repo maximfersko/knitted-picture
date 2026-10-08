@@ -131,62 +131,128 @@ namespace KnittedPicture.Game
         private static string SoundLabel(bool on) => on ? "Звук: включён" : "Звук: выключен";
     }
 
+    /// <summary>
+    /// Настройки — нижняя шторка, как в системных настройках iOS и Android: всё в зоне большого пальца,
+    /// закрыть — крестиком, тапом мимо или системной «Назад». Переключатели меняются на месте, без
+    /// переоткрытия окна. Опасное действие отдельно и красным, с подтверждением вторым касанием.
+    /// </summary>
     public sealed class SettingsPopup : Popup
     {
-        private int _resetTaps;
+        private const float RowH = 56f;
 
         public SettingsPopup(App app)
-            : base(app)
+            : base(app, true)
         {
-            AddTitle("Настройки");
-            var on = app.Progress.SoundOn;
-            AddSecondary(on ? "Звук: включён" : "Звук: выключен", on ? KnittedPicture.Game.Icon.SoundOn : KnittedPicture.Game.Icon.SoundOff)
-                .OnClick(() =>
-                {
-                    app.SetSound(!app.Progress.SoundOn);
-                    Close();
-                    app.ShowPopup(new SettingsPopup(app));
-                });
-            var haptics = app.Progress.Data.hapticsOn;
-            AddSecondary(haptics ? "Вибрация: включена" : "Вибрация: выключена", KnittedPicture.Game.Icon.Hand).OnClick(() =>
-            {
-                app.SetHaptics(!app.Progress.Data.hapticsOn);
-                Close();
-                app.ShowPopup(new SettingsPopup(app));
-            });
-            var reminders = app.Progress.Data.remindersOn;
-            AddSecondary(reminders ? "Напоминания: включены" : "Напоминания: выключены", KnittedPicture.Game.Icon.Clock).OnClick(() =>
-            {
-                app.Progress.Data.remindersOn = !app.Progress.Data.remindersOn;
-                if (app.Progress.Data.remindersOn)
-                {
-                    Reminders.AskPermission();
-                }
+            AddTitle("Настройки", 24);
 
-                app.Save();
-                Close();
-                app.ShowPopup(new SettingsPopup(app));
-            });
-            AddSecondary("Как играть", KnittedPicture.Game.Icon.Hand).OnClick(() =>
+            var group = Group(3);
+            ToggleRow(group, 0, KnittedPicture.Game.Icon.SoundOn, Palette.Link, "Звук",
+                () => app.Progress.SoundOn, app.SetSound);
+            ToggleRow(group, 1, KnittedPicture.Game.Icon.Vibrate, Palette.Danger, "Вибрация",
+                () => app.Progress.Data.hapticsOn, app.SetHaptics);
+            ToggleRow(group, 2, KnittedPicture.Game.Icon.Bell, Palette.CoinShadow, "Напоминания",
+                () => app.Progress.Data.remindersOn, on =>
+                {
+                    app.Progress.Data.remindersOn = on;
+                    if (on)
+                    {
+                        Reminders.AskPermission();
+                    }
+
+                    app.Save();
+                });
+            Space(12f);
+
+            var help = Group(1);
+            var howTo = Row(help, 0, KnittedPicture.Game.Icon.Info, Palette.Primary, "Как играть");
+            var chevron = Ui.IconImage(howTo, KnittedPicture.Game.Icon.Back, Palette.Ink3, Inner - 24f, RowH / 2f, 18f);
+            chevron.rectTransform.localScale = new Vector3(-1f, 1f, 1f);
+            howTo.gameObject.AddComponent<Tap>().OnClick(() =>
             {
                 Close();
                 app.ShowIntro();
             });
-            AddPrimary("Готово").OnClick(Close);
-            var reset = AddLink("Сбросить прогресс");
-            reset.OnClick(() =>
+            Space(12f);
+
+            // Сброс — отдельной строкой, красным. Первое касание спрашивает, второе стирает.
+            var danger = Group(1);
+            var resetRow = Ui.Place(Ui.Node(danger, "Reset"), 0, 0, Inner, RowH);
+            Ui.Stretch(Ui.Image(resetRow, "Hit", null, Color.clear, true).rectTransform);
+            var resetLabel = Ui.Label(resetRow, "Сбросить прогресс", 16, Palette.Danger, 0, 0, Inner, RowH);
+            var armed = false;
+            var resetTap = resetRow.gameObject.AddComponent<Tap>();
+            resetTap.OnClick(() =>
             {
-                _resetTaps++;
-                if (_resetTaps >= 2)
+                if (armed)
                 {
                     app.ResetProgress();
+                    return;
                 }
-                else
-                {
-                    app.Toast("Нажми ещё раз, чтобы стереть прогресс");
-                }
+
+                armed = true;
+                resetLabel.text = "Точно стереть всё? Нажми ещё раз";
+                Haptics.Play(Haptic.Medium);
             });
+
+            Space(10f);
+            var version = AddText("Версия " + Application.version, 12, 1);
+            version.color = Palette.Ink3;
             Finish(8);
+        }
+
+        /// <summary>Сгруппированный список: светлая подложка, строки через тонкие разделители.</summary>
+        private RectTransform Group(int rows)
+        {
+            var box = Ui.Box(Card, "Group", 16, Palette.Surface).rectTransform;
+            Ui.Place(box, 24, Cursor, Inner, rows * RowH);
+            Ui.Outline(box, 16, Palette.Line, 1.5f);
+            for (var i = 1; i < rows; i++)
+            {
+                var line = Ui.Box(box, "Divider", 1, Palette.Line).rectTransform;
+                Ui.Place(line, 60f, i * RowH - 0.75f, Inner - 60f, 1.5f);
+            }
+
+            Space(rows * RowH);
+            return box;
+        }
+
+        /// <summary>Строка: значок в цветном кружке и подпись слева.</summary>
+        private RectTransform Row(RectTransform group, int index, KnittedPicture.Game.Icon icon, Color tint, string title)
+        {
+            var row = Ui.Place(Ui.Node(group, title), 0, index * RowH, Inner, RowH);
+            Ui.Stretch(Ui.Image(row, "Hit", null, Color.clear, true).rectTransform);
+            var circle = Ui.Image(row, "IconBack", Art.Circle, Palette.WithAlpha(tint, 0.16f));
+            Ui.PlaceCenter(circle.rectTransform, 30f, RowH / 2f, 34f, 34f);
+            Ui.IconImage(row, icon, tint, 30f, RowH / 2f, 20f);
+            Ui.Label(row, title, 16, Palette.Ink, 58f, 0, Inner - 140f, RowH, false, TextAnchor.MiddleLeft);
+            return row;
+        }
+
+        /// <summary>Строка с переключателем справа; тап по всей строке переключает.</summary>
+        private void ToggleRow(RectTransform group, int index, KnittedPicture.Game.Icon icon, Color tint, string title,
+            System.Func<bool> get, System.Action<bool> set)
+        {
+            var row = Row(group, index, icon, tint, title);
+            const float trackW = 52f;
+            const float trackH = 32f;
+            var track = Ui.Box(row, "Switch", trackH / 2f, Palette.Inactive);
+            Ui.PlaceCenter(track.rectTransform, Inner - 16f - trackW / 2f, RowH / 2f, trackW, trackH);
+            var knob = Ui.Image(track.rectTransform, "Knob", Art.Circle, Color.white).rectTransform;
+            Ui.PlaceCenter(knob, trackH / 2f, trackH / 2f, trackH - 6f, trackH - 6f);
+
+            void Show(float t)
+            {
+                track.color = Color.Lerp(Palette.Inactive, Palette.Primary, t);
+                knob.anchoredPosition = new Vector2(Mathf.Lerp(trackH / 2f, trackW - trackH / 2f, t), knob.anchoredPosition.y);
+            }
+
+            Show(get() ? 1f : 0f);
+            row.gameObject.AddComponent<Tap>().OnClick(() =>
+            {
+                var on = !get();
+                set(on);
+                Tweens.Run(knob, 0.18f, t => Show(on ? t : 1f - t), Ease.OutCubic);
+            });
         }
     }
 
