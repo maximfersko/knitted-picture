@@ -79,7 +79,7 @@ namespace KnittedPicture.Game
                 const float segW = 34f;
                 for (var i = 0; i < YarnCatalog.MaxLevel; i++)
                 {
-                    var seg = Ui.Box(_box!, "Level", 4, i < level ? Palette.Primary : Palette.SlotEmpty).rectTransform;
+                    var seg = Ui.Box(_box!, "Level", 4, i < level ? Palette.Primary : Palette.Inactive).rectTransform;
                     Ui.Place(seg, Inner - 14 - YarnCatalog.MaxLevel * (segW + 4f) + 4f + i * (segW + 4f), _boxY + 7f, segW, 8);
                 }
 

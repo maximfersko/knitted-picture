@@ -321,7 +321,7 @@ namespace KnittedPicture.Game
 
             var label = Ui.Fit(Ui.Label(row, text, 13, done ? Palette.Ink : Palette.Ink2, 58, 0, Inner - 58 - 44, 36, done, TextAnchor.MiddleLeft), 10);
             label.lineSpacing = 0.85f;
-            var mark = Ui.Image(row, "Mark", done ? Art.Circle : Art.Ring, done ? Palette.Primary : Palette.SlotEmpty);
+            var mark = Ui.Image(row, "Mark", done ? Art.Circle : Art.Ring, done ? Palette.Primary : Palette.Inactive);
             Ui.PlaceCenter(mark.rectTransform, Inner - 22, 18, 22, 22);
             if (done)
             {

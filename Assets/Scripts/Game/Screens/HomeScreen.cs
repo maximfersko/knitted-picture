@@ -267,10 +267,10 @@ namespace KnittedPicture.Game
             for (var i = 0; i < n; i++)
             {
                 _dotX[i] = W / 2f + (i - (n - 1) / 2f) * step;
-                var dot = Ui.Box(parent, "Dot", 4, Palette.SlotEmpty, true);
+                var dot = Ui.Box(parent, "Dot", 4, Palette.Inactive, true);
                 Ui.PlaceCenter(dot.rectTransform, _dotX[i], y, 22, 22);
                 dot.color = Color.clear;
-                var visible = Ui.Box(dot.rectTransform, "Visible", 4, Palette.SlotEmpty);
+                var visible = Ui.Box(dot.rectTransform, "Visible", 4, Palette.Inactive);
                 Ui.PlaceCenter(visible.rectTransform, 11, 11, 8, 8);
                 var target = i;
                 dot.gameObject.AddComponent<Tap>().OnClick(() => Turn(target));
@@ -351,7 +351,7 @@ namespace KnittedPicture.Game
                 var claim = Ui.Box(card, "Claim", 11, Palette.CoinSoft, true).rectTransform;
                 Ui.PlaceCenter(claim, cardW / 2f, 42, Mathf.Min(cardW - 112, 200), 22);
                 Ui.Outline(claim, 11, Palette.Coin, 1.5f);
-                Ui.Label(claim, "Забрать награду", 12, Palette.CoinShadow, 0, 0, Mathf.Min(cardW - 112, 200), 22);
+                Ui.Label(claim, "Забрать награду", 12, Palette.CoinInk, 0, 0, Mathf.Min(cardW - 112, 200), 22);
                 var collectionIndex = index;
                 claim.gameObject.AddComponent<Tap>().OnClick(() => CollectionReward.Claim(App, collectionIndex, App.ShowHome));
             }
@@ -390,7 +390,7 @@ namespace KnittedPicture.Game
 
         private static void Arrow(RectTransform card, float x, bool enabled, System.Action action, bool forward)
         {
-            var button = Ui.RoundButton(card, Icon.Back, x, 8, 40);
+            var button = Ui.RoundButton(card, Icon.Back, x, 8, 40, true);
             if (forward)
             {
                 // Отражаем только значок: масштаб самой кнопки нужен для отклика на нажатие.

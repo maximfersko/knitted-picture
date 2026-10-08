@@ -383,7 +383,7 @@ namespace KnittedPicture.Game
             var ready = progress.CanOpenChest;
             var chest = Ui.Card(Root, "ChestTile", x, y, tileW, TileH, 18, ready ? Palette.CoinSoft : Palette.Card, Palette.CardShadow, 3f);
             Ui.IconImage(chest, Icon.Chest, Palette.CoinShadow, 28, TileH / 2f, 26);
-            Ui.Fit(Ui.Label(chest, ready ? "Сундук готов!" : "Сундук", 12, ready ? Palette.CoinShadow : Palette.Ink2, 50, 10, tileW - 58, 18, true,
+            Ui.Fit(Ui.Label(chest, ready ? "Сундук готов!" : "Сундук", 12, ready ? Palette.CoinInk : Palette.Ink2, 50, 10, tileW - 58, 18, true,
                 TextAnchor.MiddleLeft), 9);
             Ui.Label(chest, $"{value}/{ProgressService.ChestEvery} ★", 13, Palette.Ink, 50, 27, tileW - 58, 18, true, TextAnchor.MiddleLeft);
             Ui.ProgressBar(chest, 50, 47, tileW - 64, 6, (float)value / ProgressService.ChestEvery, Palette.Coin);

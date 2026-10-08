@@ -22,7 +22,8 @@ namespace KnittedPicture.Game
         public static readonly Color Surface = Hex("#F5F2FF");
         public static readonly Color Ink = Hex("#2B2350");
         public static readonly Color Ink2 = Hex("#544C7A");
-        public static readonly Color Ink3 = Hex("#8A81BA");
+        // Вторичный текст: контраст с белым 4.7:1 (WCAG AA для мелкого текста — от 4.5:1).
+        public static readonly Color Ink3 = Hex("#756CA6");
         public static readonly Color LoomBg = Hex("#E4DCFF");
         public static readonly Color SlotEmpty = Hex("#CFC5F3");
         public static readonly Color Track = Hex("#E7E1F8");
@@ -32,6 +33,12 @@ namespace KnittedPicture.Game
         public static readonly Color Coin = Hex("#FFC23C");
         public static readonly Color CoinShadow = Hex("#D98E0A");
         public static readonly Color CoinSoft = Hex("#FFF0C7");
+        /// <summary>Золотой текст: читается и на белом, и на CoinSoft (CoinShadow для текста слишком светлый).</summary>
+        public static readonly Color CoinInk = Hex("#965C00");
+        /// <summary>Неактивные отметки (пустые звёзды, точки листания, пустые деления): заметны на белом и на фоне.</summary>
+        public static readonly Color Inactive = Hex("#9488C8");
+        /// <summary>Заливка круглых кнопок на белой карточке: белая кнопка с тенью на белом окне пропадает.</summary>
+        public static readonly Color ButtonFill = Hex("#EAE4FF");
         public static readonly Color Danger = Hex("#E0306E");
         public static readonly Color DangerSoft = Hex("#FFDDE9");
         public static readonly Color Link = Hex("#8B5CF6");

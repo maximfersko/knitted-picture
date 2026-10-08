@@ -107,7 +107,7 @@ namespace KnittedPicture.Game
             if (warning != null)
             {
                 var warn = AddText(warning, 13, 1);
-                warn.color = Palette.CoinShadow;
+                warn.color = Palette.CoinInk;
             }
 
             AddPrimary("Продолжить").OnClick(Close);
@@ -336,7 +336,7 @@ namespace KnittedPicture.Game
             if (streakWarning != null)
             {
                 var warn = AddText(streakWarning, 13, 1);
-                warn.color = Palette.CoinShadow;
+                warn.color = Palette.CoinInk;
             }
 
             if (rescue == null)
@@ -349,25 +349,32 @@ namespace KnittedPicture.Game
                 });
             }
 
-            // «Заново» и «Домой» — маленькие круглые кнопки внизу, не спорят со спасением.
+            // «Заново» и «Домой» — маленькие круглые кнопки внизу, не спорят со спасением. На белом окне
+            // они залиты сиреневым и подписаны: значок без подписи и без заливки терялся.
             const float round = 48f;
             var rowX = 24f + Inner / 2f;
             if (rescue != null)
             {
-                Ui.RoundButton(Card, KnittedPicture.Game.Icon.Restart, rowX - round - 12f, Cursor, round).OnClick(() =>
+                RoundAction(KnittedPicture.Game.Icon.Restart, "Заново", rowX - round / 2f - 48f, round, () =>
                 {
                     Close();
                     restart();
                 });
-                Ui.RoundButton(Card, KnittedPicture.Game.Icon.Home, rowX + 12f, Cursor, round).OnClick(home);
+                RoundAction(KnittedPicture.Game.Icon.Home, "Домой", rowX - round / 2f + 48f, round, home);
             }
             else
             {
-                Ui.RoundButton(Card, KnittedPicture.Game.Icon.Home, rowX - round / 2f, Cursor, round).OnClick(home);
+                RoundAction(KnittedPicture.Game.Icon.Home, "Домой", rowX - round / 2f, round, home);
             }
 
-            Space(round + 4f);
-            Finish(12);
+            Space(round + 24f);
+            Finish(16);
+        }
+
+        private void RoundAction(KnittedPicture.Game.Icon icon, string caption, float x, float size, System.Action action)
+        {
+            Ui.RoundButton(Card, icon, x, Cursor, size, true).OnClick(action);
+            Ui.Label(Card, caption, 12, Palette.Ink2, x - 20f, Cursor + size + 4f, size + 40f, 16);
         }
 
         public override bool Closable => false;

@@ -55,7 +55,7 @@ namespace KnittedPicture.Game
             var pill = Ui.Card(parent, "Stars", cx - w / 2f, cy - h / 2f, w, h, h / 2f, Palette.Card, Palette.CardShadow, 1.5f);
             for (var i = 0; i < 3; i++)
             {
-                var star = Ui.Image(pill, "Star", Art.Icon(Icon.Star), i < stars ? Palette.Coin : Palette.SlotEmpty);
+                var star = Ui.Image(pill, "Star", Art.Icon(Icon.Star), i < stars ? Palette.Coin : Palette.Inactive);
                 Ui.PlaceCenter(star.rectTransform, 6f + size / 2f + i * (size + gap), h / 2f, size, size);
             }
         }

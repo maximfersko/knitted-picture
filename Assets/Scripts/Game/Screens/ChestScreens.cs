@@ -484,7 +484,7 @@ namespace KnittedPicture.Game
                 var chipText = isNew ? "новый!" : levelUp ? $"ур. {yarnLevel + 1}!" : $"+{YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
                 var chip = Ui.Box(front, "State", 11, isNew ? Palette.DangerSoft : levelUp ? Palette.PrimarySoft : Palette.CoinSoft).rectTransform;
                 Ui.PlaceCenter(chip, w / 2f, 130, w - 16, 22);
-                Ui.Fit(Ui.Label(chip, chipText, 12, isNew ? Palette.Danger : levelUp ? Palette.Primary : Palette.CoinShadow, 0, 0, w - 16, 22), 9);
+                Ui.Fit(Ui.Label(chip, chipText, 12, isNew ? Palette.Danger : levelUp ? Palette.Primary : Palette.CoinInk, 0, 0, w - 16, 22), 9);
 
                 // Значок бонуса в углу: сразу видно, чем поможет моток (когда бонусы уже открыты).
                 if (App.Progress.PerksOpen)

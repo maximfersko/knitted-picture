@@ -239,12 +239,18 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Круглая белая кнопка с иконкой (пауза, настройки, назад).</summary>
-        public static Tap RoundButton(RectTransform parent, Icon icon, float x, float y, float size = 44f)
+        /// <param name="onCard">Кнопка лежит на белой карточке или окне: тогда она залита светло-сиреневым
+        /// и без тени, иначе белый круг сливается с белым фоном.</param>
+        public static Tap RoundButton(RectTransform parent, Icon icon, float x, float y, float size = 44f, bool onCard = false)
         {
             var root = Place(Node(parent, "Round" + icon), x, y, size, size);
-            var shadow = Image(root, "Shadow", Art.Circle, Palette.CardShadow);
-            Place(shadow.rectTransform, 0, 2, size, size);
-            var face = Image(root, "Face", Art.Circle, Palette.Card, true);
+            if (!onCard)
+            {
+                var shadow = Image(root, "Shadow", Art.Circle, Palette.CardShadow);
+                Place(shadow.rectTransform, 0, 2, size, size);
+            }
+
+            var face = Image(root, "Face", Art.Circle, onCard ? Palette.ButtonFill : Palette.Card, true);
             Place(face.rectTransform, 0, 0, size, size);
             IconImage(root, icon, Palette.Ink, size / 2f, size / 2f, size * 0.45f);
             return root.gameObject.AddComponent<Tap>();
