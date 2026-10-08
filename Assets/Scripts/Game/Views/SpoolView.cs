@@ -183,6 +183,18 @@ namespace KnittedPicture.Game
             _badgeText.text = loops.ToString();
         }
 
+        /// <summary>
+        /// Задний ряд поля — спокойнее: без узелков, замков, «×2» и галочки, пока клубок не вышел вперёд.
+        /// Цвет, «?» и кольцо связки остаются: по ним видно, что ждёт дальше.
+        /// </summary>
+        public void Quiet()
+        {
+            _knot.gameObject.SetActive(false);
+            _lock.gameObject.SetActive(false);
+            _double.gameObject.SetActive(false);
+            _surplus.gameObject.SetActive(false);
+        }
+
         public void HideBadges()
         {
             _badge.gameObject.SetActive(false);

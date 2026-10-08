@@ -48,6 +48,15 @@ namespace KnittedPicture.Game
         /// <summary>Сцены, где игрок сам тапает элементы: тап по пустому месту сцены их не листает.</summary>
         private static readonly int[] Interactive = { 1, 6, 7 };
 
+        /// <summary>
+        /// Какие сцены показываем: только основа — тап, станок вяжет, затор. Чужую пряжу, комбо, особые клубки,
+        /// бустеры и звёзды объясняют подсказки на тех уровнях, где это встречается впервые.
+        /// </summary>
+        private static readonly int[] Shown = { 1, 2, 3 };
+
+        /// <summary>Номер показанной сцены по порядку (для шкалы сегментов).</summary>
+        private int Step => System.Array.IndexOf(Shown, _page);
+
         private static readonly Color Cream = Palette.Hex("#F3E6CF");
 
         private static readonly Color Pink = Palette.Hex("#FF5C93");
@@ -60,7 +69,7 @@ namespace KnittedPicture.Game
         private readonly float _sh;
         private readonly Text _title;
         private readonly Text _text;
-        private readonly RectTransform[] _segments = new RectTransform[Titles.Length];
+        private readonly RectTransform[] _segments = new RectTransform[Shown.Length];
         private float _segmentW;
         private readonly Text _nextLabel;
         private RectTransform _fx;
@@ -99,7 +108,7 @@ namespace KnittedPicture.Game
             next.OnClick(Next);
 
             _fx = Ui.Stretch(Ui.Node(Root, "Fx"));
-            Go(0);
+            Go(Shown[0]);
         }
 
         public override void Tick(float dt)
@@ -188,13 +197,13 @@ namespace KnittedPicture.Game
 
         private void Next()
         {
-            if (_page >= Titles.Length - 1)
+            if (Step >= Shown.Length - 1)
             {
                 Finish();
             }
             else
             {
-                Go(_page + 1);
+                Go(Shown[Step + 1]);
             }
         }
 
@@ -219,7 +228,7 @@ namespace KnittedPicture.Game
             _page = page;
             _title.text = Titles[page];
             _text.text = Texts[page];
-            _nextLabel.text = page == Titles.Length - 1 ? "Начать вязать" : "Дальше";
+            _nextLabel.text = page == Shown[Shown.Length - 1] ? "Начать вязать" : "Дальше";
             Tweens.Scale(_title.transform, 0.9f, 1f, 0.25f);
             UpdateSegments();
             BuildScene(true);
@@ -303,11 +312,11 @@ namespace KnittedPicture.Game
             for (var i = 0; i < _segments.Length; i++)
             {
                 var fill = _segments[i];
-                if (i < _page)
+                if (i < Step)
                 {
                     fill.sizeDelta = new Vector2(_segmentW, 6);
                 }
-                else if (i > _page)
+                else if (i > Step)
                 {
                     fill.sizeDelta = new Vector2(0, 6);
                 }

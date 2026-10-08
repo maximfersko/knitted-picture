@@ -77,6 +77,9 @@ namespace KnittedPicture.Game
         private readonly List<(RectTransform from, int amount)> _flights = new List<(RectTransform, int)>();
         private int _shownCoins;
 
+        /// <summary>Крупная сумма награды: монеты летят в счётчик одним потоком отсюда.</summary>
+        private RectTransform? _sumFrom;
+
         public WinScreen(App app, LevelData level, WinReward reward, LevelStats stats, WinNews news)
             : base(app, "Win")
         {
@@ -280,7 +283,7 @@ namespace KnittedPicture.Game
             Ui.Label(card, "НАГРАДА", 12, Palette.Ink3, 18, 12, 120, 26, true, TextAnchor.MiddleLeft);
             var sum = Ui.Label(card, "+" + total, 26, Palette.Ink, cardW - 16 - 120, 6, 120, 38, true, TextAnchor.MiddleRight);
             sum.horizontalOverflow = HorizontalWrapMode.Overflow;
-            Ui.Coin(card, cardW - 16 - sum.preferredWidth - 18f, 25, 26);
+            _sumFrom = Ui.Coin(card, cardW - 16 - sum.preferredWidth - 18f, 25, 26);
 
             // Плашки источников: «за картинку +20», «разгон ×11 +4»… — переносятся на вторую строку, если не влезли.
             const float chipH = 28f;
@@ -389,11 +392,18 @@ namespace KnittedPicture.Game
         /// <summary>Строки отдают монеты по очереди: сначала «за картинку», потом бонусы.</summary>
         private void FlyAll()
         {
-            var delay = 0.8f;
+            // Один поток монет из крупной суммы, а не очередь из каждой плашки: короче и спокойнее.
+            if (_sumFrom != null)
+            {
+                Fly(_sumFrom, TotalFlights(), 0.6f);
+                return;
+            }
+
+            var delay = 0.6f;
             foreach (var (from, amount) in _flights)
             {
                 Fly(from, amount, delay);
-                delay += 0.35f;
+                delay += 0.2f;
             }
         }
 

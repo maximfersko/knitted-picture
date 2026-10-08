@@ -245,10 +245,16 @@ namespace KnittedPicture.Game
                 near.color = Palette.Danger;
             }
 
-            AddText(reason, 16, 1.6f);
+            // Коротко и по очереди: есть спасение — что ждёт картинка (или причина), нет — совет на следующую попытку.
+            var showNeeded = rescue != null && needed != null && needed.Length > 0;
+            var showAdvice = rescue == null && !string.IsNullOrEmpty(advice);
+            if (!showNeeded && !showAdvice)
+            {
+                AddText(reason, 15, 1.6f);
+            }
 
             // Затор: какие цвета ждёт картинка — клубками в ряд.
-            if (needed != null && needed.Length > 0)
+            if (showNeeded && needed != null)
             {
                 const float ball = 30f;
                 const float gap = 8f;
@@ -272,7 +278,7 @@ namespace KnittedPicture.Game
             }
 
             // Приём на следующую попытку: проигрыш учит, а не просто наказывает.
-            if (!string.IsNullOrEmpty(advice))
+            if (showAdvice)
             {
                 var tip = AddText(advice!, 14, 2.4f);
                 tip.color = Palette.Link;
@@ -303,7 +309,7 @@ namespace KnittedPicture.Game
                 });
                 if (!freeRescue)
                 {
-                AddSecondary(BoosterInfo.Name(type) + " за видео", KnittedPicture.Game.Icon.Video).OnClick(() =>
+                AddSecondary(BoosterInfo.Name(type) + " за видео", KnittedPicture.Game.Icon.Video, 46f).OnClick(() =>
                 {
                     Close();
                     app.Ads.ShowRewarded("rescue_" + type, ok =>
@@ -333,13 +339,34 @@ namespace KnittedPicture.Game
                 warn.color = Palette.CoinShadow;
             }
 
-            var (again, toHome) = AddPair("Заново", KnittedPicture.Game.Icon.Restart, "Домой", KnittedPicture.Game.Icon.Home);
-            again.OnClick(() =>
+            if (rescue == null)
             {
-                Close();
-                restart();
-            });
-            toHome.OnClick(home);
+                // Спасать нечем — главная кнопка «Заново».
+                AddPrimary("Заново").OnClick(() =>
+                {
+                    Close();
+                    restart();
+                });
+            }
+
+            // «Заново» и «Домой» — маленькие круглые кнопки внизу, не спорят со спасением.
+            const float round = 48f;
+            var rowX = 24f + Inner / 2f;
+            if (rescue != null)
+            {
+                Ui.RoundButton(Card, KnittedPicture.Game.Icon.Restart, rowX - round - 12f, Cursor, round).OnClick(() =>
+                {
+                    Close();
+                    restart();
+                });
+                Ui.RoundButton(Card, KnittedPicture.Game.Icon.Home, rowX + 12f, Cursor, round).OnClick(home);
+            }
+            else
+            {
+                Ui.RoundButton(Card, KnittedPicture.Game.Icon.Home, rowX - round / 2f, Cursor, round).OnClick(home);
+            }
+
+            Space(round + 4f);
             Finish(12);
         }
 

@@ -57,6 +57,9 @@ namespace KnittedPicture.Game
 
         /// <summary>Ножницы взяты из окна затора: срез засчитается как спасение.</summary>
         private bool _scissorsRescue;
+
+        /// <summary>Какие пояснения уже показаны на этом уровне.</summary>
+        private readonly HashSet<string> _told = new HashSet<string>();
         /// <summary>Счёт уровня, который переживает перестройку экрана (поворот, смена безопасной зоны).</summary>
         private readonly LevelRun _run;
 
@@ -405,9 +408,11 @@ namespace KnittedPicture.Game
         private void ComputeLayout()
         {
             _top = (_game.TimeLimit > 0 ? 96f : 62f) + (HasGoals ? 34f : 0f);
-            var boostersY = H - 10f - 60f;
+            // На первых уровнях бустеров нет: их место отдаём полю, а клубки делаем крупнее.
+            var boosterRow = new[] { BoosterType.Scissors, BoosterType.Undo, BoosterType.Slot }.Any(t => App.Progress.IsBoosterOpen(t, BoosterLevel));
+            var boostersY = boosterRow ? H - 10f - 60f : H - 4f;
             _colW = (W - 2 * Pad - 16f) / _game.ColumnCount;
-            _spoolSize = Mathf.Min(52f, _colW - 12f);
+            _spoolSize = Mathf.Min(boosterRow ? 52f : 58f, _colW - 12f);
 
             for (var attempt = 0; attempt < 4; attempt++)
             {
@@ -439,7 +444,7 @@ namespace KnittedPicture.Game
             _picture = new PictureView(_pictureCard, _game, _colors, cell, gap);
             Ui.Place(_picture.Root, 12, 12, gridW, gridH);
 
-            _progressWidth = cardW - 24f - 48f;
+            _progressWidth = cardW - 24f;
             var bar = Ui.Box(_pictureCard, "ProgressTrack", 4, Palette.Track);
             Ui.Place(bar.rectTransform, 12, 12 + gridH + 13, _progressWidth, 8);
             _progressFill = Ui.Box(bar.rectTransform, "Fill", 4, Palette.Primary).rectTransform;
@@ -698,7 +703,7 @@ namespace KnittedPicture.Game
                     if (_game.IsForeign(spool) && !_foreignShown)
                     {
                         _foreignShown = true;
-                        App.Toast("Этой пряжи нет в рисунке, она заняла слот. Срезать её можно ножницами");
+                        ToastOnce("foreign-loom", "Этой пряжи нет в рисунке, она заняла слот. Срезать её можно ножницами");
                     }
                     view = _slotViews[i];
                 }
@@ -809,6 +814,13 @@ namespace KnittedPicture.Game
                     Ui.PlaceCenter(view.Root, x, y, _spoolSize, _spoolSize);
                     view.Bind(spool, _colors[spool.Color], d == 0 || _scissors, _game.IsSurplus(spool));
                     view.SetFabric(spool.IsColorVisible && _game.IsForeign(spool));
+                    if (d > 0 && !_scissors)
+                    {
+                        // Задние ряды тише и чуть меньше: главное на поле — передние клубки.
+                        view.Quiet();
+                        view.Root.localScale = Vector3.one * 0.86f;
+                    }
+
                     var tap = view.Tap;
                     tap.ClickSound = false;
                     var columnIndex = c;
@@ -1355,7 +1367,7 @@ namespace KnittedPicture.Game
 
                 Sfx.Play(Sound.Deny, 0.6f);
                 Haptics.Play(Haptic.Soft);
-                App.Toast("Сначала уходит передний клубок. Достать из глубины можно ножницами");
+                ToastOnce("depth", "Сначала уходит передний клубок. Достать из глубины можно ножницами");
                 return;
             }
 
@@ -1409,7 +1421,7 @@ namespace KnittedPicture.Game
             // а способ расчистить колонку. Без пояснения исчезновение клубка выглядело багом.
             if (result.Placed.Any(p => _game.IsSurplus(p.Spool)))
             {
-                App.Toast("Этот цвет уже довязан (галочка): клубок уйдёт со станка. Так можно расчистить колонку");
+                ToastOnce("surplus", "Этот цвет уже довязан (галочка): клубок уйдёт со станка. Так можно расчистить колонку");
             }
 
             foreach (var id in result.Revealed)
@@ -1474,13 +1486,13 @@ namespace KnittedPicture.Game
             {
                 if (_game.IsForeign(spool))
                 {
-                    App.Toast("Чужая пряжа: её нет в рисунке. Срезать можно ножницами");
+                    ToastOnce("foreign-loom", "Чужая пряжа: её нет в рисунке. Срезать можно ножницами");
                 }
                 else if (spool.Warmup == 0 && !_game.HasWork(spool) && !_game.IsSurplus(spool))
                 {
                     // Бледный клубок на станке: почему он не вяжет.
                     var held = Enumerable.Range(0, _game.Width).Any(x => _game.IsHeld(x) && _game.ColorAt(x, _game.FrontY(x)) == spool.Color);
-                    App.Toast(held
+                    ToastOnce("waiting", held
                         ? "Ждёт: его клетки выше пунктира. Сначала довяжи нижний ряд"
                         : "Ждёт: его цвета пока нет внизу столбиков. Начнёт, когда до него дойдёт очередь");
                 }
@@ -1520,6 +1532,18 @@ namespace KnittedPicture.Game
             CheckStatus();
         }
 
+        /// <summary>
+        /// Пояснение показываем один раз за уровень на каждый случай: дальше отказ — просто встряска
+        /// клубка и звук. Иначе за уровень набегал десяток одинаковых подсказок внизу экрана.
+        /// </summary>
+        private void ToastOnce(string key, string text)
+        {
+            if (_told.Add(key))
+            {
+                App.Toast(text);
+            }
+        }
+
         private void Deny(int column, int depth, RejectReason reason)
         {
             Sfx.Play(Sound.Deny);
@@ -1533,19 +1557,19 @@ namespace KnittedPicture.Game
             switch (reason)
             {
                 case RejectReason.Locked:
-                    App.Toast("Под замком: сначала поставь на станок клубок с ключом");
+                    ToastOnce("locked", "Под замком: сначала поставь на станок клубок с ключом");
                     break;
                 case RejectReason.LinkNotReady:
-                    App.Toast(LinkPartnerText(column, depth));
+                    ToastOnce("link", LinkPartnerText(column, depth));
                     PunchLinkPartner(column, depth);
                     break;
                 case RejectReason.Frozen:
                     var ice = _game.Column(column)[0].Ice;
-                    App.Toast($"Во льду: оттает через {ice} {Plural(ice, "петлю", "петли", "петель")} этого цвета");
+                    ToastOnce("ice", $"Во льду: оттает через {ice} {Plural(ice, "петлю", "петли", "петель")} этого цвета");
                     break;
                 case RejectReason.NoFreeSlot:
                     var spool = depth < _game.Column(column).Count ? _game.Column(column)[depth] : null;
-                    App.Toast(spool != null && spool.Link != 0 && !_scissors
+                    ToastOnce("noslot", spool != null && spool.Link != 0 && !_scissors
                         ? "Связанным клубкам нужно 2 свободных слота"
                         : spool != null && spool.Thick
                             ? "Толстому клубку нужно 2 свободных места"

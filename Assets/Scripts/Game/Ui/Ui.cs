@@ -124,6 +124,14 @@ namespace KnittedPicture.Game
             return outline;
         }
 
+        /// <summary>
+        /// Единая шкала текста: мелкие цифры 11, подписи 13, основной текст 16, заголовки 20.
+        /// Крупные заголовки (от 23) остаются как есть. Раньше на экранах было больше десятка
+        /// разных размеров — интерфейс выглядел неровным. Ui.Fit дальше может уменьшить строку, если не влезает.
+        /// </summary>
+        public static int TypeSize(float size) =>
+            size < 12f ? 11 : size < 14.5f ? 13 : size < 17.5f ? 16 : size < 23f ? 20 : Mathf.RoundToInt(size);
+
         public static Text Label(RectTransform parent, string text, float size, Color color, bool bold = true,
             TextAnchor anchor = TextAnchor.MiddleCenter)
         {
@@ -131,7 +139,7 @@ namespace KnittedPicture.Game
             var label = rt.gameObject.AddComponent<Text>();
             label.font = Font;
             label.text = text;
-            label.fontSize = Mathf.RoundToInt(size);
+            label.fontSize = TypeSize(size);
             label.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
             label.color = color;
             label.alignment = anchor;
