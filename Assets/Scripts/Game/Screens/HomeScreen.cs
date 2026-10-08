@@ -370,7 +370,7 @@ namespace KnittedPicture.Game
                 stars += progress.StarsOf(id);
             }
 
-            Ui.Fit(Ui.Label(card, collection.Name, 18, Palette.Ink, 56, 10, cardW - 112, 24), 13);
+            Ui.Fit(Ui.Label(card, collection.Name, 18, Palette.Ink, 24, 10, cardW - 48, 24), 13);
             // Награда коллекции на главной не занимает отдельную полосу: когда её можно забрать,
             // подпись под названием превращается в золотую кнопку. Прогресс и награда — в альбоме.
             if (progress.CanClaimCollection(index))
@@ -384,11 +384,8 @@ namespace KnittedPicture.Game
             }
             else
             {
-                Ui.Fit(Ui.Label(card, $"{done} из {collection.Count} · {stars}/{collection.Count * 3} ★", 13, Palette.Ink2, 56, 32, cardW - 112, 18, false), 10);
+                Ui.Fit(Ui.Label(card, $"{done} из {collection.Count} · {stars}/{collection.Count * 3} ★", 13, Palette.Ink2, 24, 32, cardW - 48, 18, false), 10);
             }
-            var page = index;
-            Arrow(card, 10, index > 0, () => Turn(page - 1), false);
-            Arrow(card, cardW - 50, index < Collections.All.Length - 1, () => Turn(page + 1), true);
 
             var x0 = (cardW - tilesW) / 2f;
             for (var i = 0; i < collection.Count; i++)
@@ -413,22 +410,6 @@ namespace KnittedPicture.Game
             }
 
             return card;
-        }
-
-        private static void Arrow(RectTransform card, float x, bool enabled, System.Action action, bool forward)
-        {
-            var button = Ui.RoundButton(card, Icon.Back, x, 8, 40, true);
-            if (forward)
-            {
-                // Отражаем только значок: масштаб самой кнопки нужен для отклика на нажатие.
-                var icon = button.transform.GetChild(button.transform.childCount - 1);
-                icon.localScale = new Vector3(-1f, 1f, 1f);
-            }
-
-            var group = button.gameObject.AddComponent<CanvasGroup>();
-            group.alpha = enabled ? 1f : 0.3f;
-            button.Interactable = enabled;
-            button.OnClick(action);
         }
 
         /// <summary>

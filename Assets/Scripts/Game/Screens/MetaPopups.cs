@@ -129,7 +129,6 @@ namespace KnittedPicture.Game
                 "Подарки идут по кругу 7 дней и растут. Пропустишь день — не страшно: неделя продолжится с того же места. " +
                 "На 7-й день: 150 монет и моток пряжи.", 26);
             AddTitle("Подарок дня", 24);
-            AddText("Забирай каждый день", 14, 1);
 
             var today = app.Today;
             var index = app.Progress.DailyIndex(today);
@@ -305,7 +304,6 @@ namespace KnittedPicture.Game
             Space(6f);
 
             AddPrimary(stars >= 3 ? "Перевязать" : "Перевязать на три звезды").OnClick(() => app.StartLevel(level.id));
-            AddLink("Закрыть").OnClick(Close);
             Finish(6);
         }
 

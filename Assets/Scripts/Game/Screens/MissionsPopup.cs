@@ -19,7 +19,6 @@ namespace KnittedPicture.Game
             var today = app.Today;
             AddIcon(Icon.Check, Palette.Primary, Palette.PrimarySoft, 64);
             AddTitle("Задания дня", 24);
-            AddText("Новые задания каждый день", 13, 1);
 
             var missions = progress.Missions(today);
             for (var i = 0; i < missions.Count; i++)

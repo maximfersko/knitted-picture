@@ -583,23 +583,26 @@ namespace KnittedPicture.Game
     }
 
     /// <summary>
-    /// «Сундук и запасы»: сундук с прогрессом и циклом (каждый 4-й большой), запас бустеров
-    /// с описаниями и корзинка пряжи. Здесь видно, что у тебя есть и что будет дальше.
+    /// «Сундук»: один главный объект — сундук. Под ним звёзды до открытия (или «Открыть»),
+    /// что внутри (монеты, бустер на выбор, моток на выбор — с прицелом на большой сундук)
+    /// и путь из четырёх сундуков. Ниже — запасы бустеров плитками; описание — по тапу на плитку.
+    /// Корзинка пряжи живёт во вкладке «Пряжа», здесь её нет, чтобы не дублировать.
     /// </summary>
     public sealed class ChestScreen : ScreenView
     {
+        private RectTransform? _bar;
+
         public ChestScreen(App app)
             : base(app, "ChestScreen")
         {
             Ui.RoundButton(Root, Icon.Back, 16, 8).OnClick(app.ShowHome);
-            Ui.Fit(Ui.Label(Root, "Сундук и запасы", 22, Palette.Ink, 66, 8, W - 66 - 136, 44), 15);
+            Ui.Fit(Ui.Label(Root, "Сундук", 22, Palette.Ink, 66, 8, W - 66 - 136, 44, true, TextAnchor.MiddleLeft), 15);
             Ui.CoinPill(Root, app.Progress.Coins, W - 16, 8);
             var h = H - 64f;
             var content = Ui.Scroll(Root, 0, 64, W, h);
             var y = 6f;
-            y = BuildChest(content, y) + 16f;
+            y = BuildChest(content, y) + 28f;
             y = BuildStock(content, y) + 16f;
-            y = BuildBasket(content, y) + 16f;
             content.sizeDelta = new Vector2(W, Mathf.Max(y + 24f, h));
         }
 
@@ -607,49 +610,98 @@ namespace KnittedPicture.Game
         {
             var progress = App.Progress;
             var cardW = W - 32f;
-            const float cardH = 380f;
+            const float cardH = 452f;
             var card = Ui.Card(content, "ChestCard", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
             Ui.Stitch(card, 24, Palette.Stitch, 7f);
-            Ui.InfoButton(card, cardW - 30, 28, "Как работает сундук",
-                $"Звёзды за уровни копятся в сундук: {ProgressService.ChestEvery} ★, и он готов. " +
-                "Внутри монеты, а ещё ты сам выбираешь один бустер из трёх и один моток из трёх. " +
-                $"Каждый {Chest.Cycle}-й сундук большой: больше монет, бустеры по 2 штуки и точно редкий моток.", 26);
 
             var big = progress.NextChestBig;
             var ready = progress.CanOpenChest;
-            // Свечение готового сундука не выходит за карточку.
-            var area = Ui.Place(Ui.Node(card, "ChestArea"), 0, 0, cardW, 168);
+
+            // Сундук — главный объект: крупно, дышит, готовый светится. Тап по готовому открывает его,
+            // по неготовому — сундук подпрыгивает и мигает полоска звёзд: видно, чего не хватает.
+            var area = Ui.Place(Ui.Node(card, "ChestArea"), 0, 0, cardW, 184);
             area.gameObject.AddComponent<RectMask2D>();
-            var chest = ChestView.Create(area, cardW / 2f, 96, 150f, big);
+            Ui.Stretch(Ui.Image(area, "Hit", null, Color.clear, true).rectTransform);
+            var chest = ChestView.Create(area, cardW / 2f, 104, 168f, big);
             chest.Breathe();
             if (ready)
             {
                 chest.Shine(0.35f, 0.1f);
             }
 
-            Ui.Label(card, big ? "Большой сундук" : "Звёздный сундук", 20, Palette.Ink, 16, 172, cardW - 32, 28);
+            var tap = area.gameObject.AddComponent<Tap>();
+            tap.PressFeedback = false;
+            tap.OnClick(() =>
+            {
+                if (App.Progress.CanOpenChest)
+                {
+                    Open();
+                    return;
+                }
+
+                Tweens.Shake(chest.Root, 6f, 0.3f);
+                Haptics.Play(Haptic.Soft);
+                if (_bar != null)
+                {
+                    var bar = _bar;
+                    Tweens.Run(bar, 0.5f, t => bar.localScale = new Vector3(1f, 1f + 0.5f * Ease.Bump(t), 1f));
+                }
+            });
+
+            Ui.Label(card, big ? "Большой сундук" : "Звёздный сундук", 20, Palette.Ink, 16, 186, cardW - 32, 28);
             if (ready)
             {
-                Ui.Button(card, "Открыть", 24, 208, cardW - 48, 56, Palette.Primary, Palette.PrimaryShadow, Color.white, 20)
-                    .OnClick(() => App.ShowPopup(new ChestOpening(App, App.ShowChest)));
+                Ui.Button(card, "Открыть", 24, 222, cardW - 48, 56, Palette.Primary, Palette.PrimaryShadow, Color.white, 20).OnClick(Open);
             }
             else
             {
                 var value = Mathf.Min(progress.ChestProgress, ProgressService.ChestEvery);
-                Ui.IconImage(card, Icon.Star, Palette.Coin, 36, 222, 22);
-                Ui.ProgressBar(card, 56, 218, cardW - 56 - 76, 9, (float)value / ProgressService.ChestEvery, Palette.Coin);
-                Ui.Label(card, $"{value}/{ProgressService.ChestEvery}", 15, Palette.Ink, cardW - 72, 210, 56, 24, true, TextAnchor.MiddleRight);
-                Ui.Fit(Ui.Label(card, $"Ещё {ProgressService.ChestEvery - value} ★: проходи уровни на три звезды", 13, Palette.Ink2,
-                    16, 238, cardW - 32, 20, false), 10);
+                Ui.IconImage(card, Icon.Star, Palette.Coin, 36, 246, 24);
+                var track = Ui.Box(card, "Track", 6, Palette.Track).rectTransform;
+                Ui.Place(track, 56, 240, cardW - 56 - 80, 12);
+                _bar = track;
+                var fill = Ui.Box(track, "Fill", 6, Palette.Coin).rectTransform;
+                Ui.Place(fill, 0, 0, Mathf.Max(12f, (cardW - 136) * value / ProgressService.ChestEvery), 12);
+                Ui.Label(card, $"{value}/{ProgressService.ChestEvery}", 17, Palette.Ink, cardW - 76, 234, 60, 24, true, TextAnchor.MiddleRight);
             }
 
-            var line = Ui.Box(card, "Divider", 1, Palette.Line);
-            Ui.Place(line.rectTransform, 16, 282, cardW - 32, 1.5f);
-            BuildCycle(card, cardW, 296f);
+            BuildInside(card, cardW, 296f, big);
+            BuildCycle(card, cardW, 376f);
             return y + cardH;
         }
 
-        /// <summary>Цикл из четырёх сундуков: открытые с галочкой, текущий в рамке, большой — золотой.</summary>
+        private void Open() => App.ShowPopup(new ChestOpening(App, App.ShowChest));
+
+        /// <summary>
+        /// Что внутри — три плашки: монеты, бустер на выбор, моток на выбор. Ожидание награды
+        /// работает сильнее любой подсказки; у большого сундука всё щедрее и подписано золотом.
+        /// </summary>
+        private void BuildInside(RectTransform card, float cardW, float y, bool big)
+        {
+            const float gap = 8f;
+            const float h = 66f;
+            var w = (cardW - 32f - gap * 2f) / 3f;
+            var items = new (string text, System.Action<RectTransform, float> icon)[]
+            {
+                ($"{Chest.CoinRange(big).Min}–{Chest.CoinRange(big).Max}", (c, cx) => Ui.Coin(c, cx, 22, 26)),
+                (big ? "бустер ×2" : "бустер", (c, cx) => Ui.IconImage(c, Icon.PlusSlot, Palette.Primary, cx, 22, 24)),
+                (big ? "редкий моток" : "моток", (c, cx) =>
+                {
+                    var ball = Ui.Image(c, "Ball", Art.YarnBall, big ? Palette.Hex("#A98BFF") : Palette.Hex("#FF6FA5"));
+                    Ui.PlaceCenter(ball.rectTransform, cx, 22, 28, 28);
+                }),
+            };
+            for (var i = 0; i < items.Length; i++)
+            {
+                var x = 16f + i * (w + gap);
+                var cell = Ui.Box(card, "Inside", 16, big ? Palette.CoinSoft : Palette.Surface).rectTransform;
+                Ui.Place(cell, x, y, w, h);
+                items[i].icon(cell, w / 2f);
+                Ui.Fit(Ui.Label(cell, items[i].text, 13, big ? Palette.CoinInk : Palette.Ink2, 4, 40, w - 8, 20, true), 10);
+            }
+        }
+
+        /// <summary>Путь из четырёх сундуков: открытые с галочкой, текущий в кольце, большой — золотой.</summary>
         private void BuildCycle(RectTransform card, float cardW, float y)
         {
             var opened = App.Progress.ChestsOpened;
@@ -679,86 +731,56 @@ namespace KnittedPicture.Game
 
                 Ui.IconImage(card, done ? Icon.Check : Icon.Chest, done ? Palette.Primary : big ? Palette.CoinShadow : Palette.Ink2, cx, y + 25,
                     big ? 26 : 22);
-                Ui.Label(card, current ? "сейчас" : big ? "большой" : done ? "открыт" : (i + 1).ToString(), 11,
-                    current ? Palette.Primary : big ? Palette.CoinShadow : Palette.Ink3, cx - 32, y + 54, 64, 16, current || big);
+
+                // Подпись только у большого: галочка и кольцо понятны без слов.
+                if (big && !done)
+                {
+                    Ui.Label(card, "большой", 11, Palette.CoinInk, cx - 32, y + 54, 64, 16, true);
+                }
             }
         }
 
+        /// <summary>
+        /// Запасы — плитками в ряд: значок, сколько есть и название. Закрытые — замок и уровень.
+        /// Что делает бустер — по тапу на плитку, а не строкой мелкого текста под каждым.
+        /// </summary>
         private float BuildStock(RectTransform content, float y)
         {
             var progress = App.Progress;
-            var cardW = W - 32f;
             var types = (BoosterType[])Enum.GetValues(typeof(BoosterType));
-            // Компактный список: значок, название, одна короткая строка и запас. Полное описание — в игре.
-            const float rowH = 60f;
-            const float listY = 12f;
-            var cardH = listY + types.Length * rowH + 6f;
-            var card = Ui.Card(content, "Stock", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
-            Ui.Stitch(card, 24, Palette.Stitch, 7f);
+            Ui.Label(content, "Запасы", 18, Palette.Ink, 20, y, W - 40, 26, true, TextAnchor.MiddleLeft);
+            y += 34f;
+            const float gap = 10f;
+            const float tileH = 104f;
+            var tileW = (W - 32f - gap * (types.Length - 1)) / types.Length;
             for (var i = 0; i < types.Length; i++)
             {
                 var type = types[i];
                 var unlocked = progress.IsUnlocked(type, progress.CurrentLevel);
-                var rowW = cardW - 24f;
-                var row = Ui.Card(card, type.ToString(), 12, listY + i * rowH, rowW, rowH - 8, 16, Palette.Surface, Palette.Surface, 0f);
-                var circle = Ui.Image(row, "Back", Art.Circle, unlocked ? Palette.PrimarySoft : Palette.Track);
-                Ui.PlaceCenter(circle.rectTransform, 28, (rowH - 8) / 2f, 36, 36);
-                Ui.IconImage(row, BoosterInfo.Icon(type), unlocked ? Palette.Primary : Palette.Ink3, 28, (rowH - 8) / 2f, 20);
-                Ui.Fit(Ui.Label(row, BoosterInfo.Name(type), 15, unlocked ? Palette.Ink : Palette.Ink2, 56, 5, rowW - 56 - 74, 20, true, TextAnchor.MiddleLeft), 11);
-                Ui.Fit(Ui.Label(row, BoosterInfo.Short(type), 12, Palette.Ink3, 56, 25, rowW - 56 - 74, 18, false, TextAnchor.MiddleLeft), 9);
+                var stock = progress.Stock(type);
+                var tile = Ui.Card(content, type.ToString(), 16 + i * (tileW + gap), y, tileW, tileH, 20, Palette.Card, Palette.CardShadow, 3f, true);
+                Ui.Stitch(tile, 20, Palette.Stitch, 5f);
+                var circle = Ui.Image(tile, "Back", Art.Circle, unlocked ? Palette.PrimarySoft : Palette.Track);
+                Ui.PlaceCenter(circle.rectTransform, tileW / 2f, 36, 48, 48);
+                Ui.IconImage(tile, unlocked ? BoosterInfo.Icon(type) : Icon.Lock, unlocked ? Palette.Primary : Palette.Ink3, tileW / 2f, 36, 24);
                 if (unlocked)
                 {
-                    Ui.Label(row, "×" + progress.Stock(type), 20, progress.Stock(type) > 0 ? Palette.Ink : Palette.Ink3, rowW - 70, 0, 56, rowH - 8, true,
-                        TextAnchor.MiddleRight);
-                }
-                else
-                {
-                    Ui.IconImage(row, Icon.Lock, Palette.Ink3, rowW - 36, (rowH - 8) / 2f - 9, 18);
-                    Ui.Label(row, $"ур. {Economy.UnlockLevel(type)}", 12, Palette.Ink3, rowW - 66, (rowH - 8) / 2f + 2, 60, 18, true);
-                }
-            }
-
-            return y + cardH;
-        }
-
-        private float BuildBasket(RectTransform content, float y)
-        {
-            var progress = App.Progress;
-            var cardW = W - 32f;
-            const float cardH = 182f;
-            var card = Ui.Card(content, "Basket", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
-            Ui.Stitch(card, 24, Palette.Stitch, 7f);
-            var circle = Ui.Image(card, "Back", Art.Circle, Palette.DangerSoft);
-            Ui.PlaceCenter(circle.rectTransform, 44, 40, 56, 56);
-            var logo = Ui.Image(card, "Ball", Art.YarnBall, Palette.Hex("#FF6FA5"));
-            Ui.PlaceCenter(logo.rectTransform, 44, 40, 38, 38);
-            Ui.Label(card, "Корзинка пряжи", 17, Palette.Ink, 84, 12, cardW - 140, 24, true, TextAnchor.MiddleLeft);
-            Ui.Label(card, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 84, 34, cardW - 140, 18, false, TextAnchor.MiddleLeft);
-            Ui.IconImage(card, Icon.Back, Palette.Ink3, cardW - 28, 40, 18).rectTransform.localScale = new Vector3(-1f, 1f, 1f);
-
-            const float ball = 30f;
-            const float gap = 8f;
-            var max = Mathf.FloorToInt((cardW - 32f + gap) / (ball + gap));
-            var shown = 0;
-            for (var i = 0; i < YarnCatalog.Count && shown < max; i++)
-            {
-                if (!progress.HasYarn(i))
-                {
-                    continue;
+                    var chip = Ui.Box(tile, "Count", 11, stock > 0 ? Palette.Ink : Palette.Inactive).rectTransform;
+                    Ui.PlaceCenter(chip, tileW / 2f + 22f, 16, 34, 22);
+                    Ui.Label(chip, "×" + stock, 12, Color.white, 0, 0, 34, 22);
                 }
 
-                YarnView.Create(card, YarnCatalog.All[i], 16 + ball / 2f + shown * (ball + gap), 98, ball, true);
-                shown++;
+                Ui.Fit(Ui.Label(tile, unlocked ? BoosterInfo.Name(type) : $"ур. {Economy.UnlockLevel(type)}", 13,
+                    unlocked ? Palette.Ink : Palette.Ink3, 4, 68, tileW - 8, 28, unlocked), 9).lineSpacing = 0.85f;
+
+                var target = type;
+                tile.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, BoosterInfo.Name(target),
+                    App.Progress.IsUnlocked(target, App.Progress.CurrentLevel)
+                        ? BoosterInfo.Description(target)
+                        : $"{BoosterInfo.Description(target)}. Откроется на уровне {Economy.UnlockLevel(target)}")));
             }
 
-            if (shown == 0)
-            {
-                Ui.Label(card, "Пока пусто: мотки дают за новые картинки и сундуки", 13, Palette.Ink3, 16, 86, cardW - 32, 24, false);
-            }
-
-            CollectionsScreen.ActiveYarnStrip(card, 12, 128, cardW - 24, App.ShowChest);
-            card.gameObject.AddComponent<Tap>().OnClick(() => App.ShowCollections(CollectionsTab.Yarn));
-            return y + cardH;
+            return y + tileH;
         }
     }
 }

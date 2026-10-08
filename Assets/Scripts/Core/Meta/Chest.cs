@@ -47,6 +47,9 @@ namespace KnittedPicture.Core
 
         public static bool IsBig(int chestNumber) => chestNumber % Cycle == Cycle - 1;
 
+        /// <summary>Сколько монет бывает в сундуке: показываем на экране сундука, катаем в Roll.</summary>
+        public static (int Min, int Max) CoinRange(bool big) => big ? (120, 160) : (50, 90);
+
         /// <summary>
         /// Собрать сундук номер chestNumber (с нуля). Мотки тянутся по тем же весам, что и везде:
         /// редкие реже, ненайденные в полтора раза чаще. В большом — хотя бы один редкий или эпический.
@@ -55,7 +58,8 @@ namespace KnittedPicture.Core
         {
             var rng = new System.Random(chestNumber * 7919 + 13);
             var big = IsBig(chestNumber);
-            var coins = big ? 120 + 10 * rng.Next(5) : 50 + 10 * rng.Next(5);
+            var range = CoinRange(big);
+            var coins = range.Min + 10 * rng.Next((range.Max - range.Min) / 10 + 1);
 
             var boosters = new List<BoosterType>();
             foreach (BoosterType type in System.Enum.GetValues(typeof(BoosterType)))

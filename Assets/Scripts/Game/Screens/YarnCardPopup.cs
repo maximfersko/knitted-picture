@@ -53,10 +53,9 @@ namespace KnittedPicture.Game
                 : !open ? ($"с ур. {YarnCatalog.PerksFromLevel}", Palette.Track, Palette.Ink3)
                 : active ? ("работает", Palette.Primary, Color.white)
                 : ("не в работе", Palette.Track, Palette.Ink2);
-            var hint = !owned ? "Найди моток за новую картинку, в сундуке или в подарке дня"
-                : !open ? $"Бонусы пряжи откроются на уровне {YarnCatalog.PerksFromLevel}"
-                : active ? "Действует в каждом уровне, пока моток в работе"
-                : "Возьми моток в работу, чтобы бонус заработал";
+            // Пояснение только там, где без него не понять: где взять ненайденный моток.
+            // Остальное и так видно по статусу и кнопке «Взять в работу».
+            var hint = !owned ? "Выпадает за новые картинки, в сундуке и в подарке дня" : null;
             var working = owned && open && active;
             BeginSection("Бонус", active && open);
             var iconBack = Ui.Image(_box!, "IconBack", Art.Circle, PerkSoft(perk));
@@ -68,13 +67,16 @@ namespace KnittedPicture.Game
             Ui.Fit(Ui.Label(pill, status, 11, statusInk, 4, 0, 86, 22), 8);
             _boxY += 36f;
             SectionText(YarnCatalog.PerkSentence(perk, power), 14, working ? Palette.Ink : Palette.Ink2, true);
-            SectionText(hint, 12, Palette.Ink3, false);
+            if (hint != null)
+            {
+                SectionText(hint, 12, Palette.Ink3, false);
+            }
             EndSection();
 
             // Раздел «Уровень мотка»: сколько собрано, как поднять и что даст следующий уровень.
             if (owned)
             {
-                BeginSection("Уровень мотка", false);
+                BeginSection("", false);
                 Ui.Label(_box!, $"Уровень {level} из {YarnCatalog.MaxLevel}", 14, Palette.Ink, 14, _boxY, 140, 22, true, TextAnchor.MiddleLeft);
                 const float segW = 34f;
                 for (var i = 0; i < YarnCatalog.MaxLevel; i++)
@@ -85,15 +87,14 @@ namespace KnittedPicture.Game
 
                 _boxY += 28f;
                 var next = level < YarnCatalog.MaxLevel
-                    ? $"Найди ещё один такой моток: уровень {level + 1}, {YarnCatalog.PerkShort(perk, YarnCatalog.Power(yarnId, level + 1))}"
-                    : $"Максимальный уровень. Каждый следующий такой моток даст {YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
+                    ? $"Ещё такой моток: {YarnCatalog.PerkShort(perk, YarnCatalog.Power(yarnId, level + 1))}"
+                    : $"Повтор: +{YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
                 SectionText(next, 12, Palette.Ink2, false);
                 EndSection();
             }
 
             if (owned && !active && progress.PerksOpen)
             {
-                AddText("В работе один моток: его бонус действует в каждом уровне", 12, 1);
                 AddPrimary("Взять в работу", 54).OnClick(() =>
                 {
                     progress.SetActiveYarn(yarnId);
@@ -103,14 +104,9 @@ namespace KnittedPicture.Game
                     Close();
                     app.Toast($"«{yarn.Name}» в работе: {YarnCatalog.PerkText(perk, power)}");
                 });
-                AddLink("Закрыть").OnClick(Close);
-            }
-            else
-            {
-                AddPrimary("Понятно", 50).OnClick(Close);
             }
 
-            Finish(6);
+            Finish(18);
         }
 
         private RectTransform? _box;
@@ -120,9 +116,13 @@ namespace KnittedPicture.Game
         /// <summary>Начать раздел: подпись над плашкой и сама плашка; высота считается по содержимому.</summary>
         private void BeginSection(string caption, bool highlight)
         {
-            var label = Ui.Label(Card, caption.ToUpperInvariant(), 11, Palette.Ink3, 30, Cursor - 6f, Inner - 12, 16, true, TextAnchor.MiddleLeft);
-            label.rectTransform.SetAsLastSibling();
-            Space(14f);
+            if (caption.Length > 0)
+            {
+                var label = Ui.Label(Card, caption.ToUpperInvariant(), 11, Palette.Ink3, 30, Cursor - 6f, Inner - 12, 16, true, TextAnchor.MiddleLeft);
+                label.rectTransform.SetAsLastSibling();
+                Space(14f);
+            }
+
             _boxTop = Cursor;
             _box = Ui.Box(Card, "Section", 16, highlight ? Palette.PrimarySoft : Palette.Surface).rectTransform;
             Ui.Outline(_box, 16, highlight ? Palette.Primary : Palette.Line, highlight ? 2f : 1.5f);
@@ -199,7 +199,7 @@ namespace KnittedPicture.Game
                 text.color = Palette.Primary;
             }
 
-            AddText("Сменить моток можно в Коллекциях → «Пряжа»", 12, 1);
+            AddText("Сменить моток можно во вкладке «Пряжа»", 12, 1);
             AddPrimary("Понятно").OnClick(Close);
             Finish(8);
         }
