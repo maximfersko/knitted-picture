@@ -19,13 +19,15 @@ namespace KnittedPicture.Game
     public sealed class CollectionsScreen : ScreenView
     {
         private const float TabsY = 62f;
-        private const float ContentY = 116f;
 
-        private static readonly string[] TabTitles = { "Альбом", "Пряжа", "Достижения" };
+        /// <summary>Страницы этого раздела: «Альбом» — картинки и достижения, «Пряжа» — одна корзинка.</summary>
+        private readonly CollectionsTab[] _pages;
+        private readonly string[] _titles;
+        private readonly float _contentY;
 
         private readonly CollectionsTab _tab;
-        private readonly UnityEngine.UI.ScrollRect[] _scrolls = new UnityEngine.UI.ScrollRect[3];
-        private readonly UnityEngine.UI.Text[] _tabLabels = new UnityEngine.UI.Text[3];
+        private readonly UnityEngine.UI.ScrollRect[] _scrolls;
+        private readonly UnityEngine.UI.Text[] _tabLabels;
         private RectTransform _strip = null!;
         private RectTransform _indicator = null!;
         private RectTransform _indicatorShadow = null!;
@@ -40,14 +42,28 @@ namespace KnittedPicture.Game
             : base(app, "Collections")
         {
             _tab = tab;
-            _target = (int)tab;
+
+            // Раздел нижней панели: «Пряжа» — одна страница; «Альбом» — картинки и достижения переключателем.
+            var yarn = tab == CollectionsTab.Yarn;
+            _pages = yarn ? new[] { CollectionsTab.Yarn } : new[] { CollectionsTab.Album, CollectionsTab.Achievements };
+            _titles = yarn ? new[] { "Пряжа" } : new[] { "Картинки", "Достижения" };
+            _contentY = _pages.Length > 1 ? 116f : 62f;
+            _scrolls = new UnityEngine.UI.ScrollRect[_pages.Length];
+            _tabLabels = new UnityEngine.UI.Text[_pages.Length];
+            _target = Mathf.Max(0, System.Array.IndexOf(_pages, tab));
             _pos = _target;
-            Ui.RoundButton(Root, Icon.Back, 16, 8).OnClick(app.ShowHome);
-            Ui.Label(Root, "Коллекции", 22, Palette.Ink, 66, 8, W - 66 - 128, 44);
+
+            // Крупный заголовок раздела слева, как на верхних экранах iOS и Android; «назад» не нужен — есть вкладки.
+            Ui.Label(Root, yarn ? "Пряжа" : "Альбом", 28, Palette.Ink, 20, 8, W - 160, 44, true, TextAnchor.MiddleLeft);
             Ui.CoinPill(Root, app.Progress.Coins, W - 16, 8);
-            BuildTabs();
+            if (_pages.Length > 1)
+            {
+                BuildTabs();
+            }
+
             BuildPages();
             Apply();
+            TabBar.Create(app, Root, W, H, yarn ? MainTab.Yarn : MainTab.Album);
         }
 
         public override void Tick(float dt)
@@ -71,17 +87,17 @@ namespace KnittedPicture.Game
         /// </summary>
         private void BuildPages()
         {
-            var h = H - ContentY;
-            var viewport = Ui.Place(Ui.Node(Root, "Pages"), 0, ContentY, W, h);
+            var h = H - _contentY - TabBar.Height;
+            var viewport = Ui.Place(Ui.Node(Root, "Pages"), 0, _contentY, W, h);
             viewport.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
-            _strip = Ui.Place(Ui.Node(viewport, "Strip"), 0, 0, W * TabTitles.Length, h);
-            for (var i = 0; i < TabTitles.Length; i++)
+            _strip = Ui.Place(Ui.Node(viewport, "Strip"), 0, 0, W * _titles.Length, h);
+            for (var i = 0; i < _titles.Length; i++)
             {
                 var content = Ui.Scroll(_strip, i * W, 0, W, h);
                 var page = (RectTransform)content.parent;
                 _scrolls[i] = page.GetComponent<UnityEngine.UI.ScrollRect>();
                 float height;
-                switch ((CollectionsTab)i)
+                switch (_pages[i])
                 {
                     case CollectionsTab.Yarn:
                         height = BuildYarn(content);
@@ -95,7 +111,10 @@ namespace KnittedPicture.Game
                 }
 
                 content.sizeDelta = new Vector2(W, Mathf.Max(height + 24f, h));
-                AttachPager(page, i);
+                if (_pages.Length > 1)
+                {
+                    AttachPager(page, i);
+                }
             }
         }
 
@@ -106,7 +125,7 @@ namespace KnittedPicture.Game
         private void AttachPager(RectTransform page, int index)
         {
             var pager = page.gameObject.AddComponent<Pager>();
-            var last = TabTitles.Length - 1;
+            var last = _titles.Length - 1;
             pager.Began += () =>
             {
                 _axis = 0;
@@ -153,7 +172,7 @@ namespace KnittedPicture.Game
 
         private void Turn(int index)
         {
-            index = Mathf.Clamp(index, 0, TabTitles.Length - 1);
+            index = Mathf.Clamp(index, 0, _titles.Length - 1);
             if (index != _target)
             {
                 Sfx.Play(Sound.Pick, 0.5f);
@@ -166,10 +185,14 @@ namespace KnittedPicture.Game
         private void Apply()
         {
             _strip.anchoredPosition = new Vector2(-_pos * W, _strip.anchoredPosition.y);
+            if (_pages.Length < 2)
+            {
+                return;
+            }
 
             // Перетекание: передний край плашки уходит к соседней вкладке раньше, задний догоняет позже.
-            var p = Mathf.Clamp(_pos, 0f, TabTitles.Length - 1);
-            var i0 = Mathf.Min(Mathf.FloorToInt(p), TabTitles.Length - 2);
+            var p = Mathf.Clamp(_pos, 0f, _titles.Length - 1);
+            var i0 = Mathf.Min(Mathf.FloorToInt(p), _titles.Length - 2);
             var t = p - i0;
             var x0 = 20f + i0 * _tabW;
             var x1 = 20f + (i0 + 1) * _tabW;
@@ -195,21 +218,21 @@ namespace KnittedPicture.Game
             var track = Ui.Box(Root, "Tabs", 22, Palette.LoomBg);
             Ui.Place(track.rectTransform, 16, TabsY, W - 32, 44);
             Ui.Outline(track.rectTransform, 22, Palette.Line, 1.5f);
-            _tabW = (W - 32 - 8) / TabTitles.Length;
+            _tabW = (W - 32 - 8) / _titles.Length;
             _indicatorShadow = Ui.Box(Root, "TabShadow", 18, Palette.CardShadow).rectTransform;
             Ui.Place(_indicatorShadow, 20, TabsY + 6, _tabW, 36);
             _indicator = Ui.Box(Root, "TabActive", 18, Palette.Card).rectTransform;
             Ui.Place(_indicator, 20, TabsY + 4, _tabW, 36);
 
-            for (var i = 0; i < TabTitles.Length; i++)
+            for (var i = 0; i < _titles.Length; i++)
             {
                 var x = 20f + i * _tabW;
                 var face = Ui.Box(Root, "Tab" + i, 18, Color.clear, true);
                 Ui.Place(face.rectTransform, x, TabsY + 4, _tabW, 36);
                 // С бейджем подпись сдвигается влево и ужимается: точка не закрывает «Достижения» на узком экране.
-                var pending = Pending((CollectionsTab)i);
+                var pending = Pending(_pages[i]);
                 var labelW = pending > 0 ? _tabW - 22f : _tabW;
-                _tabLabels[i] = Ui.Fit(Ui.Label(face.rectTransform, TabTitles[i], 15, Palette.Ink2, 0, 0, labelW, 36), 11);
+                _tabLabels[i] = Ui.Fit(Ui.Label(face.rectTransform, _titles[i], 15, Palette.Ink2, 0, 0, labelW, 36), 11);
                 if (pending > 0)
                 {
                     Ui.Badge(face.rectTransform, _tabW - 12, 6, pending);
@@ -222,9 +245,11 @@ namespace KnittedPicture.Game
             }
         }
 
-        private int Pending(CollectionsTab tab)
+        private int Pending(CollectionsTab tab) => PendingCount(App.Progress, tab);
+
+        /// <summary>Сколько наград ждёт в разделе — для красных точек на вкладках.</summary>
+        public static int PendingCount(ProgressService progress, CollectionsTab tab)
         {
-            var progress = App.Progress;
             var count = 0;
             switch (tab)
             {

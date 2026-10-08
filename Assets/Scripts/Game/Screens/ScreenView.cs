@@ -141,6 +141,12 @@ namespace KnittedPicture.Game
         {
             var extra = _bottomSheet ? 30f + App.BottomInset : 0f;
             Card.sizeDelta = new Vector2(CardWidth, _cursor + bottomPadding + extra);
+
+            // Закрыть можно не только тапом мимо окна: крестик 44 pt / 48 dp в углу, как принято на iOS и Android.
+            if (Closable)
+            {
+                Ui.RoundButton(Card, Icon.Close, CardWidth - 44f - 10f, 10f, 44f).OnClick(Close);
+            }
         }
 
         protected void Space(float height)

@@ -20,17 +20,28 @@ namespace KnittedPicture.Game
             Ui.RoundButton(Root, Icon.Settings, 16, 8).OnClick(() => app.ShowPopup(new SettingsPopup(app)));
             Ui.CoinPill(Root, progress.Coins, W - 16, 8);
 
-            // Логотип: большой клубок пряжи «в работе» со спицами, мягкая тень, название.
+            // Главная по образцу лучших казуальных игр и гайдлайнов iOS/Android: наверху настройки и монеты,
+            // в центре «герой» — клубок пряжи «в работе», по бокам круглые значки событий, ниже текущая
+            // коллекция, внизу (в зоне большого пальца) одна большая кнопка «Играть» и панель вкладок.
             var compact = H < 740f;
-            var ball = compact ? 72f : 96f;
-            var logoY = compact ? 50f : 56f;
-            BuildLogo(logoY, ball);
-            var titleY = logoY + ball + 6f;
-            Ui.Label(Root, "Вязаная картинка", compact ? 28 : 32, Palette.Ink, 16, titleY, W - 32, 40);
-            // Без подзаголовка: на главной только то, что нужно для действия.
-            var y = BuildMetaRow(titleY + 52f);
-            BuildCollection(y + 16f);
-            BuildPlay();
+            var ball = compact ? 88f : 112f;
+            const float heroTop = 58f;
+            var railH = compact ? 76f : 84f;
+            var heroH = Mathf.Max(ball, railH * 2f);
+            BuildLogo(heroTop + (heroH - ball) / 2f, ball);
+            BuildRails(heroTop, railH);
+
+            var playY = H - TabBar.Height - 12f - 84f;
+            BuildCollection(heroTop + heroH + 10f, playY - 12f);
+            BuildPlay(playY);
+            TabBar.Create(app, Root, W, H, MainTab.Home);
+        }
+
+        /// <summary>Системная «Назад» на главной: на Android игра сворачивается, как обычное приложение.</summary>
+        public override bool OnBack()
+        {
+            Platform.MoveToBack();
+            return true;
         }
 
         /// <summary>
@@ -149,106 +160,6 @@ namespace KnittedPicture.Game
             });
         }
 
-        /// <summary>Подарок дня, сундук, задания дня (с 4-го уровня) и коллекции — плитки с отметками.</summary>
-        private float BuildMetaRow(float y)
-        {
-            var progress = App.Progress;
-            const float gap = 8f;
-            const float h = 64f;
-            var missions = progress.MissionsOpen;
-            var count = missions ? 4 : 3;
-            var w = (W - 32f - gap * (count - 1)) / count;
-            var x = 16f;
-
-            var canDaily = progress.CanClaimDaily(App.Today);
-            var gift = Tile(x, y, w, h, Icon.Gift, Palette.Danger, "Подарок", canDaily ? "забери!" : "завтра", canDaily ? 1 : 0);
-            gift.OnClick(() => App.ShowPopup(new DailyGiftPopup(App, App.ShowHome)));
-            x += w + gap;
-
-            var chestReady = progress.CanOpenChest;
-            var chestProgress = Mathf.Min(progress.ChestProgress, ProgressService.ChestEvery);
-            var chest = Tile(x, y, w, h, Icon.Chest, Palette.CoinShadow, "Сундук",
-                chestReady ? "открой!" : $"{chestProgress}/{ProgressService.ChestEvery} ★", chestReady ? 1 : 0,
-                (float)chestProgress / ProgressService.ChestEvery);
-            chest.OnClick(App.ShowChest);
-            x += w + gap;
-
-            if (missions)
-            {
-                var done = progress.MissionsDone(App.Today);
-                var claimed = progress.MissionsClaimed(App.Today);
-                var ready = progress.CanClaimMissions(App.Today);
-                var tile = Tile(x, y, w, h, Icon.Check, Palette.Primary, "Задания",
-                    ready ? "забери!" : claimed ? "завтра" : $"{done}/{DailyMissions.Count}", ready ? 1 : 0,
-                    claimed ? -1f : (float)done / DailyMissions.Count);
-                tile.OnClick(() => App.ShowPopup(new MissionsPopup(App, App.ShowHome)));
-                x += w + gap;
-            }
-
-            var pending = progress.PendingClaims;
-            var kinds = progress.YarnKinds;
-            var collections = Tile(x, y, w, h, Icon.Trophy, Palette.Link, "Коллекции",
-                pending > 0 ? "забери!" : string.Empty, pending);
-            collections.OnClick(() => App.ShowCollections(FirstPendingTab()));
-
-            return y + h;
-        }
-
-        /// <summary>Открыть коллекции там, где ждёт награда.</summary>
-        private CollectionsTab FirstPendingTab()
-        {
-            var progress = App.Progress;
-            foreach (var a in Achievements.All)
-            {
-                if (progress.CanClaimAchievement(a))
-                {
-                    return CollectionsTab.Achievements;
-                }
-            }
-
-            foreach (var set in YarnCatalog.Sets)
-            {
-                if (progress.CanClaimSet(set))
-                {
-                    return CollectionsTab.Yarn;
-                }
-            }
-
-            return CollectionsTab.Album;
-        }
-
-        /// <summary>
-        /// Плитка «зачем заходить» — компактная: только значок. Подпись появляется, только когда там
-        /// что-то ждёт игрока («забери!», «открой!»), тогда же красная точка и покачивание.
-        /// У сундука и заданий без награды — тонкая полоска прогресса под значком.
-        /// </summary>
-        private Tap Tile(float x, float y, float w, float h, Icon icon, Color tint, string title, string caption, int badge, float fill = -1f)
-        {
-            var card = Ui.Card(Root, title, x, y, w, h, 18, Palette.Card, Palette.CardShadow, 3f, true);
-            var waiting = badge > 0;
-            var iconY = waiting ? h / 2f - 8f : h / 2f - (fill >= 0f ? 4f : 0f);
-            var circle = Ui.Image(card, "Back", Art.Circle, Palette.WithAlpha(tint, 0.14f));
-            Ui.PlaceCenter(circle.rectTransform, w / 2f, iconY, 38, 38);
-            var iconImage = Ui.IconImage(card, icon, tint, w / 2f, iconY, 24);
-            if (waiting)
-            {
-                Ui.Fit(Ui.Label(card, caption, 12, Palette.Danger, 2, h - 22f, w - 4, 16, true), 9);
-            }
-            else if (fill >= 0f)
-            {
-                Ui.ProgressBar(card, 16, h - 12f, w - 32, 4, fill, Palette.Coin);
-            }
-
-            if (waiting)
-            {
-                Ui.Badge(card, w - 10, 8, badge);
-                var rt = iconImage.rectTransform;
-                Tweens.Run(rt, 1.6f, t => rt.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 4f) * 10f * Ease.Bump(t)), null, null, 0.4f, true);
-            }
-
-            return card.gameObject.AddComponent<Tap>();
-        }
-
         /// <summary>Какую коллекцию показывает карусель; null — ту, где текущий уровень.</summary>
         private static int? _page;
 
@@ -289,11 +200,10 @@ namespace KnittedPicture.Game
         /// доводится до ближайшей; соседние карточки чуть меньше и бледнее. Под лентой — точки,
         /// активная «перетекает» к следующей. Тап по картинке — карточка уровня, текущий — сразу игра.
         /// </summary>
-        private void BuildCollection(float y)
+        private void BuildCollection(float y, float bottom)
         {
-            // Только коллекция текущего уровня: без ленты, стрелок и точек. Остальные — в «Коллекциях».
+            // Только коллекция текущего уровня: без ленты, стрелок и точек. Остальные — во вкладке «Альбом».
             var progress = App.Progress;
-            var bottom = H - 24f - 84f - 16f;
             var available = Mathf.Max(220f, bottom - y);
             var viewport = Ui.Place(Ui.Node(Root, "Collection"), 0, y, W, available);
             _strip = Ui.Place(Ui.Node(viewport, "Strip"), 0, 0, W, available);
@@ -438,57 +348,69 @@ namespace KnittedPicture.Game
         /// Кнопка «Узор дня»: эскиз сегодняшней картинки, подпись и серия дней. Не связан сегодня —
         /// красная точка; связан — галочка и «завтра новый», тап объясняет, когда ждать следующий.
         /// </summary>
-        private void BuildPattern(float x, float y, float size)
+        /// <summary>
+        /// Круглые значки событий по бокам от клубка: слева «Подарок» и «Задания», справа «Сундук» и «Узор дня».
+        /// Подпись жирная и красная точка — только там, где что-то ждёт. Это не вкладки, а действия на главной.
+        /// </summary>
+        private void BuildRails(float top, float railH)
         {
             var progress = App.Progress;
-            var done = progress.PatternDone(App.Today);
-            var streak = progress.PatternStreak(App.Today);
-            var card = Ui.Card(Root, "Pattern", x, y, size, size, 22, done ? Palette.Surface : Palette.Card, Palette.CardShadow, 5f, true);
-            var level = App.TodayPattern();
-            var frame = Ui.Box(card, "Preview", 10, Palette.Surface).rectTransform;
-            Ui.PlaceCenter(frame, size / 2f, 30, 44, 44);
-            MiniPicture.Create(frame, level, 22, 22, 38, faded: !done);
-            if (done)
+            const float side = 46f;
+            var canDaily = progress.CanClaimDaily(App.Today);
+            Rail(side, top, railH, Icon.Gift, Palette.Danger, "Подарок", canDaily,
+                () => App.ShowPopup(new DailyGiftPopup(App, App.ShowHome)));
+            if (progress.MissionsOpen)
             {
-                var mark = Ui.Image(card, "Done", Art.Circle, Palette.Primary);
-                Ui.PlaceCenter(mark.rectTransform, size / 2f + 20, 48, 20, 20);
-                Ui.IconImage(card, Icon.Check, Color.white, size / 2f + 20, 48, 12);
-            }
-            else
-            {
-                Ui.Badge(card, size - 10, 8, 0);
+                var ready = progress.CanClaimMissions(App.Today);
+                Rail(side, top + railH, railH, Icon.Check, Palette.Primary, "Задания", ready,
+                    () => App.ShowPopup(new MissionsPopup(App, App.ShowHome)));
             }
 
-            Ui.Fit(Ui.Label(card, "Узор дня", 12, Palette.Ink, 2, 56, size - 4, 16), 9);
-            Ui.Fit(Ui.Label(card, streak > 0 ? $"серия {streak} дн." : "новый!", 11, streak > 0 ? Palette.CoinShadow : Palette.Danger, 2, 70, size - 4, 14,
-                streak > 0), 8);
-            card.gameObject.AddComponent<Tap>().OnClick(() =>
+            Rail(W - side, top, railH, Icon.Chest, Palette.CoinShadow, "Сундук", progress.CanOpenChest, App.ShowChest);
+            if (progress.PatternOpen)
             {
-                if (progress.PatternDone(App.Today))
+                var done = progress.PatternDone(App.Today);
+                Rail(W - side, top + railH, railH, Icon.Star, Palette.Link, "Узор дня", !done, () =>
                 {
-                    App.ShowPopup(new InfoPopup(App, "Узор дня связан",
-                        $"Новый узор появится завтра. Серия: {progress.PatternStreak(App.Today)} дн. подряд, каждый {DailyPattern.YarnEvery}-й день — моток в подарок."));
-                    return;
-                }
+                    if (progress.PatternDone(App.Today))
+                    {
+                        App.ShowPopup(new InfoPopup(App, "Узор дня связан",
+                            $"Новый узор появится завтра. Серия: {progress.PatternStreak(App.Today)} дн. подряд, каждый {DailyPattern.YarnEvery}-й день — моток в подарок."));
+                        return;
+                    }
 
-                App.StartPattern();
-            });
+                    App.StartPattern();
+                });
+            }
+        }
+
+        /// <summary>Один значок события: круг 56 и подпись — касание не меньше 48×48.</summary>
+        private void Rail(float cx, float top, float h, Icon icon, Color tint, string title, bool waiting, System.Action open)
+        {
+            var root = Ui.Place(Ui.Node(Root, "Rail" + title), cx - 40f, top, 80f, h);
+            var hit = Ui.Image(root, "Hit", null, Color.clear, true);
+            Ui.Stretch(hit.rectTransform);
+            var circle = Ui.Image(root, "Back", Art.Circle, Palette.Card);
+            Ui.PlaceCenter(circle.rectTransform, 40f, 28f, 56f, 56f);
+            var tintCircle = Ui.Image(root, "Tint", Art.Circle, Palette.WithAlpha(tint, 0.16f));
+            Ui.PlaceCenter(tintCircle.rectTransform, 40f, 28f, 44f, 44f);
+            var iconImage = Ui.IconImage(root, icon, tint, 40f, 28f, 24f);
+            Ui.Fit(Ui.Label(root, title, 12, waiting ? Palette.Ink : Palette.Ink2, 0, 58f, 80f, 16f, waiting), 9);
+            if (waiting)
+            {
+                Ui.Badge(root, 62f, 4f, 0);
+                var rt = iconImage.rectTransform;
+                Tweens.Run(rt, 1.6f, t => rt.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 4f) * 10f * Ease.Bump(t)), null, null, 0.4f, true);
+            }
+
+            root.gameObject.AddComponent<Tap>().OnClick(open);
         }
 
         /// <summary>«Играть» с эскизом следующей картинки — видно, ради чего идёшь дальше.</summary>
-        private void BuildPlay()
+        private void BuildPlay(float buttonY)
         {
             var progress = App.Progress;
-            var buttonY = H - 24f - 84f;
-
-            // «Узор дня» — квадратная кнопка справа от «Играть»: новый повод зайти каждый день.
             var playW = W - 40;
-            if (progress.PatternOpen)
-            {
-                const float size = 84f;
-                playW -= size + 10f;
-                BuildPattern(W - 20 - size, buttonY, size);
-            }
 
             if (progress.AllDone)
             {
