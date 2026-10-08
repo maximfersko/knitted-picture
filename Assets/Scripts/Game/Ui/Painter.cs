@@ -14,7 +14,8 @@ namespace KnittedPicture.Game
     {
         private const float Grid = 24f;
         private readonly List<Func<float, float, float>> _shapes = new List<Func<float, float, float>>();
-        private float _stroke = 2.2f;
+        // Линии потолще (было 2.2): значки читаются рядом с объёмными клубками и не выглядят «системными».
+        private float _stroke = 2.6f;
 
         public Painter Stroke(float width)
         {

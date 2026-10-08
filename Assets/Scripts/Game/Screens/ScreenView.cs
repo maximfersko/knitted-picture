@@ -83,6 +83,7 @@ namespace KnittedPicture.Game
             }
 
             _cursor = 28f;
+            Sfx.Play(Sound.Puff, 0.45f);
             Tweens.Fade(_group, 0f, 1f, 0.18f);
             if (bottomSheet)
             {

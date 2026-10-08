@@ -42,6 +42,16 @@ namespace KnittedPicture.Game
             var ball = Mathf.Clamp((heroBottom - heroTop) * 0.62f, 64f, 128f);
             BuildLogo(heroTop + (heroBottom - heroTop - ball) / 2f, ball);
             TabBar.Create(app, Root, W, H, MainTab.Home);
+
+            // Вход на главную: значки событий по очереди «выпрыгивают», кнопка «Играть» мягко подрастает.
+            // Только при входе с другого экрана — после получения награды главная не прыгает заново.
+            if (app.PreviousScreen != typeof(HomeScreen))
+            {
+                for (var i = 0; i < _rails.Count; i++)
+                {
+                    Tweens.Scale(_rails[i], 0.4f, 1f, 0.4f, Ease.OutBack, null, 0.08f + i * 0.06f);
+                }
+            }
         }
 
         /// <summary>Системная «Назад» на главной: на Android игра сворачивается, как обычное приложение.</summary>
@@ -264,6 +274,7 @@ namespace KnittedPicture.Game
             _page = _target;
             _pos = _target;
             ApplyCarousel();
+            App.SetGround(Palette.GroundOf(_target));
             return y;
         }
 
@@ -312,6 +323,15 @@ namespace KnittedPicture.Game
         private void ApplyCarousel()
         {
             _strip.anchoredPosition = new Vector2(-_pos * W, _strip.anchoredPosition.y);
+
+            // Фон перетекает вслед за лентой: оттенок между соседними коллекциями.
+            if (_dragging || !Mathf.Approximately(_pos, _target))
+            {
+                var p0 = Mathf.Clamp(_pos, 0f, _cards.Count - 1);
+                var a = Mathf.FloorToInt(p0);
+                var b = Mathf.Min(a + 1, _cards.Count - 1);
+                App.SetGround(Color.Lerp(Palette.GroundOf(a), Palette.GroundOf(b), p0 - a), true);
+            }
             for (var i = 0; i < _cards.Count; i++)
             {
                 var away = Mathf.Min(1f, Mathf.Abs(i - _pos));
@@ -387,6 +407,7 @@ namespace KnittedPicture.Game
             }
 
             var x0 = (cardW - tilesW) / 2f;
+            MiniPicture.Shelf(card, x0 - 8f, 58f + tile - 4f, tilesW + 16f);
             for (var i = 0; i < collection.Count; i++)
             {
                 var id = collection.FirstLevel + i;
@@ -426,21 +447,21 @@ namespace KnittedPicture.Game
         private void BuildRails(float top, float railH)
         {
             var progress = App.Progress;
-            var items = new System.Collections.Generic.List<(Icon icon, Color tint, string title, bool waiting, System.Action open)>
+            var items = new System.Collections.Generic.List<(EventKind kind, Color tint, string title, bool waiting, System.Action open)>
             {
-                (Icon.Gift, Palette.Danger, "Подарок", progress.CanClaimDaily(App.Today),
+                (EventKind.Gift, Palette.Danger, "Подарок", progress.CanClaimDaily(App.Today),
                     () => App.ShowPopup(new DailyGiftPopup(App, App.ShowHome))),
             };
             if (progress.MissionsOpen)
             {
-                items.Add((Icon.Check, Palette.Primary, "Задания", progress.CanClaimMissions(App.Today),
+                items.Add((EventKind.Missions, Palette.Primary, "Задания", progress.CanClaimMissions(App.Today),
                     () => App.ShowPopup(new MissionsPopup(App, App.ShowHome))));
             }
 
-            items.Add((Icon.Chest, Palette.CoinShadow, "Сундук", progress.CanOpenChest, App.ShowChest));
+            items.Add((EventKind.Chest, Palette.CoinShadow, "Сундук", progress.CanOpenChest, App.ShowChest));
             if (progress.PatternOpen)
             {
-                items.Add((Icon.Star, Palette.Link, "Узор дня", !progress.PatternDone(App.Today), () =>
+                items.Add((EventKind.Pattern, Palette.Link, "Узор дня", !progress.PatternDone(App.Today), () =>
                 {
                     if (progress.PatternDone(App.Today))
                     {
@@ -459,30 +480,63 @@ namespace KnittedPicture.Game
             for (var i = 0; i < items.Count; i++)
             {
                 var item = items[i];
-                Rail(x0 + i * step, top, railH, item.icon, item.tint, item.title, item.waiting, item.open);
+                Rail(x0 + i * step, top, railH, item.kind, item.tint, item.title, item.waiting, item.open);
             }
         }
 
         /// <summary>Один значок события: круг 56 и подпись — касание не меньше 48×48.</summary>
-        private void Rail(float cx, float top, float h, Icon icon, Color tint, string title, bool waiting, System.Action open)
+        private readonly System.Collections.Generic.List<RectTransform> _rails = new System.Collections.Generic.List<RectTransform>();
+
+        private void Rail(float cx, float top, float h, EventKind kind, Color tint, string title, bool waiting, System.Action open)
         {
             var root = Ui.Place(Ui.Node(Root, "Rail" + title), cx - 40f, top, 80f, h);
+            _rails.Add(root);
             var hit = Ui.Image(root, "Hit", null, Color.clear, true);
             Ui.Stretch(hit.rectTransform);
             var circle = Ui.Image(root, "Back", Art.Circle, Palette.Card);
             Ui.PlaceCenter(circle.rectTransform, 40f, 28f, 56f, 56f);
             var tintCircle = Ui.Image(root, "Tint", Art.Circle, Palette.WithAlpha(tint, 0.16f));
             Ui.PlaceCenter(tintCircle.rectTransform, 40f, 28f, 44f, 44f);
-            var iconImage = Ui.IconImage(root, icon, tint, 40f, 28f, 24f);
+            var art = EventArt.Create(root, kind, 40f, 28f, 40f);
             Ui.Fit(Ui.Label(root, title, 12, waiting ? Palette.Ink : Palette.Ink2, 0, 58f, 80f, 16f, waiting), 9);
             if (waiting)
             {
+                // Ждёт — мягкий цветной ореол «дышит» за значком, сама иллюстрация покачивается.
+                var halo = tintCircle.rectTransform;
+                Tweens.Run(halo, 1.8f, t => halo.localScale = Vector3.one * (1f + 0.14f * Ease.Bump(t)), null, null, 0f, true);
                 Ui.Badge(root, 62f, 4f, 0);
-                var rt = iconImage.rectTransform;
+                var rt = art;
                 Tweens.Run(rt, 1.6f, t => rt.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 4f) * 10f * Ease.Bump(t)), null, null, 0.4f, true);
             }
 
             root.gameObject.AddComponent<Tap>().OnClick(open);
+        }
+
+        /// <summary>
+        /// Эскиз следующей картинки на «Играть» при входе на главную «довязывается» снизу вверх по рядам,
+        /// как на станке: кнопка показывает, ради чего играть, и приглашает продолжить.
+        /// </summary>
+        private static void KnitPreview(RectTransform frame, LevelData data, bool animate)
+        {
+            const float inner = 54f;
+            var mask = Ui.Node(frame, "Knit");
+            mask.anchorMin = mask.anchorMax = Vector2.zero;
+            mask.pivot = Vector2.zero;
+            mask.anchoredPosition = new Vector2(5f, 5f);
+            mask.sizeDelta = new Vector2(inner, inner);
+            mask.gameObject.AddComponent<RectMask2D>();
+            var picture = MiniPicture.Create(mask, data, inner / 2f, inner / 2f, inner, faded: true).rectTransform;
+            picture.anchorMin = picture.anchorMax = new Vector2(0.5f, 0f);
+            picture.pivot = new Vector2(0.5f, 0.5f);
+            picture.anchoredPosition = new Vector2(0f, inner / 2f);
+            if (!animate)
+            {
+                return;
+            }
+
+            var rows = Mathf.Max(1, data.height);
+            mask.sizeDelta = new Vector2(inner, 0f);
+            Tweens.Run(mask, 1.1f, t => mask.sizeDelta = new Vector2(inner, inner * Mathf.Ceil(t * rows) / rows), null, null, 0.3f);
         }
 
         /// <summary>«Играть» с эскизом следующей картинки — видно, ради чего идёшь дальше.</summary>
@@ -495,7 +549,7 @@ namespace KnittedPicture.Game
             {
                 var done = Ui.Button(Root, "", 20, buttonY, playW, 84, Palette.Primary, Palette.PrimaryShadow, Color.white);
                 Ui.Fit(Ui.Label((RectTransform)done.transform, "Все картинки связаны!", 22, Color.white, 8, 14, playW - 16, 30), 14);
-                Ui.Fit(Ui.Label((RectTransform)done.transform, "Собирай звёзды и пряжу в коллекциях", 14, Color.white, 8, 46, playW - 16, 22, false), 10);
+                Ui.Fit(Ui.Label((RectTransform)done.transform, "Собирай звёзды в альбоме и пряжу", 14, Color.white, 8, 46, playW - 16, 22, false), 10);
                 done.OnClick(App.ShowAlbum);
                 return;
             }
@@ -508,7 +562,7 @@ namespace KnittedPicture.Game
                 var data = App.Levels.Get(level);
                 var frame = Ui.Box(face, "Preview", 14, Palette.Card);
                 Ui.Place(frame.rectTransform, 12, 10, 64, 64);
-                MiniPicture.Create(frame.rectTransform, data, 32, 32, 54, faded: true);
+                KnitPreview(frame.rectTransform, data, App.PreviousScreen != typeof(HomeScreen));
                 if (data.mystery)
                 {
                     Ui.Label(frame.rectTransform, "?", 30, Palette.Ink2, 0, 0, 64, 64);

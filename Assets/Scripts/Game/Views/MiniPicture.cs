@@ -40,6 +40,38 @@ namespace KnittedPicture.Game
             return raw;
         }
 
+        /// <summary>Силуэт закрытой картинки цветом color: видно, что там будет, но не что именно.</summary>
+        public static RawImage Silhouette(RectTransform parent, LevelData level, float cx, float cy, float size, Color color)
+        {
+            var key = level.id + ":" + level.name + "s";
+            if (!Textures.TryGetValue(key, out var texture) || texture == null)
+            {
+                texture = Art.SilhouetteTexture(level);
+                Textures[key] = texture;
+            }
+
+            var rt = Ui.Node(parent, "Silhouette");
+            var raw = rt.gameObject.AddComponent<RawImage>();
+            raw.texture = texture;
+            raw.color = color;
+            raw.raycastTarget = false;
+            var aspect = (float)level.width / level.height;
+            Ui.PlaceCenter(rt, cx, cy, aspect >= 1 ? size : size * aspect, aspect >= 1 ? size / aspect : size);
+            return raw;
+        }
+
+        /// <summary>
+        /// Деревянная полочка под рядом плиток: картинки «стоят» на ней, как в настоящем альбоме-витрине.
+        /// Рисуется до плиток, чтобы они были поверх.
+        /// </summary>
+        public static void Shelf(RectTransform parent, float x, float y, float w)
+        {
+            var lip = Ui.Box(parent, "ShelfLip", 3, Palette.WoodDark);
+            Ui.Place(lip.rectTransform, x, y + 2f, w, 8);
+            var plank = Ui.Box(parent, "Shelf", 3, Palette.Wood);
+            Ui.Place(plank.rectTransform, x, y, w, 7);
+        }
+
         /// <summary>На сколько плашка звёзд выступает под плиткой: подписи ставим ниже.</summary>
         public const float StarsOverhang = 11f;
 
@@ -64,12 +96,18 @@ namespace KnittedPicture.Game
 
         public static Tap Tile(RectTransform parent, LevelData level, TileState state, float x, float y, float size, int stars = 0)
         {
-            var root = Ui.Card(parent, "Tile" + level.id, x, y, size, size, 14,
-                state == TileState.Locked ? Palette.Track : Palette.Surface, Palette.CardShadow, state == TileState.Locked ? 0f : 2f, true);
+            // Готовая картинка — в деревянной рамке с белым паспарту, как на стене; текущая — бледный эскиз
+            // в зелёной рамке; закрытая — силуэт, чтобы было любопытно, что там.
+            var face = state == TileState.Done ? Palette.Wood : state == TileState.Locked ? Palette.Track : Palette.Surface;
+            var root = Ui.Card(parent, "Tile" + level.id, x, y, size, size, 14, face, Palette.CardShadow, state == TileState.Locked ? 0f : 2f, true);
             var inner = size - 14f;
             switch (state)
             {
                 case TileState.Done:
+                    var mat = Ui.Box(root, "Mat", 10, Palette.Card);
+                    Ui.Place(mat.rectTransform, 4f, 4f, size - 8f, size - 8f);
+                    var bevel = Ui.Outline(root, 14, Palette.WoodDark, 1.5f);
+                    bevel.raycastTarget = false;
                     Create(root, level, size / 2f, size / 2f, inner);
                     break;
                 case TileState.Current:
@@ -85,7 +123,18 @@ namespace KnittedPicture.Game
                     Ui.Place(ring.rectTransform, 0, 0, size, size);
                     break;
                 default:
-                    Ui.IconImage(root, Icon.Lock, Palette.Ink3, size / 2f, size / 2f, size * 0.32f);
+                    if (level.mystery)
+                    {
+                        Ui.IconImage(root, Icon.Lock, Palette.Ink3, size / 2f, size / 2f, size * 0.32f);
+                    }
+                    else
+                    {
+                        Silhouette(root, level, size / 2f, size / 2f, inner, Palette.WithAlpha(Palette.Ink3, 0.32f));
+                        var lockBack = Ui.Image(root, "LockBack", Art.Circle, Palette.Card);
+                        Ui.PlaceCenter(lockBack.rectTransform, size - 13f, size - 13f, 20f, 20f);
+                        Ui.IconImage(root, Icon.Lock, Palette.Ink3, size - 13f, size - 13f, 12f);
+                    }
+
                     break;
             }
 

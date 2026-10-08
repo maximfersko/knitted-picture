@@ -26,6 +26,9 @@ namespace KnittedPicture.Game
         /// <summary>Звук нажатия: у игровых элементов свой звук, кнопкам — щелчок.</summary>
         public bool ClickSound { get; set; } = true;
 
+        /// <summary>Каким звуком щёлкать: обычный мягкий тап или «спицы» у главных кнопок.</summary>
+        public Sound Sound { get; set; } = Sound.Click;
+
         /// <summary>Проседать ли под пальцем. Фоновым областям (затемнение) — нет.</summary>
         public bool PressFeedback { get; set; } = true;
 
@@ -81,7 +84,7 @@ namespace KnittedPicture.Game
 
             if (ClickSound)
             {
-                Sfx.Play(Sound.Click);
+                Sfx.Play(Sound);
             }
 
             Clicked?.Invoke();

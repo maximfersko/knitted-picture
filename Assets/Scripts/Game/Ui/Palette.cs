@@ -12,8 +12,34 @@ namespace KnittedPicture.Game
     public static class Palette
     {
         public static readonly Color Ground = Hex("#EDE7FF");
+
+        /// <summary>
+        /// Фон по коллекциям: узор тот же, меняется только оттенок — у каждой коллекции своё настроение.
+        /// Все оттенки светлые (как Ground), текст и карточки на них читаются одинаково.
+        /// </summary>
+        private static readonly Color[] Grounds =
+        {
+            Hex("#EDE7FF"), // Уютные мелочи — лаванда
+            Hex("#E2F3E8"), // Сад — мята
+            Hex("#FCEBDD"), // Зверята — персик
+            Hex("#FCE6EE"), // Вкусняшки — розовый
+            Hex("#DFF0F7"), // Море — морская волна
+            Hex("#E3EAFB"), // Небо — небесный
+            Hex("#E6EEDB"), // Лес — шалфей
+            Hex("#FBF1D6"), // Праздник — сливочный
+            Hex("#F5E8E2"), // Уют — какао с молоком
+            Hex("#E8E6FB"), // Друзья — сирень
+        };
+
+        /// <summary>Фон уровня: по его коллекции.</summary>
+        public static Color GroundOfLevel(int levelId) =>
+            GroundOf(System.Array.IndexOf(KnittedPicture.Core.Collections.All, KnittedPicture.Core.Collections.Of(levelId)));
+
+        public static Color GroundOf(int collection) => Grounds[(collection % Grounds.Length + Grounds.Length) % Grounds.Length];
         public static readonly Color Card = Color.white;
         public static readonly Color CardShadow = Hex("#D3C8F3");
+        /// <summary>Мягкая размытая тень белых карточек: сиреневая и прозрачная, не серая.</summary>
+        public static readonly Color SoftShadow = new Color(0.36f, 0.27f, 0.68f, 0.18f);
 
         /// <summary>Тонкий контур белых карточек: не теряются ни на фоне, ни на белом окне.</summary>
         public static readonly Color Line = Hex("#DDD5F7");

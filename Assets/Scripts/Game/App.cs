@@ -44,6 +44,9 @@ namespace KnittedPicture.Game
         private RectTransform? _popupLayer;
         private ScreenView? _screen;
         private RawImage? _pattern;
+        private Image? _background;
+        private Color _ground;
+        private int _groundVersion;
         private Func<ScreenView>? _route;
         private Vector2Int _screenSize;
         private Rect _safeArea;
@@ -60,6 +63,83 @@ namespace KnittedPicture.Game
         public RectTransform Frame => _frame!;
 
         public RectTransform PopupLayer => _popupLayer!;
+
+        /// <summary>Счётчик монет на текущем экране (последний созданный Ui.CoinPill).</summary>
+        public Text? CoinCounter { get; set; }
+
+        /// <summary>Монеты в полёте: уже начислены, но счётчик покажет их по прилёту.</summary>
+        public int CoinsInFlight { get; private set; }
+
+        /// <summary>Тип предыдущего экрана: главная «выпрыгивает» только при входе, а не при каждом обновлении.</summary>
+        public System.Type? PreviousScreen { get; private set; }
+
+        /// <summary>
+        /// Монетки вылетают из точки и летят в счётчик; число растёт по мере прилёта. Монеты живут
+        /// в слое окон, поэтому долетают, даже если экран под ними перестроился (окно награды закрылось).
+        /// </summary>
+        public void FlyCoins(Vector3 fromWorld, int amount)
+        {
+            if (amount <= 0 || CoinCounter == null)
+            {
+                return;
+            }
+
+            var count = Mathf.Clamp(amount / 10, 3, 8);
+            var perCoin = Mathf.Max(1, amount / count);
+            var given = 0;
+            CoinsInFlight += amount;
+            CoinCounter.text = (Progress.Coins - CoinsInFlight).ToString();
+            for (var i = 0; i < count; i++)
+            {
+                var coin = Ui.Coin(PopupLayer, 0, 0, 22);
+                coin.position = fromWorld;
+                coin.localScale = Vector3.zero;
+                var portion = i == count - 1 ? amount - given : perCoin;
+                given += portion;
+                var jitter = new Vector3(UnityEngine.Random.Range(-28f, 28f), UnityEngine.Random.Range(-12f, 20f), 0) * PopupLayer.lossyScale.x;
+                var delay = 0.05f + i * 0.06f;
+                Tweens.Delay(coin, delay, () => coin.localScale = Vector3.one);
+                var start = fromWorld + jitter;
+                Tweens.Run(coin, 0.6f, t =>
+                {
+                    // Цель берём каждый кадр: под окном экран мог перестроиться, счётчик — новый.
+                    var target = CoinCounter != null ? Ui.WorldCenter((RectTransform)CoinCounter.transform.parent) : start;
+                    coin.position = Vector3.LerpUnclamped(start, target, t);
+                }, Ease.InOutCubic, () =>
+                {
+                    Destroy(coin.gameObject);
+                    CoinsInFlight -= portion;
+                    if (CoinCounter != null)
+                    {
+                        CoinCounter.text = (Progress.Coins - CoinsInFlight).ToString();
+                        Tweens.Punch(CoinCounter.transform.parent, 0.12f, 0.15f);
+                    }
+
+                    Sfx.Play(Sound.Coin, 0.4f);
+                }, delay);
+            }
+        }
+
+        /// <summary>Переход по вкладкам: новый экран коротко въезжает со стороны вкладки.</summary>
+        public void SlideIn(int direction)
+        {
+            if (_screen == null || direction == 0)
+            {
+                return;
+            }
+
+            var rt = _screen.Root;
+            var group = rt.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = rt.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            var offset = new Vector2(direction * 40f, 0);
+            rt.anchoredPosition = offset;
+            Tweens.Fade(group, 0f, 1f, 0.22f);
+            Tweens.Run(rt, 0.26f, t => rt.anchoredPosition = Vector2.LerpUnclamped(offset, Vector2.zero, t), Ease.OutCubic);
+        }
 
         public float Width { get; private set; }
 
@@ -438,9 +518,42 @@ namespace KnittedPicture.Game
             ShowIntro();
         }
 
+        /// <summary>
+        /// Оттенок фона: экран задаёт свой (главная и уровень — по коллекции), остальные — общий лавандовый.
+        /// Смена плавная, чтобы при переходе не мигало.
+        /// </summary>
+        public void SetGround(Color color, bool instant = false)
+        {
+            if (_background == null || color == _ground)
+            {
+                return;
+            }
+
+            var from = _background.color;
+            _ground = color;
+            var image = _background;
+            var version = ++_groundVersion;
+            if (instant)
+            {
+                image.color = color;
+                return;
+            }
+
+            // Новый оттенок отменяет недоигранный переход: старый твин просто перестаёт красить.
+            Tweens.Run(image, 0.35f, t =>
+            {
+                if (version == _groundVersion)
+                {
+                    image.color = Color.Lerp(from, color, t);
+                }
+            });
+        }
+
         private void Show(Func<ScreenView> route)
         {
+            SetGround(Palette.Ground);
             CloseAllPopups();
+            PreviousScreen = _screen?.GetType();
             _screen?.Dispose();
             _route = route;
             _screen = route();
@@ -544,6 +657,8 @@ namespace KnittedPicture.Game
 
             var background = Ui.Image(_canvas, "Background", null, Palette.Ground);
             Ui.Stretch(background.rectTransform);
+            _background = background;
+            _ground = Palette.Ground;
             var pattern = Ui.Node(_canvas, "Pattern").gameObject.AddComponent<RawImage>();
             pattern.texture = Art.KnitPattern;
             pattern.raycastTarget = false;

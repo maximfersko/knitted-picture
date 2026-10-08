@@ -36,12 +36,12 @@ namespace KnittedPicture.Game
             var albumBadge = CollectionsScreen.PendingCount(progress, CollectionsTab.Album) + CollectionsScreen.PendingCount(progress, CollectionsTab.Achievements);
             var yarnBadge = CollectionsScreen.PendingCount(progress, CollectionsTab.Yarn);
             var cellW = w / 3f;
-            Item(bar, 0, cellW, MainTab.Album, active, "Альбом", albumBadge, () => app.ShowCollections(CollectionsTab.Album));
-            Item(bar, 1, cellW, MainTab.Home, active, "Главная", 0, app.ShowHome);
-            Item(bar, 2, cellW, MainTab.Yarn, active, "Пряжа", yarnBadge, () => app.ShowCollections(CollectionsTab.Yarn));
+            Item(app, bar, 0, cellW, MainTab.Album, active, "Альбом", albumBadge, () => app.ShowCollections(CollectionsTab.Album));
+            Item(app, bar, 1, cellW, MainTab.Home, active, "Главная", 0, app.ShowHome);
+            Item(app, bar, 2, cellW, MainTab.Yarn, active, "Пряжа", yarnBadge, () => app.ShowCollections(CollectionsTab.Yarn));
         }
 
-        private static void Item(RectTransform bar, int index, float cellW, MainTab tab, MainTab active, string title, int badge, System.Action open)
+        private static void Item(App app, RectTransform bar, int index, float cellW, MainTab tab, MainTab active, string title, int badge, System.Action open)
         {
             var on = tab == active;
             var color = on ? Palette.Primary : Palette.Ink2;
@@ -77,6 +77,7 @@ namespace KnittedPicture.Game
                 if (!on)
                 {
                     open();
+                    app.SlideIn(tab > active ? 1 : -1);
                 }
             });
         }

@@ -78,7 +78,17 @@ namespace KnittedPicture.Game
             }
 
             Space(112);
-            AddPrimary("Забрать").OnClick(Close);
+            var coinsFrom = items.Count > 0 && granted.Reward.Coins > 0 ? (RectTransform)Card.Find("Item") : null;
+            AddPrimary("Забрать").OnClick(() =>
+            {
+                // Монеты летят из плитки в счётчик экрана: награда «переезжает» к игроку.
+                if (coinsFrom != null)
+                {
+                    app.FlyCoins(coinsFrom.TransformPoint(new Vector3(46f, -30f, 0)), granted.Reward.Coins);
+                }
+
+                Close();
+            });
             Finish(8);
             Sfx.Play(Sound.Win, 0.6f);
         }

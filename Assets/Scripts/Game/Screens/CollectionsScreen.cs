@@ -307,6 +307,7 @@ namespace KnittedPicture.Game
                 Header(card, cardW, collection.Name, $"{done} из {collection.Count} картинок", done == collection.Count ? "Собрана" : null,
                     $"{stars}/{collection.Count * 3}");
 
+                MiniPicture.Shelf(card, 8f, tilesY + tile - 4f, collection.Count * (tile + gap) - gap + 12f);
                 for (var i = 0; i < collection.Count; i++)
                 {
                     var id = collection.FirstLevel + i;

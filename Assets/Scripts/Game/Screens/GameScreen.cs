@@ -193,6 +193,10 @@ namespace KnittedPicture.Game
             // Пряжа «в работе» меняет только награды, не правила: уровень остаётся честным.
             _goldPerLoop = Economy.GoldCoins + YarnCatalog.GoldBonus(app.Progress.PerkPower(YarnPerk.Gold));
             _colors = level.colors.Select(Palette.Hex).ToArray();
+            if (!run.Pattern)
+            {
+                app.SetGround(Palette.GroundOfLevel(level.id));
+            }
 
             BuildHud();
             if (_game.TimeLimit > 0)

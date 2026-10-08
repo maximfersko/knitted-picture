@@ -120,7 +120,17 @@ namespace KnittedPicture.Game
             float radius, Color color, Color shadow, float shadowOffset = 3f, bool raycast = false)
         {
             var root = Place(Node(parent, name), x, y, w, h);
-            if (shadowOffset > 0)
+            if (shadowOffset > 0 && shadow == Palette.CardShadow)
+            {
+                // Белые карточки — на мягкой размытой тени цвета фона, а не на плотной «подошве»:
+                // легче и современнее. У цветных кнопок «подошва» остаётся: она показывает, что их нажимают.
+                var blur = Mathf.Clamp(Mathf.Min(w, h) * 0.2f, 4f, 12f);
+                var soft = Image(root, "Shadow", Art.SoftShadow(radius, blur), Palette.SoftShadow);
+                soft.type = UnityEngine.UI.Image.Type.Sliced;
+                soft.pixelsPerUnitMultiplier = Art.Density;
+                Place(soft.rectTransform, -blur, shadowOffset + 1f - blur * 0.6f, w + 2f * blur, h + 2f * blur);
+            }
+            else if (shadowOffset > 0)
             {
                 var back = Box(root, "Shadow", radius, shadow);
                 Place(back.rectTransform, 0, shadowOffset, w, h);
@@ -258,7 +268,9 @@ namespace KnittedPicture.Game
             Shine(root, w, h, radius);
             var label = Label(root, text, fontSize, textColor);
             Place(label.rectTransform, 0, 0, w, h);
-            return root.gameObject.AddComponent<Tap>();
+            var tap = root.gameObject.AddComponent<Tap>();
+            tap.Sound = Sound.Needles;
+            return tap;
         }
 
         /// <summary>Кнопка без фона: вторичное действие, не навязывается.</summary>
@@ -305,8 +317,16 @@ namespace KnittedPicture.Game
             var w = 12f + 26f + 6f + digits * 10f + 12f;
             var root = Card(parent, "Coins", rightX - w, y, w, 44, 22, Palette.Card, Palette.CardShadow, 2f);
             Coin(root, 25, 22, 26);
-            var label = Label(root, coins.ToString(), 17, Palette.Ink, 44, 0, w - 50, 44, true, TextAnchor.MiddleLeft);
+            // Монеты, которые ещё летят в счётчик, прибавятся по прилёту (см. App.FlyCoins).
+            var app = App.Instance;
+            var shown = app != null ? coins - app.CoinsInFlight : coins;
+            var label = Label(root, shown.ToString(), 17, Palette.Ink, 44, 0, w - 50, 44, true, TextAnchor.MiddleLeft);
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            if (app != null)
+            {
+                app.CoinCounter = label;
+            }
+
             return label;
         }
 

@@ -84,6 +84,11 @@ namespace KnittedPicture.Game
             : base(app, "Win")
         {
             Sfx.Play(Sound.Win);
+            if (app.Levels.Has(level.id) && app.Levels.Get(level.id) == level)
+            {
+                app.SetGround(Palette.GroundOfLevel(level.id));
+            }
+
             _shownCoins = app.Progress.Coins - reward.Total;
             Ui.RoundButton(Root, Icon.Home, 16, 8).OnClick(app.ShowHome);
             _coins = Ui.CoinPill(Root, _shownCoins, W - 16, 8);
@@ -126,10 +131,23 @@ namespace KnittedPicture.Game
             Ui.PlaceCenter(clamp.rectTransform, hoop / 2f, 2f, 36, 22);
             var cloth = Ui.Image(hoopRoot, "Cloth", Art.Circle, Palette.Hex(level.colors[0]));
             Ui.PlaceCenter(cloth.rectTransform, hoop / 2f, hoop / 2f, hoop - 8, hoop - 8);
-            MiniPicture.Create(hoopRoot, level, hoop / 2f, hoop / 2f, hoop * 0.66f);
+            KnitInHoop(hoopRoot, level, hoop);
             var ring = Ui.Image(hoopRoot, "Ring", Art.Ring, Palette.Wood);
             Ui.PlaceCenter(ring.rectTransform, hoop / 2f, hoop / 2f, hoop + 14, hoop + 14);
+            // Второе, внутреннее кольцо пялец — темнее: ткань зажата между двумя обручами.
+            var inner = Ui.Image(hoopRoot, "InnerRing", Art.Ring, Palette.WoodDark);
+            Ui.PlaceCenter(inner.rectTransform, hoop / 2f, hoop / 2f, hoop - 2, hoop - 2);
             Tweens.Scale(hoopRoot, 0.6f, 1f, 0.45f);
+
+            // Картинка довязалась — ткань «натягивается»: пяльцы коротко пружинят, искры по кругу.
+            var ringRt = ring.rectTransform;
+            Tweens.Delay(hoopRoot, 1.45f, () =>
+            {
+                Tweens.Punch(hoopRoot, 0.06f, 0.3f);
+                Tweens.Punch(ringRt, 0.05f, 0.3f);
+                Fx.Sparkle(Root, Ui.WorldCenter(hoopRoot), Palette.Coin, 12, hoop * 0.55f);
+                Haptics.Play(Haptic.Success);
+            });
 
             var y = hoopY + hoop + 10f;
             BuildStars(y, reward.Stars);
@@ -156,7 +174,7 @@ namespace KnittedPicture.Game
             }
             else if (news.Achievement)
             {
-                Tweens.Delay(Root, 2.2f, () => app.Toast("Новое достижение! Награда ждёт в коллекциях"));
+                Tweens.Delay(Root, 2.2f, () => app.Toast("Новое достижение! Награда ждёт в альбоме"));
             }
             else if (news.Mission)
             {
@@ -387,6 +405,42 @@ namespace KnittedPicture.Game
                 TextAnchor.MiddleLeft), 9);
             Ui.Label(chest, $"{value}/{ProgressService.ChestEvery} ★", 13, Palette.Ink, 50, 27, tileW - 58, 18, true, TextAnchor.MiddleLeft);
             Ui.ProgressBar(chest, 50, 47, tileW - 64, 6, (float)value / ProgressService.ChestEvery, Palette.Coin);
+        }
+
+        /// <summary>
+        /// Картинка в пяльцах проявляется так же, как вязалась: бледный эскиз, по которому снизу вверх
+        /// ряд за рядом проходят цветные петли, с тихим стуком спиц.
+        /// </summary>
+        private static void KnitInHoop(RectTransform hoopRoot, LevelData level, float hoop)
+        {
+            var size = hoop * 0.66f;
+            MiniPicture.Create(hoopRoot, level, hoop / 2f, hoop / 2f, size, faded: true);
+            var mask = Ui.Node(hoopRoot, "Knit");
+            mask.anchorMin = mask.anchorMax = Vector2.zero;
+            mask.pivot = Vector2.zero;
+            mask.anchoredPosition = new Vector2((hoop - size) / 2f, (hoop - size) / 2f);
+            mask.sizeDelta = new Vector2(size, 0f);
+            mask.gameObject.AddComponent<RectMask2D>();
+            var picture = MiniPicture.Create(mask, level, size / 2f, size / 2f, size).rectTransform;
+            picture.anchorMin = picture.anchorMax = new Vector2(0.5f, 0f);
+            picture.pivot = new Vector2(0.5f, 0.5f);
+            picture.anchoredPosition = new Vector2(0f, size / 2f);
+
+            var rows = Mathf.Max(1, level.height);
+            var shown = 0;
+            Tweens.Run(mask, 1f, t =>
+            {
+                var row = Mathf.CeilToInt(t * rows);
+                mask.sizeDelta = new Vector2(size, size * row / rows);
+                if (row > shown)
+                {
+                    shown = row;
+                    if (row % 2 == 0)
+                    {
+                        Sfx.Play(Sound.Stitch, 0.25f);
+                    }
+                }
+            }, null, null, 0.4f);
         }
 
         /// <summary>Строки отдают монеты по очереди: сначала «за картинку», потом бонусы.</summary>

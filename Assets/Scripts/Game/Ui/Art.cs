@@ -165,6 +165,32 @@ namespace KnittedPicture.Game
         /// Картинка уровня в маленькую текстуру: для альбома и экрана победы.
         /// Не связанная — ткань как есть, рисунок бледным эскизом; у загадки рисунка не видно вовсе.
         /// </summary>
+        /// <summary>
+        /// Силуэт закрытой картинки: клетки рисунка белые (их красят цветом Image), фон прозрачный.
+        /// Фон — клетки ткани-канвы, а если канвы нет — цвет левого верхнего угла.
+        /// </summary>
+        public static Texture2D SilhouetteTexture(LevelData level)
+        {
+            var texture = new Texture2D(level.width, level.height, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+            var hasCanvas = level.canvas != null && level.canvas.Length == level.height;
+            var corner = level.picture[0][0];
+            for (var y = 0; y < level.height; y++)
+            {
+                for (var x = 0; x < level.width; x++)
+                {
+                    var background = hasCanvas ? level.canvas![y][x] == '1' : level.picture[y][x] == corner;
+                    texture.SetPixel(x, level.height - 1 - y, background ? Color.clear : Color.white);
+                }
+            }
+
+            texture.Apply();
+            return texture;
+        }
+
         public static Texture2D PictureTexture(LevelData level, bool done = true)
         {
             var texture = new Texture2D(level.width, level.height, TextureFormat.RGBA32, false)
@@ -207,6 +233,40 @@ namespace KnittedPicture.Game
 
             return sprite;
         }
+
+        /// <summary>
+        /// Мягкая тень: скруглённый прямоугольник с размытым краем шириной blur (для Image.Type.Sliced
+        /// с pixelsPerUnitMultiplier = Density). Картинка больше карточки на blur с каждой стороны.
+        /// </summary>
+        public static Sprite SoftShadow(float radius, float blur) => Cached("soft" + radius + "_" + blur, () =>
+        {
+            var b = blur * Density;
+            var r = radius * Density;
+            var border = Mathf.CeilToInt(r + b) + 1;
+            var size = border * 2 + 4;
+            var half = size / 2f;
+            var edge = half - b;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[size * size];
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var qx = Mathf.Abs(x + 0.5f - half) - edge + r;
+                    var qy = Mathf.Abs(y + 0.5f - half) - edge + r;
+                    var d = Mathf.Sqrt(Mathf.Max(qx, 0) * Mathf.Max(qx, 0) + Mathf.Max(qy, 0) * Mathf.Max(qy, 0))
+                            + Mathf.Min(Mathf.Max(qx, qy), 0) - r;
+                    var k = Mathf.Clamp01(1f - d / b);
+                    var alpha = d <= 0 ? 1f : k * k * (3f - 2f * k) * k;
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)(alpha * 255));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect,
+                new Vector4(border, border, border, border));
+        });
 
         private static Sprite SlicedBox(float radius, float stroke)
         {
