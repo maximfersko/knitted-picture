@@ -325,10 +325,20 @@ namespace KnittedPicture.Game
                 }
             });
 
-            var text = _run.Pattern ? "Узор дня" : _level.hard ? $"Уровень {_level.id} · сложный" : $"Уровень {_level.id}";
             var hasTip = !string.IsNullOrEmpty(_level.tip);
             var width = (_level.hard ? 200f : 140f) + (hasTip ? 22f : 0f);
-            var pill = Ui.Card(Root, "Level", W / 2f - width / 2f, 8, width, 44, 22,
+
+            // Плашка уровня не должна наезжать на паузу и монеты (на узком экране «сложный» залезал под монеты):
+            // ширина — сколько есть между ними, центр — по экрану, если влезает.
+            var coinDigits = Mathf.Max(4, App.Progress.Coins.ToString().Length + 1);
+            var left = Pad + 44f + 8f;
+            var right = W - Pad - (12f + 26f + 6f + coinDigits * 10f + 12f) - 8f;
+            width = Mathf.Min(width, right - left);
+            var pillX = Mathf.Clamp(W / 2f - width / 2f, left, right - width);
+            var text = _run.Pattern ? "Узор дня"
+                : _level.hard ? (width >= 200f ? $"Уровень {_level.id} · сложный" : $"Ур. {_level.id} · сложный")
+                : $"Уровень {_level.id}";
+            var pill = Ui.Card(Root, "Level", pillX, 8, width, 44, 22,
                 _level.hard ? Palette.DangerSoft : Palette.Card, Palette.CardShadow, _level.hard ? 0f : 2f, hasTip);
             Ui.Fit(Ui.Label(pill, text, 17, _level.hard ? Palette.Danger : Palette.Ink, 8, 0, width - 16 - (hasTip ? 22f : 0f), 44), 12);
             if (hasTip)
