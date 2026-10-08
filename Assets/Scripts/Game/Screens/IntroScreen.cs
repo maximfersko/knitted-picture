@@ -454,7 +454,7 @@ namespace KnittedPicture.Game
             var loomY = 20f + picture.Height + 30f;
             var frames = Loom(scene, 2, loomY);
             var chip = Ui.Card(scene, "Front", _sw / 2f - 92f, loomY - 26f, 184, 22, 11, Palette.Track, Palette.Track, 0f);
-            Ui.Label(chip, "яркие клетки: фронт", 12, Palette.Ink2, 0, 0, 184, 22);
+            Ui.Label(chip, "в рамке: вяжутся следующими", 12, Palette.Ink2, 0, 0, 184, 22);
 
             var views = SlotViews(frames, game, colors);
             var demo = new Demo(game, picture, colors, scene, 0.12f, slot => Ui.WorldCenter(frames[slot]))
@@ -693,7 +693,7 @@ namespace KnittedPicture.Game
                 ("Узелок", "Первый тап развязывает узелок, второй отправляет клубок на станок", new Spool(0, 0, 5, knots: 1), Pink),
                 ("Замок", "Откроется, когда на станок встанет клубок с ключом", new Spool(0, 0, 7, locked: true), Leaf),
                 ("Связка", "Связанные клубки едут на станок только вместе, нужно 2 свободных места", new Spool(0, 0, 4, link: 1), Sun),
-                ("Радужный", "Вяжет любой цвет на фронте. Выручает, когда нужного цвета нет", new Spool(0, 0, 5, rainbow: true), Color.white),
+                ("Радужный", "Вяжет любой цвет: клетки в рамке, самые нижние. Выручает, когда нужного цвета нет", new Spool(0, 0, 5, rainbow: true), Color.white),
                 ("Толстый", "Занимает 2 места на станке, зато вяжет вдвое быстрее", new Spool(0, 0, 24, thick: true), Palette.Hex("#8B5CF6")),
                 ("Ледяной", "Оттает, когда станок свяжет столько петель его цвета, сколько на льду", new Spool(0, 0, 6, ice: 4), Sky),
             };

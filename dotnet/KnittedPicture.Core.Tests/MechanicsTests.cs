@@ -31,6 +31,10 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(GameStatus.Jammed, game.Status);
             Assert.False(game.SlotWouldHelp);
             Assert.True(game.ScissorsWouldHelp);
+
+            // Станок пуст, но передний клубок во льду: совет про заблокированные клубки, а не про короткие.
+            Assert.True(game.FreeSlots > 0);
+            Assert.Equal(JamAdvice.Blocked, game.Advice());
             Assert.False(game.TapColumn(1).Accepted);
 
             Assert.True(game.PullSpool(1, 0).Accepted);

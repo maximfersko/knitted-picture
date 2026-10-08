@@ -1404,6 +1404,14 @@ namespace KnittedPicture.Game
 
             RefreshField();
             RefreshBoosters();
+
+            // Клубок с галочкой: его цвет уже довязан. Он съездит на станок и уйдёт — это не ошибка,
+            // а способ расчистить колонку. Без пояснения исчезновение клубка выглядело багом.
+            if (result.Placed.Any(p => _game.IsSurplus(p.Spool)))
+            {
+                App.Toast("Этот цвет уже довязан (галочка): клубок уйдёт со станка. Так можно расчистить колонку");
+            }
+
             foreach (var id in result.Revealed)
             {
                 PunchField(id);
@@ -1464,6 +1472,14 @@ namespace KnittedPicture.Game
                 if (_game.IsForeign(spool))
                 {
                     App.Toast("Чужая пряжа: её нет в рисунке. Срезать можно ножницами");
+                }
+                else if (spool.Warmup == 0 && !_game.HasWork(spool) && !_game.IsSurplus(spool))
+                {
+                    // Бледный клубок на станке: почему он не вяжет.
+                    var held = Enumerable.Range(0, _game.Width).Any(x => _game.IsHeld(x) && _game.ColorAt(x, _game.FrontY(x)) == spool.Color);
+                    App.Toast(held
+                        ? "Ждёт: его клетки выше пунктира. Сначала довяжи нижний ряд"
+                        : "Ждёт: его цвета пока нет внизу столбиков. Начнёт, когда до него дойдёт очередь");
                 }
 
                 return;
@@ -1624,6 +1640,8 @@ namespace KnittedPicture.Game
             var reason = "Время вышло. Отгони моль и довяжи картинку";
             if (kind == FailKind.Jam)
             {
+                // Затор при свободных местах: станок пуст, но все передние клубки заперты.
+                var blocked = _game.FreeSlots > 0;
                 if (_game.SlotWouldHelp)
                 {
                     rescue = BoosterType.Slot;
@@ -1632,14 +1650,18 @@ namespace KnittedPicture.Game
                 else if (_game.ScissorsWouldHelp && App.Progress.IsBoosterOpen(BoosterType.Scissors, BoosterLevel))
                 {
                     rescue = BoosterType.Scissors;
-                    reason = _picture.TensionHolding
+                    reason = blocked
+                        ? "Места на станке есть, но передние клубки заблокированы: под замком, во льду или без пары. Ножницы достанут любой клубок с поля"
+                        : _picture.TensionHolding
                         ? "Столбики выше пунктира ждут нижний ряд, а его цвета на станке нет. Ножницы срежут лишний клубок со станка или достанут нужный с поля"
                         : "Станок занят, а картинка ждёт другой цвет. Ножницы срежут лишний клубок со станка или достанут нужный с поля";
                 }
                 else
                 {
                     rescue = null;
-                    reason = _game.Slots.Count >= LoomGame.MaxSlots
+                    reason = blocked
+                        ? "Места на станке есть, но передние клубки заблокированы. Попробуй ещё раз"
+                        : _game.Slots.Count >= LoomGame.MaxSlots
                         ? "Станок заполнен до предела. Попробуй ещё раз"
                         : "Нужной пряжи больше нет. Попробуй ещё раз";
                 }
@@ -1661,6 +1683,8 @@ namespace KnittedPicture.Game
         {
             switch (advice)
             {
+                case JamAdvice.Blocked:
+                    return "Совет: не закапывай клубок с ключом, пару связанного и клубки цвета, от которого тает лёд. Без них передние клубки не сдвинуть";
                 case JamAdvice.ForeignYarn:
                     return "Совет: клубки с узором ткани картинке не нужны. Не бери их, они только занимают слот";
                 case JamAdvice.Tension:
@@ -2101,8 +2125,10 @@ namespace KnittedPicture.Game
         /// цель по золоту, картинку. below — выноска под целью (цели наверху), иначе над ней.
         /// null — общий совет, выноска ложится на пустой станок.
         /// </summary>
-        private (RectTransform? target, bool below) TipTarget(string tip)
+        private (RectTransform? target, bool below) TipTarget(string tipText)
         {
+            // Без учёта регистра: подсказка часто начинается с заглавной («Тапни клубок…»).
+            var tip = tipText.ToLowerInvariant();
             System.Func<Spool, bool>? match = null;
             if (tip.Contains("?") || tip.Contains("скрыт"))
             {
@@ -2132,7 +2158,7 @@ namespace KnittedPicture.Game
             {
                 match = s => s.Rainbow;
             }
-            else if (tip.Contains("цвета ткани") || tip.Contains("чуж"))
+            else if (tip.Contains("цвета ткани") || tip.Contains("цвета фона") || tip.Contains("чуж"))
             {
                 match = s => _game.IsForeign(s);
             }
@@ -2158,7 +2184,7 @@ namespace KnittedPicture.Game
                 return ((RectTransform)_goldGoal.transform.parent, true);
             }
 
-            if (tip.Contains("фронт"))
+            if (tip.Contains("фронт") || tip.Contains("в рамке") || tip.Contains("снизу вверх"))
             {
                 return (_pictureCard, true);
             }

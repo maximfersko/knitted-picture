@@ -8,6 +8,9 @@ namespace KnittedPicture.Core
     /// <summary>Чему научить игрока после затора: приём, которым его можно было обойти.</summary>
     public enum JamAdvice
     {
+        /// <summary>Места на станке есть, но передние клубки заблокированы: замок, лёд или пара не готова.</summary>
+        Blocked,
+
         /// <summary>Станок занят пряжей цвета ткани: её не нужно брать.</summary>
         ForeignYarn,
 
