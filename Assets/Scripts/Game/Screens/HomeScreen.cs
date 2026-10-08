@@ -360,7 +360,6 @@ namespace KnittedPicture.Game
             var stripY = 58f + tile + MiniPicture.StarsOverhang + 34f;
             cardH = stripY + 6f;
             var card = Ui.Card(_strip, "Collection" + index, index * W + 16f, 0, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
-            Ui.Stitch(card, 24, Palette.Stitch, 7f);
 
             var done = 0;
             var stars = 0;

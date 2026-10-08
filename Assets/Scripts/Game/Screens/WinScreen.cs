@@ -280,7 +280,6 @@ namespace KnittedPicture.Game
             }
 
             var card = Ui.Card(Root, "Reward", 16, y, cardW, 100, 20, Palette.Card, Palette.CardShadow);
-            Ui.Stitch(card, 20, Palette.Stitch, 7f);
             Ui.Label(card, "НАГРАДА", 12, Palette.Ink3, 18, 12, 120, 26, true, TextAnchor.MiddleLeft);
             var sum = Ui.Label(card, "+" + total, 26, Palette.Ink, cardW - 16 - 120, 6, 120, 38, true, TextAnchor.MiddleRight);
             sum.horizontalOverflow = HorizontalWrapMode.Overflow;

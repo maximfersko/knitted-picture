@@ -304,7 +304,6 @@ namespace KnittedPicture.Game
                 var stripY = tilesY + tile + MiniPicture.StarsOverhang + 34f;
                 var cardH = stripY + 48f + 14f;
                 var card = Ui.Card(content, collection.Name, 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
-                Ui.Stitch(card, 24, Palette.Stitch, 7f);
                 Header(card, cardW, collection.Name, $"{done} из {collection.Count} картинок", done == collection.Count ? "Собрана" : null,
                     $"{stars}/{collection.Count * 3}");
 
@@ -402,7 +401,6 @@ namespace KnittedPicture.Game
 
             const float bannerH = 116f;
             var banner = Ui.Card(content, "Basket", 16, y, cardW, bannerH, 24, Palette.Card, Palette.CardShadow, 3f);
-            Ui.Stitch(banner, 24, Palette.Stitch, 7f);
             var circle = Ui.Image(banner, "Back", Art.Circle, Palette.DangerSoft);
             Ui.PlaceCenter(circle.rectTransform, 44, 32, 48, 48);
             var logo = Ui.Image(banner, "Ball", Art.YarnBall, Palette.Hex("#FF6FA5"));
@@ -431,7 +429,6 @@ namespace KnittedPicture.Game
                 var stripY = cellsY + cellH + 14f;
                 var cardH = stripY + 48f + 14f;
                 var card = Ui.Card(content, set.Name, 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
-                Ui.Stitch(card, 24, Palette.Stitch, 7f);
                 Header(card, cardW, set.Name, $"{owned} из {set.Count} мотков", owned == set.Count ? "Собран" : null, "");
 
                 for (var i = 0; i < set.Count; i++)

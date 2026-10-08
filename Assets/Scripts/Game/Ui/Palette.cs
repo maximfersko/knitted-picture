@@ -17,10 +17,6 @@ namespace KnittedPicture.Game
 
         /// <summary>Тонкий контур белых карточек: не теряются ни на фоне, ни на белом окне.</summary>
         public static readonly Color Line = Hex("#DDD5F7");
-        /// <summary>Строчка-пунктир по краю белых карточек и окон.</summary>
-        public static readonly Color Stitch = Hex("#D6CCF5");
-        /// <summary>Строчка на белых кнопках: заметнее, кнопка должна читаться как кнопка.</summary>
-        public static readonly Color StitchStrong = Hex("#B9ABEA");
 
         /// <summary>Плитка внутри белой карточки или окна.</summary>
         public static readonly Color Surface = Hex("#F5F2FF");

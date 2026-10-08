@@ -612,7 +612,6 @@ namespace KnittedPicture.Game
             var cardW = W - 32f;
             const float cardH = 452f;
             var card = Ui.Card(content, "ChestCard", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
-            Ui.Stitch(card, 24, Palette.Stitch, 7f);
 
             var big = progress.NextChestBig;
             var ready = progress.CanOpenChest;
@@ -759,7 +758,6 @@ namespace KnittedPicture.Game
                 var unlocked = progress.IsUnlocked(type, progress.CurrentLevel);
                 var stock = progress.Stock(type);
                 var tile = Ui.Card(content, type.ToString(), 16 + i * (tileW + gap), y, tileW, tileH, 20, Palette.Card, Palette.CardShadow, 3f, true);
-                Ui.Stitch(tile, 20, Palette.Stitch, 5f);
                 var circle = Ui.Image(tile, "Back", Art.Circle, unlocked ? Palette.PrimarySoft : Palette.Track);
                 Ui.PlaceCenter(circle.rectTransform, tileW / 2f, 36, 48, 48);
                 Ui.IconImage(tile, unlocked ? BoosterInfo.Icon(type) : Icon.Lock, unlocked ? Palette.Primary : Palette.Ink3, tileW / 2f, 36, 24);
