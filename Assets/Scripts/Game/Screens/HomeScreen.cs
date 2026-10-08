@@ -23,17 +23,24 @@ namespace KnittedPicture.Game
             // достаёт большой палец. Снизу вверх: вкладки, «Играть», ряд событий (подарок, задания, сундук,
             // узор дня), лента коллекций. Наверху то, что не нажимают часто: настройки, монеты и клубок
             // «в работе» — он занимает оставшееся место и не оставляет пустоты.
-            var playY = H - TabBar.Height - 12f - 84f;
-            BuildPlay(playY);
+            // Сетка 8 pt и правило близости: внутри группы элементы рядом, между группами — заметный
+            // промежуток (24–32 pt), иначе экран читается как одна слипшаяся куча. Нижние группы стоят
+            // с фиксированными зазорами в зоне большого пальца; всё остальное место — клубку наверху.
             const float railH = 80f;
-            var railY = playY - 10f - railH;
-            BuildRails(railY, railH);
-            var collectionTop = BuildCollection(railY - 4f);
-
             const float heroTop = 58f;
-            var heroH = collectionTop - heroTop;
-            var ball = Mathf.Clamp(heroH - 40f, 56f, 170f);
-            BuildLogo(heroTop + (heroH - ball) / 2f, ball);
+            // На низких экранах (iPhone SE и меньше) зазоры ужимаются, чтобы клубку осталось место.
+            var roomy = Mathf.Clamp01((H - 620f) / 120f);
+            var playGap = Mathf.Lerp(12f, 24f, roomy);
+            var groupGap = Mathf.Lerp(14f, 32f, roomy);
+            var playY = H - TabBar.Height - 16f - 84f;
+            BuildPlay(playY);
+            var railY = playY - playGap - railH;
+            BuildRails(railY, railH);
+            var collectionTop = BuildCollection(railY - groupGap);
+
+            var heroBottom = collectionTop - groupGap;
+            var ball = Mathf.Clamp((heroBottom - heroTop) * 0.62f, 64f, 128f);
+            BuildLogo(heroTop + (heroBottom - heroTop - ball) / 2f, ball);
             TabBar.Create(app, Root, W, H, MainTab.Home);
         }
 
@@ -206,7 +213,7 @@ namespace KnittedPicture.Game
             var progress = App.Progress;
             var cardH = PageCardHeight();
             const float dotsGap = 18f;
-            var available = cardH + dotsGap + 12f;
+            var available = CollectionHeight();
             var y = bottom - available;
             var viewport = Ui.Place(Ui.Node(Root, "Carousel"), 0, y, W, available);
             var hit = Ui.Image(viewport, "Hit", null, Color.clear, true);
@@ -259,6 +266,9 @@ namespace KnittedPicture.Game
             ApplyCarousel();
             return y;
         }
+
+        /// <summary>Лента целиком: карточка и точки под ней.</summary>
+        private float CollectionHeight() => PageCardHeight() + 30f;
 
         /// <summary>Высота карточки коллекции (как в BuildPageCard) — ленту ставим над рядом событий.</summary>
         private float PageCardHeight()

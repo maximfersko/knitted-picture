@@ -68,7 +68,7 @@ namespace KnittedPicture.Game
             Ui.Fit(Ui.Label(rt, title, 12, color, 2, 40, cellW - 4, 18, on), 10);
             if (badge > 0)
             {
-                Ui.Badge(rt, cellW / 2f + 22f, 6, badge);
+                Ui.Badge(rt, cellW / 2f + 18f, 13, badge);
             }
 
             var tap = cell.gameObject.AddComponent<Tap>();

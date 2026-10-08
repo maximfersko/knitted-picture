@@ -59,7 +59,11 @@ namespace KnittedPicture.Game
         private bool _scissorsRescue;
 
         /// <summary>Какие пояснения уже показаны на этом уровне.</summary>
-        private readonly HashSet<string> _told = new HashSet<string>();
+        /// <summary>
+        /// Какие пояснения уже показаны. Общие на всю игровую сессию, а не на уровень: одно и то же
+        /// «сначала уходит передний клубок» на каждом уровне раздражает.
+        /// </summary>
+        private static readonly HashSet<string> _told = new HashSet<string>();
         /// <summary>Счёт уровня, который переживает перестройку экрана (поворот, смена безопасной зоны).</summary>
         private readonly LevelRun _run;
 
@@ -177,6 +181,7 @@ namespace KnittedPicture.Game
 
         /// <summary>Подсказку не гасить от тапа (объяснение правила посреди игры), только по таймеру.</summary>
         private bool _tipKeep;
+        private float _tipShownAt;
         private RectTransform? _scissorsBanner;
 
         public GameScreen(App app, LevelData level, LoomGame game, LevelRun run)
@@ -297,7 +302,7 @@ namespace KnittedPicture.Game
             {
                 _idle += dt;
                 // Дальше — мягкий толчок, если игрок долго не делает ничего: 20 секунд без хода, станок стоит.
-                var threshold = _level.id <= 3 ? 1.5f : _level.id <= 5 ? 8f : IdleNudge;
+                var threshold = _level.id == 1 ? 3f : _level.id <= 3 ? 6f : _level.id <= 5 ? 12f : IdleNudge;
                 if (threshold > 0 && _idle > threshold)
                 {
                     ShowHint();
@@ -703,7 +708,7 @@ namespace KnittedPicture.Game
                     if (_game.IsForeign(spool) && !_foreignShown)
                     {
                         _foreignShown = true;
-                        ToastOnce("foreign-loom", "Этой пряжи нет в рисунке, она заняла слот. Срезать её можно ножницами");
+                        ToastOnce("foreign-loom", "Этой пряжи нет в рисунке: срежь её ножницами");
                     }
                     view = _slotViews[i];
                 }
@@ -912,7 +917,7 @@ namespace KnittedPicture.Game
             var where = $"в {partnerColumn + 1}-й колонке";
             if (partnerDepth > 0)
             {
-                return $"Связанные едут вдвоём. Пара (кольцо того же цвета) {where}, перед ней {partnerDepth} {Plural(partnerDepth, "клубок", "клубка", "клубков")}";
+                return $"Пара {where}, перед ней {partnerDepth} {Plural(partnerDepth, "клубок", "клубка", "клубков")}";
             }
 
             var partner = _game.Column(partnerColumn)[0];
@@ -1349,7 +1354,8 @@ namespace KnittedPicture.Game
             }
 
             _idle = 0;
-            if (!_tipKeep)
+            // Подсказку о натяжении не гасим мгновенным тапом, но и не держим: через секунду любой ход её убирает.
+            if (!_tipKeep || Time.unscaledTime - _tipShownAt > 1.2f)
             {
                 HideTip();
             }
@@ -1367,7 +1373,7 @@ namespace KnittedPicture.Game
 
                 Sfx.Play(Sound.Deny, 0.6f);
                 Haptics.Play(Haptic.Soft);
-                ToastOnce("depth", "Сначала уходит передний клубок. Достать из глубины можно ножницами");
+                ToastOnce("depth", "Сначала уходит передний клубок");
                 return;
             }
 
@@ -1421,7 +1427,7 @@ namespace KnittedPicture.Game
             // а способ расчистить колонку. Без пояснения исчезновение клубка выглядело багом.
             if (result.Placed.Any(p => _game.IsSurplus(p.Spool)))
             {
-                ToastOnce("surplus", "Этот цвет уже довязан (галочка): клубок уйдёт со станка. Так можно расчистить колонку");
+                ToastOnce("surplus", "Цвет довязан: клубок сразу уйдёт со станка");
             }
 
             foreach (var id in result.Revealed)
@@ -1486,15 +1492,15 @@ namespace KnittedPicture.Game
             {
                 if (_game.IsForeign(spool))
                 {
-                    ToastOnce("foreign-loom", "Чужая пряжа: её нет в рисунке. Срезать можно ножницами");
+                    ToastOnce("foreign-loom", "Чужая пряжа: срежь её ножницами");
                 }
                 else if (spool.Warmup == 0 && !_game.HasWork(spool) && !_game.IsSurplus(spool))
                 {
                     // Бледный клубок на станке: почему он не вяжет.
                     var held = Enumerable.Range(0, _game.Width).Any(x => _game.IsHeld(x) && _game.ColorAt(x, _game.FrontY(x)) == spool.Color);
                     ToastOnce("waiting", held
-                        ? "Ждёт: его клетки выше пунктира. Сначала довяжи нижний ряд"
-                        : "Ждёт: его цвета пока нет внизу столбиков. Начнёт, когда до него дойдёт очередь");
+                        ? "Ждёт: сначала довяжи клетки ниже пунктира"
+                        : "Ждёт своей очереди: его цвета пока нет внизу");
                 }
 
                 return;
@@ -1573,7 +1579,7 @@ namespace KnittedPicture.Game
                         ? "Связанным клубкам нужно 2 свободных слота"
                         : spool != null && spool.Thick
                             ? "Толстому клубку нужно 2 свободных места"
-                            : "На станке нет места. Подожди, пока клубок довяжет");
+                            : "Нет места: подожди, пока клубок довяжет");
                     Tweens.Shake(_loomBg, 5f, 0.25f);
                     break;
             }
@@ -2084,7 +2090,7 @@ namespace KnittedPicture.Game
             }
 
             App.Save();
-            ShowTip("Полотно растёт ровно: выше пунктира столбики ждут, пока довяжут подсвеченные клетки внизу", line, false);
+            ShowTip("Выше пунктира ждут, пока довяжут клетки внизу", line, false);
             _tipKeep = true;
         }
 
@@ -2170,7 +2176,8 @@ namespace KnittedPicture.Game
             var rest = root.anchoredPosition;
             var lift = below ? -1f : 1f;
             Tweens.Run(root, 1.8f, t => root.anchoredPosition = rest + new Vector2(0, lift * 3f * Ease.Bump(t)), null, null, 0.3f, true);
-            Tweens.Delay(root, Mathf.Clamp(2.5f + tipText.Length * 0.06f, 5f, 8f), HideTip);
+            _tipShownAt = Time.unscaledTime;
+            Tweens.Delay(root, Mathf.Clamp(1.5f + tipText.Length * 0.04f, 3f, 4.5f), HideTip);
         }
 
         /// <summary>
