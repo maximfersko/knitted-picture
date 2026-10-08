@@ -328,26 +328,16 @@ namespace KnittedPicture.Game
                 }
             });
 
+            // Только номер: у сложного плашка красная. Подсказка уровня открывается тапом по плашке.
             var hasTip = !string.IsNullOrEmpty(_level.tip);
-            var width = (_level.hard ? 200f : 140f) + (hasTip ? 22f : 0f);
-
-            // Плашка уровня не должна наезжать на паузу и монеты (на узком экране «сложный» залезал под монеты):
-            // ширина — сколько есть между ними, центр — по экрану, если влезает.
-            var coinDigits = Mathf.Max(4, App.Progress.Coins.ToString().Length + 1);
-            var left = Pad + 44f + 8f;
-            var right = W - Pad - (12f + 26f + 6f + coinDigits * 10f + 12f) - 8f;
-            width = Mathf.Min(width, right - left);
-            var pillX = Mathf.Clamp(W / 2f - width / 2f, left, right - width);
-            var text = _run.Pattern ? "Узор дня"
-                : _level.hard ? (width >= 200f ? $"Уровень {_level.id} · сложный" : $"Ур. {_level.id} · сложный")
-                : $"Уровень {_level.id}";
-            var pill = Ui.Card(Root, "Level", pillX, 8, width, 44, 22,
-                _level.hard ? Palette.DangerSoft : Palette.Card, Palette.CardShadow, _level.hard ? 0f : 2f, hasTip);
-            Ui.Fit(Ui.Label(pill, text, 17, _level.hard ? Palette.Danger : Palette.Ink, 8, 0, width - 16 - (hasTip ? 22f : 0f), 44), 12);
+            var text = _run.Pattern ? "Узор дня" : _level.id.ToString();
+            var width = _run.Pattern ? 120f : 64f;
+            var pill = Ui.Card(Root, "Level", W / 2f - width / 2f, 8, width, 44, 22,
+                _level.hard ? Palette.Danger : Palette.Card, Palette.CardShadow, _level.hard ? 0f : 2f, hasTip);
+            Ui.Fit(Ui.Label(pill, text, 20, _level.hard ? Color.white : Palette.Ink, 6, 0, width - 12, 44), 12);
             if (hasTip)
             {
                 // Подсказка уровня исчезает сама; вернуть её можно тапом по плашке уровня.
-                Ui.IconImage(pill, Icon.Info, _level.hard ? Palette.Danger : Palette.Ink3, width - 22f, 22, 18);
                 pill.gameObject.AddComponent<Tap>().OnClick(() =>
                 {
                     if (!_ended && !_failShown)
@@ -356,7 +346,9 @@ namespace KnittedPicture.Game
                     }
                 });
             }
-            _coins = Ui.CoinPill(Root, App.Progress.Coins, W - Pad, 8);
+            // Монеты на уровне не показываем: цена бустера видна в окне покупки, заработанное — на победе.
+            _coins = Ui.Label(Root, "", 1, Color.clear, 0, 0, 1, 1);
+            _coins.enabled = false;
         }
 
         private void BuildTimer()
@@ -378,7 +370,8 @@ namespace KnittedPicture.Game
             RefreshTimer();
         }
 
-        private bool HasGoals => _level.gold.Length > 0;
+        /// <summary>Плашки цели над картинкой больше нет: золотые кольца видны прямо на картинке, итог — на победе.</summary>
+        private bool HasGoals => false;
 
         private float GoalsY => _game.TimeLimit > 0 ? 94f : 60f;
 
@@ -456,7 +449,8 @@ namespace KnittedPicture.Game
 
         private void BuildLoom()
         {
-            _loomTitle = Ui.Label(Root, "Станок", 13, Palette.Ink2, Pad + 6, _loomY + 2f, 120, 24, true, TextAnchor.MiddleLeft);
+            // Подписи станка нет: слоты видны. Надпись появляется, только когда места кончаются.
+            _loomTitle = Ui.Label(Root, "", 13, Palette.Ink2, Pad + 6, _loomY + 2f, 120, 24, true, TextAnchor.MiddleLeft);
             _loomLabel = Ui.Label(Root, "", 13, Palette.Ink2, W - Pad - 186, _loomY + 2f, 180, 24, true, TextAnchor.MiddleRight);
             _loomBgImage = Ui.Box(Root, "Loom", 20, Palette.LoomBg);
             _loomBg = _loomBgImage.rectTransform;
@@ -532,14 +526,22 @@ namespace KnittedPicture.Game
 
         private void BuildBoosters()
         {
-            var types = new[] { BoosterType.Scissors, BoosterType.Undo, BoosterType.Slot };
+            // Только открытые бустеры: закрытая серая кнопка «ур. 12» ничего не делает и только шумит.
+            var types = new[] { BoosterType.Scissors, BoosterType.Undo, BoosterType.Slot }
+                .Where(t => App.Progress.IsBoosterOpen(t, BoosterLevel)).ToArray();
+            if (types.Length == 0)
+            {
+                return;
+            }
+
             const float gap = 10f;
-            var w = (W - 2 * Pad - gap * 2) / 3f;
+            var w = Mathf.Min((W - 2 * Pad - gap * 2) / 3f, (W - 2 * Pad - gap * (types.Length - 1)) / types.Length);
+            var x0 = (W - (w * types.Length + gap * (types.Length - 1))) / 2f;
             var y = H - 10f - 60f;
             for (var i = 0; i < types.Length; i++)
             {
                 var type = types[i];
-                var button = new BoosterButton(Root, type, Pad + i * (w + gap), y, w);
+                var button = new BoosterButton(Root, type, x0 + i * (w + gap), y, w);
                 button.Tap.OnClick(() => OnBooster(type));
                 _boosters[type] = button;
             }
@@ -552,23 +554,19 @@ namespace KnittedPicture.Game
                 Tweens.Delay(Root, 0.6f, ShowTip);
             }
 
+            // Один баннер на старте — самое важное: сложный уровень, иначе загадка, иначе подарок серии.
             var bannerY = _top + 40f;
             if (_level.hard)
             {
                 Banner("Сложный уровень", Palette.Danger, bannerY);
-                bannerY += 66f;
             }
-
-            if (_level.mystery)
+            else if (_level.mystery)
             {
                 Banner("Загадка: что получится?", Palette.Link, bannerY);
-                bannerY += 66f;
             }
-
-            // Подарок «тёплой серии» — тёплой плашкой: что именно дали на этот уровень.
-            if (_run.Warm.Any)
+            else if (_run.Warm.Any)
             {
-                Banner($"Серия ×{_run.WarmStreak}: {WarmGifts(_run.Warm)}", Palette.CoinShadow, bannerY, 1.0f);
+                Banner($"Серия ×{_run.WarmStreak}: {WarmGifts(_run.Warm)}", Palette.CoinShadow, bannerY, 0.3f);
             }
         }
 
@@ -638,7 +636,7 @@ namespace KnittedPicture.Game
         {
             var fraction = (float)_picture.LandedCount / _game.TotalStitches;
             _progressFill.sizeDelta = new Vector2(Mathf.Max(8f, _progressWidth * fraction), 8f);
-            _progressText.text = Mathf.FloorToInt(fraction * 100f) + "%";
+            _progressText.text = string.Empty;
         }
 
         /// <summary>Привести клубки на станке к модели: новые появляются, ушедшие исчезают, числа обновляются.</summary>
@@ -730,7 +728,7 @@ namespace KnittedPicture.Game
             }
 
             var free = _game.FreeSlots;
-            _loomLabel.text = free == 1 && _slotFrames.Length > 1 ? "Осталось 1 место!" : $"{used} из {_slotFrames.Length}";
+            _loomLabel.text = free == 1 && _slotFrames.Length > 1 ? "Осталось 1 место!" : free == 0 ? "Мест нет" : string.Empty;
             _loomLabel.color = free <= 1 ? Palette.Danger : Palette.Ink2;
         }
 
@@ -1268,8 +1266,7 @@ namespace KnittedPicture.Game
             }
             else
             {
-                Fx.FloatText(_fx, at, combo > TempoCombo.RushFrom ? $"×{combo}" : $"Комбо ×{combo}",
-                    combo > TempoCombo.RushFrom ? RushColor : Palette.Link, combo >= 4 ? 24f : 20f);
+                // Без всплывающих «Комбо ×N» на каждый тап: серию показывает плашка над станком.
                 Sfx.Play(Sound.Combo, 0.45f);
             }
 
@@ -2211,9 +2208,9 @@ namespace KnittedPicture.Game
                 }
             }
 
-            if (tip.Contains("золот") && _goldGoal != null)
+            if (tip.Contains("золот"))
             {
-                return ((RectTransform)_goldGoal.transform.parent, true);
+                return _goldGoal != null ? ((RectTransform)_goldGoal.transform.parent, true) : (_pictureCard, true);
             }
 
             if (tip.Contains("фронт") || tip.Contains("в рамке") || tip.Contains("снизу вверх"))

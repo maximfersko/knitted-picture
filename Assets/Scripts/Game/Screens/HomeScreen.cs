@@ -27,9 +27,8 @@ namespace KnittedPicture.Game
             BuildLogo(logoY, ball);
             var titleY = logoY + ball + 6f;
             Ui.Label(Root, "Вязаная картинка", compact ? 28 : 32, Palette.Ink, 16, titleY, W - 32, 40);
-            var chip = BuildYarnChip(titleY + 44f);
             // Без подзаголовка: на главной только то, что нужно для действия.
-            var y = BuildMetaRow(titleY + 52f + chip);
+            var y = BuildMetaRow(titleY + 52f);
             BuildCollection(y + 16f);
             BuildPlay();
         }
@@ -106,6 +105,14 @@ namespace KnittedPicture.Game
 
                 busy = true;
                 taps++;
+
+                // Какая пряжа «в работе» и что даёт — коротко, по первому тапу, без постоянной плашки.
+                if (taps == 1 && info != null)
+                {
+                    var perk = YarnCatalog.PerkOf(info.Id);
+                    var power = App.Progress.PerkPower(perk);
+                    App.Toast(power > 0 ? $"{info.Name} в работе: {YarnCatalog.PerkShort(perk, power)}" : $"{info.Name} в работе");
+                }
                 var flip = taps % 7 == 0;
                 Sfx.Play(flip ? Sound.Star : Sound.Pick);
                 Haptics.Play(flip ? Haptic.Medium : Haptic.Tap);
@@ -142,40 +149,12 @@ namespace KnittedPicture.Game
             });
         }
 
-        /// <summary>
-        /// Плашка под названием: какая пряжа «в работе» и что она даёт. Тап — карточка мотка.
-        /// Нет пряжи в работе — плашки нет. Возвращает, сколько места она заняла.
-        /// </summary>
-        private float BuildYarnChip(float y)
-        {
-            var progress = App.Progress;
-            var id = progress.ActiveYarn;
-            if (id < 0)
-            {
-                return 0f;
-            }
-
-            var info = YarnCatalog.All[id];
-            var perk = YarnCatalog.PerkOf(id);
-            var power = progress.PerkPower(perk);
-            var text = progress.PerksOpen && power > 0 ? $"{info.Name} в работе · {YarnCatalog.PerkShort(perk, power)}" : $"{info.Name} в работе";
-            const float h = 28f;
-            var w = Mathf.Min(W - 48f, 320f);
-            var chip = Ui.Box(Root, "YarnChip", h / 2f, Palette.Card, true);
-            Ui.Place(chip.rectTransform, (W - w) / 2f, y, w, h);
-            var face = chip.rectTransform;
-            YarnView.Create(face, info, 16f, h / 2f, 20f, true);
-            Ui.Fit(Ui.Label(face, text, 13, Palette.Ink, 30f, 0f, w - 40f, h), 9);
-            chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new YarnCardPopup(App, id, App.ShowHome)));
-            return h + 8f;
-        }
-
         /// <summary>Подарок дня, сундук, задания дня (с 4-го уровня) и коллекции — плитки с отметками.</summary>
         private float BuildMetaRow(float y)
         {
             var progress = App.Progress;
             const float gap = 8f;
-            const float h = 92f;
+            const float h = 64f;
             var missions = progress.MissionsOpen;
             var count = missions ? 4 : 3;
             var w = (W - 32f - gap * (count - 1)) / count;
@@ -209,7 +188,7 @@ namespace KnittedPicture.Game
             var pending = progress.PendingClaims;
             var kinds = progress.YarnKinds;
             var collections = Tile(x, y, w, h, Icon.Trophy, Palette.Link, "Коллекции",
-                $"пряжа {kinds}/{YarnCatalog.Count}", pending);
+                pending > 0 ? "забери!" : string.Empty, pending);
             collections.OnClick(() => App.ShowCollections(FirstPendingTab()));
 
             return y + h;
@@ -238,23 +217,29 @@ namespace KnittedPicture.Game
             return CollectionsTab.Album;
         }
 
+        /// <summary>
+        /// Плитка «зачем заходить» — компактная: только значок. Подпись появляется, только когда там
+        /// что-то ждёт игрока («забери!», «открой!»), тогда же красная точка и покачивание.
+        /// У сундука и заданий без награды — тонкая полоска прогресса под значком.
+        /// </summary>
         private Tap Tile(float x, float y, float w, float h, Icon icon, Color tint, string title, string caption, int badge, float fill = -1f)
         {
-            var card = Ui.Card(Root, title, x, y, w, h, 20, Palette.Card, Palette.CardShadow, 3f, true);
+            var card = Ui.Card(Root, title, x, y, w, h, 18, Palette.Card, Palette.CardShadow, 3f, true);
+            var waiting = badge > 0;
+            var iconY = waiting ? h / 2f - 8f : h / 2f - (fill >= 0f ? 4f : 0f);
             var circle = Ui.Image(card, "Back", Art.Circle, Palette.WithAlpha(tint, 0.14f));
-            Ui.PlaceCenter(circle.rectTransform, w / 2f, 30, 44, 44);
-            var iconImage = Ui.IconImage(card, icon, tint, w / 2f, 30, 26);
-            Ui.Fit(Ui.Label(card, title, 14, Palette.Ink, 2, 54, w - 4, 18), 10);
-            if (fill >= 0f && badge == 0)
+            Ui.PlaceCenter(circle.rectTransform, w / 2f, iconY, 38, 38);
+            var iconImage = Ui.IconImage(card, icon, tint, w / 2f, iconY, 24);
+            if (waiting)
             {
-                Ui.ProgressBar(card, 14, 76, w - 28, 6, fill, Palette.Coin);
+                Ui.Fit(Ui.Label(card, caption, 12, Palette.Danger, 2, h - 22f, w - 4, 16, true), 9);
             }
-            else
+            else if (fill >= 0f)
             {
-                Ui.Fit(Ui.Label(card, caption, 12, badge > 0 ? Palette.Danger : Palette.Ink2, 2, 71, w - 4, 16, badge > 0), 9);
+                Ui.ProgressBar(card, 16, h - 12f, w - 32, 4, fill, Palette.Coin);
             }
 
-            if (badge > 0)
+            if (waiting)
             {
                 Ui.Badge(card, w - 10, 8, badge);
                 var rt = iconImage.rectTransform;
@@ -306,76 +291,20 @@ namespace KnittedPicture.Game
         /// </summary>
         private void BuildCollection(float y)
         {
+            // Только коллекция текущего уровня: без ленты, стрелок и точек. Остальные — в «Коллекциях».
             var progress = App.Progress;
-            var warm = progress.WarmStartFor(progress.CurrentLevel);
-            var showStreak = warm.Any && !progress.AllDone;
-            var bottom = H - 24f - 84f - 16f - (showStreak ? 44f : 0f);
+            var bottom = H - 24f - 84f - 16f;
             var available = Mathf.Max(220f, bottom - y);
-            var viewport = Ui.Place(Ui.Node(Root, "Carousel"), 0, y, W, available);
-            var hit = Ui.Image(viewport, "Hit", null, Color.clear, true);
-            Ui.Stretch(hit.rectTransform);
-            viewport.gameObject.AddComponent<RectMask2D>();
-            _strip = Ui.Place(Ui.Node(viewport, "Strip"), 0, 0, W * Collections.All.Length, available);
-
-            var cardH = 0f;
-            for (var i = 0; i < Collections.All.Length; i++)
-            {
-                var card = BuildPageCard(i, out cardH);
-                _cards.Add(card);
-            }
-
-            // Карточки и точки — по центру свободного места.
-            const float dotsGap = 18f;
-            var blockH = cardH + dotsGap + 8f;
-            var top = Mathf.Max(4f, (available - blockH) / 2f);
-            for (var i = 0; i < _cards.Count; i++)
-            {
-                // Центр карточки — опорная точка: соседние уменьшаются к центру, а не к углу.
-                Ui.PlaceCenter(_cards[i], i * W + W / 2f, top + cardH / 2f, W - 32f, cardH);
-            }
-
-            BuildDots(viewport, top + cardH + dotsGap);
-
-            var pager = viewport.gameObject.AddComponent<Pager>();
-            pager.Began += () =>
-            {
-                _dragging = true;
-                _speed = 0f;
-            };
-            pager.Moved += dx =>
-            {
-                // За краями лента идёт туже — понятно, что дальше коллекций нет.
-                var outside = _pos < 0f || _pos > _cards.Count - 1;
-                _pos -= dx / W * (outside ? 0.35f : 1f);
-                ApplyCarousel();
-            };
-            pager.Released += velocity =>
-            {
-                _dragging = false;
-                var next = Mathf.RoundToInt(_pos);
-                if (Mathf.Abs(velocity) > 350f)
-                {
-                    next = velocity < 0 ? Mathf.FloorToInt(_pos) + 1 : Mathf.CeilToInt(_pos) - 1;
-                }
-
-                Turn(Mathf.Clamp(next, 0, _cards.Count - 1));
-            };
-
-            _target = Mathf.Clamp(_page ?? IndexOf(Collections.Of(progress.CurrentLevel)), 0, _cards.Count - 1);
-            _page = _target;
-            _pos = _target;
-            ApplyCarousel();
-
-            // Серия побед подряд: чем длиннее, тем больше монет — повод не перезапускать.
-            if (showStreak)
-            {
-                var chipW = Mathf.Min(W - 32f, 300f);
-                var chip = Ui.Card(Root, "Streak", (W - chipW) / 2f, bottom + 4f, chipW, 32, 16, Palette.CoinSoft, Palette.CoinSoft, 0f);
-                Ui.IconImage(chip, Icon.Star, Palette.CoinShadow, 22, 16, 18);
-                // Что даст серия на старте следующего уровня — повод не перезапускать и вернуться за продолжением.
-                Ui.Fit(Ui.Label(chip, $"Тёплая серия ×{progress.Streak}: на старте {GameScreen.WarmGifts(warm)}", 14, Palette.Ink, 36, 0, chipW - 44, 32,
-                    true, TextAnchor.MiddleLeft), 10);
-            }
+            var viewport = Ui.Place(Ui.Node(Root, "Collection"), 0, y, W, available);
+            _strip = Ui.Place(Ui.Node(viewport, "Strip"), 0, 0, W, available);
+            var index = Mathf.Clamp(IndexOf(Collections.Of(progress.CurrentLevel)), 0, Collections.All.Length - 1);
+            var card = BuildPageCard(index, out var cardH, true);
+            _cards.Add(card);
+            var top = Mathf.Max(4f, (available - cardH) / 2f);
+            Ui.PlaceCenter(card, W / 2f, top + cardH / 2f, W - 32f, cardH);
+            _page = null;
+            _target = 0;
+            _pos = 0;
         }
 
         private static int IndexOf(CollectionInfo collection) => System.Array.IndexOf(Collections.All, collection);
@@ -407,27 +336,6 @@ namespace KnittedPicture.Game
             _indicator.sizeDelta = new Vector2(right - left, 8f);
         }
 
-        private void BuildDots(RectTransform parent, float y)
-        {
-            var n = Collections.All.Length;
-            const float step = 18f;
-            _dotX = new float[n];
-            for (var i = 0; i < n; i++)
-            {
-                _dotX[i] = W / 2f + (i - (n - 1) / 2f) * step;
-                var dot = Ui.Box(parent, "Dot", 4, Palette.SlotEmpty, true);
-                Ui.PlaceCenter(dot.rectTransform, _dotX[i], y, 22, 22);
-                dot.color = Color.clear;
-                var visible = Ui.Box(dot.rectTransform, "Visible", 4, Palette.SlotEmpty);
-                Ui.PlaceCenter(visible.rectTransform, 11, 11, 8, 8);
-                var target = i;
-                dot.gameObject.AddComponent<Tap>().OnClick(() => Turn(target));
-            }
-
-            _indicator = Ui.Box(parent, "Indicator", 4, Palette.Ink).rectTransform;
-            Ui.Place(_indicator, _dotX[0] - 11f, y - 4f, 22, 8);
-        }
-
         /// <summary>Листнуть к коллекции: лента доедет сама в Tick.</summary>
         private void Turn(int index)
         {
@@ -442,7 +350,7 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Карточка одной коллекции: шапка со стрелками, картинки с подписями, награда.</summary>
-        private RectTransform BuildPageCard(int index, out float cardH)
+        private RectTransform BuildPageCard(int index, out float cardH, bool single = false)
         {
             var progress = App.Progress;
             var collection = Collections.All[index];
@@ -452,7 +360,7 @@ namespace KnittedPicture.Game
             var tilesW = collection.Count * tile + (collection.Count - 1) * gap;
             var stripY = 58f + tile + MiniPicture.StarsOverhang + 34f;
             cardH = stripY + 6f;
-            var card = Ui.Card(_strip, "Collection" + index, index * W + 16f, 0, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
+            var card = Ui.Card(_strip, "Collection" + index, (single ? 0 : index * W) + 16f, 0, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
 
             var done = 0;
             var stars = 0;
@@ -478,9 +386,12 @@ namespace KnittedPicture.Game
             {
                 Ui.Fit(Ui.Label(card, $"{done} из {collection.Count} · {stars}/{collection.Count * 3} ★", 13, Palette.Ink2, 56, 32, cardW - 112, 18, false), 10);
             }
-            var page = index;
-            Arrow(card, 10, index > 0, () => Turn(page - 1), false);
-            Arrow(card, cardW - 50, index < Collections.All.Length - 1, () => Turn(page + 1), true);
+            if (!single)
+            {
+                var page = index;
+                Arrow(card, 10, index > 0, () => Turn(page - 1), false);
+                Arrow(card, cardW - 50, index < Collections.All.Length - 1, () => Turn(page + 1), true);
+            }
 
             var x0 = (cardW - tilesW) / 2f;
             for (var i = 0; i < collection.Count; i++)
@@ -605,7 +516,9 @@ namespace KnittedPicture.Game
 
             Ui.Fit(Ui.Label(face, "Играть", 28, Color.white, 76, 12, playW - 88, 36), 18);
             var hard = App.Levels.Has(level) && App.Levels.Get(level).hard;
-            Ui.Fit(Ui.Label(face, hard ? $"Уровень {level} · сложный" : $"Уровень {level}", 15, Color.white, 76, 46, playW - 88, 22, false), 10);
+            // Тёплая серия — в подписи кнопки, а не отдельной плашкой: «Уровень 12 · серия ×3».
+            var streak = App.Progress.WarmStartFor(level).Any ? $" · серия ×{App.Progress.Streak}" : string.Empty;
+            Ui.Fit(Ui.Label(face, (hard ? $"Уровень {level} · сложный" : $"Уровень {level}") + streak, 15, Color.white, 76, 46, playW - 88, 22, false), 10);
             play.OnClick(() => App.StartLevel(level));
             Tweens.Run(play, 1.6f, t => play.transform.localScale = Vector3.one * (1f + 0.025f * Ease.Bump(t)), null, null, 0.6f, true);
         }
