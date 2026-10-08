@@ -165,7 +165,16 @@ namespace KnittedPicture.Game
 
         protected UnityEngine.UI.Text AddTitle(string text, float size = 26f)
         {
-            var label = Ui.Label(Card, text, size, Palette.Ink, 24, _cursor, Inner, size + 10);
+            // Заголовок в самом верху закрываемого окна — на одной высоте с крестиком: оставляем по 58
+            // с обеих сторон (симметрично, чтобы текст остался по центру) и ужимаем шрифт, если не влезает.
+            var nearClose = Closable && _cursor < 54f;
+            var side = nearClose ? 58f : 24f;
+            var label = Ui.Label(Card, text, size, Palette.Ink, side, _cursor, CardWidth - 2f * side, size + 10);
+            if (nearClose)
+            {
+                Ui.Fit(label, Mathf.RoundToInt(size * 0.7f));
+            }
+
             _cursor += size + 18f;
             return label;
         }
