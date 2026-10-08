@@ -25,9 +25,6 @@ namespace KnittedPicture.Game
         private const float NextAlpha = 0.42f;
         private const float SketchAlpha = 0.2f;
 
-        /// <summary>Насколько ткань светлее рисунка: картинка «проявляется» на ней.</summary>
-        private const float FabricLighten = 0.22f;
-
         private readonly LoomGame _game;
         private readonly Color[] _colors;
         private readonly Image[] _cells;
@@ -165,7 +162,7 @@ namespace KnittedPicture.Game
                 if (_game.IsFabric(x, y))
                 {
                     image.sprite = Art.FabricCell;
-                    image.color = Color.Lerp(color, Color.white, FabricLighten);
+                    image.color = Palette.Fabric(color);
                     continue;
                 }
 

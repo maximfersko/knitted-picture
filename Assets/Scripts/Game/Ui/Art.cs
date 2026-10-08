@@ -210,6 +210,11 @@ namespace KnittedPicture.Game
                 {
                     var color = colors[level.picture[y][x] - '0'];
                     var fabric = level.canvas != null && level.canvas.Length == level.height && level.canvas[y][x] == '1';
+                    if (fabric)
+                    {
+                        color = Palette.Fabric(color);
+                    }
+
                     if (!done && !fabric)
                     {
                         color = level.mystery ? Palette.Track : Color.Lerp(Color.white, color, 0.22f);
@@ -943,11 +948,17 @@ namespace KnittedPicture.Game
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
+        /// <summary>
+        /// Ткань-основа как канва для вышивки (Аида): блоки по две нити, переплетённые в шахматном порядке,
+        /// каждая нить округлая и выгибается аркой между проколами, на углах блоков — дырочки сетки,
+        /// мелкий ворс и лёгкий объём клетки (свет сверху, тень у края). 96 px — видно и на крупных клетках.
+        /// Текстура серая (около 0,9), цвет даёт Image: так ткань яркая, а фактура не съедает цвет.
+        /// </summary>
         private static Sprite BuildCanvasCell()
         {
-            const int size = 48;
-            const float radius = 11f;
-            const float pitch = 8f;
+            const int size = 96;
+            const float radius = 22f;
+            const float pitch = 16f;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
             var pixels = new Color32[size * size];
             for (var py = 0; py < size; py++)
@@ -956,20 +967,47 @@ namespace KnittedPicture.Game
                 {
                     var x = px + 0.5f;
                     var y = py + 0.5f;
-                    var qx = Mathf.Abs(x - 24f) - 24f + radius;
-                    var qy = Mathf.Abs(y - 24f) - 24f + radius;
+                    var qx = Mathf.Abs(x - size / 2f) - size / 2f + radius;
+                    var qy = Mathf.Abs(y - size / 2f) - size / 2f + radius;
                     var d = Mathf.Sqrt(Mathf.Max(qx, 0) * Mathf.Max(qx, 0) + Mathf.Max(qy, 0) * Mathf.Max(qy, 0))
                             + Mathf.Min(Mathf.Max(qx, qy), 0) - radius;
                     var alpha = Mathf.Clamp01(0.5f - d);
 
-                    // Полотняное переплетение: нити вдоль и поперёк, в клетках между ними — чуть темнее.
-                    var u = Mathf.Repeat(x, pitch) / pitch;
-                    var v = Mathf.Repeat(y, pitch) / pitch;
-                    var warp = Mathf.Sin(Mathf.PI * u);
-                    var weft = Mathf.Sin(Mathf.PI * v);
-                    var over = (Mathf.Floor(x / pitch) + Mathf.Floor(y / pitch)) % 2f == 0f;
-                    var value = 0.9f + 0.08f * (over ? warp : weft);
-                    var v8 = (byte)(value * 255);
+                    // Блок переплетения: в чётных нити идут вдоль, в нечётных — поперёк.
+                    var gx = (x - pitch / 2f) / pitch;
+                    var gy = (y - pitch / 2f) / pitch;
+                    var u = gx - Mathf.Floor(gx);
+                    var v = gy - Mathf.Floor(gy);
+                    var over = ((int)Mathf.Floor(gx) + (int)Mathf.Floor(gy)) % 2 == 0;
+                    var across = over ? u : v;
+                    var along = over ? v : u;
+
+                    // Две нити в блоке: округлые поперёк, выгнутые аркой вдоль, с бликом по гребню.
+                    var t = across * 2f - Mathf.Floor(across * 2f);
+                    var round = Mathf.Pow(Mathf.Sin(Mathf.PI * t), 0.7f);
+                    var arch = Mathf.Sqrt(Mathf.Sin(Mathf.PI * along));
+                    var value = 0.84f + 0.16f * round * (0.6f + 0.4f * arch);
+                    value += 0.25f * Mathf.Max(0f, Mathf.Sin(Mathf.PI * t) - 0.8f) * arch;
+
+                    // Дырочки сетки на углах блоков.
+                    var hole = Mathf.Sqrt(Mathf.Pow(Mathf.Min(u, 1f - u), 2f) + Mathf.Pow(Mathf.Min(v, 1f - v), 2f));
+                    value *= 0.78f + 0.22f * Mathf.Clamp01((hole - 0.05f) / 0.12f);
+
+                    // Ворс: мелкий шум и редкие светлые волоски.
+                    value += (Hash(px, py) - 0.5f) * 0.035f;
+                    if (Hash(px / 2 + 7, py / 3) > 0.985f)
+                    {
+                        value += 0.05f;
+                    }
+
+                    // Объём клетки: у края чуть темнее, сверху светлее (py растёт вверх).
+                    if (-d < 5f)
+                    {
+                        value *= 0.92f + 0.08f * Mathf.Max(0f, -d) / 5f;
+                    }
+
+                    value += 0.03f * py / size;
+                    var v8 = (byte)(Mathf.Clamp01(value) * 255);
                     pixels[py * size + px] = new Color32(v8, v8, v8, (byte)(alpha * 255));
                 }
             }
@@ -977,6 +1015,17 @@ namespace KnittedPicture.Game
             texture.SetPixels32(pixels);
             texture.Apply();
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        /// <summary>Детерминированный шум 0..1 по координатам пикселя — одинаковая фактура при каждом запуске.</summary>
+        private static float Hash(int x, int y)
+        {
+            unchecked
+            {
+                var n = (uint)(x * 374761393 + y * 668265263);
+                n = (n ^ (n >> 13)) * 1274126177u;
+                return ((n ^ (n >> 16)) & 0xffff) / 65535f;
+            }
         }
 
         private static float DistanceToSegment(float x, float y, float ax, float ay, float bx, float by)
