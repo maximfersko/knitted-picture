@@ -67,6 +67,8 @@ namespace KnittedPicture.Game
             Card = Ui.Node(Root, "Card");
             var face = Ui.Box(Card, "Face", bottomSheet ? 30 : 26, Palette.Card, true);
             Ui.Stretch(face.rectTransform);
+            // Окно как лоскут ткани: строчка по краю.
+            Ui.Stitch(Card, bottomSheet ? 30 : 26, Palette.Stitch, 8f);
             if (bottomSheet)
             {
                 Card.anchorMin = new Vector2(0.5f, 0f);
@@ -208,10 +210,7 @@ namespace KnittedPicture.Game
         protected Tap AddSecondary(string text, Icon? icon = null, float height = 54f)
         {
             var root = Ui.Card(Card, "Secondary", 24, _cursor, Inner, height, 20, Palette.Card, Palette.CardShadow, 3f, true);
-            var outline = Ui.Image(root, "Outline", Art.RoundRectOutline(20, 2), Palette.CardShadow);
-            outline.type = UnityEngine.UI.Image.Type.Sliced;
-            outline.pixelsPerUnitMultiplier = Art.Density;
-            Ui.Place(outline.rectTransform, 0, 0, Inner, height);
+            Ui.Stitch(root, 20, Palette.StitchStrong, 5f);
             var label = Ui.Label(root, text, 17, Palette.Ink, icon != null ? 14 : 0, 0, Inner, height);
             if (icon != null)
             {

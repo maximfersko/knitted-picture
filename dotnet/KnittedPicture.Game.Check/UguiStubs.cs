@@ -114,6 +114,7 @@ namespace UnityEngine.UI
         public float fillAmount { get; set; }
 
         public float pixelsPerUnitMultiplier { get; set; }
+        public bool fillCenter { get; set; } = true;
     }
 
     public class RawImage : MaskableGraphic

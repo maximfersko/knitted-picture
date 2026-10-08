@@ -11,8 +11,14 @@ namespace KnittedPicture.Game
     public static class Ui
     {
         private static Font? _font;
+        private static Font? _regular;
+        private static bool _custom;
 
-        /// <summary>Свой шрифт кладётся в Assets/Resources/Fonts/Main.ttf (например, Nunito Black), иначе встроенный.</summary>
+        /// <summary>
+        /// Округлый Nunito (OFL, лицензия рядом в Resources/Fonts): Main.ttf — ExtraBold для заголовков и
+        /// кнопок, Regular.ttf — SemiBold для подписей. Начертания настоящие, поэтому FontStyle.Bold
+        /// поверх не включаем: синтетический жирный у Unity расплывается. Нет файлов — встроенный шрифт.
+        /// </summary>
         public static Font Font
         {
             get
@@ -20,6 +26,7 @@ namespace KnittedPicture.Game
                 if (_font == null)
                 {
                     _font = Resources.Load<Font>("Fonts/Main");
+                    _custom = _font != null;
                     if (_font == null)
                     {
                         _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -27,6 +34,23 @@ namespace KnittedPicture.Game
                 }
 
                 return _font;
+            }
+        }
+
+        private static Font RegularFont
+        {
+            get
+            {
+                if (_regular == null)
+                {
+                    _regular = Resources.Load<Font>("Fonts/Regular");
+                    if (_regular == null)
+                    {
+                        _regular = Font;
+                    }
+                }
+
+                return _regular;
             }
         }
 
@@ -114,6 +138,27 @@ namespace KnittedPicture.Game
             return root;
         }
 
+        /// <summary>Строчка-пунктир по краю плашки, как шов на ткани (см. Art.Stitch).</summary>
+        public static Image Stitch(RectTransform parent, float radius, Color color, float inset = 5f)
+        {
+            var stitch = Image(parent, "Stitch", Art.Stitch(radius, inset), color);
+            stitch.type = UnityEngine.UI.Image.Type.Tiled;
+            // Середина пустая: без fillCenter Unity не плодит сотни плиток внутри плашки.
+            stitch.fillCenter = false;
+            stitch.pixelsPerUnitMultiplier = Art.Density;
+            Stretch(stitch.rectTransform);
+            return stitch;
+        }
+
+        /// <summary>Блик сверху: свет падает сверху, и плоская кнопка становится выпуклой.</summary>
+        public static Image Shine(RectTransform parent, float w, float h, float radius)
+        {
+            var shineH = Mathf.Round(h * 0.44f);
+            var shine = Box(parent, "Shine", Mathf.Min(Mathf.Max(2f, radius - 3f), shineH / 2f), new Color(1f, 1f, 1f, 0.16f));
+            Place(shine.rectTransform, 4f, 3f, w - 8f, shineH);
+            return shine;
+        }
+
         /// <summary>Контур поверх элемента (растянут на весь родитель).</summary>
         public static Image Outline(RectTransform parent, float radius, Color color, float stroke)
         {
@@ -138,9 +183,14 @@ namespace KnittedPicture.Game
             var rt = Node(parent, "Text");
             var label = rt.gameObject.AddComponent<Text>();
             label.font = Font;
+            if (!bold && _custom)
+            {
+                label.font = RegularFont;
+            }
+
             label.text = text;
             label.fontSize = TypeSize(size);
-            label.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
+            label.fontStyle = bold && !_custom ? FontStyle.Bold : FontStyle.Normal;
             label.color = color;
             label.alignment = anchor;
             label.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -214,7 +264,11 @@ namespace KnittedPicture.Game
         public static Tap Button(RectTransform parent, string text, float x, float y, float w, float h,
             Color color, Color shadow, Color textColor, float fontSize = 20f)
         {
-            var root = Card(parent, "Button", x, y, w, h, Mathf.Min(22f, h / 2f), color, shadow, 5f, true);
+            var radius = Mathf.Min(22f, h / 2f);
+            var root = Card(parent, "Button", x, y, w, h, radius, color, shadow, 5f, true);
+            // «Вязаная» кнопка: блик сверху и строчка по краю светлым по цвету кнопки.
+            Shine(root, w, h, radius);
+            Stitch(root, radius, new Color(1f, 1f, 1f, 0.42f), h < 44f ? 3.5f : 5f);
             var label = Label(root, text, fontSize, textColor);
             Place(label.rectTransform, 0, 0, w, h);
             return root.gameObject.AddComponent<Tap>();

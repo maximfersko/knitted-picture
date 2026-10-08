@@ -609,6 +609,7 @@ namespace KnittedPicture.Game
             var cardW = W - 32f;
             const float cardH = 380f;
             var card = Ui.Card(content, "ChestCard", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
+            Ui.Stitch(card, 24, Palette.Stitch, 7f);
             Ui.InfoButton(card, cardW - 30, 28, "Как работает сундук",
                 $"Звёзды за уровни копятся в сундук: {ProgressService.ChestEvery} ★, и он готов. " +
                 "Внутри монеты, а ещё ты сам выбираешь один бустер из трёх и один моток из трёх. " +
@@ -693,6 +694,7 @@ namespace KnittedPicture.Game
             const float listY = 12f;
             var cardH = listY + types.Length * rowH + 6f;
             var card = Ui.Card(content, "Stock", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
+            Ui.Stitch(card, 24, Palette.Stitch, 7f);
             for (var i = 0; i < types.Length; i++)
             {
                 var type = types[i];
@@ -725,6 +727,7 @@ namespace KnittedPicture.Game
             var cardW = W - 32f;
             const float cardH = 182f;
             var card = Ui.Card(content, "Basket", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f, true);
+            Ui.Stitch(card, 24, Palette.Stitch, 7f);
             var circle = Ui.Image(card, "Back", Art.Circle, Palette.DangerSoft);
             Ui.PlaceCenter(circle.rectTransform, 44, 40, 56, 56);
             var logo = Ui.Image(card, "Ball", Art.YarnBall, Palette.Hex("#FF6FA5"));
