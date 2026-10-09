@@ -145,7 +145,8 @@ namespace KnittedPicture.Game
         {
             AddTitle("Настройки", 24);
 
-            var group = Group(3);
+            var consent = app.Ads.NeedsConsent;
+            var group = Group(consent ? 4 : 3);
             ToggleRow(group, 0, KnittedPicture.Game.Icon.SoundOn, Palette.Link, "Звук",
                 () => app.Progress.SoundOn, app.SetSound);
             ToggleRow(group, 1, KnittedPicture.Game.Icon.Vibrate, Palette.Danger, "Вибрация",
@@ -161,17 +162,38 @@ namespace KnittedPicture.Game
 
                     app.Save();
                 });
+            if (consent)
+            {
+                ToggleRow(group, 3, KnittedPicture.Game.Icon.Gift, Palette.Primary, "Персональная реклама",
+                    () => app.Progress.Data.adsConsent == 1, app.SetAdsConsent);
+            }
+
             Space(12f);
 
-            var help = Group(1);
-            var howTo = Row(help, 0, KnittedPicture.Game.Icon.Info, Palette.Primary, "Как играть");
-            var chevron = Ui.IconImage(howTo, KnittedPicture.Game.Icon.Back, Palette.Ink3, Inner - 24f, RowH / 2f, 18f);
-            chevron.rectTransform.localScale = new Vector3(-1f, 1f, 1f);
-            howTo.gameObject.AddComponent<Tap>().OnClick(() =>
+            // Покупки — только там, где они работают (RuStore с SDK). «Без рекламы» пропадает после покупки.
+            var purchases = app.Purchases.Available;
+            var buyNoAds = purchases && !app.Progress.Data.adsRemoved;
+            var help = Group(1 + (buyNoAds ? 1 : 0) + (purchases ? 1 : 0));
+            var row = 0;
+            NavRow(help, row++, KnittedPicture.Game.Icon.Info, Palette.Primary, "Как играть", () =>
             {
                 Close();
                 app.ShowIntro();
             });
+            if (buyNoAds)
+            {
+                NavRow(help, row++, KnittedPicture.Game.Icon.Star, Palette.CoinShadow, "Убрать рекламу", () =>
+                {
+                    Close();
+                    app.BuyNoAds();
+                });
+            }
+
+            if (purchases)
+            {
+                NavRow(help, row, KnittedPicture.Game.Icon.Restart, Palette.Link, "Восстановить покупки", () => app.RestorePurchases(true));
+            }
+
             Space(12f);
 
             // Сброс — отдельной строкой, красным. Первое касание спрашивает, второе стирает.
@@ -194,10 +216,20 @@ namespace KnittedPicture.Game
                 Haptics.Play(Haptic.Medium);
             });
 
-            Space(10f);
+            Space(6f);
+            AddLink("Политика конфиденциальности").OnClick(() => Application.OpenURL(StoreConfig.PrivacyPolicyUrl));
             var version = AddText("Версия " + Application.version, 12, 1);
             version.color = Palette.Ink3;
             Finish(8);
+        }
+
+        /// <summary>Строка-переход: значок, подпись и стрелка вправо; тап по всей строке.</summary>
+        private void NavRow(RectTransform group, int index, KnittedPicture.Game.Icon icon, Color tint, string title, System.Action open)
+        {
+            var row = Row(group, index, icon, tint, title);
+            var chevron = Ui.IconImage(row, KnittedPicture.Game.Icon.Back, Palette.Ink3, Inner - 24f, RowH / 2f, 18f);
+            chevron.rectTransform.localScale = new Vector3(-1f, 1f, 1f);
+            row.gameObject.AddComponent<Tap>().OnClick(open);
         }
 
         /// <summary>Сгруппированный список: светлая подложка, строки через тонкие разделители.</summary>

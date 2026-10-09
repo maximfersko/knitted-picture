@@ -106,6 +106,18 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void No_interstitials_after_ads_are_removed()
+        {
+            var progress = new ProgressService(new PlayerProgress { nextLevel = 10, adsRemoved = true }, levelCount: 15);
+
+            for (var level = 10; level <= 13; level++)
+            {
+                progress.CompleteLevel(level, false);
+                Assert.False(progress.TakeInterstitialSlot(level));
+            }
+        }
+
+        [Fact]
         public void Best_stars_are_kept_and_an_improvement_is_a_record()
         {
             var progress = Fresh();

@@ -794,7 +794,7 @@ namespace KnittedPicture.Core
         /// <summary>Пора ли показать межуровневую рекламу после этой победы. Сбрасывает счётчик, если да.</summary>
         public bool TakeInterstitialSlot(int levelId)
         {
-            if (levelId < Economy.InterstitialFromLevel || _data.winsSinceInterstitial < Economy.InterstitialEveryWins)
+            if (_data.adsRemoved || levelId < Economy.InterstitialFromLevel || _data.winsSinceInterstitial < Economy.InterstitialEveryWins)
             {
                 return false;
             }

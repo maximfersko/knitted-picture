@@ -59,6 +59,63 @@ namespace KnittedPicture.Game
 
         public IAds Ads { get; private set; } = null!;
 
+        /// <summary>Покупки внутри игры (только сборка для RuStore с SDK; иначе — «покупок нет»).</summary>
+        public IPurchases Purchases { get; private set; } = null!;
+
+        private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _mainThread = new System.Collections.Concurrent.ConcurrentQueue<Action>();
+
+        /// <summary>
+        /// Выполнить в главном потоке Unity: ответы рекламного и платёжного SDK могут приходить из своих потоков,
+        /// а трогать интерфейс и сохранение можно только из главного.
+        /// </summary>
+        public void RunOnMain(Action action) => _mainThread.Enqueue(action);
+
+        /// <summary>Выполнить через seconds секунд реального времени (пауза окон не мешает).</summary>
+        public void After(float seconds, Action action) => Tweens.Delay(this, seconds, action);
+
+        /// <summary>Разрешить или запретить персональную рекламу и запомнить ответ.</summary>
+        public void SetAdsConsent(bool allowed)
+        {
+            Progress.Data.adsConsent = allowed ? 1 : 2;
+            Save();
+            Ads.SetPersonalized(allowed);
+        }
+
+        /// <summary>Купить «Без рекламы»; после оплаты межуровневой рекламы больше нет.</summary>
+        public void BuyNoAds(Action? done = null)
+        {
+            Purchases.Buy(StoreConfig.NoAdsProduct, ok =>
+            {
+                if (ok)
+                {
+                    Progress.Data.adsRemoved = true;
+                    Save();
+                    Toast("Готово: рекламы между уровнями больше не будет. Спасибо!");
+                }
+
+                done?.Invoke();
+            });
+        }
+
+        /// <summary>Вернуть разовые покупки (переустановка, новый телефон, сброс прогресса).</summary>
+        public void RestorePurchases(bool tell)
+        {
+            Purchases.Restore(owned =>
+            {
+                var noAds = System.Linq.Enumerable.Contains(owned, StoreConfig.NoAdsProduct);
+                if (noAds && !Progress.Data.adsRemoved)
+                {
+                    Progress.Data.adsRemoved = true;
+                    Save();
+                }
+
+                if (tell)
+                {
+                    Toast(noAds ? "Покупка «Без рекламы» восстановлена" : "Покупок не найдено");
+                }
+            });
+        }
+
         /// <summary>Контентная колонка внутри безопасной зоны.</summary>
         public RectTransform Frame => _frame!;
 
@@ -174,7 +231,10 @@ namespace KnittedPicture.Game
             Progress = new ProgressService(SaveStore.Load(), Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
             Haptics.Enabled = Progress.Data.hapticsOn;
-            Ads = new StubAds(this);
+            Ads = AdsFactory.Create(this);
+            Ads.SetPersonalized(Progress.Data.adsConsent == 1);
+            Purchases = PurchasesFactory.Create(this);
+            RestorePurchases(false);
 
             EnsureCamera();
             EnsureEventSystem();
@@ -197,6 +257,11 @@ namespace KnittedPicture.Game
 
         private void Update()
         {
+            while (_mainThread.TryDequeue(out var action))
+            {
+                action();
+            }
+
             if (Screen.width != _screenSize.x || Screen.height != _screenSize.y || Screen.safeArea != _safeArea)
             {
                 Rebuild();
@@ -509,8 +574,11 @@ namespace KnittedPicture.Game
         public void ResetProgress()
         {
             CloseAllPopups();
+            // Покупка и ответ про рекламу — не игровой прогресс: после сброса они остаются.
+            var adsRemoved = Progress.Data.adsRemoved;
+            var adsConsent = Progress.Data.adsConsent;
             SaveStore.Reset();
-            Progress = new ProgressService(new PlayerProgress(), Levels.Count);
+            Progress = new ProgressService(new PlayerProgress { adsRemoved = adsRemoved, adsConsent = adsConsent }, Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
             Haptics.Enabled = Progress.Data.hapticsOn;
             HomeScreen.ResetCarousel();

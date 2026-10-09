@@ -43,6 +43,18 @@ namespace KnittedPicture.Game
             BuildLogo(heroTop + (heroBottom - heroTop - ball) / 2f, ball);
             TabBar.Create(app, Root, W, H, MainTab.Home);
 
+            // До первой рекламы — один раз спросить про персональную рекламу.
+            if (app.Ads.NeedsConsent && progress.Data.adsConsent == 0)
+            {
+                Tweens.Delay(Root, 0.6f, () =>
+                {
+                    if (!app.HasPopups && app.Progress.Data.adsConsent == 0)
+                    {
+                        app.ShowPopup(new ConsentPopup(app));
+                    }
+                });
+            }
+
             // Вход на главную: значки событий по очереди «выпрыгивают», кнопка «Играть» мягко подрастает.
             // Только при входе с другого экрана — после получения награды главная не прыгает заново.
             if (app.PreviousScreen != typeof(HomeScreen))

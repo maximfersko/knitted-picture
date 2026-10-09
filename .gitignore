@@ -118,3 +118,8 @@ InitTestScene*.unity*
 # Python
 __pycache__/
 *.pyc
+
+# Ключ подписи и пароли: никогда не в git
+/Signing/
+*.keystore
+*.jks

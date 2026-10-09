@@ -96,5 +96,11 @@ namespace KnittedPicture.Core
         public bool remindersAsked;
         public int totalWins;
         public int winsSinceInterstitial;
+
+        /// <summary>Куплено «Без рекламы»: межуровневой рекламы больше нет (видео за награду — по желанию).</summary>
+        public bool adsRemoved;
+
+        /// <summary>Согласие на персональную рекламу: 0 — ещё не спрашивали, 1 — да, 2 — нет.</summary>
+        public int adsConsent;
     }
 }
