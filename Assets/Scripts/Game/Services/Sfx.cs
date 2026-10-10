@@ -100,64 +100,61 @@ namespace KnittedPicture.Game
             _source.PlayOneShot(clip, volume);
         }
 
-        /// <summary>Глухой мягкий тап: низкий тон 190 Гц с быстрым затуханием и тёплый шорох.</summary>
+        // Все звуки — чистые тоны с плавной атакой и затуханием до нуля. Шум (случайные отсчёты) не используем:
+        // на телефонных динамиках он слышен как шипение.
+
+        /// <summary>Мягкий тап: низкий тон, за 50 мс сползающий с 240 до 170 Гц, без щелчка в начале.</summary>
         private static AudioClip WoolTap()
         {
-            var length = Mathf.CeilToInt(0.06f * Rate);
+            var length = Mathf.CeilToInt(0.05f * Rate);
             var data = new float[length];
-            var rng = new System.Random(3);
-            var low = 0f;
+            var phase = 0.0;
             for (var i = 0; i < length; i++)
             {
-                var t = (float)i / Rate;
                 var k = i / (float)length;
-                var envelope = Mathf.Min(1f, k * 40f) * Mathf.Pow(1f - k, 3f);
-                low += (((float)rng.NextDouble() * 2f - 1f) - low) * 0.08f;
-                data[i] = (Mathf.Sin(2f * Mathf.PI * 190f * t) * 0.7f + low * 1.6f) * envelope * 0.32f;
+                var freq = Mathf.Lerp(240f, 170f, k);
+                phase += 2.0 * Mathf.PI * freq / Rate;
+                var envelope = Mathf.Min(1f, k * 25f) * Mathf.Pow(1f - k, 2.5f);
+                data[i] = (float)(Mathf.Sin((float)phase) * 0.85 + Mathf.Sin((float)(phase * 2.0)) * 0.15) * envelope * 0.3f;
             }
 
             return Clip("woolTap", data);
         }
 
-        /// <summary>Два сухих деревянных щелчка подряд: короткий шум, «окрашенный» резонансом около 2,4 кГц.</summary>
+        /// <summary>Два коротких деревянных «тука», как стукнули спицы: тоны 1500 и 1050 Гц с очень быстрым затуханием.</summary>
         private static AudioClip Needles()
         {
-            var length = Mathf.CeilToInt(0.1f * Rate);
+            var length = Mathf.CeilToInt(0.11f * Rate);
             var data = new float[length];
-            var rng = new System.Random(11);
-            foreach (var (start, gain) in new[] { (0f, 1f), (0.045f, 0.7f) })
+            foreach (var (start, freq, gain) in new[] { (0f, 1500f, 1f), (0.05f, 1050f, 0.75f) })
             {
                 var from = Mathf.RoundToInt(start * Rate);
-                var count = Mathf.RoundToInt(0.018f * Rate);
+                var count = Mathf.RoundToInt(0.04f * Rate);
                 for (var i = 0; i < count && from + i < length; i++)
                 {
                     var t = (float)i / Rate;
                     var k = i / (float)count;
-                    var envelope = Mathf.Pow(1f - k, 4f);
-                    var noise = (float)rng.NextDouble() * 2f - 1f;
-                    var body = Mathf.Sin(2f * Mathf.PI * 2400f * t) * 0.6f + Mathf.Sin(2f * Mathf.PI * 1150f * t) * 0.4f;
-                    data[from + i] += (body * 0.7f + noise * 0.3f) * envelope * gain * 0.3f;
+                    var envelope = Mathf.Min(1f, k * 60f) * Mathf.Exp(-k * 7f) * (1f - k);
+                    var body = Mathf.Sin(2f * Mathf.PI * freq * t) * 0.7f + Mathf.Sin(2f * Mathf.PI * freq * 1.5f * t) * 0.3f;
+                    data[from + i] += body * envelope * gain * 0.22f;
                 }
             }
 
             return Clip("needles", data);
         }
 
-        /// <summary>Мягкий «пух»: сглаженный шум, который плавно нарастает и тает, — без тона и без щелчка.</summary>
+        /// <summary>Тихий мягкий «пуф»: низкий тон 330 → 260 Гц с плавным нарастанием и затуханием.</summary>
         private static AudioClip Puff()
         {
-            var length = Mathf.CeilToInt(0.16f * Rate);
+            var length = Mathf.CeilToInt(0.12f * Rate);
             var data = new float[length];
-            var rng = new System.Random(5);
-            var low = 0f;
-            var lower = 0f;
+            var phase = 0.0;
             for (var i = 0; i < length; i++)
             {
                 var k = i / (float)length;
-                var envelope = Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.6f));
-                low += (((float)rng.NextDouble() * 2f - 1f) - low) * 0.12f;
-                lower += (low - lower) * 0.2f;
-                data[i] = lower * envelope * 2.6f;
+                phase += 2.0 * Mathf.PI * Mathf.Lerp(330f, 260f, k) / Rate;
+                var envelope = Mathf.Sin(Mathf.PI * k);
+                data[i] = Mathf.Sin((float)phase) * envelope * envelope * 0.18f;
             }
 
             return Clip("puff", data);
