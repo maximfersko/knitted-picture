@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Бот-тестировщик: играет тысячи партий на настоящем ядре игры и проверяет правила,
+    сложность уровней и мета-игру (подарки, сундуки, задания) за много дней.
+    Запуск и ключи командной строки описаны в Program.cs.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>KnittedPicture.Playtest</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../KnittedPicture.Core/KnittedPicture.Core.csproj" />
+    <ProjectReference Include="../KnittedPicture.LevelTool/KnittedPicture.LevelTool.csproj" />
+  </ItemGroup>
+
+</Project>

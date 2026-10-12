@@ -23,3 +23,14 @@ jobs:
         run: |
           dotnet run --project dotnet/KnittedPicture.LevelTool
           git diff --exit-code -- Assets/Resources/Levels
+
+      - name: Playtest bot (rules, meta-game over many days)
+        run: dotnet run -c Release --project dotnet/KnittedPicture.Playtest -- --runs 60 --generated 20 --difficulty-runs 0 --players 10 --days 45 --report playtest-report.md
+
+      - name: Playtest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playtest-report
+          path: playtest-report.md
+          if-no-files-found: ignore
