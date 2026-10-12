@@ -69,6 +69,7 @@ namespace KnittedPicture.Game
                 AddPrimary("Забрать").OnClick(() =>
                 {
                     var granted = progress.ClaimMissions(today, app.Random);
+                    Analytics.Event("missions_claim", ("level", progress.CurrentLevel));
                     app.Save();
                     Close();
                     if (granted != null)

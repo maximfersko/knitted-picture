@@ -77,6 +77,7 @@ namespace KnittedPicture.Game
         public void SetAdsConsent(bool allowed)
         {
             Progress.Data.adsConsent = allowed ? 1 : 2;
+            Analytics.Event("ads_consent", ("allowed", allowed));
             Save();
             Ads.SetPersonalized(allowed);
         }
@@ -86,6 +87,7 @@ namespace KnittedPicture.Game
         {
             Purchases.Buy(StoreConfig.NoAdsProduct, ok =>
             {
+                Analytics.Event("purchase", ("product", StoreConfig.NoAdsProduct), ("ok", ok));
                 if (ok)
                 {
                     Progress.Data.adsRemoved = true;
@@ -231,6 +233,9 @@ namespace KnittedPicture.Game
             Progress = new ProgressService(SaveStore.Load(), Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
             Haptics.Enabled = Progress.Data.hapticsOn;
+            Analytics.Init();
+            Analytics.Event("app_open", ("level", Progress.CurrentLevel), ("wins", Progress.Data.totalWins), ("coins", Progress.Coins),
+                ("store", StoreConfig.Flavor.ToString()), ("ads_removed", Progress.Data.adsRemoved), ("first", !Progress.Data.introSeen));
             Ads = AdsFactory.Create(this);
             Ads.SetPersonalized(Progress.Data.adsConsent == 1);
             Purchases = PurchasesFactory.Create(this);
@@ -344,6 +349,7 @@ namespace KnittedPicture.Game
         /// <summary>Вступление закончено или пропущено: новичка сразу в первый уровень.</summary>
         public void FinishIntro()
         {
+            Analytics.Event("intro_finish", ("first", !Progress.Data.introSeen));
             Progress.Data.introSeen = true;
             Save();
             if (Progress.IsCompleted(1))
@@ -374,9 +380,10 @@ namespace KnittedPicture.Game
             HomeScreen.ResetCarousel();
             var level = Levels.Get(levelId);
             var intro = Progress.TakeBoosterIntro(levelId);
+            var attempt = Progress.NextAttempt(levelId);
             Save();
             var game = new LoomGame(level);
-            var run = new LevelRun();
+            var run = new LevelRun { Attempt = attempt };
 
             // «Тёплая серия»: подарок на старт — лишний слот сразу, ножницы и отмена бесплатно.
             var warm = Progress.WarmStartFor(levelId);
@@ -389,6 +396,8 @@ namespace KnittedPicture.Game
 
             run.FreeScissors = warm.FreeScissors ? 1 : 0;
             run.FreeUndo = warm.FreeUndo ? 1 : 0;
+            Analytics.Event("level_start", ("level", levelId), ("attempt", attempt), ("hard", level.hard), ("timed", level.timeLimit > 0),
+                ("completed_before", Progress.IsCompleted(levelId)), ("warm", warm.Any));
             Show(() => new GameScreen(this, level, game, run));
             if (intro != null)
             {
@@ -423,6 +432,7 @@ namespace KnittedPicture.Game
             var level = TodayPattern();
             var game = new LoomGame(level);
             var run = new LevelRun { Pattern = true };
+            Analytics.Event("pattern_start", ("streak", Progress.PatternStreak(Today)));
             Show(() => new GameScreen(this, level, game, run));
         }
 

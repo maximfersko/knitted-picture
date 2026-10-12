@@ -792,6 +792,22 @@ namespace KnittedPicture.Core
         }
 
         /// <summary>Пора ли показать межуровневую рекламу после этой победы. Сбрасывает счётчик, если да.</summary>
+        /// <summary>Начата новая попытка уровня; возвращает её номер (1 — первая).</summary>
+        public int NextAttempt(int levelId)
+        {
+            if (levelId < 1)
+            {
+                return 1;
+            }
+
+            while (_data.attempts.Count < levelId)
+            {
+                _data.attempts.Add(0);
+            }
+
+            return ++_data.attempts[levelId - 1];
+        }
+
         public bool TakeInterstitialSlot(int levelId)
         {
             if (_data.adsRemoved || levelId < Economy.InterstitialFromLevel || _data.winsSinceInterstitial < Economy.InterstitialEveryWins)

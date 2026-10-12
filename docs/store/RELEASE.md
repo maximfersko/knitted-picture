@@ -62,6 +62,19 @@ keytool -genkeypair -v -keystore Signing/knitted-upload.keystore -alias knitted 
 > покажет ошибки в этом файле (например, в новой версии `MobileAds` переименован в `YandexAds`),
 > исправить нужно только этот файл. Остальная игра работает через интерфейс `IAds`. Пришли мне ошибки, поправлю.
 
+## Шаг 3½. Аналитика AppMetrica
+
+1. Зайди на appmetrica.yandex.ru тем же аккаунтом Яндекса, что и для рекламы, и добавь приложение (Android).
+2. Скопируй **API key** приложения в `StoreConfig.cs` → `AppMetricaApiKey`.
+3. Установи плагин AppMetrica для Unity по инструкции AppMetrica (раздел SDK → Unity), затем External Dependency Manager → Android Resolver → Force Resolve.
+4. **Knitted → Сборка → Проверить, какие SDK найдены** → «Аналитика AppMetrica: найдена».
+
+Какие события отправляет игра и какие отчёты по ним строить, описано в `docs/analytics.md`. Без плагина события
+просто пишутся в Console Unity (в редакторе и в Development-сборке), так их удобно проверять.
+
+> Код отправки: `Assets/Scripts/Game/Services/Analytics/AppMetricaSink.cs` (плагин версий 6+, `Io.AppMetrica`).
+> Если имена в установленной версии другие, правки только в этом файле.
+
 ## Шаг 4. RuStore Pay (только для RuStore)
 
 1. В консоли RuStore: Монетизация → подключи платежи (нужен статус самозанятого, ИП или юрлица и реквизиты).
@@ -157,7 +170,7 @@ python3 tools/store/make_screenshots.py docs/store/raw docs/store/captions.txt d
 ## Чек-лист перед первой отправкой
 
 - [ ] Политика опубликована, ссылка открывается, в ней твои данные
-- [ ] В `StoreConfig.cs` настоящие ID рекламных блоков, а не `demo-…`
+- [ ] В `StoreConfig.cs` настоящие ID рекламных блоков, а не `demo-…`, и ключ AppMetrica
 - [ ] Ключ создан, сохранён в 2–3 местах, `signing.json` заполнен
 - [ ] APK проверен на телефоне: реклама, согласие, покупка (RuStore)
 - [ ] Значок, баннер, скриншоты, тексты готовы

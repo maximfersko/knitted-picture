@@ -30,9 +30,9 @@ namespace KnittedPicture.Game
         public static IAds Create(App app)
         {
 #if KNITTED_YANDEX_ADS && (STORE_RUSTORE || STORE_GOOGLEPLAY) && !UNITY_EDITOR
-            return new YandexAds(app);
+            return new TrackedAds(new YandexAds(app));
 #else
-            return new StubAds(app);
+            return new TrackedAds(new StubAds(app));
 #endif
         }
     }
@@ -65,5 +65,34 @@ namespace KnittedPicture.Game
         {
             Debug.Log($"[Ads] personalized: {allowed}");
         }
+    }
+
+    /// <summary>Обёртка, которая пишет в аналитику каждый показ: где предложили видео и досмотрели ли его.</summary>
+    public sealed class TrackedAds : IAds
+    {
+        private readonly IAds _inner;
+
+        public TrackedAds(IAds inner)
+        {
+            _inner = inner;
+        }
+
+        public bool NeedsConsent => _inner.NeedsConsent;
+
+        public void SetPersonalized(bool allowed) => _inner.SetPersonalized(allowed);
+
+        public void ShowRewarded(string placement, Action<bool> done) =>
+            _inner.ShowRewarded(placement, ok =>
+            {
+                Analytics.Event("ad_rewarded", ("placement", placement), ("watched", ok));
+                done(ok);
+            });
+
+        public void ShowInterstitial(string placement, Action done) =>
+            _inner.ShowInterstitial(placement, () =>
+            {
+                Analytics.Event("ad_interstitial", ("placement", placement));
+                done();
+            });
     }
 }

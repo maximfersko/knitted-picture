@@ -35,6 +35,9 @@ namespace KnittedPicture.Game
         /// <summary>Межуровневая реклама.</summary>
         public const string InterstitialAdUnit = "demo-interstitial-yandex";
 
+        /// <summary>Ключ приложения в AppMetrica (кабинет appmetrica.yandex.ru → настройки приложения → API key).</summary>
+        public const string AppMetricaApiKey = "YOUR-APPMETRICA-API-KEY";
+
         /// <summary>Разовая покупка «Без рекламы» (в RuStore — товар типа «непотребляемый» с этим кодом).</summary>
         public const string NoAdsProduct = "no_ads";
 

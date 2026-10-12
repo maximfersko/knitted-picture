@@ -550,7 +550,9 @@ namespace KnittedPicture.Game
 
         private void Claim(int yarnChoice)
         {
+            var big = App.Progress.NextChestBig;
             var granted = App.Progress.ClaimChest(_booster, yarnChoice);
+            Analytics.Event("chest_open", ("big", big), ("level", App.Progress.CurrentLevel));
             App.Save();
             _claimed = true;
             _step = Step.Done;

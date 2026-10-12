@@ -1624,6 +1624,9 @@ namespace KnittedPicture.Game
                     Tweens.Punch(_pictureCard, 0.06f, 0.4f);
                     Fx.Poof(_fx, Ui.WorldCenter(_pictureCard), Palette.Coin, _pictureCard.sizeDelta.x * 0.9f);
                     var stars = Economy.Stars(_boostersUsed, _rescues);
+                    Analytics.Event(_run.Pattern ? "pattern_win" : "level_win", LevelParams(
+                        ("stars", stars), ("boosters", _boostersUsed), ("rescues", _rescues),
+                        ("best_combo", _tempo.Best), ("rushes", _tempo.RushCount), ("gold", _goldCaught)));
                     var stats = new LevelStats(_tempo.RushCoins, _goldCoins, _goldCaught, _level.gold.Length, _game.Taps,
                         _tempo.Best, _boostersUsed > 0 || _rescues > 0, _game.TotalStitches, _tempo.RushCount);
                     Tweens.Delay(Root, 0.45f, () =>
@@ -1724,6 +1727,10 @@ namespace KnittedPicture.Game
                 : null;
             // Совет на следующую попытку: приём, которым этот затор можно было обойти.
             var advice = kind == FailKind.Jam ? AdviceText(_game.Advice()) : null;
+            Analytics.Event("level_fail", LevelParams(
+                ("reason", kind == FailKind.Jam ? "jam" : "time"),
+                ("rescue_offered", rescue?.ToString() ?? "none"),
+                ("jam_advice", kind == FailKind.Jam ? _game.Advice().ToString() : "")));
             App.ShowPopup(new FailPopup(App, kind, rescue, reason, percent, Rescue, Restart, LeaveHome,
                 rescue == BoosterType.Scissors && _run.FreeScissors > 0, StreakWarning(), needed, advice));
         }
@@ -1748,6 +1755,7 @@ namespace KnittedPicture.Game
         private void Rescue(BoosterType type)
         {
             _failShown = false;
+            Analytics.Event("rescue", LevelParams(("type", type.ToString())));
             if (type == BoosterType.Scissors)
             {
                 // Ножницы оплачиваются, когда ими режут; затор снимается этим ходом.
@@ -1778,6 +1786,25 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>Общие параметры событий уровня: какой уровень, какая попытка, сколько длится, сколько связано.</summary>
+        private (string, object)[] LevelParams(params (string, object)[] extra)
+        {
+            var list = new List<(string, object)>
+            {
+                ("level", _run.Pattern ? 0 : _level.id),
+                ("pattern", _run.Pattern),
+                ("attempt", _run.Attempt),
+                ("seconds", Mathf.RoundToInt(Time.realtimeSinceStartup - _run.StartedAt)),
+                ("progress", Mathf.FloorToInt(100f * _game.KnittedCount / Mathf.Max(1, _game.TotalStitches))),
+                ("taps", _game.Taps),
+            };
+            list.AddRange(extra);
+            return list.ToArray();
+        }
+
+        private void TrackBooster(BoosterType type, bool free) =>
+            Analytics.Event("booster", LevelParams(("type", type.ToString()), ("free", free)));
+
         private void Restart()
         {
             if (_run.Pattern)
@@ -1793,6 +1820,11 @@ namespace KnittedPicture.Game
         /// <summary>Уйти домой посреди уровня — как сдаться: серия побед обрывается (повтор её не трогает).</summary>
         private void LeaveHome()
         {
+            if (!_ended)
+            {
+                Analytics.Event("level_quit", LevelParams());
+            }
+
             if (!_run.Pattern && !_ended && _game.Taps > 0 && !App.Progress.IsCompleted(_level.id))
             {
                 App.Progress.BreakStreak();
@@ -1857,6 +1889,7 @@ namespace KnittedPicture.Game
                         }
 
                         App.Save();
+                        TrackBooster(BoosterType.Undo, free: false);
                         _game.Undo();
                         _tempo.Break();
                         _finishedColors.Clear();
@@ -1881,6 +1914,7 @@ namespace KnittedPicture.Game
                     {
                         App.Save();
                         _boostersUsed++;
+                        TrackBooster(BoosterType.Slot, free: false);
                         _game.AddSlot();
                         RebuildSlots();
                         RefreshAll();
@@ -1940,6 +1974,7 @@ namespace KnittedPicture.Game
                 _rescues++;
             }
 
+            TrackBooster(BoosterType.Scissors, free: _run.FreeScissors > 0);
             if (_run.FreeScissors > 0)
             {
                 _run.FreeScissors--;
@@ -2423,6 +2458,11 @@ namespace KnittedPicture.Game
         public int FreeScissors { get; set; }
 
         public int FreeUndo { get; set; }
+
+        /// <summary>Номер попытки этого уровня (для аналитики) и когда она началась.</summary>
+        public int Attempt { get; set; } = 1;
+
+        public float StartedAt { get; set; } = UnityEngine.Time.realtimeSinceStartup;
 
         /// <summary>Это «Узор дня», а не уровень кампании: своя награда, серия кампании не трогается.</summary>
         public bool Pattern { get; set; }

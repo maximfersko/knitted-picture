@@ -102,5 +102,8 @@ namespace KnittedPicture.Core
 
         /// <summary>Согласие на персональную рекламу: 0 — ещё не спрашивали, 1 — да, 2 — нет.</summary>
         public int adsConsent;
+
+        /// <summary>Сколько раз начинали каждый уровень (индекс — номер уровня − 1): для аналитики «с какой попытки проходят».</summary>
+        public List<int> attempts = new List<int>();
     }
 }

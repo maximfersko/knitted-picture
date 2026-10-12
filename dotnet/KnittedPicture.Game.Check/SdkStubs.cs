@@ -82,3 +82,21 @@ namespace RuStore.PayClient
     }
 }
 #endif
+
+#if SDK_STUBS
+namespace Io.AppMetrica
+{
+    public sealed class AppMetricaConfig
+    {
+        public AppMetricaConfig(string apiKey) { }
+        public bool? LocationTracking { get; set; }
+        public bool? SessionsAutoTrackingEnabled { get; set; }
+    }
+
+    public static class AppMetrica
+    {
+        public static void Activate(AppMetricaConfig config) { }
+        public static void ReportEvent(string message, string json) { }
+    }
+}
+#endif

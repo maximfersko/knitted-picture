@@ -203,6 +203,7 @@ namespace KnittedPicture.Game
                 AddPrimary("Забрать").OnClick(() =>
                 {
                     var granted = app.Progress.ClaimDaily(today, app.Random);
+                    Analytics.Event("daily_gift", ("day", index + 1), ("level", app.Progress.CurrentLevel));
                     app.Save();
                     Close();
                     if (granted != null)

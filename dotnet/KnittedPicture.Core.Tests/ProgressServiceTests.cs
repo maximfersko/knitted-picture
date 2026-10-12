@@ -106,6 +106,16 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Attempts_are_counted_per_level()
+        {
+            var progress = Fresh();
+            Assert.Equal(1, progress.NextAttempt(3));
+            Assert.Equal(2, progress.NextAttempt(3));
+            Assert.Equal(1, progress.NextAttempt(1));
+            Assert.Equal(3, progress.NextAttempt(3));
+        }
+
+        [Fact]
         public void No_interstitials_after_ads_are_removed()
         {
             var progress = new ProgressService(new PlayerProgress { nextLevel = 10, adsRemoved = true }, levelCount: 15);

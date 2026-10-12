@@ -38,6 +38,7 @@ namespace KnittedPicture.Editor
             EditorUtility.DisplayDialog("SDK в проекте",
                 $"Реклама Яндекса: {(HasType("YandexMobileAds.RewardedAdLoader") ? "найдена" : "НЕ найдена")}\n" +
                 $"RuStore Pay: {(HasType("RuStore.PayClient.RuStorePayClient") ? "найден" : "НЕ найден")}\n" +
+                $"Аналитика AppMetrica: {(HasType("Io.AppMetrica.AppMetrica") ? "найдена" : "НЕ найдена")}\n" +
                 $"Ключ подписи ({SigningFile}): {(File.Exists(SigningFile) ? "есть" : "НЕТ")}", "OK");
         }
 
@@ -57,6 +58,11 @@ namespace KnittedPicture.Editor
                          "Плагин Yandex Mobile Ads не найден: сборка выйдет без рекламы (с заглушкой). Продолжить?", "Собрать", "Отмена"))
             {
                 return;
+            }
+
+            if (HasType("Io.AppMetrica.AppMetrica"))
+            {
+                defines.Add("KNITTED_APPMETRICA");
             }
 
             if (storeSymbol == "STORE_RUSTORE" && HasType("RuStore.PayClient.RuStorePayClient"))
