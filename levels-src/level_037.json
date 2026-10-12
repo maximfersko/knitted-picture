@@ -79,5 +79,6 @@
   "minDanger": 0.05,
   "maxDanger": 0.35,
   "minFollower": 0.7,
+  "minSkilled": 0.75,
   "seed": 371
 }

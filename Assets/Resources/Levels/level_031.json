@@ -33,113 +33,108 @@
     "11001001100111"
   ],
   "gold": [
-    5,
-    29,
-    64,
-    100
+    16,
+    49,
+    92
   ],
   "band": 2,
   "slots": 4,
   "spools": [
     {
       "color": 2,
-      "loops": 6
+      "loops": 1
     },
     {
-      "color": 2,
-      "loops": 6,
-      "knots": 2
-    },
-    {
-      "color": 5,
-      "loops": 4,
-      "knots": 1
-    },
-    {
-      "color": 1,
+      "color": 3,
       "loops": 5
     },
     {
-      "column": 1,
-      "color": 1,
-      "loops": 7
-    },
-    {
-      "column": 1,
       "color": 2,
-      "loops": 8
+      "loops": 7,
+      "knots": 2
     },
     {
       "column": 1,
-      "color": 1,
-      "loops": 10,
-      "ice": 7
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 3
-    },
-    {
-      "column": 2,
-      "color": 3,
-      "loops": 2,
-      "ice": 9
-    },
-    {
-      "column": 2,
-      "color": 4,
-      "loops": 2
-    },
-    {
-      "column": 2,
-      "color": 2,
-      "loops": 3
-    },
-    {
-      "column": 3,
-      "color": 3,
-      "loops": 7
-    },
-    {
-      "column": 3,
-      "color": 3,
-      "loops": 2
-    },
-    {
-      "column": 3,
-      "color": 2,
-      "loops": 3
-    },
-    {
-      "column": 3,
-      "color": 1,
-      "loops": 4,
-      "knots": 1
-    },
-    {
-      "column": 4,
-      "color": 3,
-      "loops": 6
-    },
-    {
-      "column": 4,
       "color": 1,
       "loops": 4
     },
     {
-      "column": 4,
-      "loops": 6
+      "column": 1,
+      "color": 2,
+      "loops": 3,
+      "knots": 1
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 4
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 8,
+      "ice": 6
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 3
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 11
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 5
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 3,
+      "loops": 2
+    },
+    {
+      "column": 3,
+      "color": 3,
+      "loops": 4,
+      "ice": 10
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 12
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 2
     },
     {
       "column": 4,
-      "color": 2,
-      "loops": 6
-    },
-    {
-      "column": 4,
-      "color": 2,
+      "color": 4,
       "loops": 1
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 8
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 6
+    },
+    {
+      "column": 4,
+      "color": 4,
+      "loops": 1,
+      "knots": 1
     }
   ]
 }
