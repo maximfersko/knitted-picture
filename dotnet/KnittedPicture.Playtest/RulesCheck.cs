@@ -185,6 +185,15 @@ namespace KnittedPicture.Playtest
                 }
 
                 Invariants(g, Ctx() + " " + action, repro);
+
+                // Проверка «финиша» смотрит на копию: сама партия от неё меняться не должна.
+                var beforeFinish = Snap(g);
+                g.WinIsCertain();
+                if (Snap(g) != beforeFinish)
+                {
+                    _f.Fail("проверка «победа неизбежна» изменила партию", Ctx(), repro);
+                }
+
                 if (StripStatus(Snap(g.Clone())) != StripStatus(Snap(g)))
                 {
                     _f.Fail("копия партии отличается от оригинала", Ctx(), repro);

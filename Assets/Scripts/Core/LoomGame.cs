@@ -387,6 +387,22 @@ namespace KnittedPicture.Core
             return new StepResult(stitches, completed, thawed, progress, _status);
         }
 
+        /// <summary>
+        /// Победа уже решена: станок довяжет картинку сам, без единого хода игрока. Тогда игре незачем
+        /// ждать и пугать молью — экран переходит в «финиш». Проверка на копии: довязать до упора и посмотреть.
+        /// </summary>
+        public bool WinIsCertain()
+        {
+            if (_status != GameStatus.Playing)
+            {
+                return _status == GameStatus.Won;
+            }
+
+            var copy = Clone();
+            copy.Settle();
+            return copy._status == GameStatus.Won;
+        }
+
         /// <summary>Вязать, пока станок не встанет. Для решателя, ботов и тестов.</summary>
         public void Settle()
         {

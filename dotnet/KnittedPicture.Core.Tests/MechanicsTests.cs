@@ -19,6 +19,28 @@ namespace KnittedPicture.Core.Tests
         };
 
         [Fact]
+        public void Win_is_certain_only_when_the_loom_can_finish_without_the_player()
+        {
+            var game = new LoomGame(Strip(
+                new SpoolData { column = 0, color = 0, loops = 4 },
+                new SpoolData { column = 1, color = 1, loops = 4 }));
+            Assert.False(game.WinIsCertain());
+
+            game.TapColumn(0);
+            Assert.False(game.WinIsCertain());
+
+            game.TapColumn(1);
+            Assert.True(game.WinIsCertain());
+
+            // Проверка на копии: сама партия не продвинулась.
+            Assert.Equal(GameStatus.Playing, game.Status);
+            Assert.Equal(0, game.KnittedCount);
+            game.Settle();
+            Assert.Equal(GameStatus.Won, game.Status);
+            Assert.True(game.WinIsCertain());
+        }
+
+        [Fact]
         public void Scissors_on_the_loom_return_a_needed_spool_to_the_front_of_its_column()
         {
             // Клубок верхнего цвета занял слот раньше времени; срезать его — не значит потерять пряжу.

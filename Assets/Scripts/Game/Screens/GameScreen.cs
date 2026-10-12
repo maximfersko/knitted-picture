@@ -128,18 +128,42 @@ namespace KnittedPicture.Game
         private RectTransform _fx = null!;
         private Text _coins = null!;
 
-        private RectTransform? _timerMoth;
+        /// <summary>Значок моли в конце полоски времени: подпись, чья это полоска. Сама моль живёт на картинке.</summary>
+        private Image? _timerIcon;
+        private RectTransform? _timerFill;
         private Text? _timerText;
 
-        /// <summary>Моль в последней четверти пути: финишный рывок.</summary>
+        /// <summary>Моль в последней четверти времени: показано «Моль близко!».</summary>
         private bool _mothNear;
 
-        private Image? _timerMothImage;
-
-        /// <summary>Красное свечение по краю экрана: пульсирует, когда моль близко, и сильнее в последние секунды.</summary>
+        /// <summary>Красное свечение по краю экрана в последние секунды моли.</summary>
         private Image? _mothEdge;
 
-        /// <summary>Последняя секунда, на которую уже был «тик» отсчёта (вибрация и щелчок).</summary>
+        /// <summary>Живая моль на рамке картинки (только на уровнях с таймером).</summary>
+        private MothView? _moth;
+        private RectTransform? _mothLayer;
+        private Vector2 _mothSpot = new Vector2(float.NaN, float.NaN);
+
+        /// <summary>Моль ест полотно: время вышло, окно покажется после укусов.</summary>
+        private bool _mothEating;
+
+        /// <summary>Экран собран целиком (слой эффектов уже есть).</summary>
+        private bool _built;
+
+        /// <summary>Моль уже улетела (финиш или победа) и больше не вернётся.</summary>
+        private bool _mothGone;
+
+        /// <summary>
+        /// Финиш: победа уже решена, станок довязывает сам. Поле и бустеры затихают, моль улетает,
+        /// таймер стоит, вязка ускоряется — не нужно ждать и нечего бояться.
+        /// </summary>
+        private bool _finishing;
+        private float _finishSpeed = 1f;
+        private float _finishCheck;
+
+        /// <summary>Подсветка причины затора на поле (кольца), убирается при спасении.</summary>
+        private readonly List<RectTransform> _jamMarks = new List<RectTransform>();
+
         private int _lastTickSecond = -1;
 
         /// <summary>С какого остатка секунд начинается отсчёт: тик каждую секунду.</summary>
@@ -212,6 +236,12 @@ namespace KnittedPicture.Game
             BuildBoosters();
             if (_game.TimeLimit > 0)
             {
+                // Моль поверх картинки и поля, но под красным краем, эффектами и окнами.
+                _mothLayer = Ui.Stretch(Ui.Node(Root, "MothLayer"));
+                var step = _picture.Root.sizeDelta.x / Mathf.Max(1, _game.Width);
+                _moth = MothView.Create(_mothLayer, Mathf.Clamp(step * 1.15f, 22f, 30f));
+                _moth.Hide();
+
                 // Поверх поля, но под эффектами и окнами: край экрана краснеет, когда время на исходе.
                 _mothEdge = Ui.Image(Root, "MothEdge", Art.EdgeGlow(40), Color.clear);
                 _mothEdge.type = Image.Type.Sliced;
@@ -220,7 +250,20 @@ namespace KnittedPicture.Game
             }
 
             _fx = Ui.Stretch(Ui.Node(Root, "Fx"));
+            _built = true;
             RefreshAll();
+            if (_moth != null)
+            {
+                // Новый уровень: моль прилетает и садится на рамку — видно, кто тут угроза. Перестройка — сразу на месте.
+                if (_game.Taps == 0 && !_game.TimerStarted)
+                {
+                    Tweens.Delay(Root, 0.8f, () => MothArrive(false));
+                }
+                else
+                {
+                    MothArrive(true);
+                }
+            }
 
             // Экран перестроили посреди уровня: подсказки не повторяем, а затор или моль показываем снова.
             if (_game.Taps == 0)
@@ -257,7 +300,7 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            if (_game.TimeLimit > 0)
+            if (_game.TimeLimit > 0 && !_finishing)
             {
                 _game.Tick(dt);
                 RefreshTimer();
@@ -271,7 +314,7 @@ namespace KnittedPicture.Game
             if (_game.Status == GameStatus.Playing)
             {
                 _stepClock += dt;
-                var interval = _tempo.Rush ? StepInterval / RushSpeed : StepInterval;
+                var interval = (_tempo.Rush ? StepInterval / RushSpeed : StepInterval) / _finishSpeed;
                 var guard = 0;
                 while (_stepClock >= interval && guard++ < 6)
                 {
@@ -292,6 +335,20 @@ namespace KnittedPicture.Game
                 }
             }
 
+            // Победа уже решена — финиш. Проверка на копии партии, четыре раза в секунду.
+            if (!_finishing && _game.Status == GameStatus.Playing && _game.Taps > 0)
+            {
+                _finishCheck -= dt;
+                if (_finishCheck <= 0f)
+                {
+                    _finishCheck = 0.25f;
+                    if (_game.IsBusy && _game.WinIsCertain())
+                    {
+                        StartFinish();
+                    }
+                }
+            }
+
             var wasRush = _tempo.Rush;
             if (_tempo.Update(dt, _game.IsBusy || _arriving.Count > 0))
             {
@@ -302,7 +359,7 @@ namespace KnittedPicture.Game
             UpdateCombo(dt);
             _picture.SetGoldLive(_tempo.Active);
 
-            if (!_game.IsBusy && _hint == null && _game.Status == GameStatus.Playing && _hintFailedAt != _game.Taps)
+            if (!_finishing && !_game.IsBusy && _hint == null && _game.Status == GameStatus.Playing && _hintFailedAt != _game.Taps)
             {
                 _idle += dt;
                 // Дальше — мягкий толчок, если игрок долго не делает ничего: 20 секунд без хода, станок стоит.
@@ -367,13 +424,14 @@ namespace KnittedPicture.Game
         {
             const float y = 60f;
             _timerX = 44f;
-            _timerW = W - 44f - 74f;
+            _timerW = W - 44f - 100f;
             var yarn = Ui.Image(Root, "Target", Art.YarnBall, _colors[0]);
             Ui.PlaceCenter(yarn.rectTransform, 26, y + 13, 24, 24);
             var track = Ui.Box(Root, "TimerTrack", 5, Palette.Track);
             Ui.Place(track.rectTransform, _timerX, y + 8, _timerW, 10);
-            _timerMothImage = Ui.IconImage(Root, Icon.Moth, Palette.Ink, _timerX + _timerW, y + 13, 28);
-            _timerMoth = _timerMothImage.rectTransform;
+            _timerFill = Ui.Box(track.rectTransform, "Fill", 5, Palette.Primary).rectTransform;
+            Ui.Place(_timerFill, 0, 0, _timerW, 10);
+            _timerIcon = Ui.IconImage(Root, Icon.Moth, Palette.WithAlpha(Palette.Ink, 0.5f), _timerX + _timerW + 16f, y + 13, 18);
             _timerText = Ui.Label(Root, "", 16, Palette.Ink, W - Pad - 56, y, 56, 26, true, TextAnchor.MiddleRight);
 
             // Опора справа посередине: на сердцебиении цифры растут от своего края, а не уезжают.
@@ -998,39 +1056,56 @@ namespace KnittedPicture.Game
 
         private void RefreshTimer()
         {
-            if (_timerMoth == null || _timerText == null)
+            if (_timerFill == null || _timerText == null)
             {
                 return;
             }
 
             var left = Mathf.Max(0f, _game.TimeLeft);
-            var fraction = _game.TimeLimit > 0 ? left / _game.TimeLimit : 0f;
-            _timerMoth.anchoredPosition = new Vector2(_timerX + _timerW * fraction, _timerMoth.anchoredPosition.y);
+            var fraction = _game.TimeLimit > 0 ? Mathf.Clamp01(left / _game.TimeLimit) : 0f;
             var seconds = Mathf.CeilToInt(left);
             _timerText.text = $"{seconds / 60}:{seconds % 60:00}";
-            _timerText.color = fraction < 0.25f ? Palette.Danger : Palette.Ink;
-
-            // Последняя четверть: моль близко. Один раз — надпись и отклик, дальше моль дрожит до конца.
-            var near = fraction < 0.25f && _game.TimerStarted && _game.Status == GameStatus.Playing;
-            if (near && !_mothNear)
+            _timerFill.sizeDelta = new Vector2(Mathf.Max(10f, _timerW * fraction), 10f);
+            var fill = _timerFill.GetComponent<Image>();
+            if (_finishing)
             {
-                Fx.FloatText(_fx, Ui.WorldCenter(_timerMoth), "Моль близко!", Palette.Danger, 18f);
-                Tweens.Punch(_timerMoth, 0.3f, 0.35f);
+                // Финиш: время больше не важно — полоска и цифры спокойные, край экрана гаснет.
+                _timerText.color = Palette.Primary;
+                _timerText.rectTransform.localScale = Vector3.one;
+                fill.color = Palette.Primary;
+                if (_mothEdge != null)
+                {
+                    _mothEdge.color = Color.clear;
+                }
+
+                return;
+            }
+
+            // Последняя четверть: моль близко. Один раз — надпись у самой моли и отклик, дальше она беспокойнее.
+            var near = fraction < 0.25f && _game.TimerStarted && _game.Status == GameStatus.Playing;
+            if (near && !_mothNear && _built)
+            {
+                Fx.FloatText(_fx, MothWorld() ?? Ui.WorldCenter(_timerText.rectTransform), "Моль близко!", Palette.Danger, 18f);
+                _moth?.Startle();
                 Sfx.Play(Sound.Deny, 0.5f);
                 Haptics.Play(Haptic.Medium);
             }
 
             _mothNear = near;
-            _timerMoth.localRotation = near ? Quaternion.Euler(0f, 0f, Mathf.Sin(Time.unscaledTime * 14f) * 10f) : Quaternion.identity;
+            UpdateMoth(fraction);
 
             // Сердцебиение: на каждой новой секунде короткий толчок, к концу сильнее.
             var countdown = near && left <= CountdownFrom;
             var sinceTick = 1f - (left - Mathf.Floor(left));
             var pulse = near ? Mathf.Exp(-sinceTick * 6f) : 0f;
             _timerText.rectTransform.localScale = Vector3.one * (1f + (countdown ? 0.35f : 0.18f) * pulse);
-            if (_timerMothImage != null)
+            _timerText.color = near ? Palette.Danger : Palette.Ink;
+            fill.color = near ? Color.Lerp(Palette.Danger, Palette.WithAlpha(Palette.Danger, 0.6f), pulse)
+                : fraction < 0.5f ? Color.Lerp(Palette.Hex("#FF9A3C"), Palette.Primary, (fraction - 0.25f) / 0.25f)
+                : Palette.Primary;
+            if (_timerIcon != null)
             {
-                _timerMothImage.color = near ? Color.Lerp(Palette.Ink, Palette.Danger, 0.5f + 0.5f * pulse) : Palette.Ink;
+                _timerIcon.color = near ? Palette.WithAlpha(Palette.Danger, 0.7f + 0.3f * pulse) : Palette.WithAlpha(Palette.Ink, 0.5f);
             }
 
             if (_mothEdge != null)
@@ -1039,13 +1114,161 @@ namespace KnittedPicture.Game
                 _mothEdge.color = Palette.WithAlpha(Palette.Danger, edge);
             }
 
-            // Последние 10 секунд: тик каждую секунду — вибрация (последние 5 — заметнее) и щелчок.
+            // Последние 10 секунд: тик каждую секунду — вибрация (последние 5 — заметнее), щелчок
+            // и укус моли по краю рамки: видно и слышно, что она уже грызёт.
             if (countdown && seconds != _lastTickSecond)
             {
                 _lastTickSecond = seconds;
                 Haptics.Play(seconds <= 5 ? Haptic.Medium : Haptic.Soft);
                 Sfx.Play(Sound.Click, seconds <= 5 ? 0.9f : 0.6f);
+                if (_moth != null && _moth.Shown && !_moth.Flying)
+                {
+                    _moth.Chew(1, _ =>
+                    {
+                        var at = MothWorld();
+                        if (at != null)
+                        {
+                            Fx.Sparkle(_fx, at.Value, Palette.Hex("#F4E8D6"), 2, 8f);
+                        }
+                    }, null);
+                }
             }
+        }
+
+        // ---------- Моль ----------
+
+        /// <summary>
+        /// Где сидит моль при такой доле оставшегося времени. Пока времени больше 60% — в правом верхнем
+        /// углу рамки, спокойно. Дальше идёт по верхнему краю к середине короткими перебежками
+        /// (семь остановок), к 15% — над серединой картинки, головой к полотну.
+        /// </summary>
+        private (Vector2 At, float Facing) MothPerch(float fraction)
+        {
+            var corners = new Vector3[4];
+            _pictureCard.GetWorldCorners(corners);
+            var bottomLeft = (Vector2)_mothLayer!.InverseTransformPoint(corners[0]);
+            var topRight = (Vector2)_mothLayer.InverseTransformPoint(corners[2]);
+            var span = _moth!.Span;
+            var startX = topRight.x - span * 0.55f;
+            var endX = (bottomLeft.x + topRight.x) / 2f;
+            var walk = Mathf.InverseLerp(0.6f, 0.15f, fraction);
+            walk = Mathf.Floor(walk * 7f + 0.001f) / 7f;
+            var at = new Vector2(Mathf.Lerp(startX, endX, walk), topRight.y - 5f);
+
+            // Голова к полотну: почти вниз, с наклоном к середине картинки.
+            var facing = MothView.Facing(new Vector2((endX - at.x) * 0.35f, -(topRight.y - bottomLeft.y) * 0.5f));
+            return (at, facing);
+        }
+
+        /// <summary>Моль следит за временем: перебирается на своё место и волнуется к концу.</summary>
+        private void UpdateMoth(float fraction)
+        {
+            if (_moth == null || !_moth.Shown || _mothEating || _finishing || _moth.Flying)
+            {
+                return;
+            }
+
+            _moth.Agitation = Mathf.Clamp01(Mathf.InverseLerp(0.45f, 0.05f, fraction));
+            var (at, facing) = MothPerch(fraction);
+            if (Vector2.Distance(at, _mothSpot) > 0.5f)
+            {
+                _mothSpot = at;
+                _moth.MoveTo(at, facing);
+            }
+        }
+
+        private void MothArrive(bool instant)
+        {
+            if (_moth == null || _mothLayer == null || _ended || _finishing)
+            {
+                return;
+            }
+
+            var fraction = _game.TimeLimit > 0 ? Mathf.Clamp01(_game.TimeLeft / _game.TimeLimit) : 1f;
+            var (at, facing) = MothPerch(fraction);
+            _mothSpot = at;
+            _moth.Agitation = Mathf.Clamp01(Mathf.InverseLerp(0.45f, 0.05f, fraction));
+            if (instant)
+            {
+                _moth.Place(at, facing);
+                return;
+            }
+
+            var rect = _mothLayer.rect;
+            _moth.FlyIn(new Vector2(rect.xMax + 40f, rect.yMax - 40f), at, facing);
+        }
+
+        /// <summary>Улететь за правый верхний край: победа, финиш.</summary>
+        private void MothLeave()
+        {
+            if (_moth == null || _mothLayer == null || !_moth.Shown || _mothGone)
+            {
+                return;
+            }
+
+            _mothGone = true;
+            var rect = _mothLayer.rect;
+            _moth.FlyAway(new Vector2(rect.xMax + 50f, rect.yMax + 30f));
+        }
+
+        private Vector3? MothWorld() =>
+            _moth != null && _mothLayer != null && _moth.Shown ? _mothLayer.TransformPoint(_moth.Position) : (Vector3?)null;
+
+        /// <summary>
+        /// Какие петли съест моль: связанная клетка рисунка ближе всего к ней и соседняя связанная.
+        /// Нет связанного рисунка — клетка ткани. Только картинка: модель партии не меняется.
+        /// </summary>
+        private List<(int X, int Y)> MothBites()
+        {
+            var bites = new List<(int X, int Y)>();
+            if (_moth == null || _mothLayer == null)
+            {
+                return bites;
+            }
+
+            var from = _moth.Position;
+            (int X, int Y)? Nearest(System.Func<int, int, bool> ok)
+            {
+                (int X, int Y)? best = null;
+                var bestDistance = float.MaxValue;
+                for (var y = 0; y < _game.Height; y++)
+                {
+                    for (var x = 0; x < _game.Width; x++)
+                    {
+                        if (!ok(x, y))
+                        {
+                            continue;
+                        }
+
+                        var d = Vector2.Distance(from, _mothLayer!.InverseTransformPoint(_picture.CellWorld(x, y)));
+                        if (d < bestDistance)
+                        {
+                            bestDistance = d;
+                            best = (x, y);
+                        }
+                    }
+                }
+
+                return best;
+            }
+
+            var first = Nearest((x, y) => _game.IsKnitted(x, y) && !_game.IsFabric(x, y)) ?? Nearest((x, y) => _game.IsFabric(x, y));
+            if (first == null)
+            {
+                return bites;
+            }
+
+            bites.Add(first.Value);
+            var (fx, fy) = first.Value;
+            var fabric = _game.IsFabric(fx, fy);
+            var second = Nearest((x, y) => Mathf.Abs(x - fx) + Mathf.Abs(y - fy) == 1
+                && (fabric ? _game.IsFabric(x, y) : _game.IsKnitted(x, y) && !_game.IsFabric(x, y)));
+            if (second != null)
+            {
+                bites.Add(second.Value);
+            }
+
+            return bites;
         }
 
         /// <summary>Рамка станка: оранжевая, когда осталось одно место, красная — когда мест нет.</summary>
@@ -1352,7 +1575,7 @@ namespace KnittedPicture.Game
 
         private void OnSpoolTap(int column, int depth)
         {
-            if (_ended || _failShown || App.HasPopups)
+            if (_ended || _failShown || _finishing || App.HasPopups)
             {
                 return;
             }
@@ -1481,7 +1704,7 @@ namespace KnittedPicture.Game
         /// <summary>Тап по слоту станка: с ножницами — срезать клубок, без них — подсказка про чужую пряжу.</summary>
         private void OnSlotTap(int slot)
         {
-            if (_ended || _failShown || App.HasPopups || slot >= _game.Slots.Count)
+            if (_ended || _failShown || _finishing || App.HasPopups || slot >= _game.Slots.Count)
             {
                 return;
             }
@@ -1591,6 +1814,46 @@ namespace KnittedPicture.Game
 
         // ---------- Победа и поражение ----------
 
+        /// <summary>
+        /// Финиш: всё нужное уже на станке, победа неизбежна. Игроку незачем ждать и нечего решать:
+        /// поле и бустеры затихают и не нажимаются, таймер останавливается, моль улетает, станок
+        /// плавно разгоняется до трёх с лишним раз. Если вязать почти нечего, тихо: без надписи.
+        /// </summary>
+        private void StartFinish()
+        {
+            _finishing = true;
+            _idle = 0;
+            HideHint();
+            HideTip();
+            SetScissors(false);
+            RefreshTimer();
+            MothLeave();
+
+            var left = _game.TotalStitches - _game.KnittedCount;
+            if (left >= 8)
+            {
+                Fx.FloatText(_fx, Ui.WorldCenter(_loomBg) + new Vector3(0f, 30f * _fx.lossyScale.y, 0f), "Финиш!", Palette.Primary, 24f);
+                Sfx.Play(Sound.Combo, 0.6f);
+                Haptics.Play(Haptic.Medium);
+            }
+
+            var field = _fieldContent.parent.GetComponent<CanvasGroup>();
+            if (field == null)
+            {
+                field = _fieldContent.parent.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            field.blocksRaycasts = false;
+            Tweens.Fade(field, field.alpha, 0.45f, 0.35f);
+            foreach (var button in _boosters.Values)
+            {
+                button.Dimmed = true;
+            }
+
+            RefreshBoosters();
+            Tweens.Run(Root, 1.1f, t => _finishSpeed = Mathf.Lerp(1f, 3.4f, t), Ease.InOutCubic);
+        }
+
         private void AfterStatus(GameStatus status)
         {
             switch (status)
@@ -1613,6 +1876,7 @@ namespace KnittedPicture.Game
             HideHint();
             HideTip();
             SetScissors(false);
+            MothLeave();
             Tweens.Delay(Root, BeadFlight + 0.1f, () =>
             {
                 _picture.Refresh();
@@ -1626,7 +1890,7 @@ namespace KnittedPicture.Game
                     var stars = Economy.Stars(_boostersUsed, _rescues);
                     Analytics.Event(_run.Pattern ? "pattern_win" : "level_win", LevelParams(
                         ("stars", stars), ("boosters", _boostersUsed), ("rescues", _rescues),
-                        ("best_combo", _tempo.Best), ("rushes", _tempo.RushCount), ("gold", _goldCaught)));
+                        ("best_combo", _tempo.Best), ("rushes", _tempo.RushCount), ("gold", _goldCaught), ("auto_finish", _finishing)));
                     var stats = new LevelStats(_tempo.RushCoins, _goldCoins, _goldCaught, _level.gold.Length, _game.Taps,
                         _tempo.Best, _boostersUsed > 0 || _rescues > 0, _game.TotalStitches, _tempo.RushCount);
                     Tweens.Delay(Root, 0.45f, () =>
@@ -1649,6 +1913,7 @@ namespace KnittedPicture.Game
             _failShown = true;
             SetScissors(false);
             HideHint();
+            HideTip();
             _tempo.Break();
             _hitStop = 0.12f;
             Sfx.Play(Sound.Jam);
@@ -1662,23 +1927,316 @@ namespace KnittedPicture.Game
                 Tweens.Run(image, 0.5f, t => image.color = Color.Lerp(Palette.Danger, Palette.SlotEmpty, t));
             }
 
-            Tweens.Delay(Root, 0.6f, () => ShowFail(FailKind.Jam));
+            // Сначала причина прямо на поле (кольца и короткая выноска), потом окно. Тап пропускает.
+            Tweens.Delay(Root, 0.45f, () =>
+            {
+                if (ExplainJam())
+                {
+                    Interlude(1.9f, () =>
+                    {
+                        HideTip();
+                        ShowFail(FailKind.Jam);
+                    });
+                }
+                else
+                {
+                    Tweens.Delay(Root, 0.15f, () => ShowFail(FailKind.Jam));
+                }
+            });
         }
 
+        /// <summary>
+        /// Затор: показать на поле, что случилось. Красное кольцо — где проблема, зелёное — что поможет,
+        /// выноска в несколько слов. Один фокус, без длинных текстов: подробный совет — в окне.
+        /// false — показать нечего (окно сразу).
+        /// </summary>
+        private bool ExplainJam()
+        {
+            ClearJamMarks();
+            RectTransform? target = null;
+            var text = "";
+            var below = false;
+            switch (_game.Advice())
+            {
+                case JamAdvice.Blocked:
+                    for (var c = 0; c < _game.ColumnCount && target == null; c++)
+                    {
+                        var column = _game.Column(c);
+                        var view = FieldView(c, 0);
+                        if (column.Count == 0 || view == null)
+                        {
+                            continue;
+                        }
+
+                        var spool = column[0];
+                        if (spool.Locked)
+                        {
+                            var problem = JamMark(view, Palette.Danger);
+                            var key = _field.FirstOrDefault(f => f.Depth < _game.Column(f.Column).Count && _game.Column(f.Column)[f.Depth].IsKey);
+                            target = key != null ? JamMark(key.View.Root, Palette.Primary) : problem;
+                            text = key != null ? "Ключ от замка лежит глубже" : "Замок откроет клубок с ключом";
+                        }
+                        else if (spool.Frozen)
+                        {
+                            target = JamMark(view, Palette.Danger);
+                            text = "Лёд тает от петель этого цвета";
+                        }
+                        else if (spool.Link != 0)
+                        {
+                            target = JamMark(view, Palette.Danger);
+                            var (pc, pd) = FindLinkPartner(c, 0);
+                            var partner = pc >= 0 ? FieldView(pc, pd) : null;
+                            if (partner != null)
+                            {
+                                JamMark(partner, Palette.Primary);
+                            }
+
+                            text = "Пара этого клубка ещё не впереди";
+                        }
+                    }
+
+                    break;
+
+                case JamAdvice.ForeignYarn:
+                    for (var i = 0; i < _slotViews.Length && target == null; i++)
+                    {
+                        var slot = _slotViews[i];
+                        var spool = i < _game.Slots.Count ? _game.Slots[i] : null;
+                        if (slot != null && spool != null && _game.IsForeign(spool))
+                        {
+                            target = JamMark(slot.View.Root, Palette.Danger);
+                            text = "Эта пряжа картинке не нужна";
+                        }
+                    }
+
+                    break;
+
+                case JamAdvice.Tension:
+                    var lowest = _game.LowestFront;
+                    for (var x = 0; x < _game.Width && _jamMarks.Count < 3; x++)
+                    {
+                        if (lowest >= 0 && _game.FrontY(x) == lowest && !_game.IsHeld(x))
+                        {
+                            var mark = JamMark(_picture.CellRect(x, lowest), Palette.Primary);
+                            target ??= mark;
+                        }
+                    }
+
+                    text = "Сначала довяжи этот ряд";
+                    below = true;
+                    break;
+
+                case JamAdvice.Knots:
+                    for (var c = 0; c < _game.ColumnCount && target == null; c++)
+                    {
+                        var column = _game.Column(c);
+                        var view = FieldView(c, 0);
+                        if (column.Count > 0 && column[0].Knots > 0 && view != null)
+                        {
+                            target = JamMark(view, Palette.Danger);
+                            text = "Узелки лучше развязывать заранее";
+                        }
+                    }
+
+                    break;
+
+                default:
+                    // Станок забит не теми цветами: клубки на станке — красным, нужные картинке петли — зелёным.
+                    foreach (var slot in _slotViews)
+                    {
+                        if (slot != null)
+                        {
+                            JamMark(slot.View.Root, Palette.Danger);
+                        }
+                    }
+
+                    var shown = new HashSet<int>();
+                    for (var x = 0; x < _game.Width && shown.Count < 3; x++)
+                    {
+                        var y = _game.ActiveFrontY(x);
+                        if (y >= 0 && shown.Add(_game.ColorAt(x, y)))
+                        {
+                            JamMark(_picture.CellRect(x, y), Palette.Primary);
+                        }
+                    }
+
+                    if (_jamMarks.Count > 0)
+                    {
+                        target = _loomBg;
+                        text = "Станок занят, а картинке нужны другие цвета";
+                    }
+
+                    break;
+            }
+
+            if (target == null)
+            {
+                ClearJamMarks();
+                return false;
+            }
+
+            ShowTip(text, target, below);
+            _tipKeep = true;
+            return true;
+        }
+
+        private RectTransform? FieldView(int column, int depth) =>
+            _field.FirstOrDefault(f => f.Column == column && f.Depth == depth)?.View.Root;
+
+        /// <summary>
+        /// Пульсирующее кольцо поверх цели и мягкое свечение под ним. Появляется с лёгким «прыжком»,
+        /// дальше дышит; живёт до спасения или до перезапуска. Возвращает саму цель — к ней крепится выноска.
+        /// </summary>
+        private RectTransform JamMark(RectTransform target, Color color)
+        {
+            var size = Mathf.Max(target.rect.width, target.rect.height) + 12f;
+            var root = Ui.Node(_fx, "JamMark");
+            root.sizeDelta = new Vector2(size, size);
+            root.position = Ui.WorldCenter(target);
+            var glow = Ui.Image(root, "Glow", Art.Glow, Palette.WithAlpha(color, 0.3f));
+            Ui.PlaceCenter(glow.rectTransform, size / 2f, size / 2f, size * 1.7f, size * 1.7f);
+            glow.rectTransform.anchorMin = glow.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            glow.rectTransform.anchoredPosition = Vector2.zero;
+            var ring = Ui.Image(root, "Ring", Art.Ring, color);
+            Ui.Stretch(ring.rectTransform);
+            var group = root.gameObject.AddComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+            var delay = 0.06f * _jamMarks.Count;
+            root.localScale = Vector3.zero;
+            Tweens.Scale(root, 0.4f, 1f, 0.32f, Ease.OutBack, null, delay);
+            Tweens.Run(root, 0.9f, t =>
+            {
+                var bump = Ease.Bump(t);
+                root.localScale = Vector3.one * (1f + 0.08f * bump);
+                ring.color = Palette.WithAlpha(color, 0.75f + 0.25f * bump);
+                glow.color = Palette.WithAlpha(color, 0.18f + 0.17f * bump);
+            }, null, null, delay + 0.32f, true);
+            _jamMarks.Add(root);
+            return target;
+        }
+
+        private void ClearJamMarks()
+        {
+            foreach (var mark in _jamMarks)
+            {
+                if (mark == null)
+                {
+                    continue;
+                }
+
+                var group = mark.GetComponent<CanvasGroup>();
+                var node = mark;
+                Tweens.Fade(group, group.alpha, 0f, 0.2f, () => Object.Destroy(node.gameObject));
+            }
+
+            _jamMarks.Clear();
+        }
+
+        /// <summary>
+        /// Короткая пауза перед окном (объяснение затора, моль ест полотно). Тап в любом месте её
+        /// пропускает: кто понял сразу, не ждёт. then вызывается ровно один раз.
+        /// </summary>
+        private void Interlude(float seconds, System.Action then)
+        {
+            var overlay = Ui.Stretch(Ui.Node(Root, "Interlude"));
+            var hit = overlay.gameObject.AddComponent<Image>();
+            hit.color = Color.clear;
+            hit.raycastTarget = true;
+            var done = false;
+            void Finish()
+            {
+                if (done)
+                {
+                    return;
+                }
+
+                done = true;
+                Object.Destroy(overlay.gameObject);
+                then();
+            }
+
+            var tap = overlay.gameObject.AddComponent<Tap>();
+            tap.ClickSound = false;
+            tap.PressFeedback = false;
+            tap.OnClick(Finish);
+            Tweens.Delay(overlay, seconds, Finish);
+        }
+
+        /// <summary>
+        /// Время вышло: моль слетает с рамки на ближнюю связанную петлю, трижды кусает — дырка;
+        /// перебегает на соседнюю, кусает дважды — вторая дырка. Потом окно. Тап пропускает сцену.
+        /// </summary>
         private void OnTimeUp()
         {
             _failShown = true;
             SetScissors(false);
             HideHint();
+            HideTip();
             _tempo.Break();
-            Sfx.Play(Sound.Jam);
-            Haptics.Play(Haptic.Warning);
-            if (_timerMoth != null)
+            if (_mothEdge != null)
             {
-                Tweens.Punch(_timerMoth, 0.4f, 0.4f);
+                _mothEdge.color = Palette.WithAlpha(Palette.Danger, 0.35f);
             }
 
-            Tweens.Delay(Root, 0.45f, () => ShowFail(FailKind.TimeUp));
+            var bites = MothBites();
+            if (_moth == null || _mothLayer == null || bites.Count == 0)
+            {
+                Sfx.Play(Sound.Jam);
+                Haptics.Play(Haptic.Warning);
+                Tweens.Delay(Root, 0.45f, () => ShowFail(FailKind.TimeUp));
+                return;
+            }
+
+            _mothEating = true;
+            _moth.Show();
+            _moth.Agitation = 1f;
+            Haptics.Play(Haptic.Medium);
+            Sfx.Play(Sound.Deny, 0.7f);
+            Interlude(2.6f, () =>
+            {
+                _mothEating = false;
+                Sfx.Play(Sound.Jam);
+                Haptics.Play(Haptic.Warning);
+                ShowFail(FailKind.TimeUp);
+            });
+            MothEat(bites, 0);
+        }
+
+        /// <summary>Моль садится головой на петлю index и кусает; на последнем укусе — дырка.</summary>
+        private void MothEat(List<(int X, int Y)> bites, int index)
+        {
+            if (!_mothEating || index >= bites.Count || _moth == null || _mothLayer == null)
+            {
+                return;
+            }
+
+            var (x, y) = bites[index];
+            var cell = (Vector2)_mothLayer.InverseTransformPoint(_picture.CellWorld(x, y));
+            var approach = cell - _moth.Position;
+            var facing = approach.sqrMagnitude > 1f ? MothView.Facing(approach) : 180f;
+            var forward = new Vector2(-Mathf.Sin(facing * Mathf.Deg2Rad), Mathf.Cos(facing * Mathf.Deg2Rad));
+            var seat = cell - forward * _moth.Span * 0.3f;
+            var chews = index == 0 ? 3 : 2;
+            var moth = _moth;
+            moth.MoveTo(seat, facing, () => moth.Chew(chews, bite =>
+            {
+                if (!_mothEating)
+                {
+                    return;
+                }
+
+                var world = _picture.CellWorld(x, y);
+                var color = _colors[_game.ColorAt(x, y)];
+                Fx.Sparkle(_fx, world, color, 2, 10f);
+                Sfx.Play(Sound.Knot, 0.45f);
+                Haptics.Play(Haptic.Soft);
+                if (bite == chews)
+                {
+                    _picture.ShowHole(x, y);
+                    Fx.Poof(_fx, world, color, moth.Span);
+                    Haptics.Play(Haptic.Medium);
+                }
+            }, () => Tweens.Delay(Root, 0.12f, () => MothEat(bites, index + 1))));
         }
 
         /// <summary>
@@ -1755,6 +2313,8 @@ namespace KnittedPicture.Game
         private void Rescue(BoosterType type)
         {
             _failShown = false;
+            _mothEating = false;
+            ClearJamMarks();
             Analytics.Event("rescue", LevelParams(("type", type.ToString())));
             if (type == BoosterType.Scissors)
             {
@@ -1776,6 +2336,29 @@ namespace KnittedPicture.Game
             else
             {
                 _game.AddTime(Economy.TimeBonusSeconds);
+                _lastTickSecond = -1;
+                if (_mothEdge != null)
+                {
+                    _mothEdge.color = Color.clear;
+                }
+
+                // Моль спугнули: вздрагивает и улетает на своё место, дырки затягиваются.
+                if (_picture.HasHoles)
+                {
+                    _picture.MendHoles(_fx);
+                    Sfx.Play(Sound.Unlock);
+                }
+
+                if (_moth != null && _moth.Shown && _mothLayer != null)
+                {
+                    _moth.Startle();
+                    var fraction = Mathf.Clamp01(_game.TimeLeft / _game.TimeLimit);
+                    var (at, facing) = MothPerch(fraction);
+                    _mothSpot = at;
+                    _moth.Agitation = Mathf.Clamp01(Mathf.InverseLerp(0.45f, 0.05f, fraction));
+                    _moth.FlyTo(at, facing);
+                }
+
                 RefreshTimer();
                 RefreshAll();
             }
@@ -1838,7 +2421,7 @@ namespace KnittedPicture.Game
 
         private void OnBooster(BoosterType type)
         {
-            if (_ended || _failShown)
+            if (_ended || _failShown || _finishing)
             {
                 return;
             }
@@ -2135,7 +2718,7 @@ namespace KnittedPicture.Game
 
         private void ShowTip(string tipText, RectTransform? target, bool below)
         {
-            if (_ended || _tip != null || string.IsNullOrEmpty(tipText))
+            if (_ended || _finishing || _tip != null || string.IsNullOrEmpty(tipText))
             {
                 return;
             }
@@ -2393,9 +2976,19 @@ namespace KnittedPicture.Game
 
             public Tap Tap { get; }
 
+            /// <summary>Финиш: кнопка затихает и не нажимается.</summary>
+            public bool Dimmed { get; set; }
+
             public void Refresh(bool unlocked, int stock, int price, int unlockLevel, bool available, bool active, int free = 0)
             {
                 _face.color = active ? Palette.PrimarySoft : Palette.Card;
+                _group.blocksRaycasts = !Dimmed;
+                if (Dimmed)
+                {
+                    _group.alpha = 0.4f;
+                    return;
+                }
+
                 if (!unlocked)
                 {
                     _group.alpha = 0.55f;

@@ -16,7 +16,7 @@
 | `app_open` | запуск игры | `level`, `wins`, `coins`, `store`, `ads_removed`, `first` (первый запуск) |
 | `intro_finish` | закончено вступление «Как играть» | `first` |
 | `level_start` | начат уровень | `level`, `attempt`, `hard`, `timed`, `completed_before`, `warm` (подарок тёплой серии) |
-| `level_win` / `pattern_win` | картинка довязана | общие + `stars`, `boosters`, `rescues`, `best_combo`, `rushes`, `gold` |
+| `level_win` / `pattern_win` | картинка довязана | общие + `stars`, `boosters`, `rescues`, `best_combo`, `rushes`, `gold`, `auto_finish` (сработал ли «финиш»: победа решилась раньше конца вязки) |
 | `level_fail` | затор или моль | общие + `reason` (`jam`/`time`), `rescue_offered` (что предложили: Slot/Scissors/Time/none), `jam_advice` (причина затора) |
 | `rescue` | игрок выбрал спасение | общие + `type` |
 | `booster` | использован бустер | общие + `type`, `free` (бесплатный от серии) |

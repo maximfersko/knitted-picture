@@ -33,6 +33,7 @@ namespace KnittedPicture.Game
         private readonly Image[] _fronts;
         private readonly HashSet<int> _pending = new HashSet<int>();
         private readonly Dictionary<int, Image> _gold = new Dictionary<int, Image>();
+        private readonly List<(int X, int Y, Image Hole)> _holes = new List<(int X, int Y, Image Hole)>();
 
         /// <summary>Золото ловится только во время комбо: тогда кольца яркие и пульсируют, иначе тусклые.</summary>
         private bool _goldLive = true;
@@ -366,6 +367,60 @@ namespace KnittedPicture.Game
         }
 
         public Vector3 CellWorld(int x, int y) => Ui.WorldCenter(_cells[y * _game.Width + x].rectTransform);
+
+        /// <summary>Клетка как цель для подсветки и выноски.</summary>
+        public RectTransform CellRect(int x, int y) => _cells[y * _game.Width + x].rectTransform;
+
+        public bool HasHoles => _holes.Count > 0;
+
+        /// <summary>
+        /// Моль прогрызла петлю: поверх клетки появляется дырка с рваным краем. Только картинка —
+        /// модель не меняется: спасение «штопает» дырки, перезапуск начинает с чистого полотна.
+        /// </summary>
+        public void ShowHole(int x, int y)
+        {
+            var hole = Ui.Image(Root, "Hole", MothArt.Hole, Color.white);
+            var rt = hole.rectTransform;
+            Ui.PlaceCenter(rt, x * _step + _cell / 2f, y * _step + _cell / 2f, _cell * 0.92f, _cell * 0.92f);
+            rt.localRotation = Quaternion.Euler(0f, 0f, UnityEngine.Random.Range(0f, 360f));
+            Tweens.Run(rt, 0.28f, t => rt.localScale = Vector3.one * (t < 0.6f ? Mathf.Lerp(0.2f, 1.12f, t / 0.6f) : Mathf.Lerp(1.12f, 1f, (t - 0.6f) / 0.4f)));
+            _holes.Add((x, y, hole));
+        }
+
+        /// <summary>Заштопать дырки: каждая затягивается к центру, по клетке пробегает светлая вспышка, из неё искры.</summary>
+        public void MendHoles(RectTransform fx)
+        {
+            var i = 0;
+            foreach (var (x, y, hole) in _holes)
+            {
+                var rt = hole.rectTransform;
+                var cell = _cells[Key(x, y)];
+                var color = cell.color;
+                var turn = rt.localRotation.eulerAngles.z;
+                var delay = 0.12f * i++;
+                Tweens.Run(rt, 0.35f, t =>
+                {
+                    rt.localScale = Vector3.one * (1f - t);
+                    rt.localRotation = Quaternion.Euler(0f, 0f, turn + 120f * t);
+                }, Ease.InOutCubic, () =>
+                {
+                    Object.Destroy(hole.gameObject);
+                    Fx.Sparkle(fx, Ui.WorldCenter(cell.rectTransform), color, 5, _cell);
+                    Tweens.Run(cell.rectTransform, 0.3f, t =>
+                    {
+                        var bump = Ease.Bump(t);
+                        cell.color = Color.Lerp(color, Color.white, 0.6f * bump);
+                        cell.rectTransform.localScale = Vector3.one * (1f + 0.2f * bump);
+                    }, null, () =>
+                    {
+                        cell.color = color;
+                        cell.rectTransform.localScale = Vector3.one;
+                    });
+                }, delay);
+            }
+
+            _holes.Clear();
+        }
 
         /// <summary>
         /// Цвет довязан: его клетки пробегает светлая волна снизу вверх — маленький праздник посреди уровня.
