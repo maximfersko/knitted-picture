@@ -1,9 +1,10 @@
 # «Вязаная картинка»: промпт и стиль-гайд для спрайтов, анимаций и детальной графики
 
-Документ двойного назначения:
+Документ тройного назначения:
 
 1. **Промпты для ИИ-генераторов** (Midjourney, GPT Image, Stable Diffusion/Flux, Recraft и т.п.). Блоки на английском: генераторы лучше понимают английский. Копируй мастер-промпт + промпт нужного элемента.
 2. **Бриф для художника и аниматора.** Русские разделы: что рисуем, как двигается, размеры, проверка качества.
+3. **Промпт для Figma** (раздел 13): дизайн-система, компоненты, экраны, раскадровки анимаций и спрайты на экспорт в одном файле.
 
 Всё ниже привязано к тому, что уже есть в игре: клубки на поле, станок со слотами, пиксельная картинка из петель, моль, бустеры, комбо «Разгон», сундук-шкатулка, альбом коллекций, карточки пряжи.
 
@@ -559,3 +560,105 @@ soft knit texture, bold readable silhouette, centered, no text
 - [ ] Моль и маскот милые, не страшные; без гендерных маркеров.
 - [ ] Текст и значки контрастные (Ink на белом).
 - [ ] Цели касания не меньше 44×44 точек.
+
+---
+
+## 13. Промпт для Figma: собрать дизайн-систему, экраны и раскадровки анимаций
+
+Для **Claude с подключённой Figma** (MCP) или **Figma Make**. Вставляй целиком; разделы 1–12 этого файла приложи как контекст (или вставь ниже промпта). Растровые текстуры (клубки, дерево, моль) Figma делает через генерацию картинок («Make image»); иконки, плашки, кнопки и раскладку экранов лучше делать вектором и компонентами.
+
+```
+Create a complete Figma design file for the mobile puzzle game "Вязаная картинка" (Knitted
+Picture). Follow the attached style guide exactly: "cozy tactile workshop" style (wool, felt,
+lacquered honey wood, brushed brass), warm light from top-left, lavender soft shadows, deep plum
+#2B2350 as the darkest tone, no pure black, calm lavender/white UI with candy-bright yarn.
+All UI text is in Russian, font Nunito (ExtraBold for headings, numbers and buttons; SemiBold
+for body). No long dashes in player-facing text. No gendered phrasing toward the player.
+
+FILE STRUCTURE (one Figma page each):
+00 Cover: game title, a hero illustration (yarn balls rolling into a knitted heart, the moth
+   peeking from a corner), version and date.
+01 Style tile: three yarn balls (strawberry, lemon, sky), stockinette swatch, linen canvas swatch,
+   honey maple bar, brass key, felt tag, the caramel moth, a gold coin. Same light everywhere.
+02 Foundations:
+   - Colour variables (collection "Palette"): Ink #2B2350, Ink2 #544C7A, Ink3 #756CA6,
+     Surface #F5F2FF, Ground #EDE7FF, Card #FFFFFF, CardShadow #D3C8F3, Line #DDD5F7,
+     LoomBg #E4DCFF, SlotEmpty #CFC5F3, Track #E7E1F8, Primary #17945F, PrimaryShadow #0F6E46,
+     PrimarySoft #DCF3E7, Coin #FFC23C, CoinShadow #D98E0A, CoinSoft #FFF0C7, Danger #E0306E,
+     DangerSoft #FFDDE9, Link #8B5CF6, Wood #F2C48D, WoodDark #D9955A.
+   - Yarn variables (collection "Yarn", 12 colours from section 4.3) plus a matching pattern
+     swatch for each (colour-blind mode).
+   - Collection ground variables (10 tints from section 4.2).
+   - Spacing 4/8/12/16/24/32, radius 8/14/18/22/24, side gutter 16.
+   - Text styles: Display 32, Title 24, Heading 20, Body 16, Caption 13, Number 16–40.
+   - Effects: Card shadow (y 4, blur 16, #5B45AE 18%), Soft contact shadow, Glow, Inner shadow
+     for slots.
+   - Motion tokens documented as a table: durations (70, 120, 160, 220, 280, 350, 450 ms),
+     curves (out-cubic 0.33,1,0.68,1; in-out-cubic 0.65,0,0.35,1; out-back 0.34,1.56,0.64,1)
+     and Figma spring presets used for each.
+03 Icons: one 24x24 grid set, 2.2 px rounded stroke, plum: pause, home, album, chest, gift,
+   settings, sound on/off, vibrate, star, lock, key, video, back, close, check, info, bell,
+   trophy, bolt, clock, snowflake, scissors, undo, plus-slot, moth, knot, link. Each as a
+   component, named icon/<name>.
+04 Components (all with auto layout and variants, properties named property=value):
+   - Yarn ball: colour (12) x kind (plain, linked, knots 1-3, locked, key, rainbow, thick,
+     ice 1-3 cracks, hidden "?", foreign canvas) x state (idle, front, deep, pressed,
+     on-loom, empty-poof). Felt badge with loop count as a nested instance.
+   - Loom with 3, 4, 5 slots; slot states (empty, filled, warning orange, full red, rush glow).
+   - Picture cell: sketch, next-in-column (framed), behind (42%), knitted stitch, fabric canvas,
+     gold ring, moth hole. Picture grid example 12x8 built from cell instances.
+   - Booster button (scissors, undo, slot, +time) x badge (stock, free "даром", price) x
+     state (default, active, disabled, dimmed during finish).
+   - Buttons (primary green, secondary, text, round icon), coin pill, level pill (normal/hard),
+     progress bar, timer bar with moth icon, combo chip (x1-x9, rush), tip bubble with arrow
+     (above/below), jam ring (red problem / green solution), toast, bottom sheet, toggle row,
+     nav row, tab bar (5 tabs, active state), daily gift box, missions clipboard, chest
+     (closed, shaking, open), yarn card (common, rare, epic, legendary), collection cover
+     (10 collections, locked/unlocked), star (empty/filled), embroidery hoop.
+   - Moth: separate layers fore wing L/R, hind wing L/R, body, antenna L/R, shadow; variants
+     for poses (wings open, half closed, chewing, flying with bank).
+05 Screens (390x844 base, plus check frames 360x800 and 834x1194 tablet):
+   Home (collections carousel, play button, events), Level start (intro banner), Level mid-game,
+   Level "Разгон" (rush), Moth calm / moth walking / "Моль близко!" / last 10 seconds,
+   Time up: moth eating (3 frames), Fail sheet (jam and moth versions, with advice line),
+   Jam explanation on the field (red/green rings + callout), Finish (field dimmed, "Финиш!"),
+   Win sequence (5 key frames from section 9.H), Chest open (4 key frames), Collections album,
+   Yarn card reveal, Settings bottom sheet, Daily gift, Missions, Pattern of the day calendar,
+   Consent sheet, Pause.
+   Every gameplay screen must be playable one-handed: primary targets in the lower 60%,
+   touch targets at least 44x44.
+06 Motion storyboards: for every animation in section 7.2 and 9 (yarn ball tap, flight to the
+   loom, landing, stitch knitted, ball emptied, colour complete wave, jam, moth arrival, moth
+   walk, moth bite, moth eat, rescue scare, finish, win, chest open, card flip, coin fly):
+   a horizontal strip of key poses (anticipation, action, overshoot, settle) with time stamps
+   in ms, easing name, and the sync point for sound and haptics marked with a small bell icon.
+   Build clickable prototypes for the key ones with Smart Animate between component variants
+   (After delay triggers for idle loops, spring presets: Gentle for UI, Bouncy for landings,
+   Quick for taps). Add a "Calm motion" variant of each strip (half amplitude, no particles,
+   no shake).
+07 Sprites for export: every game sprite on its own frame at @3x with transparent background,
+   6-8% padding, pivot marked with a small cross, exported as PNG with snake_case names from
+   section 10 (yarn_base, yarn_badge, moth_wing_fore, fx_fluff_01 ...). Tintable sprites in
+   neutral grey with a coloured preview next to them. Particle atlas 1024x1024 with 128 cells.
+08 Accessibility: grayscale copy of the gameplay screen, protanopia and deuteranopia previews,
+   contrast table for text styles (target 7:1 for body), pattern mode for yarn.
+09 Store: app icon 1024 and 512 (check at 48 px), Google Play feature graphic 1024x500,
+   6 screenshot frames 1080x1920 with short Russian captions on top.
+
+RULES:
+- Use variables and styles everywhere, never raw hex in layers.
+- Every element must read as a single-colour silhouette at 32 px.
+- Only one big celebratory animation at a time; flashes never faster than 3 per second.
+- The moth is small (about one picture cell), cute and mischievous, never scary.
+- Keep raster textures inside components as image fills so they can be swapped later.
+- Name every layer meaningfully; no "Frame 123" or "Rectangle 45".
+- At the end, list in a "Readme" frame on the Cover page what was created, which sprites are
+  ready for export and anything left as a placeholder.
+```
+
+**Что проверить после генерации в Figma:**
+- [ ] Цвета и шрифты подключены как переменные и стили, а не вписаны вручную.
+- [ ] У клубков все варианты собраны в один компонент со свойствами (цвет, вид, состояние).
+- [ ] Раскадровки подписаны: время, кривая, точка звука и вибрации.
+- [ ] Спрайты на странице 07 экспортируются одной кнопкой с правильными именами.
+- [ ] Экраны проверены на 360×800: ничего не обрезано, цели касания не меньше 44×44.
