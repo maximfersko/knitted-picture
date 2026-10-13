@@ -6,17 +6,21 @@ using UnityEngine.UI;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Рабочая нить: кручёная верёвка вдоль кубической кривой от клубка на станке к спице.
-    /// Меш — полоса из 32 сегментов; текстура нити повторяется по длине (витки не растягиваются)
+    /// Рабочая нить: кручёная верёвка от клубка на станке к спице — две кубические кривые подряд
+    /// (до точки Mid у края доски и от неё к спице), с общей касательной в Mid: изгиб плавный.
+    /// Меш — полоса из 40 сегментов; текстура нити повторяется по длине (витки не растягиваются)
     /// и бежит вдоль верёвки, когда нить тянется в петлю. Цвет пряжи — цвет вершин.
     /// Точки — в локальных координатах родителя (слой растянут на экран).
     /// </summary>
     public sealed class YarnRope : MaskableGraphic
     {
-        private const int Segments = 32;
+        private const int Segments = 40;
 
         public Vector2 Start;
         public Vector2 Control1;
+        public Vector2 MidIn;
+        public Vector2 Mid;
+        public Vector2 MidOut;
         public Vector2 Control2;
         public Vector2 End;
 
@@ -77,8 +81,15 @@ namespace KnittedPicture.Game
 
         private Vector2 Point(float t)
         {
+            return t < 0.5f
+                ? Cubic(Start, Control1, MidIn, Mid, t * 2f)
+                : Cubic(Mid, MidOut, Control2, End, t * 2f - 1f);
+        }
+
+        private static Vector2 Cubic(Vector2 a, Vector2 b, Vector2 c, Vector2 d, float t)
+        {
             var s = 1f - t;
-            return s * s * s * Start + 3f * s * s * t * Control1 + 3f * s * t * t * Control2 + t * t * t * End;
+            return s * s * s * a + 3f * s * s * t * b + 3f * s * t * t * c + t * t * t * d;
         }
     }
 }

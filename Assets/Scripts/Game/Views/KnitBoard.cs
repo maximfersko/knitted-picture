@@ -94,11 +94,6 @@ namespace KnittedPicture.Game
             paper.raycastTarget = false;
             paper.uvRect = new Rect(0f, 0f, (width - 2 * Margin) * Art.Density / 128f, _viewH * Art.Density / 128f);
 
-            // Шапка схемы: название и какой ряд вяжется.
-            var titleLabel = Ui.Label(view, "Схема · «" + title + "»", 16, Palette.Ink2, 12, 4, width * 0.62f, 24, true, TextAnchor.MiddleLeft);
-            Ui.Fit(titleLabel, 11);
-            _rowText = Ui.Label(view, "", 13, Palette.Ink3, width - 2 * Margin - 120, 4, 108, 24, true, TextAnchor.MiddleRight);
-
             // Сетка: ширина столбика ограничена 30 точками, высота ряда — как у настоящей петли (шире, чем выше).
             var gridW = width - 2 * Margin - LabelW - 8f;
             _cw = Mathf.Min(gridW / game.Width, 30f);
@@ -160,6 +155,17 @@ namespace KnittedPicture.Game
                     _stitches[y * w + x] = stitch;
                 }
             }
+
+            // Шапка схемы поверх рядов (у высокой картинки ряды уходят под неё): своя полоска бумаги,
+            // название и какой ряд вяжется.
+            var header = Ui.Place(Ui.Node(view, "Header"), 0f, 0f, width - 2 * Margin, Header);
+            var headerPaper = header.gameObject.AddComponent<RawImage>();
+            headerPaper.texture = Art2.Paper;
+            headerPaper.raycastTarget = false;
+            headerPaper.uvRect = new Rect(0f, (_viewH - Header) * Art.Density / 128f, (width - 2 * Margin) * Art.Density / 128f, Header * Art.Density / 128f);
+            var titleLabel = Ui.Label(header, "Схема · «" + title + "»", 16, Palette.Ink2, 12, 4, width * 0.62f, 24, true, TextAnchor.MiddleLeft);
+            Ui.Fit(titleLabel, 11);
+            _rowText = Ui.Label(header, "", 13, Palette.Ink3, width - 2 * Margin - 120, 4, 108, 24, true, TextAnchor.MiddleRight);
 
             // Следующие петли столбиков: рамка-строчка поверх клетки.
             _fronts = new Image[w];
@@ -224,6 +230,28 @@ namespace KnittedPicture.Game
         }
 
         public RectTransform Root { get; }
+
+        /// <summary>
+        /// Какой высоты доска нужна картинке целиком (шапка, все ряды, зазор под спицу, поля), при ширине width.
+        /// Если места больше — доска не растягивается: лишнее остаётся столу.
+        /// </summary>
+        public static float NeededHeight(LoomGame game, float width)
+        {
+            var gridW = width - 2 * Margin - LabelW - 8f;
+            var cw = Mathf.Min(gridW / game.Width, 30f);
+            var rh = cw * 0.82f;
+            var gap = Mathf.Max(rh * 0.55f, 9f);
+            return 2 * Margin + Header + game.Height * rh + gap + 14f;
+        }
+
+        /// <summary>Правый и левый край окна доски (в мире): вдоль них идут рабочие нити.</summary>
+        public (Vector3 Left, Vector3 Right) Edges(float y)
+        {
+            var corners = new Vector3[4];
+            Root.GetWorldCorners(corners);
+            var inset = (corners[2].x - corners[0].x) / _width * (Margin * 0.5f);
+            return (new Vector3(corners[0].x + inset, y, 0f), new Vector3(corners[2].x - inset, y, 0f));
+        }
 
         /// <summary>Ширина столбика в точках (под неё — размер моли и колец).</summary>
         public float CellSize => _cw;
@@ -294,9 +322,23 @@ namespace KnittedPicture.Game
 
             var mark = _fronts[x];
             mark.enabled = active && front >= 0;
-            UpdateLoop(x);
-            UpdateTension();
+
+            // Спица поднялась — живые петли переезжают: у столбиков ниже спицы их больше нет.
+            var needle = _nTarget;
             Aim();
+            if (Mathf.Abs(needle - _nTarget) > 0.01f)
+            {
+                for (var i = 0; i < _game.Width; i++)
+                {
+                    UpdateLoop(i);
+                }
+            }
+            else
+            {
+                UpdateLoop(x);
+            }
+
+            UpdateTension();
             PlaceMarks();
         }
 
@@ -428,10 +470,25 @@ namespace KnittedPicture.Game
 
             _nTarget = top;
             var gridBottom = _viewH - 3f;
-            var anchored = gridBottom - top * _rh - _gap / 2f;
-            var schemaVisible = Header + _gap / 2f + Mathf.Min(SchemaRows, h - top) * _rh;
+            var content = h * _rh + _gap;
+            var available = gridBottom - Header;
+            float ny;
+            if (content <= available)
+            {
+                // Картинка помещается: стоит по центру, спица поднимается ряд за рядом.
+                var topEdge = Header + (available - content) / 2f;
+                ny = topEdge + (h - top) * _rh + _gap / 2f;
+            }
+            else
+            {
+                // Высокая: полотно свисает со спицы, над ней три ряда схемы, снизу без пустоты.
+                var anchored = gridBottom - top * _rh - _gap / 2f;
+                var schemaVisible = Header + _gap / 2f + Mathf.Min(SchemaRows, h - top) * _rh;
+                ny = Mathf.Max(anchored, schemaVisible);
+            }
+
+            // Самый отстающий столбик всегда в кадре.
             var lowestVisible = gridBottom - _gap / 2f - (top - lowest + 1) * _rh;
-            var ny = Mathf.Max(anchored, schemaVisible);
             ny = Mathf.Min(ny, lowestVisible);
             _nyTarget = Mathf.Max(ny, Header + _gap / 2f);
 

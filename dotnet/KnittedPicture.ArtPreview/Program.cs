@@ -24,6 +24,45 @@ namespace KnittedPicture.ArtPreview
             Board(dir, red, blue);
             Balls(dir);
             Loom(dir);
+            Export(Path.Combine(dir, "sprites"));
+        }
+
+        /// <summary>Отдельные спрайты для сборки макета экрана (tools/design/screen_mock.py).</summary>
+        private static void Export(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            void Save(string name, Raster r) => Png.Save(r, Path.Combine(dir, name + ".png"));
+            foreach (var hex in Yarn)
+            {
+                var c = Rgba.Hex(hex);
+                var key = hex.TrimStart('#');
+                Save("stitch_" + key, KnitRaster.Stitch(c));
+                Save("loop_" + key, KnitRaster.Loop(c));
+                Save("ball_" + key, BallRaster.Ball(c));
+                Save("deep_" + key, BallRaster.Ball(Rgba.Lerp(c, new Rgba(0.91f, 0.89f, 0.92f), 0.5f)));
+            }
+
+            Save("needle", KnitRaster.Needle());
+            Save("knob", KnitRaster.Knob());
+            Save("wood", KnitRaster.WoodFrame());
+            Save("paper", KnitRaster.PaperTile());
+            Save("rope", KnitRaster.RopeTile());
+            Save("ribbon", BallRaster.Ribbon());
+            Save("padlock", BallRaster.Padlock());
+            Save("key", BallRaster.Key());
+            Save("knots2", BallRaster.Knots(2));
+            Save("ice1", BallRaster.Ice(1));
+            Save("hidden", BallRaster.Hidden());
+            Save("badge", BallRaster.Badge());
+            Save("shadow", BallRaster.Shadow());
+            Save("loombar", LoomRaster.Bar());
+            Save("well", LoomRaster.Well());
+            Save("glow", LoomRaster.Glow());
+            Save("loomneedle", LoomRaster.Needle());
+            Save("b_scissors", LoomRaster.Booster(LoomRaster.BoosterArt.Scissors));
+            Save("b_undo", LoomRaster.Booster(LoomRaster.BoosterArt.Undo));
+            Save("b_slot", LoomRaster.Booster(LoomRaster.BoosterArt.Slot));
+            Save("frame", KnitRaster.DashedFrame(66, 4.8f, 18, 9.6f, 7.2f));
         }
 
         /// <summary>Станок на 5 слотов с двумя клубками и строкой бустеров.</summary>

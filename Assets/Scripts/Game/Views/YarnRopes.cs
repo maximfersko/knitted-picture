@@ -30,8 +30,11 @@ namespace KnittedPicture.Game
             return ropes;
         }
 
-        /// <summary>Клубок из слота slot вяжет петлю: нить тянется от from (верх клубка) к to (точка на спице).</summary>
-        public void Pull(int slot, Vector3 fromWorld, Vector3 toWorld, Color color, bool rush)
+        /// <summary>
+        /// Клубок из слота slot вяжет петлю: нить тянется от from (верх клубка) вдоль края доски edge
+        /// (точка на кромке по высоте спицы) и сверху заходит к to (точка на спице).
+        /// </summary>
+        public void Pull(int slot, Vector3 fromWorld, Vector3 toWorld, Vector3 edgeWorld, Color color, bool rush)
         {
             if (!_strands.TryGetValue(slot, out var strand) || strand.Rope == null)
             {
@@ -48,6 +51,7 @@ namespace KnittedPicture.Game
 
             strand.From = Local(fromWorld);
             strand.Target = Local(toWorld);
+            strand.Edge = Local(edgeWorld).x;
             strand.LastPull = _clock;
             strand.Rush = rush;
             strand.Rope.color = rush ? Color.Lerp(color, Color.white, 0.25f) : color;
@@ -99,15 +103,21 @@ namespace KnittedPicture.Game
                 reach = Mathf.MoveTowards(reach, active ? 1f : 0f, dt * (active ? 7f : 3.5f));
                 s.Tug = Mathf.MoveTowards(s.Tug, 0f, dt * 6f);
 
-                // Форма: от клубка вверх, дугой к спице сверху; натяг петли выпрямляет дугу, ветер чуть качает.
+                // Форма: от клубка вверх вдоль края доски, над спицей дугой к петле. Натяг петли
+                // выпрямляет дуги, ветер чуть качает нить у кромки.
                 var start = s.From;
                 var end = s.End;
-                var span = Mathf.Abs(end.y - start.y);
                 var slack = 1f - 0.35f * s.Tug;
-                var sway = Mathf.Sin(_clock * 1.3f + pair.Key * 1.7f) * 5f;
+                var sway = Mathf.Sin(_clock * 1.3f + pair.Key * 1.7f) * 3f;
+                var edge = s.Edge + sway;
+                var mid = new Vector2(edge, Mathf.Max(end.y, s.Target.y) + 22f);
+                var rise = Mathf.Max(30f, mid.y - start.y);
                 s.Rope.Start = start;
-                s.Rope.Control1 = start + new Vector2(sway, (span * 0.45f + 30f) * slack);
-                s.Rope.Control2 = end + new Vector2(-sway * 0.5f + (start.x - end.x) * 0.15f, (36f + span * 0.12f) * slack);
+                s.Rope.Control1 = start + new Vector2(0f, rise * 0.35f * slack + 16f);
+                s.Rope.MidIn = new Vector2(edge, mid.y - rise * 0.4f);
+                s.Rope.Mid = mid;
+                s.Rope.MidOut = new Vector2(edge, mid.y + 22f * slack);
+                s.Rope.Control2 = new Vector2(end.x + (edge - end.x) * 0.3f, end.y + 34f * slack);
                 s.Rope.End = end;
                 s.Rope.Thickness = s.Rush ? 5f : 3.6f;
                 s.Rope.Flow += dt * (active ? 1.2f + 2.5f * s.Tug : 0f);
@@ -138,6 +148,7 @@ namespace KnittedPicture.Game
 
             public Vector2 From;
             public Vector2 Target;
+            public float Edge;
             public Vector2 End;
             public Vector2 Velocity;
             public float LastPull;

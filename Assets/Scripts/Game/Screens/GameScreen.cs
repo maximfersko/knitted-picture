@@ -178,6 +178,8 @@ namespace KnittedPicture.Game
         private float _timerW;
 
         private float _top;
+        private float _boardY;
+        private float _boardH;
         private float _loomY;
         private float _fieldY;
         private float _fieldH;
@@ -494,26 +496,33 @@ namespace KnittedPicture.Game
 
         private void ComputeLayout()
         {
-            // Шапка: пауза, уровень, монеты (до 52) и полоса (68). Доска начинается ниже, плашка комбо лежит на её кромке.
+            // Шапка: пауза, уровень, монеты (до 52) и полоса (68). Доска ниже, плашка комбо лежит на её кромке.
             _top = BarY + 22f;
-            // На первых уровнях бустеров нет: их место отдаём полю, а клубки делаем крупнее.
+            // На первых уровнях бустеров нет: их место отдаём полю.
             var boosterRow = new[] { BoosterType.Scissors, BoosterType.Undo, BoosterType.Slot }.Any(t => App.Progress.IsBoosterOpen(t, BoosterLevel));
             var boostersY = boosterRow ? H - 10f - BoosterSize : H - 6f;
             _colW = (W - 2 * Pad) / _game.ColumnCount;
-            _spoolSize = Mathf.Min(boosterRow ? 54f : 60f, _colW - 18f);
 
-            for (var attempt = 0; attempt < 5; attempt++)
+            // Доске нужно ровно столько, сколько картинке. Свободное место сначала идёт клубкам (крупнее —
+            // легче попасть пальцем), остальное — воздух между станком и полем, у большого пальца.
+            var needed = KnitBoard.NeededHeight(_game, W - 2 * Pad);
+            var region = 0f;
+            for (var size = 58f; size >= 40f; size -= 2f)
             {
+                _spoolSize = Mathf.Min(size, _colW - 16f);
                 _fieldH = FieldHeight();
                 _fieldY = boostersY - 8f - _fieldH;
-                _loomY = _fieldY - 10f - LoomH;
-                if (_loomY - 12f - _top >= 210f || _spoolSize <= 40f)
+                region = _fieldY - 10f - _top;
+                if (region - 12f - LoomH >= needed)
                 {
                     break;
                 }
-
-                _spoolSize -= 3f;
             }
+
+            _boardH = Mathf.Max(200f, Mathf.Min(needed, region - 12f - LoomH));
+            var extra = Mathf.Max(0f, region - 12f - LoomH - _boardH);
+            _boardY = _top + extra * 0.4f;
+            _loomY = _boardY + _boardH + 12f;
         }
 
         /// <summary>Глубина поля: передний ряд внизу (у большого пальца), задние выше, меньше и бледнее.</summary>
@@ -524,7 +533,7 @@ namespace KnittedPicture.Game
             var y = _fieldH - 6f - _spoolSize * 0.5f;
             for (var d = 1; d <= depth; d++)
             {
-                y -= _spoolSize * (DepthScale[d - 1] + DepthScale[d]) * 0.5f * 0.86f;
+                y -= _spoolSize * (DepthScale[d - 1] + DepthScale[d]) * 0.5f * 0.96f;
             }
 
             return y;
@@ -536,7 +545,7 @@ namespace KnittedPicture.Game
             var top = 6f + _spoolSize * 0.5f;
             for (var d = 1; d <= deepest; d++)
             {
-                top += _spoolSize * (DepthScale[d - 1] + DepthScale[d]) * 0.5f * 0.86f;
+                top += _spoolSize * (DepthScale[d - 1] + DepthScale[d]) * 0.5f * 0.96f;
             }
 
             return top + _spoolSize * DepthScale[deepest] * 0.5f + 14f;
@@ -546,8 +555,8 @@ namespace KnittedPicture.Game
         private void BuildPicture()
         {
             var boardW = W - 2 * Pad;
-            var boardH = _loomY - 12f - _top;
-            _pictureCard = Ui.Place(Ui.Node(Root, "Board"), Pad, _top, boardW, boardH);
+            var boardH = _boardH;
+            _pictureCard = Ui.Place(Ui.Node(Root, "Board"), Pad, _boardY, boardW, boardH);
             var shadow = Ui.Image(_pictureCard, "Shadow", Art.SoftShadow(24f, 14f), Palette.WithAlpha(Palette.Hex("#5B45AE"), 0.2f));
             shadow.type = Image.Type.Sliced;
             shadow.pixelsPerUnitMultiplier = Art.Density;
@@ -593,7 +602,8 @@ namespace KnittedPicture.Game
         /// </summary>
         private void BuildComboChip()
         {
-            _comboChip = Ui.Place(Ui.Node(Root, "Combo"), W - Pad - ComboW - 6f, _top - 16f, ComboW, 32);
+            var boardTop = -_pictureCard.anchoredPosition.y;
+            _comboChip = Ui.Place(Ui.Node(Root, "Combo"), W - Pad - ComboW - 6f, boardTop - 16f, ComboW, 32);
             _comboGroup = _comboChip.gameObject.AddComponent<CanvasGroup>();
             _comboGroup.blocksRaycasts = false;
             _comboGroup.alpha = 0f;
@@ -1374,7 +1384,10 @@ namespace KnittedPicture.Game
 
                 // Рабочая нить от клубка к спице: конец нити пружиной догоняет петлю, нить «утягивается».
                 var spoolTop = from + new Vector3(0f, _slotSpool * 0.32f * _fx.lossyScale.y, 0f);
-                _ropes.Pull(stitch.Slot, spoolTop, _picture.KnitPoint(stitch.X, stitch.Y), color, rush);
+                var knitAt = _picture.KnitPoint(stitch.X, stitch.Y);
+                var edges = _picture.Edges(knitAt.y);
+                var edge = stitch.Slot < _slotFrames.Length / 2f ? edges.Left : edges.Right;
+                _ropes.Pull(stitch.Slot, spoolTop, knitAt, edge, color, rush);
                 var x = stitch.X;
                 var y = stitch.Y;
 
