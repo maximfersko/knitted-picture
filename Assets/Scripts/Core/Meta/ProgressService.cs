@@ -26,9 +26,42 @@ namespace KnittedPicture.Core
         {
             _data = data;
             LevelCount = levelCount;
-            if (_data.nextLevel < 1)
+            Repair(_data);
+        }
+
+        /// <summary>
+        /// Починить сохранение при загрузке: от старой или новой версии игры, после сбоя записи. Пустые списки
+        /// вместо отсутствующих, ничего отрицательного, звёзд за уровень 0..3. Обычное сохранение не меняется.
+        /// </summary>
+        private static void Repair(PlayerProgress d)
+        {
+            d.completed ??= new System.Collections.Generic.List<int>();
+            d.introsShown ??= new System.Collections.Generic.List<int>();
+            d.stars ??= new System.Collections.Generic.List<int>();
+            d.bestTaps ??= new System.Collections.Generic.List<int>();
+            d.cleanWins ??= new System.Collections.Generic.List<int>();
+            d.yarns ??= new System.Collections.Generic.List<int>();
+            d.missionKinds ??= new System.Collections.Generic.List<int>();
+            d.missionTargets ??= new System.Collections.Generic.List<int>();
+            d.missionValues ??= new System.Collections.Generic.List<int>();
+            d.achievementsClaimed ??= new System.Collections.Generic.List<int>();
+            d.yarnSetsClaimed ??= new System.Collections.Generic.List<int>();
+            d.collectionsClaimed ??= new System.Collections.Generic.List<int>();
+            d.attempts ??= new System.Collections.Generic.List<int>();
+            if (d.nextLevel < 1)
             {
-                _data.nextLevel = 1;
+                d.nextLevel = 1;
+            }
+
+            d.coins = System.Math.Max(0, d.coins);
+            d.slotBoosters = System.Math.Max(0, d.slotBoosters);
+            d.scissorsBoosters = System.Math.Max(0, d.scissorsBoosters);
+            d.undoBoosters = System.Math.Max(0, d.undoBoosters);
+            d.timeBoosters = System.Math.Max(0, d.timeBoosters);
+            d.chestsOpened = System.Math.Max(0, d.chestsOpened);
+            for (var i = 0; i < d.stars.Count; i++)
+            {
+                d.stars[i] = System.Math.Max(0, System.Math.Min(3, d.stars[i]));
             }
         }
 
@@ -75,14 +108,15 @@ namespace KnittedPicture.Core
             }
         }
 
+        /// <summary>Добавить бустеры в запас (отрицательное — списать, но не ниже нуля).</summary>
         public void AddStock(BoosterType type, int count)
         {
             switch (type)
             {
-                case BoosterType.Slot: _data.slotBoosters += count; break;
-                case BoosterType.Scissors: _data.scissorsBoosters += count; break;
-                case BoosterType.Undo: _data.undoBoosters += count; break;
-                case BoosterType.Time: _data.timeBoosters += count; break;
+                case BoosterType.Slot: _data.slotBoosters = System.Math.Max(0, _data.slotBoosters + count); break;
+                case BoosterType.Scissors: _data.scissorsBoosters = System.Math.Max(0, _data.scissorsBoosters + count); break;
+                case BoosterType.Undo: _data.undoBoosters = System.Math.Max(0, _data.undoBoosters + count); break;
+                case BoosterType.Time: _data.timeBoosters = System.Math.Max(0, _data.timeBoosters + count); break;
             }
         }
 
@@ -108,9 +142,10 @@ namespace KnittedPicture.Core
             return Payment.NotEnough;
         }
 
+        /// <summary>Начислить монеты (отрицательное — списать, но не ниже нуля).</summary>
         public void AddCoins(int amount)
         {
-            _data.coins += amount;
+            _data.coins = System.Math.Max(0, _data.coins + amount);
         }
 
         /// <summary>
@@ -301,13 +336,13 @@ namespace KnittedPicture.Core
         /// <summary>Уровень мотка 0..3: сколько штук собрано, но не больше максимума.</summary>
         public int YarnLevel(int yarn) => System.Math.Min(YarnCount(yarn), YarnCatalog.MaxLevel);
 
-        /// <summary>Моток «в работе», -1 — нет.</summary>
-        public int ActiveYarn => HasYarn(_data.activeYarn) ? _data.activeYarn : -1;
+        /// <summary>Моток «в работе», -1 — нет (или его нет в каталоге этой версии игры).</summary>
+        public int ActiveYarn => _data.activeYarn < YarnCatalog.Count && HasYarn(_data.activeYarn) ? _data.activeYarn : -1;
 
         /// <summary>Взять моток в работу: его бонус будет действовать в уровнях.</summary>
         public bool SetActiveYarn(int yarn)
         {
-            if (!HasYarn(yarn))
+            if (yarn >= YarnCatalog.Count || !HasYarn(yarn))
             {
                 return false;
             }
@@ -374,6 +409,11 @@ namespace KnittedPicture.Core
         /// <summary>Положить моток в корзинку. true — такого ещё не было.</summary>
         public bool AddYarn(int yarn)
         {
+            if (yarn < 0 || yarn >= YarnCatalog.Count)
+            {
+                return false;
+            }
+
             while (_data.yarns.Count <= yarn)
             {
                 _data.yarns.Add(0);
@@ -724,6 +764,13 @@ namespace KnittedPicture.Core
         /// <summary>Засчитать победу и начислить награду.</summary>
         public WinReward CompleteLevel(int levelId, bool hard, int stars = 3, int comboCoins = 0)
         {
+            // Такого уровня нет: ничего не засчитываем (ошибка вызова не должна ронять экран победы).
+            if (levelId < 1 || levelId > LevelCount)
+            {
+                return new WinReward(0, 0, _data.streak, 0, false);
+            }
+
+            stars = System.Math.Max(0, System.Math.Min(3, stars));
             var firstTime = !_data.completed.Contains(levelId);
             if (firstTime)
             {

@@ -19,6 +19,9 @@ jobs:
       - name: Game code compiles against Unity reference assemblies
         run: dotnet build dotnet/KnittedPicture.Game.Check
 
+      - name: In-game QA bot compiles (dev builds only)
+        run: dotnet build dotnet/KnittedPicture.Game.Check -p:UnityPlatform=KNITTED_QA
+
       - name: Levels are up to date with levels-src
         run: |
           dotnet run --project dotnet/KnittedPicture.LevelTool
@@ -33,4 +36,15 @@ jobs:
         with:
           name: playtest-report
           path: playtest-report.md
+          if-no-files-found: ignore
+
+      - name: Deep QA bot (personas, oracles, edge levels, clock jumps; minimal repro + screenshots)
+        run: dotnet run -c Release --project dotnet/KnittedPicture.QA -- --quick --out qa-out
+
+      - name: Deep QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-report
+          path: qa-out
           if-no-files-found: ignore

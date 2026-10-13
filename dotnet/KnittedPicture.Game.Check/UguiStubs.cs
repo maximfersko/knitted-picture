@@ -11,6 +11,47 @@ namespace UnityEngine.EventSystems
     public class EventSystem : UIBehaviour
     {
         public static EventSystem current { get; set; }
+
+        public void RaycastAll(PointerEventData eventData, System.Collections.Generic.List<RaycastResult> raycastResults)
+        {
+        }
+    }
+
+    public struct RaycastResult
+    {
+        public GameObject gameObject { get; set; }
+
+        public BaseRaycaster module;
+
+        public float distance;
+
+        public bool isValid => true;
+    }
+
+    public static class ExecuteEvents
+    {
+        public delegate void EventFunction<T1>(T1 handler, BaseEventData eventData);
+
+        public static EventFunction<IPointerDownHandler> pointerDownHandler => null;
+
+        public static EventFunction<IPointerUpHandler> pointerUpHandler => null;
+
+        public static EventFunction<IPointerClickHandler> pointerClickHandler => null;
+
+        public static EventFunction<IBeginDragHandler> beginDragHandler => null;
+
+        public static EventFunction<IDragHandler> dragHandler => null;
+
+        public static EventFunction<IEndDragHandler> endDragHandler => null;
+
+        public static bool Execute<T>(GameObject target, BaseEventData eventData, EventFunction<T> functor)
+            where T : IEventSystemHandler => false;
+
+        public static GameObject ExecuteHierarchy<T>(GameObject root, BaseEventData eventData, EventFunction<T> callbackFunction)
+            where T : IEventSystemHandler => null;
+
+        public static GameObject GetEventHandler<T>(GameObject root)
+            where T : IEventSystemHandler => null;
     }
 
     public abstract class BaseInputModule : UIBehaviour
@@ -27,13 +68,60 @@ namespace UnityEngine.EventSystems
 
     public class BaseEventData
     {
+        public BaseEventData()
+        {
+        }
+
+        public BaseEventData(EventSystem eventSystem)
+        {
+        }
     }
 
     public class PointerEventData : BaseEventData
     {
+        public enum InputButton
+        {
+            Left,
+            Right,
+            Middle,
+        }
+
+        public PointerEventData()
+        {
+        }
+
+        public PointerEventData(EventSystem eventSystem)
+            : base(eventSystem)
+        {
+        }
+
         public Vector2 position { get; set; }
 
         public Vector2 delta { get; set; }
+
+        public Vector2 pressPosition { get; set; }
+
+        public InputButton button { get; set; }
+
+        public int clickCount { get; set; }
+
+        public float clickTime { get; set; }
+
+        public bool eligibleForClick { get; set; }
+
+        public bool dragging { get; set; }
+
+        public bool useDragThreshold { get; set; }
+
+        public GameObject pointerPress { get; set; }
+
+        public GameObject rawPointerPress { get; set; }
+
+        public GameObject pointerDrag { get; set; }
+
+        public RaycastResult pointerCurrentRaycast { get; set; }
+
+        public RaycastResult pointerPressRaycast { get; set; }
     }
 
     public interface IEventSystemHandler
@@ -174,6 +262,8 @@ namespace UnityEngine.UI
         public float preferredWidth => 0f;
 
         public float preferredHeight => 0f;
+
+        public TextGenerator cachedTextGenerator => null;
 
         public bool resizeTextForBestFit { get; set; }
 

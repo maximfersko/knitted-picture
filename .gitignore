@@ -126,3 +126,6 @@ __pycache__/
 
 # Отчёт бота-тестировщика
 playtest-report.md
+
+# Отчёты QA-бота (dotnet/KnittedPicture.QA)
+qa-out/

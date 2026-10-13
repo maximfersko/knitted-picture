@@ -78,6 +78,7 @@ namespace KnittedPicture.Core
             TimerStarted = other.TimerStarted;
             Mystery = other.Mystery;
             Taps = other.Taps;
+            Version = other.Version;
             _grid = other._grid.Clone();
             _gold = other._gold;
             _slots = CloneSlots(other._slots);
@@ -465,7 +466,8 @@ namespace KnittedPicture.Core
         /// <summary>Время идёт только во время игры и только после первого действия.</summary>
         public void Tick(float seconds)
         {
-            if (TimeLimit <= 0 || !TimerStarted || _status != GameStatus.Playing)
+            // Время идёт только вперёд: NaN и отрицательное (сбой часов, кривой кадр) таймер не трогают.
+            if (TimeLimit <= 0 || !TimerStarted || _status != GameStatus.Playing || !(seconds > 0f))
             {
                 return;
             }
@@ -480,7 +482,7 @@ namespace KnittedPicture.Core
         /// <summary>Добавить время (спасение после моли).</summary>
         public void AddTime(float seconds)
         {
-            if (TimeLimit <= 0 || _status == GameStatus.Won)
+            if (TimeLimit <= 0 || _status == GameStatus.Won || !(seconds > 0f) || float.IsInfinity(seconds))
             {
                 return;
             }

@@ -211,6 +211,9 @@ namespace KnittedPicture.Game
 
         public bool HasPopups => _popups.Count > 0;
 
+        /// <summary>Открытый экран (для QA-бота и диагностики).</summary>
+        public ScreenView? CurrentScreen => _screen;
+
         /// <summary>Сегодняшний день (с 1970 года) по местному времени — для подарка дня.</summary>
         public int Today => (int)(DateTime.Now.Date - new DateTime(1970, 1, 1)).TotalDays;
 
