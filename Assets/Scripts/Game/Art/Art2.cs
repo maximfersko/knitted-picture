@@ -82,6 +82,26 @@ namespace KnittedPicture.Game
             return Get("dashed" + px + "_" + Mathf.RoundToInt(r), () => KnitRaster.DashedFrame(px, 1.6f * Art.Density, r, 3.2f * Art.Density, 2.4f * Art.Density));
         }
 
+        /// <summary>
+        /// Строчка по прямоугольнику w×h точек (кнопки, выноски, карточки): пунктир под точный размер.
+        /// Размер округляется до 2 точек, чтобы кэш не разрастался.
+        /// </summary>
+        public static Sprite Stitched(float w, float h, float radius)
+        {
+            var pw = Mathf.Max(16, Mathf.RoundToInt(w / 2f) * 2 * (int)Art.Density);
+            var ph = Mathf.Max(16, Mathf.RoundToInt(h / 2f) * 2 * (int)Art.Density);
+            var r = radius * Art.Density;
+            return Get("stitched" + pw + "x" + ph + "_" + Mathf.RoundToInt(r),
+                () => KnitRaster.DashedFrame(pw, ph, 1.5f * Art.Density, r, 4.5f * Art.Density, 3f * Art.Density));
+        }
+
+        /// <summary>Пунктирное кольцо (подсветка причины затора) диаметром size точек.</summary>
+        public static Sprite DashedRing(float size)
+        {
+            var px = Mathf.Max(16, Mathf.RoundToInt(size / 2f) * 2 * (int)Art.Density);
+            return Get("dashedRing" + px, () => KnitRaster.DashedFrame(px, 3f * Art.Density, px / 2f, 6f * Art.Density, 4f * Art.Density));
+        }
+
         // ---------- Клубки ----------
 
         /// <summary>Фон под клубками на поле: задние ряды смешиваются с ним в пастель.</summary>

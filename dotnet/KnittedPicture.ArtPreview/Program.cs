@@ -19,6 +19,8 @@ namespace KnittedPicture.ArtPreview
             Png.Save(KnitRaster.RopeTile(), Path.Combine(dir, "rope.png"));
             Png.Save(KnitRaster.WoodFrame(), Path.Combine(dir, "wood.png"));
             Png.Save(KnitRaster.DashedFrame(90, 4, 18, 8, 6), Path.Combine(dir, "dashed.png"));
+            Png.Save(KnitRaster.DashedFrame(660, 120, 4.5f, 36, 13.5f, 9), Path.Combine(dir, "stitched.png"));
+            Png.Save(KnitRaster.DashedFrame(180, 9, 90, 18, 12), Path.Combine(dir, "ring.png"));
             Board(dir, red, blue);
             Balls(dir);
             Loom(dir);

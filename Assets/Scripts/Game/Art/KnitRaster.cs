@@ -292,48 +292,79 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Рамка-строчка вокруг клетки: пунктир по скруглённому квадрату (размер size пикселей).
-        /// Белая — красится. Рисуется под конкретный размер, чтобы штрихи не растягивались.
+        /// Строчка: пунктир по скруглённому прямоугольнику w×h пикселей (радиус radius). Штрихи равномерны
+        /// по всему контуру и не растягиваются: рисуется под конкретный размер. Белая — красится.
         /// </summary>
-        public static Raster DashedFrame(int size, float stroke, float radius, float dash, float gap)
+        public static Raster DashedFrame(int w, int h, float stroke, float radius, float dash, float gap)
         {
-            var r = new Raster(size, size);
-            var c = size / 2f;
-            var half = c - stroke;
-            var straight = (half - radius) * 2f;
-            var perimeter = 4f * straight + 2f * MathF.PI * radius;
+            var r = new Raster(w, h);
+            var cx = w / 2f;
+            var cy = h / 2f;
+            var hw = cx - stroke;
+            var hh = cy - stroke;
+            radius = MathF.Min(radius, MathF.Min(hw, hh));
+            var a = hw - radius;
+            var b = hh - radius;
+            var perimeter = 4f * a + 4f * b + 2f * MathF.PI * radius;
             var count = MathF.Max(4f, MathF.Round(perimeter / (dash + gap)));
             var period = perimeter / count;
+            var on = period * dash / (dash + gap);
             r.Paint((x, y) =>
             {
-                var d = MathF.Abs(Draw.RoundBox(x, y, c, c, half, half, radius)) - stroke / 2f;
+                var d = MathF.Abs(Draw.RoundBox(x, y, cx, cy, hw, hh, radius)) - stroke / 2f;
                 var cover = Draw.Cover(d);
                 if (cover <= 0f)
                 {
                     return Rgba.Clear;
                 }
 
-                var along = Perimeter(x - c, y - c, half, radius, straight);
+                var along = Along(x - cx, y - cy, a, b, radius);
                 var phase = along % period;
-                var on = Draw.Clamp01(MathF.Min(phase, period * dash / (dash + gap) - phase) + 0.5f);
-                return Rgba.White.WithAlpha(cover * on);
+                var dashCover = Draw.Clamp01(MathF.Min(phase, on - phase) + 0.5f);
+                return Rgba.White.WithAlpha(cover * dashCover);
             });
             return r;
         }
 
-        /// <summary>Положение точки вдоль контура скруглённого квадрата (для пунктира).</summary>
-        private static float Perimeter(float x, float y, float half, float radius, float straight)
+        /// <summary>Квадратная строчка (рамка клетки, кольцо при radius = половине стороны).</summary>
+        public static Raster DashedFrame(int size, float stroke, float radius, float dash, float gap) =>
+            DashedFrame(size, size, stroke, radius, dash, gap);
+
+        /// <summary>Длина пути по контуру скруглённого прямоугольника до ближайшей к точке (px, py) точки контура.</summary>
+        private static float Along(float px, float py, float a, float b, float r)
         {
-            var angle = MathF.Atan2(y, x);
-            if (angle < 0f)
+            var arc = MathF.PI * r / 2f;
+            if (MathF.Abs(px) <= a)
             {
-                angle += 2f * MathF.PI;
+                return py >= 0f ? px + a : 2f * a + arc + 2f * b + arc + (a - px);
             }
 
-            var quarter = straight + MathF.PI * radius / 2f;
-            var side = (int)(angle / (MathF.PI / 2f));
-            var local = angle - side * MathF.PI / 2f;
-            return side * quarter + local / (MathF.PI / 2f) * quarter;
+            if (MathF.Abs(py) <= b)
+            {
+                return px > 0f ? 2f * a + arc + (b - py) : 4f * a + 3f * arc + 2f * b + (py + b);
+            }
+
+            // Угол: дуга вокруг центра угла, по часовой.
+            var sx = px > 0f ? 1f : -1f;
+            var sy = py > 0f ? 1f : -1f;
+            var angle = MathF.Atan2((py - sy * b) * sy, (px - sx * a) * sx);
+            var t = angle / (MathF.PI / 2f);
+            if (sx > 0f && sy > 0f)
+            {
+                return 2f * a + (1f - t) * arc;
+            }
+
+            if (sx > 0f)
+            {
+                return 2f * a + arc + 2f * b + t * arc;
+            }
+
+            if (sy < 0f)
+            {
+                return 4f * a + 2f * arc + 2f * b + (1f - t) * arc;
+            }
+
+            return 4f * a + 3f * arc + 4f * b + t * arc;
         }
     }
 }
