@@ -146,6 +146,15 @@ namespace KnittedPicture.Game
 
         public static Sprite Coin => Get("coin2", MetaRaster.Coin);
 
+        /// <summary>Бирка на ниточке для числа (петли клубка, цена и запас бустера). Белая — красится; 72×40, тело — правые 58.</summary>
+        public static Sprite Tag => Get("tag", KnitRaster.Tag);
+
+        /// <summary>Лунка под значок бустера.</summary>
+        public static Sprite IconWell => Get("iconWell", KnitRaster.IconWell);
+
+        /// <summary>Доля ширины бирки слева, занятая хвостиком и дырочкой: текст — правее.</summary>
+        public const float TagTextFrom = 0.27f;
+
         public static Sprite Sparkle => Get("sparkle", KnitRaster.Sparkle);
 
         public static Sprite Gift => Get("gift2", MetaRaster.Gift);

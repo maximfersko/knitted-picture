@@ -496,6 +496,121 @@ namespace KnittedPicture.Game
             });
         }
 
+        /// <summary>
+        /// Карточка-«подушка» для Image.Type.Sliced (белая, красится цветом карточки): сверху светлее, к низу
+        /// чуть темнее, по верхнему краю тонкий блик, по нижнему мягкая тень внутрь. Перелив целиком в
+        /// растягиваемой середине, поэтому он идёт на всю высоту карточки любого размера. r — радиус в пикселях.
+        /// </summary>
+        public static Raster SoftCard(int r)
+        {
+            var size = r * 2 + 4;
+            var border = r + 1;
+            var half = size / 2f;
+            var raster = new Raster(size, size);
+            raster.Paint((x, y) =>
+            {
+                var d = Draw.RoundBox(x, y, half, half, half, half, r);
+                var cover = Draw.Cover(d);
+                if (cover <= 0f)
+                {
+                    return Rgba.Clear;
+                }
+
+                var t = y >= size - border ? 1f : y < border ? 0f : (y - border) / (size - 2f * border);
+                var v = Draw.Lerp(0.945f, 0.985f, t);
+                var inside = -d;
+                var up = Draw.Clamp01((y - half) / half * 2f);
+                var down = Draw.Clamp01((half - y) / half * 2f);
+                v = Draw.Lerp(v, 1f, up * Draw.Clamp01(1f - MathF.Abs(inside - 2.5f) / 1.5f));
+                v *= 1f - 0.07f * down * (1f - Draw.SmoothStep(0f, 8f, inside));
+                return new Rgba(v, v, v, cover);
+            });
+            return raster;
+        }
+
+        /// <summary>
+        /// Бирка на ниточке для числа: бумажный ярлычок с дырочкой слева, из неё к клубку уходит нитка.
+        /// Белая (красится цветом), бумага чуть светлее сверху, мягкая тень снизу. 72×40 точек, тело — правые 58.
+        /// </summary>
+        public static Raster Tag()
+        {
+            const int w = 72;
+            const int h = 40;
+            return Raster.Render(w, h, 3, (x, y) =>
+            {
+                var result = Rgba.Clear;
+
+                // Тень под ярлычком.
+                var shadowD = Draw.RoundBox(x, y + 1.6f, 44f, 20f, 25f, 14f, 7f);
+                var shadow = Draw.Clamp01(1f - (shadowD + 1f) / 3.5f);
+                if (shadow > 0f)
+                {
+                    result = new Rgba(0.17f, 0.14f, 0.31f, 0.16f * shadow);
+                }
+
+                // Нитка из дырочки к клубку: вверх-влево, мягкой дугой.
+                var thread = MathF.Min(Draw.Segment(x, y, 24f, 21f, 14f, 27f), Draw.Segment(x, y, 14f, 27f, 2f, 30f));
+                var threadCover = Draw.Cover(thread - 1.1f);
+                if (threadCover > 0f)
+                {
+                    result = Rgba.Over(new Rgba(0.42f, 0.38f, 0.5f, threadCover), result);
+                }
+
+                // Ярлычок: скошенный слева, как бирка.
+                var body = Draw.RoundBox(x, y, 44f, 20f, 25f, 14f, 7f);
+                var tip = Draw.RoundBox(x, y, 21f, 20f, 6f, 9f, 5f);
+                var d = MathF.Min(body, tip);
+                var cover = Draw.Cover(d);
+                if (cover > 0f)
+                {
+                    var v = Draw.Lerp(0.93f, 1f, Draw.Clamp01((y - 6f) / 26f));
+                    v *= 1f - 0.06f * (1f - Draw.SmoothStep(0f, 3f, -d)) * Draw.Clamp01((20f - y) / 10f);
+                    var paper = new Rgba(v, v, v, cover);
+
+                    // Дырочка с колечком.
+                    var hole = Draw.Circle(x, y, 22f, 20f, 2.6f);
+                    if (hole < 1.6f)
+                    {
+                        var ring = Draw.Clamp01(1f - MathF.Abs(hole - 0.6f) / 1.1f);
+                        paper = Rgba.Lerp(paper, new Rgba(0.72f, 0.7f, 0.78f, cover), ring);
+                        paper = paper.WithAlpha(cover * Draw.Clamp01(hole + 0.5f));
+                    }
+
+                    result = Rgba.Over(paper, result);
+                    if (threadCover > 0f && x < 23f)
+                    {
+                        // Нитка проходит сквозь дырочку и ложится поверх бумаги у края.
+                        result = Rgba.Over(new Rgba(0.42f, 0.38f, 0.5f, threadCover * 0.9f), result);
+                    }
+                }
+
+                return result;
+            });
+        }
+
+        /// <summary>Лунка под значок бустера: мягкая сиреневая чаша, тень внутри сверху, светлая кромка снизу.</summary>
+        public static Raster IconWell()
+        {
+            const int s = 132;
+            var inside = Rgba.Hex("#EEE8FF");
+            var shade = Rgba.Hex("#D6CCF5");
+            return Raster.Render(s / 3, s / 3, 3, (x, y) =>
+            {
+                const float c = s / 6f;
+                var d = Draw.Circle(x, y, c, c, c - 1f);
+                var cover = Draw.Cover(d);
+                if (cover <= 0f)
+                {
+                    return Rgba.Clear;
+                }
+
+                var ny = (y - c) / c;
+                var col = Rgba.Lerp(inside, shade, Draw.Clamp01(ny * 0.9f + 0.1f) * Draw.SmoothStep(-9f, -1f, d) + Draw.Clamp01(ny) * 0.25f);
+                col = Rgba.Lerp(col, Rgba.White, Draw.Clamp01(-ny) * Draw.SmoothStep(-4f, -0.5f, d) * 0.8f);
+                return col.WithAlpha(cover);
+            });
+        }
+
         /// <summary>Искра: мягкая четырёхлучевая звёздочка с ярким центром. Белая — красится.</summary>
         public static Raster Sparkle()
         {

@@ -191,7 +191,9 @@ namespace KnittedPicture.Game
                 Place(back.rectTransform, 0, shadowOffset, w, h);
             }
 
-            var face = Box(root, "Face", radius, color, raycast);
+            var face = Image(root, "Face", Art.SoftCard(radius), color, raycast);
+            face.type = UnityEngine.UI.Image.Type.Sliced;
+            face.pixelsPerUnitMultiplier = Art.Density;
             Place(face.rectTransform, 0, 0, w, h);
 
             // Белым карточкам — тонкий контур: на белом окне и на светлом фоне они не теряются.

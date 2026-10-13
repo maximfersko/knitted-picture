@@ -2793,6 +2793,14 @@ namespace KnittedPicture.Game
             {
                 (target, below) = TipTarget(tipText.ToLowerInvariant());
             }
+
+            // Станок — главное место в игре, его выноска не закрывает: про клубок поля она ложится под ним
+            // (поле прямо под станком), а общий совет — сверху, над картинкой.
+            if (target != null && _fieldContent != null && target.IsChildOf(_fieldContent))
+            {
+                below = true;
+            }
+
             var maxW = Mathf.Min(W - 2 * Pad, 320f);
             var root = Ui.Node(Root, "Tip");
             _tip = root;
@@ -2818,13 +2826,20 @@ namespace KnittedPicture.Game
             }
             else
             {
+                // Общий совет — у верхнего края картинки: верхние ряды вяжутся последними, их можно закрыть.
                 cx = W / 2f;
-                top = bottom = _loomY + LoomTop + LoomH / 2f;
+                top = bottom = _top + 4f;
             }
 
             const float arrow = 9f;
             var x = Mathf.Clamp(cx - bubbleW / 2f, Pad, W - Pad - bubbleW);
-            var y = target == null ? top - bubbleH / 2f : below ? bottom + arrow + 2f : top - bubbleH - arrow - 2f;
+            if (target != null && below && bottom + arrow + 2f + bubbleH > H - 4f)
+            {
+                // Под целью не помещается (нижний край экрана) — над ней.
+                below = false;
+            }
+
+            var y = target == null ? top : below ? bottom + arrow + 2f : top - bubbleH - arrow - 2f;
             Ui.Place(root, x, y, bubbleW, bubbleH);
             var arrowX = Mathf.Clamp(cx - x, 22f, bubbleW - 22f);
 
@@ -3026,18 +3041,24 @@ namespace KnittedPicture.Game
                 _group = root.gameObject.AddComponent<CanvasGroup>();
                 var label = Ui.Label(root, type == BoosterType.Slot ? "Слот" : BoosterInfo.Name(type), 14, Palette.Ink);
                 var textW = label.preferredWidth;
-                var total = 22f + 6f + textW;
-                // Цветной детальный значок: латунные ножницы, стрелка из нити, лунка с плюсом.
+                var well = Mathf.Min(44f, w * 0.38f);
+                var total = well + 6f + textW;
+                var left = Mathf.Max(6f, w / 2f - total / 2f);
+
+                // Цветной детальный значок в мягкой лунке: латунные ножницы, стрелка из нити, лунка с плюсом.
+                var bowl = Ui.Image(root, "Well", Art2.IconWell, Color.white);
+                Ui.PlaceCenter(bowl.rectTransform, left + well / 2f, 30, well, well);
                 var art = Ui.Image(root, "Icon", Art2.Booster(type), Color.white);
-                Ui.PlaceCenter(art.rectTransform, w / 2f - total / 2f + 11f, 30, 32, 32);
-                Ui.Place(label.rectTransform, w / 2f - total / 2f + 28f, 0, textW + 4f, 60);
+                Ui.PlaceCenter(art.rectTransform, left + well / 2f, 30, well * 0.8f, well * 0.8f);
+                Ui.Place(label.rectTransform, left + well + 6f, 0, Mathf.Min(textW + 4f, w - left - well - 8f), 60);
                 label.alignment = TextAnchor.MiddleLeft;
 
-                var badge = Ui.Place(Ui.Node(root, "Badge"), w - 38f, -6f, 40, 20);
-                _badgeBack = Ui.Box(badge, "Back", 10, Palette.Ink);
+                // Запас или цена — на бирке, как число петель у клубков.
+                var badge = Ui.Place(Ui.Node(root, "Badge"), w - 44f, -8f, 47, 26);
+                _badgeBack = Ui.Image(badge, "Back", Art2.Tag, Palette.Ink);
                 Ui.Stretch(_badgeBack.rectTransform);
-                _badgeText = Ui.Label(badge, "", 11, Color.white);
-                Ui.Stretch(_badgeText.rectTransform);
+                _badgeText = Ui.Fit(Ui.Label(badge, "", 11, Color.white), 8);
+                Ui.Place(_badgeText.rectTransform, 47f * Art2.TagTextFrom, 0, 47f * (0.97f - Art2.TagTextFrom), 26);
                 Tap = root.gameObject.AddComponent<Tap>();
             }
 

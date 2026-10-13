@@ -80,10 +80,13 @@ namespace KnittedPicture.Game
             Ui.PlaceCenter(_iceDot.rectTransform, size * 0.86f, size * 0.18f, dot, dot);
 
             var badgeH = Mathf.Round(size * 0.42f);
-            _badge = Ui.Place(Ui.Node(root, "Badge"), size - badgeH * 0.95f, size - badgeH * 0.75f, badgeH * 1.15f, badgeH);
-            Ui.Stretch(Ui.Box(_badge, "Back", badgeH / 2f, Color.white).rectTransform);
-            _badgeText = Ui.Label(_badge, "", badgeH * 0.62f, Palette.Ink);
-            Ui.Stretch(_badgeText.rectTransform);
+            // Число петель — на бумажной бирке, привязанной ниточкой к клубку.
+            var tagH = badgeH * 1.1f;
+            var tagW = tagH * 1.8f;
+            _badge = Ui.Place(Ui.Node(root, "Badge"), size + badgeH * 0.2f - tagW, size - tagH * 0.75f, tagW, tagH);
+            Ui.Stretch(Ui.Image(_badge, "Back", Art2.Tag, Palette.Hex("#FFFDF7")).rectTransform);
+            _badgeText = Ui.Label(_badge, "", badgeH * 0.6f, Palette.Ink);
+            Ui.Place(_badgeText.rectTransform, tagW * Art2.TagTextFrom, 0, tagW * (0.97f - Art2.TagTextFrom), tagH);
 
             _knot = Ui.Place(Ui.Node(root, "Knot"), -badgeH * 0.3f, -badgeH * 0.3f, badgeH * 1.25f, badgeH);
             Ui.Stretch(Ui.Box(_knot, "Back", badgeH / 2f, Palette.Danger).rectTransform);

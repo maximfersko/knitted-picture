@@ -12,6 +12,7 @@ namespace KnittedPicture.ArtPreview
             Directory.CreateDirectory(dir);
             Classic(dir);
             Field(dir);
+            Panels(dir);
             Balls(dir);
             Loom(dir);
             Export(Path.Combine(dir, "sprites"));
@@ -110,6 +111,74 @@ namespace KnittedPicture.ArtPreview
             Png.Put(img, stitch, 1020, 20, 200, 200, Rgba.Hex("#F2303F"));
             Png.Put(img, gloss, 1020, 20, 200, 200);
             Png.Save(img, Path.Combine(dir, "field.png"));
+        }
+
+        /// <summary>
+        /// Карточки-«подушки», бирки на клубках и кнопки бустеров с лункой — как на игровом экране (2 px на точку).
+        /// </summary>
+        private static void Panels(string dir)
+        {
+            const float k = 2f;
+            var img = new Raster((int)(390 * k), (int)(330 * k));
+            Png.Fill(img, Rgba.Hex("#EDE7FF"));
+            const int density = 3;
+            void Card(float x, float top, float w, float h, float radius, Rgba tint)
+            {
+                var r = (int)MathF.Ceiling(radius * density);
+                var src = KnitRaster.SoftCard(r);
+                Sliced(img, src, r + 1, x * k, img.Height - (top + h) * k, w * k, h * k, (r + 1) * k / density, tint);
+            }
+
+            // Поле с клубками и бирками.
+            Card(12, 10, 366, 150, 24, Rgba.White);
+            string[] colors = { "#F2303F", "#F2303F", "#C8102E", "#F5C542", "#5FD7A5" };
+            var tag = KnitRaster.Tag();
+            for (var i = 0; i < colors.Length; i++)
+            {
+                var size = 58f;
+                var cx = 50 + i * 72;
+                var art = size / (BallRaster.Radius * 2f / BallRaster.Size);
+                var ball = BallRaster.Ball(Rgba.Hex(colors[i]));
+                Png.Put(img, BallRaster.Shadow(), (cx - size * 0.45f) * k, img.Height - (40 + size * 1.05f) * k, size * 0.95f * k, size * 0.3f * k);
+                Png.Put(img, ball, (cx - art / 2f - 2f) * k, img.Height - (40 + size / 2f + art / 2f) * k + 3f * k, art * k, art * k);
+                var th = size * 0.42f * 1.1f;
+                var tw = th * 1.8f;
+                Png.Put(img, tag, (cx + size / 2f + size * 0.2f - tw) * k, img.Height - (40 + size - th * 0.75f + th) * k, tw * k, th * k, Rgba.Hex("#FFFDF7"));
+            }
+
+            // Бустеры: подушка, лунка, значок, бирка с ценой.
+            var arts = new[] { LoomRaster.BoosterArt.Scissors, LoomRaster.BoosterArt.Undo, LoomRaster.BoosterArt.Slot };
+            var well = KnitRaster.IconWell();
+            for (var i = 0; i < 3; i++)
+            {
+                var x = 20 + i * 120f;
+                Card(x, 200, 110, 60, 18, Rgba.White);
+                Png.Put(img, well, (x + 14) * k, img.Height - (200 + 30 + 22) * k, 44 * k, 44 * k);
+                Png.Put(img, LoomRaster.Booster(arts[i]), (x + 18) * k, img.Height - (200 + 30 + 18) * k, 36 * k, 36 * k);
+                Png.Put(img, tag, (x + 110 - 40) * k, img.Height - (200 - 6 + 24) * k, 43 * k, 24 * k, i == 0 ? Rgba.Hex("#2B2350") : Rgba.Hex("#FFC23C"));
+            }
+
+            Card(20, 280, 350, 44, 22, Rgba.Hex("#17945F"));
+            Png.Save(img, Path.Combine(dir, "panels.png"));
+        }
+
+        /// <summary>9-срез: углы в масштабе, края и середина растянуты.</summary>
+        private static void Sliced(Raster dst, Raster src, int border, float x, float y, float w, float h, float corner, Rgba tint)
+        {
+            var cw = src.Width - 2 * border;
+            var ch = src.Height - 2 * border;
+            float[] sx = { 0, border, border + cw, src.Width };
+            float[] dx = { x, x + corner, x + w - corner, x + w };
+            float[] sy = { 0, border, border + ch, src.Height };
+            float[] dy = { y, y + corner, y + h - corner, y + h };
+            for (var j = 0; j < 3; j++)
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    var piece = src.Crop((int)sx[i], (int)sy[j], (int)(sx[i + 1] - sx[i]), (int)(sy[j + 1] - sy[j]));
+                    Png.Put(dst, piece, dx[i], dy[j], dx[i + 1] - dx[i], dy[j + 1] - dy[j], tint);
+                }
+            }
         }
 
         private const float Art2BallFill = BallRaster.Radius * 2f / BallRaster.Size;

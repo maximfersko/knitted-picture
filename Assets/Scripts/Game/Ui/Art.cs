@@ -55,6 +55,17 @@ namespace KnittedPicture.Game
         public static Sprite RoundRect(float radius) =>
             Cached("rr" + radius, () => SlicedBox(radius, 0f));
 
+        /// <summary>
+        /// Карточка-«подушка» (Image.Type.Sliced с pixelsPerUnitMultiplier = Density): свет сверху, лёгкая тень
+        /// к низу, блик по верхнему краю — в одном стиле с объёмными клубками.
+        /// </summary>
+        public static Sprite SoftCard(float radius)
+        {
+            var r = Mathf.Max(2, Mathf.CeilToInt(radius * Density));
+            var b = r + 1;
+            return Art2.Get("softCard" + r, () => KnitRaster.SoftCard(r), null, new Vector4(b, b, b, b));
+        }
+
         /// <summary>Контур скруглённого прямоугольника (рамка пустого слота).</summary>
         public static Sprite RoundRectOutline(float radius, float stroke) =>
             Cached("ro" + radius + "_" + stroke, () => SlicedBox(radius, stroke));
