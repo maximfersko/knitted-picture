@@ -205,8 +205,18 @@ namespace KnittedPicture.Game
             return t * t * (3f - 2f * t);
         }
 
-        /// <summary>Размер настоящего пикселя в единицах макета (меньше 1 внутри Raster.Render).</summary>
-        public static float Pixel = 1f;
+        [ThreadStatic]
+        private static float _pixel;
+
+        /// <summary>
+        /// Размер настоящего пикселя в единицах макета (меньше 1 внутри Raster.Render). Свой у каждого потока:
+        /// форма клубка рисуется в фоне, пока игра рисует другое.
+        /// </summary>
+        public static float Pixel
+        {
+            get => _pixel > 0f ? _pixel : 1f;
+            set => _pixel = value;
+        }
 
         /// <summary>Покрытие пикселя по знаковому расстоянию: мягкий край шириной в пиксель.</summary>
         public static float Cover(float distance) => Clamp01(0.5f - distance / Pixel);

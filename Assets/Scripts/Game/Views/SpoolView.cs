@@ -26,7 +26,7 @@ namespace KnittedPicture.Game
         private readonly RectTransform _ice;
         private readonly Text _iceText;
         private readonly Image _iceDot;
-        private Sprite? _plain;
+        private System.Func<Sprite>? _plain;
         private Color _tint;
         private readonly RectTransform _double;
         private readonly RectTransform _surplus;
@@ -129,11 +129,13 @@ namespace KnittedPicture.Game
         public void Bind(Spool spool, Color color, bool front, bool surplus = false, bool foreign = false)
         {
             var visible = spool.IsColorVisible;
-            _ball.sprite = !visible ? Art2.Ball(Palette.Hidden)
-                : spool.Rainbow ? Art2.RainbowBall
-                : Art2.Ball(color, false, spool.Thick);
+            var rainbow = spool.Rainbow;
+            var thick = spool.Thick;
+
+            // Спрайт берём заново, а не храним: невидимые клубки Art2.Trim может выгрузить.
+            _plain = () => !visible ? Art2.Ball(Palette.Hidden) : rainbow ? Art2.RainbowBall : Art2.Ball(color, false, thick);
+            _ball.sprite = _plain();
             _ball.color = Color.white;
-            _plain = _ball.sprite;
             _tint = color;
             _question.gameObject.SetActive(!visible);
 
@@ -171,7 +173,7 @@ namespace KnittedPicture.Game
         /// <summary>Чужая пряжа на поле: клубок намотан тесьмой цвета ткани (сам крестик — только на станке).</summary>
         public void SetFabric(bool fabric)
         {
-            _ball.sprite = fabric ? Art2.CanvasBall(_tint) : _plain;
+            _ball.sprite = fabric ? Art2.CanvasBall(_tint) : _plain?.Invoke() ?? _ball.sprite;
         }
 
         /// <summary>Метку «×2» на станке не показываем: там толстый клубок и так стоит на двух местах.</summary>

@@ -227,6 +227,9 @@ namespace KnittedPicture.Game
             }
 
             Tweens.Install(gameObject);
+
+            // Форма клубка (640 px, четыре слоя намотки) рисуется в фоне, пока грузится остальное.
+            System.Threading.Tasks.Task.Run(BallRaster.Warm);
             Reminders.CancelAll();
             Sfx.Install(gameObject);
             Levels = new LevelRepository();
@@ -635,6 +638,9 @@ namespace KnittedPicture.Game
             _screen?.Dispose();
             _route = route;
             _screen = route();
+
+            // Старый экран уже снят: лишние текстуры клубков освобождаем, когда он исчезнет со сцены.
+            Tweens.Delay(this, 0.2f, Art2.Trim);
         }
 
         private void CloseAllPopups()

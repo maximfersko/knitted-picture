@@ -15,18 +15,97 @@ namespace KnittedPicture.Game
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
         private static readonly Dictionary<string, Texture2D> Textures = new Dictionary<string, Texture2D>();
 
-        public static Sprite Get(string key, System.Func<Raster> draw, Vector2? pivot = null, Vector4? border = null)
+        /// <summary>Текстуры клубков по порядку последнего обращения (в конце — свежие): их выгружает Trim.</summary>
+        private static readonly List<string> Balls = new List<string>();
+
+        /// <summary>Сколько текстур клубков держать сверх тех, что сейчас на экране (каждая 640 px, ~2 МБ).</summary>
+        private const int KeepBalls = 12;
+
+        public static Sprite Get(string key, System.Func<Raster> draw, Vector2? pivot = null, Vector4? border = null) =>
+            Sub(key, key, draw, null, pivot, border);
+
+        /// <summary>
+        /// Спрайт из части текстуры textureKey (rect — в пикселях; null — вся). Несколько спрайтов делят одну
+        /// текстуру: клубок поля и клубок-значок — одна картинка в памяти.
+        /// </summary>
+        private static Sprite Sub(string key, string textureKey, System.Func<Raster> draw, Rect? rect, Vector2? pivot = null,
+            Vector4? border = null)
         {
+            if (textureKey.StartsWith("ball", System.StringComparison.Ordinal))
+            {
+                Balls.Remove(textureKey);
+                Balls.Add(textureKey);
+            }
+
             if (Cache.TryGetValue(key, out var sprite) && sprite != null)
             {
                 return sprite;
             }
 
-            var texture = Texture(key, draw, TextureWrapMode.Clamp);
-            sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), pivot ?? new Vector2(0.5f, 0.5f), 100f, 0,
+            var texture = Texture(textureKey, draw, TextureWrapMode.Clamp);
+            sprite = Sprite.Create(texture, rect ?? new Rect(0, 0, texture.width, texture.height), pivot ?? new Vector2(0.5f, 0.5f), 100f, 0,
                 SpriteMeshType.FullRect, border ?? Vector4.zero);
             Cache[key] = sprite;
             return sprite;
+        }
+
+        /// <summary>
+        /// Выгрузить текстуры клубков, которых нет ни на одной картинке сцены, кроме KeepBalls последних:
+        /// цветов в игре больше сотни, и без этого память росла бы от уровня к уровню.
+        /// </summary>
+        public static void Trim()
+        {
+            if (Balls.Count <= KeepBalls)
+            {
+                return;
+            }
+
+            var used = new HashSet<Texture>();
+            foreach (var image in Object.FindObjectsOfType<UnityEngine.UI.Image>(true))
+            {
+                if (image.sprite != null)
+                {
+                    used.Add(image.sprite.texture);
+                }
+            }
+
+            for (var i = Balls.Count - KeepBalls - 1; i >= 0; i--)
+            {
+                var key = Balls[i];
+                if (!Textures.TryGetValue(key, out var texture) || texture == null)
+                {
+                    Balls.RemoveAt(i);
+                    continue;
+                }
+
+                if (used.Contains(texture))
+                {
+                    continue;
+                }
+
+                var stale = new List<string>();
+                foreach (var pair in Cache)
+                {
+                    if (pair.Value == null || pair.Value.texture == texture)
+                    {
+                        stale.Add(pair.Key);
+                    }
+                }
+
+                foreach (var name in stale)
+                {
+                    if (Cache[name] != null)
+                    {
+                        Object.Destroy(Cache[name]);
+                    }
+
+                    Cache.Remove(name);
+                }
+
+                Object.Destroy(texture);
+                Textures.Remove(key);
+                Balls.RemoveAt(i);
+            }
         }
 
         /// <summary>Повторяемая текстура (бумага, верёвка) для RawImage и мешей.</summary>
@@ -140,15 +219,20 @@ namespace KnittedPicture.Game
         /// Детальный клубок в пропорциях старого спрайта (шар почти во весь квадрат, завиток внутри):
         /// подменяет окрашиваемый Art.YarnBall там, где клубок — значок или украшение.
         /// </summary>
-        public static Sprite YarnBall(Color c) => Get("ballTight" + Key(c), () => Tight(BallRaster.Ball(ToRgba(c))));
+        public static Sprite YarnBall(Color c) =>
+            Sub("ballTight" + Key(c), "ball" + Key(c) + BallRaster.Kind.Plain, () => BallRaster.Ball(ToRgba(c)), Tight);
 
-        public static Sprite YarnBallRainbow => Get("ballTightRainbow", () => Tight(BallRaster.Ball(Rgba.White, BallRaster.Kind.Rainbow)));
+        public static Sprite YarnBallRainbow => Sub("ballTightRainbow", "ballRainbow", () => BallRaster.Ball(Rgba.White, BallRaster.Kind.Rainbow), Tight);
 
-        private static Raster Tight(Raster ball)
+        /// <summary>Квадрат вокруг шара (вместе с завитком) внутри текстуры клубка.</summary>
+        private static Rect Tight
         {
-            const int q = BallRaster.Quality;
-            const int half = 74 * q;
-            return ball.Crop((int)BallRaster.Cx * q - half, (int)BallRaster.Cy * q - half, half * 2, half * 2);
+            get
+            {
+                const int q = BallRaster.Quality;
+                const int half = 74 * q;
+                return new Rect(BallRaster.Cx * q - half, BallRaster.Cy * q - half, half * 2, half * 2);
+            }
         }
 
         public static Sprite RainbowBall => Get("ballRainbow", () => BallRaster.Ball(Rgba.White, BallRaster.Kind.Rainbow));
