@@ -146,7 +146,8 @@ namespace KnittedPicture.QA
                 return false;
             }
 
-            var ms = clock.Elapsed.TotalMilliseconds;
+            // «step N» — N шагов станка разом: медленность меряем на один шаг, как их делает игра.
+            var ms = clock.Elapsed.TotalMilliseconds / (a.Kind == ActionKind.Step ? Math.Max(1, a.A) : 1);
             if (a.Kind == ActionKind.Hint && ms > result.SlowestHintMs)
             {
                 result.SlowestHintMs = ms;
