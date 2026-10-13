@@ -1385,9 +1385,10 @@ namespace KnittedPicture.Game
                 // Рабочая нить от клубка к спице: конец нити пружиной догоняет петлю, нить «утягивается».
                 var spoolTop = from + new Vector3(0f, _slotSpool * 0.32f * _fx.lossyScale.y, 0f);
                 var knitAt = _picture.KnitPoint(stitch.X, stitch.Y);
-                var edges = _picture.Edges(knitAt.y);
-                var edge = stitch.Slot < _slotFrames.Length / 2f ? edges.Left : edges.Right;
-                _ropes.Pull(stitch.Slot, spoolTop, knitAt, edge, color, rush);
+                // Нить идёт вдоль ближнего к петле края доски: не тянется через всё полотно.
+                var corners = _picture.Corners();
+                var corner = knitAt.x - corners.Left.x < corners.Right.x - knitAt.x ? corners.Left : corners.Right;
+                _ropes.Pull(stitch.Slot, spoolTop, knitAt, corner, color, rush);
                 var x = stitch.X;
                 var y = stitch.Y;
 

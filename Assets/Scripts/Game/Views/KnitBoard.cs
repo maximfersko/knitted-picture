@@ -70,6 +70,11 @@ namespace KnittedPicture.Game
         private float _nTarget;
         private float _nyTarget;
         private int _shownRow = -1;
+
+        /// <summary>Спица «приседает» на каждой петле: пружина смещения вниз, точки.</summary>
+        private float _dip;
+        private float _dipVelocity;
+        private bool _won;
         private int _lowestRow = -1;
 
         public KnitBoard(RectTransform parent, LoomGame game, Color[] colors, string title, float width, float height)
@@ -244,13 +249,13 @@ namespace KnittedPicture.Game
             return 2 * Margin + Header + game.Height * rh + gap + 14f;
         }
 
-        /// <summary>Правый и левый край окна доски (в мире): вдоль них идут рабочие нити.</summary>
-        public (Vector3 Left, Vector3 Right) Edges(float y)
+        /// <summary>Нижние углы доски (в мире, чуть внутрь по рамке): через них рабочие нити поднимаются по краю.</summary>
+        public (Vector3 Left, Vector3 Right) Corners()
         {
             var corners = new Vector3[4];
             Root.GetWorldCorners(corners);
             var inset = (corners[2].x - corners[0].x) / _width * (Margin * 0.5f);
-            return (new Vector3(corners[0].x + inset, y, 0f), new Vector3(corners[2].x - inset, y, 0f));
+            return (new Vector3(corners[0].x + inset, corners[0].y, 0f), new Vector3(corners[2].x - inset, corners[0].y, 0f));
         }
 
         /// <summary>Ширина столбика в точках (под неё — размер моли и колец).</summary>
@@ -388,6 +393,9 @@ namespace KnittedPicture.Game
             });
 
             UpdateLoop(x);
+
+            // Толчок спицы: петля снята — спица чуть кивает вниз и возвращается.
+            _dipVelocity += Mathf.Max(18f, _rh * 1.1f);
             return true;
         }
 
@@ -532,6 +540,15 @@ namespace KnittedPicture.Game
         /// <summary>Кадр: камера мягко догоняет цель, ряды и всё, что на клетках, встают на места.</summary>
         internal void Tick(float dt)
         {
+            // Пружина кивка спицы (недодемпфированная: лёгкий отскок, а не тряска).
+            const float w = 30f;
+            _dipVelocity += (-w * w * _dip - 2f * 0.55f * w * _dipVelocity) * dt;
+            _dip = Mathf.Clamp(_dip + _dipVelocity * dt, -1f, 3.5f);
+            if (_needle.gameObject.activeSelf && !_won)
+            {
+                _needle.anchoredPosition = new Vector2(0f, -(Margin + _ny + _dip));
+            }
+
             var k = 1f - Mathf.Exp(-dt * 10f);
             var moved = Mathf.Abs(_n - _nTarget) > 0.001f || Mathf.Abs(_ny - _nyTarget) > 0.05f;
             if (moved)
@@ -582,7 +599,7 @@ namespace KnittedPicture.Game
                 _labelRows[r].localScale = Vector3.one * Mathf.Max(0.001f, label);
             }
 
-            _needle.anchoredPosition = new Vector2(0f, -(Margin + _ny));
+            _needle.anchoredPosition = new Vector2(0f, -(Margin + _ny + _dip));
             PlaceMarks();
         }
 
@@ -826,6 +843,7 @@ namespace KnittedPicture.Game
             var needleFrom = _needle.anchoredPosition;
             _nTarget = h;
             _nyTarget = endNy;
+            _won = true;
             Tweens.Run(Root, 0.5f, t =>
             {
                 _n = Mathf.Lerp(startN, h, t);

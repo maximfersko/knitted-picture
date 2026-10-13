@@ -31,10 +31,11 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Клубок из слота slot вяжет петлю: нить тянется от from (верх клубка) вдоль края доски edge
-        /// (точка на кромке по высоте спицы) и сверху заходит к to (точка на спице).
+        /// Клубок из слота slot вяжет петлю: нить от from (верх клубка) поднимается под доску, вдоль её
+        /// низа идёт к углу corner (нижний угол доски с той стороны, где петля), вверх по краю и сверху
+        /// заходит к to (точка на спице). Так нить не ложится поперёк полотна.
         /// </summary>
-        public void Pull(int slot, Vector3 fromWorld, Vector3 toWorld, Vector3 edgeWorld, Color color, bool rush)
+        public void Pull(int slot, Vector3 fromWorld, Vector3 toWorld, Vector3 cornerWorld, Color color, bool rush)
         {
             if (!_strands.TryGetValue(slot, out var strand) || strand.Rope == null)
             {
@@ -44,6 +45,7 @@ namespace KnittedPicture.Game
                 strand = new Strand(rope);
                 var start = Local(fromWorld);
                 strand.End = start;
+                strand.Edge = Local(cornerWorld).x;
                 strand.Velocity = Vector2.zero;
                 strand.Rope.Reach = 0f;
                 _strands[slot] = strand;
@@ -51,7 +53,8 @@ namespace KnittedPicture.Game
 
             strand.From = Local(fromWorld);
             strand.Target = Local(toWorld);
-            strand.Edge = Local(edgeWorld).x;
+            strand.EdgeTarget = Local(cornerWorld).x;
+            strand.Bottom = Local(cornerWorld).y;
             strand.LastPull = _clock;
             strand.Rush = rush;
             strand.Rope.color = rush ? Color.Lerp(color, Color.white, 0.25f) : color;
@@ -103,22 +106,26 @@ namespace KnittedPicture.Game
                 reach = Mathf.MoveTowards(reach, active ? 1f : 0f, dt * (active ? 7f : 3.5f));
                 s.Tug = Mathf.MoveTowards(s.Tug, 0f, dt * 6f);
 
-                // Форма: от клубка вверх вдоль края доски, над спицей дугой к петле. Натяг петли
-                // выпрямляет дуги, ветер чуть качает нить у кромки.
+                // Петля перешла на другую половину доски — нить плавно перекидывается к другому краю.
+                s.Edge = Mathf.Lerp(s.Edge, s.EdgeTarget, 1f - Mathf.Exp(-dt * 6f));
+
+                // Маршрут: от клубка вверх под доску, вдоль низа к углу, вверх по краю, над спицей
+                // дугой к петле. Натяг петли выпрямляет дуги, ветер чуть качает нить у кромки.
                 var start = s.From;
                 var end = s.End;
                 var slack = 1f - 0.35f * s.Tug;
                 var sway = Mathf.Sin(_clock * 1.3f + pair.Key * 1.7f) * 3f;
                 var edge = s.Edge + sway;
-                var mid = new Vector2(edge, Mathf.Max(end.y, s.Target.y) + 22f);
-                var rise = Mathf.Max(30f, mid.y - start.y);
-                s.Rope.Start = start;
-                s.Rope.Control1 = start + new Vector2(0f, rise * 0.35f * slack + 16f);
-                s.Rope.MidIn = new Vector2(edge, mid.y - rise * 0.4f);
-                s.Rope.Mid = mid;
-                s.Rope.MidOut = new Vector2(edge, mid.y + 22f * slack);
-                s.Rope.Control2 = new Vector2(end.x + (edge - end.x) * 0.3f, end.y + 34f * slack);
-                s.Rope.End = end;
+                var top = Mathf.Max(end.y, s.Target.y) + 22f;
+                var under = Mathf.Min(s.Bottom - 8f, start.y + 26f);
+                s.Points[0] = start;
+                s.Points[1] = new Vector2(start.x + (edge - start.x) * 0.15f, (start.y + under) / 2f);
+                s.Points[2] = new Vector2((start.x + edge) / 2f, under);
+                s.Points[3] = new Vector2(edge, s.Bottom + 14f);
+                s.Points[4] = new Vector2(edge, top);
+                s.Points[5] = new Vector2(end.x + (edge - end.x) * 0.3f, end.y + 26f * slack);
+                s.Points[6] = end;
+                s.Rope.Points = s.Points;
                 s.Rope.Thickness = s.Rush ? 5f : 3.6f;
                 s.Rope.Flow += dt * (active ? 1.2f + 2.5f * s.Tug : 0f);
                 s.Rope.Reach = reach;
@@ -149,6 +156,9 @@ namespace KnittedPicture.Game
             public Vector2 From;
             public Vector2 Target;
             public float Edge;
+            public float EdgeTarget;
+            public float Bottom;
+            public readonly Vector2[] Points = new Vector2[7];
             public Vector2 End;
             public Vector2 Velocity;
             public float LastPull;
