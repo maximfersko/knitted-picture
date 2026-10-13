@@ -69,6 +69,32 @@ namespace KnittedPicture.Game
         public static readonly Color DangerSoft = Hex("#FFDDE9");
         public static readonly Color Link = Hex("#8B5CF6");
 
+        // ---------- 2.0: новые токены из «Основы 2.0» (Figma) ----------
+
+        /// <summary>Предупреждение: осталось одно место, вторая половина времени.</summary>
+        public static readonly Color Warn = Hex("#FF9A3C");
+
+        /// <summary>Ягодный: вязаная шкатулка-сундук.</summary>
+        public static readonly Color Berry = Hex("#C2417A");
+
+        public static readonly Color Brass = Hex("#E2B04A");
+        public static readonly Color BrassDark = Hex("#A8742A");
+
+        /// <summary>Фетр: подложки карточек пряжи, бирки.</summary>
+        public static readonly Color Felt = Hex("#FBF6EC");
+
+        /// <summary>Тени всегда лавандовые: цвет мягкой тени и отражённого света снизу.</summary>
+        public static readonly Color Shade = Hex("#5B45AE");
+        public static readonly Color Bounce = Hex("#C9BEF5");
+
+        /// <summary>Тёмные выноски и подсказки.</summary>
+        public static readonly Color Night = Hex("#3A2F6B");
+        public static readonly Color IceFill = Hex("#BFF1F5");
+        public static readonly Color IceRim = Hex("#5CC8D8");
+
+        /// <summary>Стол мастерской: фон экрана уровня.</summary>
+        public static readonly Color Table = Hex("#F7F1EA");
+
         /// <summary>Цвета пар связанных клубков: у каждой пары свой, чтобы было видно, кто с кем связан.</summary>
         private static readonly Color[] LinkPairs = { Hex("#8B5CF6"), Hex("#0EA5A4"), Hex("#F97316"), Hex("#2563EB") };
 

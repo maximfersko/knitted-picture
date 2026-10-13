@@ -33,7 +33,8 @@ namespace KnittedPicture.Game
             var raw = rt.gameObject.AddComponent<RawImage>();
             raw.texture = texture;
             raw.raycastTarget = false;
-            var aspect = (float)level.width / level.height;
+            // Клетка вязаной миниатюры шире, чем выше (как петля): пропорции по ней, у силуэта тоже.
+            var aspect = (float)level.width * MetaRaster.MiniCellW / (level.height * MetaRaster.MiniCellH);
             var w = aspect >= 1 ? size : size * aspect;
             var h = aspect >= 1 ? size / aspect : size;
             Ui.PlaceCenter(rt, cx, cy, w, h);
@@ -55,7 +56,8 @@ namespace KnittedPicture.Game
             raw.texture = texture;
             raw.color = color;
             raw.raycastTarget = false;
-            var aspect = (float)level.width / level.height;
+            // Клетка вязаной миниатюры шире, чем выше (как петля): пропорции по ней, у силуэта тоже.
+            var aspect = (float)level.width * MetaRaster.MiniCellW / (level.height * MetaRaster.MiniCellH);
             Ui.PlaceCenter(rt, cx, cy, aspect >= 1 ? size : size * aspect, aspect >= 1 ? size / aspect : size);
             return raw;
         }

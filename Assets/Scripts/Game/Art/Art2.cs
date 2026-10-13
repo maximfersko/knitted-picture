@@ -51,6 +51,25 @@ namespace KnittedPicture.Game
             return texture;
         }
 
+        /// <summary>Растр в текстуру без кэша (картинки уровней кэширует MiniPicture).</summary>
+        public static Texture2D Texture(Raster raster)
+        {
+            var texture = new Texture2D(raster.Width, raster.Height, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+            };
+            texture.SetPixelData(raster.ToBytes(), 0);
+            texture.Apply(true);
+            return texture;
+        }
+
+        public static Sprite Coin => Get("coin2", MetaRaster.Coin);
+
+        public static Sprite Gift => Get("gift2", MetaRaster.Gift);
+
+        public static Sprite Hoop => Get("hoop2", MetaRaster.Hoop);
+
         public static string Key(Color c) => ColorUtility.ToHtmlStringRGBA(c);
 
         public static Rgba ToRgba(Color c) => new Rgba(c.r, c.g, c.b, c.a);

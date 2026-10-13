@@ -127,16 +127,12 @@ namespace KnittedPicture.Game
             var room = nextTop - 12f - hoopY - 10f - 48f - 40f - 30f - cardEstimate;
             var hoop = Mathf.Clamp(room, 110f, compact ? 168f : 220f);
             var hoopRoot = Ui.PlaceCenter(Ui.Node(Root, "Hoop"), W / 2f, hoopY + hoop / 2f, hoop, hoop);
-            var clamp = Ui.Box(hoopRoot, "Clamp", 6, Palette.WoodDark);
-            Ui.PlaceCenter(clamp.rectTransform, hoop / 2f, 2f, 36, 22);
-            var cloth = Ui.Image(hoopRoot, "Cloth", Art.Circle, Palette.Hex(level.colors[0]));
-            Ui.PlaceCenter(cloth.rectTransform, hoop / 2f, hoop / 2f, hoop - 8, hoop - 8);
+            // Пяльцы 2.0: кремовая ткань, на ней вязаная миниатюра, сверху деревянный обруч с латунным винтом.
+            var cloth = Ui.Image(hoopRoot, "Cloth", Art.Circle, Palette.Hex("#FBF5EA"));
+            Ui.PlaceCenter(cloth.rectTransform, hoop / 2f, hoop / 2f, hoop - 6, hoop - 6);
             KnitInHoop(hoopRoot, level, hoop);
-            var ring = Ui.Image(hoopRoot, "Ring", Art.Ring, Palette.Wood);
-            Ui.PlaceCenter(ring.rectTransform, hoop / 2f, hoop / 2f, hoop + 14, hoop + 14);
-            // Второе, внутреннее кольцо пялец — темнее: ткань зажата между двумя обручами.
-            var inner = Ui.Image(hoopRoot, "InnerRing", Art.Ring, Palette.WoodDark);
-            Ui.PlaceCenter(inner.rectTransform, hoop / 2f, hoop / 2f, hoop - 2, hoop - 2);
+            var ring = Ui.Image(hoopRoot, "Hoop", Art2.Hoop, Color.white);
+            Ui.PlaceCenter(ring.rectTransform, hoop / 2f, hoop / 2f - hoop * 0.035f, hoop * 1.12f, hoop * 1.12f * 400f / 384f);
             Tweens.Scale(hoopRoot, 0.6f, 1f, 0.45f);
 
             // Картинка довязалась — ткань «натягивается»: пяльцы коротко пружинят, искры по кругу.

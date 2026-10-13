@@ -28,6 +28,10 @@ namespace KnittedPicture.Game
             const float ball = 92f;
             var back = Ui.Image(Card, "Back", Art.Circle, RaritySoft(yarn.Rarity));
             Ui.PlaceCenter(back.rectTransform, CardWidth / 2f, Cursor + ball / 2f + 4f, ball + 28f, ball + 28f);
+
+            // Строчка цвета редкости по кругу (2.0): обычная — тихая, легендарная — золотая.
+            var stitch = Ui.Image(Card, "Stitch", Art2.DashedRing(ball + 20f), Palette.WithAlpha(rarityColor, 0.8f));
+            Ui.PlaceCenter(stitch.rectTransform, CardWidth / 2f, Cursor + ball / 2f + 4f, ball + 20f, ball + 20f);
             var skein = YarnView.Create(Card, yarn, CardWidth / 2f, Cursor + ball / 2f + 4f, ball, owned);
             Tweens.Scale(skein, 0.6f, 1f, 0.35f, Ease.OutBack);
             if (active)

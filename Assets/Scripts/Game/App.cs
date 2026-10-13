@@ -540,9 +540,17 @@ namespace KnittedPicture.Game
             root.anchorMax = new Vector2(0.5f, 1f);
             root.pivot = new Vector2(0.5f, 1f);
             root.anchoredPosition = new Vector2(0, -(Screen.height / (_scaler != null ? _scaler.scaleFactor : 1f) - Height - BottomInset) - 64f);
-            var face = Ui.Box(root, "Face", 18, Palette.WithAlpha(Palette.Ink, 0.92f));
+            // Тост 2.0: белая плашка на мягкой лавандовой тени, тёмный текст.
+            var shadow = Ui.Image(root, "Shadow", Art.SoftShadow(18f, 10f), Palette.WithAlpha(Palette.Shade, 0.25f));
+            shadow.type = UnityEngine.UI.Image.Type.Sliced;
+            shadow.pixelsPerUnitMultiplier = Art.Density;
+            shadow.rectTransform.anchorMin = Vector2.zero;
+            shadow.rectTransform.anchorMax = Vector2.one;
+            shadow.rectTransform.offsetMin = new Vector2(-10f, -14f);
+            shadow.rectTransform.offsetMax = new Vector2(10f, 6f);
+            var face = Ui.Box(root, "Face", 26, Palette.Card);
             Ui.Stretch(face.rectTransform);
-            var label = Ui.Label(root, text, 15, Color.white, 12, 0, width - 24, 52);
+            var label = Ui.Label(root, text, 15, Palette.Ink, 12, 0, width - 24, 52);
             label.lineSpacing = 0.9f;
             var height = Mathf.Max(52f, label.preferredHeight + 18f);
             root.sizeDelta = new Vector2(width, height);

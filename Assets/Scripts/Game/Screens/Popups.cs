@@ -104,6 +104,7 @@ namespace KnittedPicture.Game
             : base(app)
         {
             AddTitle("Пауза");
+            AddText("Картинка подождёт. Моль тоже.", 15, 1).color = Palette.Ink2;
             if (warning != null)
             {
                 var warn = AddText(warning, 13, 1);

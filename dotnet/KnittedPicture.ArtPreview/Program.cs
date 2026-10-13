@@ -25,6 +25,43 @@ namespace KnittedPicture.ArtPreview
             Balls(dir);
             Loom(dir);
             Export(Path.Combine(dir, "sprites"));
+            Meta(dir);
+        }
+
+        /// <summary>Мета: шкатулка (закрытая), подарок, монета, пяльцы с вязаным сердечком.</summary>
+        private static void Meta(string dir)
+        {
+            var img = new Raster(1100, 420);
+            Png.Fill(img, Rgba.Hex("#F5F2FF"));
+            var body = MetaRaster.ChestBody(330, 177, false);
+            var lid = MetaRaster.ChestLid(348, 111, false);
+            Png.Put(img, body, 40, 60, 330, 177);
+            Png.Put(img, lid, 31, 60 + 177 - 30, 348, 111);
+            Png.Put(img, MetaRaster.Gift(), 400, 90, 192, 192);
+            Png.Put(img, MetaRaster.Coin(), 610, 140, 96, 96);
+
+            string[] heart =
+            {
+                "0000000000", "0110001100", "1111011110", "1111111111", "1111111111",
+                "0111111110", "0011111100", "0001111000", "0000110000", "0000000000",
+            };
+            var colors = new Rgba?[100];
+            var canvas = new bool[100];
+            for (var y = 0; y < 10; y++)
+            {
+                for (var x = 0; x < 10; x++)
+                {
+                    colors[y * 10 + x] = heart[y][x] == '1' ? Rgba.Hex("#E8475F") : (Rgba?)null;
+                }
+            }
+
+            var mini = MetaRaster.Mini(10, 10, colors, canvas);
+            var cloth = new Raster(300, 300);
+            cloth.Paint((x, y) => Rgba.Hex("#FBF5EA").WithAlpha(Draw.Cover(Draw.Circle(x, y, 150, 150, 148))));
+            Png.Put(img, cloth, 760, 45, 300, 300);
+            Png.Put(img, mini, 760 + 60, 45 + 70, 180, 180 * mini.Height / mini.Width);
+            Png.Put(img, MetaRaster.Hoop(), 760 - 30, 45 - 30, 360, 375);
+            Png.Save(img, Path.Combine(dir, "meta.png"));
         }
 
         /// <summary>Отдельные спрайты для сборки макета экрана (tools/design/screen_mock.py).</summary>

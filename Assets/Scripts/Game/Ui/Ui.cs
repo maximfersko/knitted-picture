@@ -251,10 +251,9 @@ namespace KnittedPicture.Game
         /// <summary>Монетка: жёлтый круг с ободком.</summary>
         public static RectTransform Coin(RectTransform parent, float cx, float cy, float size)
         {
+            // Монета 2.0: золото с ободом и выпуклым клубком.
             var root = PlaceCenter(Node(parent, "Coin"), cx, cy, size, size);
-            Stretch(Image(root, "Edge", Art.Circle, Palette.CoinShadow).rectTransform);
-            var face = Image(root, "Face", Art.Circle, Palette.Coin);
-            PlaceCenter(face.rectTransform, size / 2f, size / 2f - size * 0.06f, size * 0.84f, size * 0.84f);
+            Stretch(Image(root, "Face", Art2.Coin, Color.white).rectTransform);
             return root;
         }
 
@@ -266,6 +265,12 @@ namespace KnittedPicture.Game
             var root = Card(parent, "Button", x, y, w, h, radius, color, shadow, 5f, true);
             // Блик сверху: кнопка выпуклая, как будто свет падает сверху.
             Shine(root, w, h, radius);
+
+            // Строчка 2.0: пунктир внутри по краю, как прошитый фетр. На цветных — белый, на белых — лавандовый.
+            var light = textColor.r + textColor.g + textColor.b > 2.4f;
+            var stitch = Image(root, "Stitch", Art2.Stitched(w - 8f, h - 8f, Mathf.Max(4f, radius - 4f)),
+                light ? Palette.WithAlpha(Color.white, 0.75f) : Palette.WithAlpha(Palette.Bounce, 0.95f));
+            Place(stitch.rectTransform, 4f, 4f, w - 8f, h - 8f);
             var label = Label(root, text, fontSize, textColor);
             Place(label.rectTransform, 0, 0, w, h);
             var tap = root.gameObject.AddComponent<Tap>();
