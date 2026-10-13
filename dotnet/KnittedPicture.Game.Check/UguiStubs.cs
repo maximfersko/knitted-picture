@@ -89,6 +89,33 @@ namespace UnityEngine.UI
         public RectTransform rectTransform => (RectTransform)transform;
 
         public virtual Material material { get; set; }
+
+        public virtual Texture mainTexture => null;
+
+        public virtual void SetVerticesDirty()
+        {
+        }
+
+        protected virtual void OnPopulateMesh(VertexHelper vh)
+        {
+        }
+    }
+
+    public class VertexHelper
+    {
+        public int currentVertCount => 0;
+
+        public void Clear()
+        {
+        }
+
+        public void AddVert(Vector3 position, Color32 color, Vector4 uv0)
+        {
+        }
+
+        public void AddTriangle(int idx0, int idx1, int idx2)
+        {
+        }
     }
 
     public abstract class MaskableGraphic : Graphic

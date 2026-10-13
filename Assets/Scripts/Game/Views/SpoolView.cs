@@ -7,30 +7,34 @@ using UnityEngine.UI;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Клубок на экране: шарик пряжи, число петель, значки узелка, замка, ключа, связки,
-    /// льда и толстой нити. Радужный — в полоску. Закрытые клубки (не впереди) приглушены,
-    /// лишние (их цвет в картинке уже довязан) — отмечены галочкой.
+    /// Клубок 2.0: глянцевый шар из кручёной нити с ворсом и завитком, мягкая лавандовая тень под ним.
+    /// На клубок «надевается» то, что им управляет: лента связки с бантиком (цвет пары), замок на ремешке,
+    /// ключик, узелки сверху, ледяной пузырь с трещинами (чем меньше льда, тем больше трещин),
+    /// бумажная обёртка «?» у скрытого цвета. Число петель — на бирке-строчке справа внизу.
+    /// Задние ряды поля — пастельные, без бирок: главное видно у передних.
     /// </summary>
     public sealed class SpoolView
     {
+        private readonly Image _shadow;
         private readonly Image _ball;
         private readonly Text _question;
+        private readonly Image _ribbon;
+        private readonly Image _lock;
+        private readonly Image _key;
+        private readonly Image _knots;
+        private readonly Image _ice;
         private readonly RectTransform _badge;
         private readonly Text _badgeText;
-        private readonly RectTransform _knot;
-        private readonly Text _knotText;
-        private readonly RectTransform _lock;
-        private readonly RectTransform _key;
-        private readonly Image _linkRing;
-        private readonly Image _thickRing;
-        private readonly RectTransform _ice;
-        private readonly Text _iceText;
-        private readonly Image _iceDot;
-        private readonly Image _fabric;
         private readonly RectTransform _double;
         private readonly RectTransform _surplus;
         private readonly RectTransform _foreign;
         private readonly CanvasGroup _group;
+        private Color _color;
+        private bool _deep;
+        private bool _thick;
+        private bool _rainbow;
+        private bool _visible = true;
+        private bool _canvas;
 
         private SpoolView(RectTransform root, float size)
         {
@@ -38,70 +42,35 @@ namespace KnittedPicture.Game
             Size = size;
             _group = root.gameObject.AddComponent<CanvasGroup>();
 
-            _linkRing = Ui.Image(root, "LinkRing", Art.Ring, Palette.Link);
-            Ui.PlaceCenter(_linkRing.rectTransform, size / 2f, size / 2f, size + 10, size + 10);
+            // Спрайт шире шара: в нём место под ворс, завиток и тень. Шар занимает BallFill стороны.
+            var art = size / Art2.BallFill;
+            var cx = size / 2f;
+            var cy = size / 2f - size * 0.02f;
 
-            // Толстая нить: второй виток вокруг клубка.
-            _thickRing = Ui.Image(root, "ThickRing", Art.Ring, Color.white);
-            Ui.PlaceCenter(_thickRing.rectTransform, size / 2f, size / 2f, size + 8, size + 8);
+            _shadow = Ui.Image(root, "Shadow", Art2.BallShadow, Color.white);
+            Ui.PlaceCenter(_shadow.rectTransform, cx + size * 0.04f, size * 0.98f, size * 0.95f, size * 0.3f);
 
-            _ball = Ui.Image(root, "Ball", Art.YarnBall, Color.white, true);
-            Ui.PlaceCenter(_ball.rectTransform, size / 2f, size / 2f, size, size);
+            _ball = Image(root, "Ball", Art2.Ball(Color.white), art, cx, cy, true);
+            _question = Ui.Label(root, "?", size * 0.56f, Palette.Link, 0, -size * 0.02f, size, size);
+            _ribbon = Image(root, "Ribbon", Art2.Ribbon, art, cx, cy);
+            _lock = Image(root, "Lock", Art2.Padlock, art, cx, cy);
+            _key = Image(root, "Key", Art2.KeyCharm, art, cx, cy);
+            _knots = Image(root, "Knots", Art2.Knots(1), art, cx, cy);
+            _ice = Image(root, "Ice", Art2.Ice(0), art, cx, cy);
 
-            // Чужая пряжа цвета ткани: поверх клубка узор полотна.
-            _fabric = Ui.Image(root, "Fabric", Art.FabricOverlay, Color.white);
-            Ui.PlaceCenter(_fabric.rectTransform, size / 2f, size / 2f, size, size);
-
-            _question = Ui.Label(root, "?", size * 0.5f, Palette.Ink, 0, 0, size, size);
-
-            _lock = Ui.PlaceCenter(Ui.Node(root, "Lock"), size / 2f, size / 2f, size * 0.62f, size * 0.62f);
-            Ui.Stretch(Ui.Image(_lock, "Back", Art.Circle, Palette.WithAlpha(Palette.Ink, 0.8f)).rectTransform);
-            Ui.IconImage(_lock, Icon.Lock, Color.white, size * 0.31f, size * 0.31f, size * 0.38f);
-
-            _ice = Ui.PlaceCenter(Ui.Node(root, "Ice"), size / 2f, size / 2f, size * 1.04f, size * 1.04f);
-            Ui.Stretch(Ui.Box(_ice, "Block", size * 0.24f, new Color(0.78f, 0.92f, 1f, 0.82f)).rectTransform);
-            var frost = Ui.Image(_ice, "Frost", Art.RoundRectOutline(size * 0.24f, 2), Color.white);
-            frost.type = Image.Type.Sliced;
-            frost.pixelsPerUnitMultiplier = Art.Density;
-            Ui.Stretch(frost.rectTransform);
-            Ui.IconImage(_ice, Icon.Snowflake, Palette.Hex("#3D8FD1"), size * 0.52f, size * 0.36f, size * 0.42f);
-            _iceText = Ui.Label(_ice, "", size * 0.3f, Palette.Hex("#1F5F96"), 0, size * 0.56f, size * 1.04f, size * 0.4f);
-
-            // Цвет клубка подо льдом: точка в углу, чтобы было видно, петли какого цвета его растопят.
-            var dot = size * 0.3f;
-            var dotRing = Ui.Image(_ice, "DotRing", Art.Circle, Color.white);
-            Ui.PlaceCenter(dotRing.rectTransform, size * 0.86f, size * 0.18f, dot + 4f, dot + 4f);
-            _iceDot = Ui.Image(_ice, "Dot", Art.Circle, Color.white);
-            Ui.PlaceCenter(_iceDot.rectTransform, size * 0.86f, size * 0.18f, dot, dot);
-
-            var badgeH = Mathf.Round(size * 0.42f);
-            _badge = Ui.Place(Ui.Node(root, "Badge"), size - badgeH * 0.95f, size - badgeH * 0.75f, badgeH * 1.15f, badgeH);
-            Ui.Stretch(Ui.Box(_badge, "Back", badgeH / 2f, Color.white).rectTransform);
-            _badgeText = Ui.Label(_badge, "", badgeH * 0.62f, Palette.Ink);
+            var badgeH = Mathf.Round(size * 0.44f);
+            _badge = Ui.Place(Ui.Node(root, "Badge"), size - badgeH * 0.78f, size - badgeH * 0.86f, badgeH, badgeH);
+            Ui.Stretch(Ui.Image(_badge, "Back", Art2.Badge, Color.white).rectTransform);
+            _badgeText = Ui.Label(_badge, "", badgeH * 0.5f, Palette.Ink);
             Ui.Stretch(_badgeText.rectTransform);
 
-            _knot = Ui.Place(Ui.Node(root, "Knot"), -badgeH * 0.3f, -badgeH * 0.3f, badgeH * 1.25f, badgeH);
-            Ui.Stretch(Ui.Box(_knot, "Back", badgeH / 2f, Palette.Danger).rectTransform);
-            Ui.IconImage(_knot, Icon.Knot, Color.white, badgeH * 0.42f, badgeH / 2f, badgeH * 0.7f);
-            _knotText = Ui.Label(_knot, "", badgeH * 0.55f, Color.white, badgeH * 0.62f, 0, badgeH * 0.6f, badgeH);
-
-            _key = Ui.Place(Ui.Node(root, "Key"), size - badgeH * 0.8f, -badgeH * 0.3f, badgeH, badgeH);
-            Ui.Stretch(Ui.Image(_key, "Back", Art.Circle, Palette.Coin).rectTransform);
-            Ui.IconImage(_key, Icon.Key, Palette.Ink, badgeH / 2f, badgeH / 2f, badgeH * 0.7f);
-
-            _surplus = Ui.Place(Ui.Node(root, "Surplus"), -badgeH * 0.2f, size - badgeH * 0.8f, badgeH, badgeH);
-            Ui.Stretch(Ui.Image(_surplus, "Back", Art.Circle, Palette.Primary).rectTransform);
-            Ui.IconImage(_surplus, Icon.Check, Color.white, badgeH / 2f, badgeH / 2f, badgeH * 0.7f);
+            _surplus = Marker(root, "Surplus", Palette.Primary, Icon.Check, -badgeH * 0.15f, size - badgeH * 0.8f, badgeH * 0.85f);
+            _foreign = Marker(root, "Foreign", Palette.Danger, Icon.Close, -badgeH * 0.15f, size - badgeH * 0.8f, badgeH * 0.85f);
 
             // Толстый клубок займёт два места: метка «×2» слева внизу.
-            _double = Ui.Place(Ui.Node(root, "Double"), -badgeH * 0.3f, size - badgeH * 0.8f, badgeH * 1.25f, badgeH);
-            Ui.Stretch(Ui.Box(_double, "Back", badgeH / 2f, Palette.Ink).rectTransform);
-            var twice = Ui.Label(_double, "×2", badgeH * 0.55f, Color.white);
-            Ui.Stretch(twice.rectTransform);
-
-            _foreign = Ui.Place(Ui.Node(root, "Foreign"), -badgeH * 0.2f, size - badgeH * 0.8f, badgeH, badgeH);
-            Ui.Stretch(Ui.Image(_foreign, "Back", Art.Circle, Palette.Danger).rectTransform);
-            Ui.IconImage(_foreign, Icon.Close, Color.white, badgeH / 2f, badgeH / 2f, badgeH * 0.62f);
+            _double = Ui.Place(Ui.Node(root, "Double"), -badgeH * 0.25f, size - badgeH * 0.8f, badgeH * 1.2f, badgeH * 0.8f);
+            Ui.Stretch(Ui.Box(_double, "Back", badgeH * 0.4f, Palette.Ink).rectTransform);
+            Ui.Stretch(Ui.Label(_double, "×2", badgeH * 0.45f, Color.white).rectTransform);
         }
 
         public RectTransform Root { get; }
@@ -117,53 +86,87 @@ namespace KnittedPicture.Game
             return new SpoolView(root, size);
         }
 
+        private static Image Image(RectTransform root, string name, Sprite sprite, float art, float cx, float cy, bool raycast = false)
+        {
+            var image = Ui.Image(root, name, sprite, Color.white, raycast);
+            Ui.PlaceCenter(image.rectTransform, cx, cy, art, art);
+            return image;
+        }
+
+        private static RectTransform Marker(RectTransform root, string name, Color color, Icon icon, float x, float y, float size)
+        {
+            var marker = Ui.Place(Ui.Node(root, name), x, y, size, size);
+            Ui.Stretch(Ui.Image(marker, "Back", Art.Circle, color).rectTransform);
+            Ui.IconImage(marker, icon, Color.white, size / 2f, size / 2f, size * 0.66f);
+            return marker;
+        }
+
         /// <summary>
-        /// Показать клубок. front — передний в колонке (полностью яркий);
+        /// Показать клубок. front — передний в колонке (полный цвет, бирка, все накладки);
         /// surplus — его цвет в картинке уже довязан, клубок лишний.
         /// </summary>
         public void Bind(Spool spool, Color color, bool front, bool surplus = false, bool foreign = false)
         {
-            var visible = spool.IsColorVisible;
-            _ball.sprite = spool.Rainbow && visible ? Art.RainbowBall : Art.YarnBall;
-            _ball.color = !visible ? Palette.Hidden : spool.Rainbow ? Color.white : color;
-            _question.gameObject.SetActive(!visible);
-
-            _thickRing.gameObject.SetActive(spool.Thick);
-            _thickRing.color = visible && !spool.Rainbow ? Color.Lerp(color, Palette.Ink, 0.25f) : Palette.Ink3;
+            _visible = spool.IsColorVisible;
+            _color = color;
+            _deep = !front;
+            _thick = spool.Thick;
+            _rainbow = spool.Rainbow;
+            _canvas = false;
+            UpdateBall();
+            _question.gameObject.SetActive(!_visible);
 
             SetIce(spool.Ice);
-            _iceDot.color = visible ? color : Palette.Hidden;
-            _surplus.gameObject.SetActive(surplus && visible);
+            _surplus.gameObject.SetActive(surplus && _visible);
             _foreign.gameObject.SetActive(foreign);
-            _fabric.gameObject.SetActive(false);
-            _double.gameObject.SetActive(spool.Thick && !surplus && !foreign);
+            _double.gameObject.SetActive(spool.Thick && !surplus && !foreign && front);
 
             // Число петель — только у тех, кого можно взять сейчас: задние ряды без цифр, меньше шума.
-            _badge.gameObject.SetActive(visible && front);
+            _badge.gameObject.SetActive(_visible && front);
             _badgeText.text = spool.Loops.ToString();
 
-            _knot.gameObject.SetActive(spool.Knots > 0);
-            _knotText.text = spool.Knots > 1 ? spool.Knots.ToString() : string.Empty;
+            _knots.gameObject.SetActive(spool.Knots > 0);
+            if (spool.Knots > 0)
+            {
+                _knots.sprite = Art2.Knots(spool.Knots);
+            }
 
             _lock.gameObject.SetActive(spool.Locked);
             _key.gameObject.SetActive(spool.IsKey);
-            _linkRing.gameObject.SetActive(spool.Link != 0);
-            _linkRing.color = Palette.LinkPair(spool.Link);
-
-            _group.alpha = front ? surplus ? 0.75f : 1f : 0.5f;
+            _ribbon.gameObject.SetActive(spool.Link != 0);
+            _ribbon.color = Palette.LinkPair(spool.Link);
+            _group.alpha = surplus && front ? 0.8f : 1f;
         }
 
-        /// <summary>Лёд с числом петель до оттаивания; 0 — льда нет.</summary>
+        private void UpdateBall()
+        {
+            _ball.sprite = !_visible ? Art2.HiddenBall
+                : _rainbow ? Art2.RainbowBall
+                : _canvas ? Art2.CanvasBall(_color)
+                : Art2.Ball(_color, _deep, _thick);
+            _ball.color = _deep && (_rainbow || !_visible) ? new Color(1f, 1f, 1f, 0.7f) : Color.white;
+        }
+
+        /// <summary>Лёд: пузырь вокруг клубка; трещин тем больше, чем меньше петель осталось до оттаивания.</summary>
         public void SetIce(int ice)
         {
             _ice.gameObject.SetActive(ice > 0);
-            _iceText.text = ice.ToString();
+            if (ice > 0)
+            {
+                _ice.sprite = Art2.Ice(Mathf.Clamp(4 - ice, 0, 3));
+            }
         }
 
-        /// <summary>Чужая пряжа на поле: узор ткани поверх клубка (сам крестик — только на станке).</summary>
+        /// <summary>Чужая пряжа цвета ткани: клубок намотан нитями канвы.</summary>
         public void SetFabric(bool fabric)
         {
-            _fabric.gameObject.SetActive(fabric);
+            if (_canvas == fabric)
+            {
+                return;
+            }
+
+            _canvas = fabric;
+            UpdateBall();
         }
 
         /// <summary>Метку «×2» на станке не показываем: там толстый клубок и так стоит на двух местах.</summary>
@@ -172,10 +175,10 @@ namespace KnittedPicture.Game
             _double.gameObject.SetActive(false);
         }
 
-        /// <summary>Клубок на станке ждёт: его цвета сейчас нет на фронте (или фронт держит натяжение). Бледнее, чтобы было видно, что он не вяжет.</summary>
+        /// <summary>Клубок на станке ждёт: его цвета сейчас нет на фронте. Бледнее, чтобы было видно, что он не вяжет.</summary>
         public void SetWaiting(bool waiting)
         {
-            _group.alpha = waiting ? 0.5f : 1f;
+            _group.alpha = waiting ? 0.55f : 1f;
         }
 
         public void SetLoops(int loops)
@@ -184,28 +187,27 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Задний ряд поля — спокойнее: без узелков, замков, «×2» и галочки, пока клубок не вышел вперёд.
-        /// Цвет, «?» и кольцо связки остаются: по ним видно, что ждёт дальше.
+        /// Задний ряд поля — спокойнее: без узелков, замков и «×2», пока клубок не вышел вперёд.
+        /// Цвет, «?», лёд и лента связки остаются: по ним видно, что ждёт дальше.
         /// </summary>
         public void Quiet()
         {
-            _knot.gameObject.SetActive(false);
-            _lock.gameObject.SetActive(false);
+            _knots.gameObject.SetActive(false);
             _double.gameObject.SetActive(false);
             _surplus.gameObject.SetActive(false);
+            _shadow.color = new Color(1f, 1f, 1f, 0.5f);
         }
 
         public void HideBadges()
         {
             _badge.gameObject.SetActive(false);
-            _knot.gameObject.SetActive(false);
+            _knots.gameObject.SetActive(false);
             _lock.gameObject.SetActive(false);
             _key.gameObject.SetActive(false);
-            _linkRing.gameObject.SetActive(false);
+            _ribbon.gameObject.SetActive(false);
             _ice.gameObject.SetActive(false);
             _surplus.gameObject.SetActive(false);
             _foreign.gameObject.SetActive(false);
-            _fabric.gameObject.SetActive(false);
             _double.gameObject.SetActive(false);
         }
     }
