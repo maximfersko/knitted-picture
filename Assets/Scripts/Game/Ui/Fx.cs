@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Визуальные эффекты: бусина нитки летит от клубка к петле, искры, «пуф» пустого клубка,
+    /// Визуальные эффекты: нитка-клубочек летит от клубка к петле, искры, «пуф» пустого клубка,
     /// всплывающий текст. Маленькие кружки берутся из пула — их сотни в секунду.
     /// </summary>
     public static class Fx
@@ -18,31 +18,100 @@ namespace KnittedPicture.Game
         /// <summary>Сколько мировых единиц в одной точке макета у этого слоя.</summary>
         private static float Unit(RectTransform layer) => layer.lossyScale.x;
 
-        /// <summary>Нитка-бусина по дуге от клубка к петле, с коротким хвостом.</summary>
+        /// <summary>Хвост нитки: сколько точек тянется за клубочком и на какую долю пути каждая отстаёт.</summary>
+        private const int TailLength = 5;
+        private const float TailLag = 0.06f;
+
+        /// <summary>Чередуем сторону дуги: соседние нитки расходятся веером, а не летят одна в одну.</summary>
+        private static int _side = 1;
+
+        /// <summary>
+        /// Нитка от клубка к петле: клубочек выпрыгивает из клубка, летит по дуге (то левее, то правее),
+        /// покачиваясь, тянет за собой тающий хвост нитки и смазку скорости; у петли ныряет в неё,
+        /// и по ткани расходится колечко.
+        /// </summary>
         public static void Bead(RectTransform layer, Vector3 from, Vector3 to, Color color, float size, float duration, Action? arrived)
         {
             var unit = Unit(layer);
-            var lift = new Vector3(0, 70f * unit, 0);
-            var control = (from + to) / 2f + lift;
-            var head = Dot(layer, color, size);
+            _side = -_side;
+            var swing = _side * (26f + UnityEngine.Random.value * 34f) * unit;
+            var rise = (60f + UnityEngine.Random.value * 30f) * unit;
+            var c1 = from + new Vector3(swing, rise, 0f);
+            var c2 = to + new Vector3(-swing * 0.35f, rise * 0.75f, 0f);
+            var wobble = (UnityEngine.Random.value < 0.5f ? -1f : 1f) * (14f + UnityEngine.Random.value * 10f);
+
+            // Хвост: точки цвета нитки, всё мельче и прозрачнее; появляются, как только клубочек отлетел.
+            var tail = new Image[TailLength];
+            for (var i = 0; i < TailLength; i++)
+            {
+                var k = (i + 1f) / (TailLength + 1f);
+                tail[i] = Dot(layer, Palette.WithAlpha(color, 0.55f * (1f - k)), size * Mathf.Lerp(0.62f, 0.22f, k));
+                tail[i].rectTransform.position = from;
+                tail[i].gameObject.SetActive(false);
+            }
+
+            // Смазка скорости: вытянутый мазок под клубочком по направлению полёта.
+            var streak = Dot(layer, Palette.WithAlpha(Color.Lerp(color, Color.white, 0.35f), 0f), size);
+            var head = Dot(layer, Color.white, size * 1.15f, Art2.YarnBall(color));
+            head.rectTransform.position = from;
+            head.rectTransform.localScale = Vector3.one * 0.4f;
+
             Tweens.Run(head, duration, t =>
             {
-                head.rectTransform.position = Bezier(from, control, to, t);
-                head.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, 0.6f, t);
-            }, Ease.InOutCubic, () =>
+                var e = Ease.InOutCubic(t);
+                var p = Cubic(from, c1, c2, to, e);
+                head.rectTransform.position = p;
+
+                // Выпрыгнул из клубка с перелётом, в полёте чуть дышит, у петли сжимается и ныряет.
+                var scale = t < 0.18f ? Mathf.Lerp(0.4f, 1.12f, Ease.OutCubic(t / 0.18f))
+                    : t < 0.8f ? 1.12f - 0.08f * Ease.Bump((t - 0.18f) / 0.62f)
+                    : Mathf.Lerp(1.04f, 0.55f, (t - 0.8f) / 0.2f);
+                head.rectTransform.localScale = Vector3.one * scale;
+                head.rectTransform.localRotation = Quaternion.Euler(0f, 0f, wobble * Mathf.Sin(t * Mathf.PI * 2f));
+
+                // Скорость по времени: в середине пути мазок длиннее и ярче, у клубка и у петли его нет.
+                var ahead = Cubic(from, c1, c2, to, Ease.InOutCubic(Mathf.Min(1f, t + 0.03f)))
+                    - Cubic(from, c1, c2, to, Ease.InOutCubic(Mathf.Max(0f, t - 0.03f)));
+                var speed = ahead.magnitude / unit;
+                streak.rectTransform.position = p - ahead * 0.35f;
+                streak.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(ahead.y, ahead.x) * Mathf.Rad2Deg);
+                streak.rectTransform.localScale = new Vector3(1f + Mathf.Min(1.6f, speed / 30f), 0.5f, 1f) * scale;
+                streak.color = Palette.WithAlpha(streak.color, Mathf.Min(0.45f, speed / 60f));
+
+                for (var i = 0; i < TailLength; i++)
+                {
+                    var back = e - (i + 1) * TailLag;
+                    tail[i].gameObject.SetActive(back > 0f && t < 0.97f);
+                    if (back > 0f)
+                    {
+                        tail[i].rectTransform.position = Cubic(from, c1, c2, to, back);
+                    }
+                }
+            }, null, () =>
             {
                 Release(head);
+                Release(streak);
+                foreach (var dot in tail)
+                {
+                    Release(dot);
+                }
+
+                Ripple(layer, to, color, size);
                 arrived?.Invoke();
             });
+        }
 
-            for (var i = 1; i <= 2; i++)
+        /// <summary>Колечко по ткани там, куда села петля.</summary>
+        private static void Ripple(RectTransform layer, Vector3 at, Color color, float size)
+        {
+            var ring = Dot(layer, Palette.WithAlpha(Color.Lerp(color, Color.white, 0.4f), 0.8f), size * 1.1f, Art.Ring);
+            ring.rectTransform.position = at;
+            var tint = ring.color;
+            Tweens.Run(ring, 0.24f, t =>
             {
-                var tail = Dot(layer, Palette.WithAlpha(color, 0.45f / i), size * (1f - 0.2f * i));
-                var lag = 0.035f * i;
-                tail.rectTransform.position = from;
-                Tweens.Run(tail, duration, t => tail.rectTransform.position = Bezier(from, control, to, t), Ease.InOutCubic,
-                    () => Release(tail), lag);
-            }
+                ring.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.5f, 2.1f, t);
+                ring.color = Palette.WithAlpha(tint, 0.8f * (1f - t));
+            }, Ease.OutCubic, () => Release(ring));
         }
 
         /// <summary>Искры: несколько точек разлетаются и гаснут.</summary>
@@ -105,10 +174,10 @@ namespace KnittedPicture.Game
             }, null, () => UnityEngine.Object.Destroy(root.gameObject));
         }
 
-        private static Vector3 Bezier(Vector3 a, Vector3 b, Vector3 c, float t)
+        private static Vector3 Cubic(Vector3 a, Vector3 b, Vector3 c, Vector3 d, float t)
         {
             var u = 1f - t;
-            return u * u * a + 2f * u * t * b + t * t * c;
+            return u * u * u * a + 3f * u * u * t * b + 3f * u * t * t * c + t * t * t * d;
         }
 
         private static Image Dot(RectTransform layer, Color color, float size, Sprite? sprite = null)

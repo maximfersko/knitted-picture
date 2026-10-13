@@ -36,7 +36,7 @@ namespace KnittedPicture.Game
         private const float StepInterval = 0.065f;
 
         /// <summary>Полёт нитки от клубка к петле.</summary>
-        private const float BeadFlight = 0.36f;
+        private const float BeadFlight = 0.26f;
 
         /// <summary>Во сколько раз быстрее вяжет станок в «Разгоне».</summary>
         private const float RushSpeed = 2f;
@@ -73,9 +73,6 @@ namespace KnittedPicture.Game
         private readonly int _goldPerLoop;
 
         private PictureView _picture = null!;
-
-        /// <summary>Рабочие нити от клубков на станке к картинке.</summary>
-        private YarnRopes _ropes = null!;
         private RectTransform _pictureCard = null!;
         private RectTransform _progressFill = null!;
         private Text _progressText = null!;
@@ -235,7 +232,6 @@ namespace KnittedPicture.Game
             BuildGoals();
             BuildPicture();
             BuildLoom();
-            _ropes = YarnRopes.Create(Root);
             BuildField();
             BuildBoosters();
             if (_game.TimeLimit > 0)
@@ -1312,17 +1308,6 @@ namespace KnittedPicture.Game
             _lowestRow = lowest < 0 ? 0 : lowest;
         }
 
-        /// <summary>Нижний угол карточки картинки (чуть внутрь) с той стороны, где петля: по нему нить поднимается к ней.</summary>
-        private Vector3 CardCorner(Vector3 target)
-        {
-            var corners = new Vector3[4];
-            _pictureCard.GetWorldCorners(corners);
-            var inset = 7f * _fx.lossyScale.x;
-            var left = new Vector3(corners[0].x + inset, corners[0].y + inset, 0f);
-            var right = new Vector3(corners[3].x - inset, corners[3].y + inset, 0f);
-            return target.x - left.x < right.x - target.x ? left : right;
-        }
-
         private void Present(StepResult step)
         {
             var changed = new HashSet<int>();
@@ -1342,15 +1327,14 @@ namespace KnittedPicture.Game
                 var gold = _game.IsGold(x, y);
                 var caught = gold && _tempo.Active;
 
-                // Рабочая нить: от клубка на станке под карточкой картинки, вверх по ближнему краю
-                // и сверху к петле. Кончик догоняет петлю пружиной, витки бегут к ней; в «Разгоне» нить толще и светлее.
-                var spoolTop = from + new Vector3(0f, _slotSpool * 0.32f * _fx.lossyScale.y, 0f);
-                _ropes.Pull(stitch.Slot, spoolTop, to, CardCorner(to), color, rush);
-                Tweens.Delay(_fx, YarnRopes.Reach, () =>
+                // Нитка-клубочек летит от клубка к петле по дуге с хвостом; в «Разгоне» светится и крупнее.
+                var beadColor = rush ? Color.Lerp(color, Color.white, 0.3f) : color;
+                var beadSize = Mathf.Max(10f, _slotSpool * 0.28f) * (rush ? 1.25f : 1f);
+                Fx.Bead(_fx, from, to, beadColor, beadSize, BeadFlight, () =>
                 {
                     if (_picture.Land(x, y))
                     {
-                        Tweens.Delay(_fx, 0.12f, () => Fx.Sparkle(_fx, to, rush ? RushColor : color, rush ? 5 : 3, rush ? 24f : 16f));
+                        Fx.Sparkle(_fx, to, rush ? RushColor : color, rush ? 5 : 3, rush ? 24f : 16f);
                         Sfx.Play(Sound.Stitch, 0.5f);
                     }
 
@@ -1376,7 +1360,6 @@ namespace KnittedPicture.Game
 
             foreach (var done in step.Completed)
             {
-                _ropes.Release(done.Slot);
                 var slot = _slotViews[done.Slot];
                 if (slot != null)
                 {
@@ -1914,7 +1897,6 @@ namespace KnittedPicture.Game
             HideTip();
             SetScissors(false);
             MothLeave();
-            Tweens.Delay(Root, BeadFlight, _ropes.ReleaseAll);
             Tweens.Delay(Root, BeadFlight + 0.1f, () =>
             {
                 _picture.Refresh();
