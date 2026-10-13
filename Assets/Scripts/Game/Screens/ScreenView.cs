@@ -10,7 +10,7 @@ namespace KnittedPicture.Game
         protected ScreenView(App app, string name)
         {
             App = app;
-            Root = Ui.Stretch(Ui.Node(app.Frame, name));
+            Root = Ui.Layer(Ui.Stretch(Ui.Node(app.Frame, name)), true);
         }
 
         public RectTransform Root { get; }

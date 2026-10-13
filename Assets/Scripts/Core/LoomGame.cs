@@ -103,7 +103,23 @@ namespace KnittedPicture.Core
         /// <summary>Слоты станка. Толстый клубок стоит в двух слотах сразу — см. <see cref="IsTail"/>.</summary>
         public IReadOnlyList<Spool?> Slots => _slots;
 
-        public int FreeSlots => _slots.Count(s => s == null);
+        public int FreeSlots
+        {
+            get
+            {
+                // Без LINQ: зовётся каждый кадр, а лямбда с перечислителем — мусор для сборщика.
+                var free = 0;
+                foreach (var slot in _slots)
+                {
+                    if (slot == null)
+                    {
+                        free++;
+                    }
+                }
+
+                return free;
+            }
+        }
 
         public int ColumnCount => _columns.Count;
 
@@ -123,8 +139,29 @@ namespace KnittedPicture.Core
         /// <summary>Принятые тапы: клубок на станок, узелок, ножницы.</summary>
         public int Taps { get; private set; }
 
+        /// <summary>
+        /// Растёт с каждым действием игрока (ход, слот, ножницы, отмена, время). Вязка сама по себе его не меняет:
+        /// она детерминирована, поэтому всё, что зависит только от будущего партии (WinIsCertain), между
+        /// действиями можно не пересчитывать.
+        /// </summary>
+        public int Version { get; private set; }
+
         /// <summary>Есть ли на станке работа: клубок долетает, может связать петлю или уходит как лишний.</summary>
-        public bool IsBusy => _slots.Any(s => s != null && (s.Warmup > 0 || HasWork(s) || IsSurplus(s)));
+        public bool IsBusy
+        {
+            get
+            {
+                foreach (var s in _slots)
+                {
+                    if (s != null && (s.Warmup > 0 || HasWork(s) || IsSurplus(s)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
         /// <summary>Колонка поля, передний клубок — с индексом 0.</summary>
         public IReadOnlyList<Spool> Column(int index) => _columns[index];
@@ -420,6 +457,7 @@ namespace KnittedPicture.Core
             }
 
             _slots.Add(null);
+            Version++;
             Reevaluate();
             return true;
         }
@@ -448,6 +486,7 @@ namespace KnittedPicture.Core
             }
 
             TimeLeft += seconds;
+            Version++;
             if (_status == GameStatus.TimeUp)
             {
                 _status = GameStatus.Playing;
@@ -482,6 +521,7 @@ namespace KnittedPicture.Core
             }
 
             _status = GameStatus.Playing;
+            Version++;
             Reevaluate();
             return true;
         }
@@ -510,6 +550,7 @@ namespace KnittedPicture.Core
             _grid.LoadState(snapshot.Done);
             Taps = snapshot.Taps;
             _status = GameStatus.Playing;
+            Version++;
             Reevaluate();
             return true;
         }
@@ -626,6 +667,7 @@ namespace KnittedPicture.Core
             SaveSnapshot();
             TimerStarted = true;
             Taps++;
+            Version++;
             var spool = _columns[column][depth];
 
             if (!scissors && spool.Knots > 0)

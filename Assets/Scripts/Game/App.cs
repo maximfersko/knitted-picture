@@ -221,6 +221,10 @@ namespace KnittedPicture.Game
         {
             Instance = this;
             Application.targetFrameRate = 60;
+
+            // Плоский интерфейс: сглаживание и анизотропия ничего не дают, а стоят памяти и заполнения.
+            QualitySettings.antiAliasing = 0;
+            QualitySettings.anisotropicFiltering = AnisotropicFiltering.Disable;
             if (Application.isMobilePlatform)
             {
                 Screen.orientation = ScreenOrientation.Portrait;
@@ -269,6 +273,8 @@ namespace KnittedPicture.Game
             {
                 action();
             }
+
+            Art2.Pump();
 
             if (Screen.width != _screenSize.x || Screen.height != _screenSize.y || Screen.safeArea != _safeArea)
             {
@@ -713,6 +719,7 @@ namespace KnittedPicture.Game
             if (Camera.main != null)
             {
                 Camera.main.backgroundColor = Palette.Ground;
+                Lean(Camera.main);
                 return;
             }
 
@@ -722,7 +729,20 @@ namespace KnittedPicture.Game
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = Palette.Ground;
             camera.orthographic = true;
+            Lean(camera);
             go.tag = "MainCamera";
+        }
+
+        /// <summary>
+        /// Камера только чистит экран цветом фона (интерфейс рисует Canvas поверх): ей нечего отсекать и
+        /// незачем держать буферы сглаживания и HDR — это лишняя память и пропускная способность на слабом GPU.
+        /// </summary>
+        private static void Lean(Camera camera)
+        {
+            camera.cullingMask = 0;
+            camera.allowMSAA = false;
+            camera.allowHDR = false;
+            camera.useOcclusionCulling = false;
         }
 
         private void BuildCanvas()
@@ -749,7 +769,7 @@ namespace KnittedPicture.Game
             Ui.Stretch(pattern.rectTransform);
             _pattern = pattern;
             _frame = Ui.Node(_canvas, "Frame");
-            _popupLayer = Ui.Stretch(Ui.Node(_canvas, "Popups"));
+            _popupLayer = Ui.Layer(Ui.Stretch(Ui.Node(_canvas, "Popups")), true);
             ApplyLayout();
         }
 

@@ -64,20 +64,30 @@ namespace KnittedPicture.Game
             }
         }
 
-        private static void MiniStitch(Raster r, int bx, int by, Rgba color)
+        /// <summary>
+        /// Петля миниатюры одна на все клетки: форма (покрытие и светотень) считается один раз, дальше —
+        /// только умножение на цвет. Альбом из полусотни картинок собирается в разы быстрее.
+        /// </summary>
+        private static readonly Lazy<(float Cover, float Value)[]> MiniTemplate = new Lazy<(float, float)[]>(BuildMiniTemplate);
+
+        private const int TemplateW = MiniCellW + 2;
+        private const int TemplateH = MiniCellH + 6;
+
+        private static (float Cover, float Value)[] BuildMiniTemplate()
         {
-            var cx = bx + MiniCellW / 2f;
-            for (var py = by; py < by + MiniCellH + 6; py++)
+            var template = new (float, float)[TemplateW * TemplateH];
+            var cx = MiniCellW / 2f + 1f;
+            for (var py = 0; py < TemplateH; py++)
             {
-                for (var px = bx - 1; px < bx + MiniCellW + 1; px++)
+                for (var tx = 0; tx < TemplateW; tx++)
                 {
-                    var x = px + 0.5f;
+                    var x = tx + 0.5f;
                     var y = py + 0.5f;
                     var best = float.MaxValue;
                     var value = 0f;
                     for (var side = -1; side <= 1; side += 2)
                     {
-                        var d = Draw.Capsule(x, y, cx + side * 0.7f, by + 2f, cx + side * 4f, by + MiniCellH + 1.5f, 2.2f, 4.2f, out var t, out var across);
+                        var d = Draw.Capsule(x, y, cx + side * 0.7f, 2f, cx + side * 4f, MiniCellH + 1.5f, 2.2f, 4.2f, out var t, out var across);
                         if (d < best)
                         {
                             best = d;
@@ -86,10 +96,24 @@ namespace KnittedPicture.Game
                         }
                     }
 
-                    var cover = Draw.Cover(best);
+                    template[py * TemplateW + tx] = (Draw.Cover(best), value);
+                }
+            }
+
+            return template;
+        }
+
+        private static void MiniStitch(Raster r, int bx, int by, Rgba color)
+        {
+            var template = MiniTemplate.Value;
+            for (var py = 0; py < TemplateH; py++)
+            {
+                for (var tx = 0; tx < TemplateW; tx++)
+                {
+                    var (cover, value) = template[py * TemplateW + tx];
                     if (cover > 0f)
                     {
-                        r.Blend(px, py, color.Scale(value).WithAlpha(cover));
+                        r.Blend(bx - 1 + tx, by + py, color.Scale(value).WithAlpha(cover));
                     }
                 }
             }

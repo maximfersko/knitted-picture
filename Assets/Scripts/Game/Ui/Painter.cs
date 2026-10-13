@@ -122,7 +122,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 

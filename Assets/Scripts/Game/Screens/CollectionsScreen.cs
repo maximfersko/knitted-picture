@@ -78,7 +78,11 @@ namespace KnittedPicture.Game
                 }
             }
 
-            Apply();
+            // Карусель стоит — ничего не двигаем: иначе экран пересобирался бы каждый кадр впустую.
+            if (_dragging || _pos != _appliedPos)
+            {
+                Apply();
+            }
         }
 
         /// <summary>
@@ -182,8 +186,12 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Лента, «перетекающая» плашка активной вкладки и цвет подписей — по текущей позиции.</summary>
+        /// <summary>Положение ленты, которое уже показано на экране.</summary>
+        private float _appliedPos = float.NaN;
+
         private void Apply()
         {
+            _appliedPos = _pos;
             _strip.anchoredPosition = new Vector2(-_pos * W, _strip.anchoredPosition.y);
             if (_pages.Length < 2)
             {

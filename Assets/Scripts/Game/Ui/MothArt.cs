@@ -430,7 +430,7 @@ namespace KnittedPicture.Game
                 filterMode = FilterMode.Trilinear,
             };
             texture.SetPixels32(pixels);
-            texture.Apply(true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, w, h), pivot, 100f);
         }
     }

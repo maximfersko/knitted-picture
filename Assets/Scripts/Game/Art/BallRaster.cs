@@ -52,7 +52,24 @@ namespace KnittedPicture.Game
         /// Форма клубка каждого вида (без цвета): рисуется один раз за запуск на всех ядрах, а цвет
         /// накладывается простым проходом. Так клубок в 640 px стоит на старте уровня миллисекунды, а не секунды.
         /// </summary>
-        private static readonly Dictionary<Kind, byte[]> Shapes = new Dictionary<Kind, byte[]>();
+        private static readonly Dictionary<Kind, Shape> Shapes = new Dictionary<Kind, Shape>();
+
+        /// <summary>Каналы формы и для каждой строки — отрезок [From, To), где есть хоть что-то: края пустые, их не красим.</summary>
+        private sealed class Shape
+        {
+            public Shape(byte[] data, int[] from, int[] to)
+            {
+                Data = data;
+                From = from;
+                To = to;
+            }
+
+            public byte[] Data { get; }
+
+            public int[] From { get; }
+
+            public int[] To { get; }
+        }
 
         /// <summary>
         /// Клубок: четыре слоя намотки (основа по всему шару и три ленты поверх, каждая отбрасывает мягкую
@@ -64,9 +81,30 @@ namespace KnittedPicture.Game
         /// </summary>
         public static Raster Ball(Rgba color, Kind kind = Kind.Plain)
         {
-            var shape = ShapeOf(kind);
             const int n = Size * Quality;
+            var bytes = BallBytes(color, kind);
             var r = new Raster(n, n);
+            for (var i = 0; i < n * n; i++)
+            {
+                r.Pixels[i] = new Rgba(bytes[i * 4] / 255f, bytes[i * 4 + 1] / 255f, bytes[i * 4 + 2] / 255f, bytes[i * 4 + 3] / 255f);
+            }
+
+            return r;
+        }
+
+        /// <summary>Сторона текстуры клубка в пикселях.</summary>
+        public const int Pixels = Size * Quality;
+
+        /// <summary>
+        /// Клубок сразу в байты RGBA32 (строки снизу вверх, как ждёт Texture2D.SetPixelData): без
+        /// промежуточного растра в 6,5 МБ. into — буфер Pixels·Pixels·4 для повторного использования
+        /// (пусть и грязный: пустые пиксели тоже записываются). Можно звать из фонового потока.
+        /// </summary>
+        public static byte[] BallBytes(Rgba color, Kind kind = Kind.Plain, byte[]? into = null)
+        {
+            var shape = ShapeOf(kind);
+            const int n = Pixels;
+            var bytes = into != null && into.Length == n * n * 4 ? into : new byte[n * n * 4];
             var rainbow = kind == Kind.Rainbow;
 
             // Тона по каналу формы заранее: 256 значений светотени вместо пересчёта в каждом пикселе.
@@ -75,73 +113,86 @@ namespace KnittedPicture.Game
             var tails = Lut(rainbow ? Hue(0.92f) : color, TailMin, TailRange);
             var lighter = color.Shade(0.25f);
             var hazeColor = color.Shade(-0.05f);
+            var data = shape.Data;
             Parallel.For(0, n, py =>
             {
-                for (var px = 0; px < n; px++)
+                // Пустые края строки — сразу нули: красить нечего.
+                var from = shape.From[py];
+                var to = shape.To[py];
+                var row = py * n * 4;
+                Array.Clear(bytes, row, from * 4);
+                Array.Clear(bytes, row + to * 4, (n - to) * 4);
+                for (var px = from; px < to; px++)
                 {
                     var i = py * n + px;
                     var o = i * Channels;
                     var result = Rgba.Clear;
-                    var cover = shape[o];
+                    var cover = data[o];
                     if (cover > 0)
                     {
                         Rgba c;
                         if (rainbow)
                         {
-                            var hue = Hue(shape[o + 5] / 255f);
-                            c = hue.Shade(shape[o + 1] / 255f * ShadeRange + ShadeMin);
-                            c = Rgba.Lerp(c, Rgba.White, shape[o + 2] / 255f);
-                            c = Rgba.Lerp(c, hue.Shade(0.25f), shape[o + 3] / 255f);
+                            var hue = Hue(data[o + 5] / 255f);
+                            c = hue.Shade(data[o + 1] / 255f * ShadeRange + ShadeMin);
+                            c = Rgba.Lerp(c, Rgba.White, data[o + 2] / 255f);
+                            c = Rgba.Lerp(c, hue.Shade(0.25f), data[o + 3] / 255f);
                         }
                         else
                         {
-                            c = body[shape[o + 1]];
-                            if (shape[o + 2] > 0)
+                            c = body[data[o + 1]];
+                            if (data[o + 2] > 0)
                             {
-                                c = Rgba.Lerp(c, Rgba.White, shape[o + 2] / 255f);
+                                c = Rgba.Lerp(c, Rgba.White, data[o + 2] / 255f);
                             }
 
-                            if (shape[o + 3] > 0)
+                            if (data[o + 3] > 0)
                             {
-                                c = Rgba.Lerp(c, lighter, shape[o + 3] / 255f);
+                                c = Rgba.Lerp(c, lighter, data[o + 3] / 255f);
                             }
                         }
 
-                        if (shape[o + 4] > 0)
+                        if (data[o + 4] > 0)
                         {
-                            c = c.Shade(-0.12f * shape[o + 4] / 255f);
+                            c = c.Shade(-0.12f * data[o + 4] / 255f);
                         }
 
                         result = c.WithAlpha(cover / 255f);
                     }
 
-                    if (shape[o + 6] > 0)
+                    if (data[o + 6] > 0)
                     {
-                        var haze = rainbow ? Hue(shape[o + 9] / 255f).Shade(-0.05f) : hazeColor;
-                        result = Rgba.Over(haze.WithAlpha(shape[o + 6] / 255f * HazeMax), result);
+                        var haze = rainbow ? Hue(data[o + 9] / 255f).Shade(-0.05f) : hazeColor;
+                        result = Rgba.Over(haze.WithAlpha(data[o + 6] / 255f * HazeMax), result);
                     }
 
-                    if (shape[o + 7] > 0)
+                    if (data[o + 7] > 0)
                     {
-                        var hair = rainbow ? Hue(shape[o + 9] / 255f).Shade(shape[o + 8] / 255f * HairRange + HairMin) : hairs[shape[o + 8]];
-                        result = Rgba.Over(hair.WithAlpha(shape[o + 7] / 255f), result);
+                        var hair = rainbow ? Hue(data[o + 9] / 255f).Shade(data[o + 8] / 255f * HairRange + HairMin) : hairs[data[o + 8]];
+                        result = Rgba.Over(hair.WithAlpha(data[o + 7] / 255f), result);
                     }
 
-                    if (shape[o + 10] > 0 && result.A > 0f)
+                    if (data[o + 10] > 0 && result.A > 0f)
                     {
-                        result = Rgba.Lerp(result, result.Shade(-0.35f).WithAlpha(result.A), shape[o + 10] / 255f * TailShadowMax);
+                        result = Rgba.Lerp(result, result.Shade(-0.35f).WithAlpha(result.A), data[o + 10] / 255f * TailShadowMax);
                     }
 
-                    if (shape[o + 11] > 0)
+                    if (data[o + 11] > 0)
                     {
-                        result = Rgba.Over(tails[shape[o + 12]].WithAlpha(shape[o + 11] / 255f), result);
+                        result = Rgba.Over(tails[data[o + 12]].WithAlpha(data[o + 11] / 255f), result);
                     }
 
-                    r.Pixels[i] = result;
+                    var b = i * 4;
+                    bytes[b] = ToByte(result.R);
+                    bytes[b + 1] = ToByte(result.G);
+                    bytes[b + 2] = ToByte(result.B);
+                    bytes[b + 3] = ToByte(result.A);
                 }
             });
-            return r;
+            return bytes;
         }
+
+        private static byte ToByte(float v) => (byte)(v <= 0f ? 0 : v >= 1f ? 255 : (int)(v * 255f + 0.5f));
 
         private static Rgba[] Lut(Rgba color, float min, float range)
         {
@@ -157,13 +208,35 @@ namespace KnittedPicture.Game
         /// <summary>Нарисовать форму обычного клубка заранее (игра зовёт в фоне при запуске).</summary>
         public static void Warm() => ShapeOf(Kind.Plain);
 
-        private static byte[] ShapeOf(Kind kind)
+        private static Shape ShapeOf(Kind kind)
         {
             lock (Shapes)
             {
                 if (!Shapes.TryGetValue(kind, out var shape))
                 {
-                    shape = BuildShape(kind);
+                    var data = BuildShape(kind);
+                    const int n = Pixels;
+                    var from = new int[n];
+                    var to = new int[n];
+                    for (var py = 0; py < n; py++)
+                    {
+                        var first = n;
+                        var last = 0;
+                        for (var px = 0; px < n; px++)
+                        {
+                            var o = (py * n + px) * Channels;
+                            if (data[o] > 0 || data[o + 6] > 0 || data[o + 7] > 0 || data[o + 11] > 0)
+                            {
+                                first = Math.Min(first, px);
+                                last = px + 1;
+                            }
+                        }
+
+                        from[py] = Math.Min(first, last);
+                        to[py] = last;
+                    }
+
+                    shape = new Shape(data, from, to);
                     Shapes[kind] = shape;
                 }
 

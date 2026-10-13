@@ -47,6 +47,9 @@ namespace KnittedPicture.Game
         private readonly List<Tween> _active = new List<Tween>();
         private readonly List<Tween> _adding = new List<Tween>();
 
+        /// <summary>Отработавшие твины: на поле сотни нитей в секунду, без пула каждая — мусор для сборщика.</summary>
+        private readonly Stack<Tween> _pool = new Stack<Tween>();
+
         public static void Install(GameObject host)
         {
             _instance = host.AddComponent<Tweens>();
@@ -62,20 +65,27 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            _instance._adding.Add(new Tween
+            if (loop)
             {
-                Owner = owner,
-                Duration = Mathf.Max(0.0001f, duration),
-                Delay = delay,
-                Step = step,
-                Ease = ease ?? KnittedPicture.Game.Ease.Linear,
-                Done = done,
-                Loop = loop,
-            });
+                Ui.LoopLayer(owner);
+            }
+
+            var tween = _instance._pool.Count > 0 ? _instance._pool.Pop() : new Tween();
+            tween.Owner = owner;
+            tween.Duration = Mathf.Max(0.0001f, duration);
+            tween.Delay = delay;
+            tween.Time = 0f;
+            tween.Step = step;
+            tween.Ease = ease ?? KnittedPicture.Game.Ease.Linear;
+            tween.Done = done;
+            tween.Loop = loop;
+            _instance._adding.Add(tween);
         }
 
         public static void Delay(UnityEngine.Object owner, float seconds, Action action) =>
-            Run(owner, seconds, _ => { }, null, action);
+            Run(owner, seconds, NoStep, null, action);
+
+        private static readonly Action<float> NoStep = _ => { };
 
         public static void Move(RectTransform rt, Vector3 fromWorld, Vector3 toWorld, float duration, Func<float, float>? ease = null,
             Action? done = null, float delay = 0f)
@@ -128,7 +138,7 @@ namespace KnittedPicture.Game
                 var tween = _active[i];
                 if (tween.Owner == null)
                 {
-                    _active.RemoveAt(i);
+                    RemoveAt(i);
                     continue;
                 }
 
@@ -152,9 +162,26 @@ namespace KnittedPicture.Game
                     continue;
                 }
 
-                _active.RemoveAt(i);
-                tween.Done?.Invoke();
+                var done = tween.Done;
+                RemoveAt(i);
+                done?.Invoke();
             }
+        }
+
+        /// <summary>Убрать твин из списка (порядок сохраняем: два твина одного свойства решают, кто последний) и вернуть в пул.</summary>
+        private void RemoveAt(int i)
+        {
+            var tween = _active[i];
+            _active.RemoveAt(i);
+            tween.Owner = null;
+            tween.Step = null;
+            tween.Done = null;
+            _pool.Push(tween);
+        }
+
+        private void LateUpdate()
+        {
+            Tap.FollowPressed();
         }
     }
 }

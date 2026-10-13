@@ -85,6 +85,61 @@ namespace KnittedPicture.Game
             return rt;
         }
 
+        /// <summary>
+        /// Свой вложенный Canvas у слоя: uGUI пересобирает геометрию целиком того Canvas, где что-то сдвинулось
+        /// или перекрасилось. Подвижное (картинка, поле, станок, эффекты, окна) — в своих слоях, и летящая
+        /// нитка пересобирает только слой эффектов, а не весь экран. Порядок отрисовки прежний (без overrideSorting).
+        /// input — слою нужны нажатия: у вложенного Canvas свой GraphicRaycaster.
+        /// </summary>
+        public static RectTransform Layer(RectTransform rt, bool input)
+        {
+            if (rt.GetComponent<Canvas>() == null)
+            {
+                rt.gameObject.AddComponent<Canvas>();
+                if (input)
+                {
+                    rt.gameObject.AddComponent<GraphicRaycaster>();
+                }
+            }
+
+            return rt;
+        }
+
+        /// <summary>
+        /// Слой для того, что анимируется без конца (пульс кнопки, кольца, лучи): иначе его Canvas пересобирался бы
+        /// каждый кадр, пока экран открыт. Внутри области с обрезкой (RectMask2D) не трогаем — обрезка
+        /// считается в пространстве её Canvas. Нажатия сохраняются, если внутри есть кликабельное.
+        /// </summary>
+        public static void LoopLayer(Object owner)
+        {
+            var rt = owner switch
+            {
+                RectTransform r => r,
+                Component c => c.transform as RectTransform,
+                GameObject go => go.transform as RectTransform,
+                _ => null,
+            };
+            if (rt == null || rt.GetComponent<Canvas>() != null || rt.GetComponentInParent<RectMask2D>() != null)
+            {
+                return;
+            }
+
+            var input = rt.GetComponentInChildren<Tap>(true) != null;
+            if (!input)
+            {
+                foreach (var graphic in rt.GetComponentsInChildren<Graphic>(true))
+                {
+                    if (graphic.raycastTarget)
+                    {
+                        input = true;
+                        break;
+                    }
+                }
+            }
+
+            Layer(rt, input);
+        }
+
         /// <summary>Растянуть на весь родитель.</summary>
         public static RectTransform Stretch(RectTransform rt)
         {

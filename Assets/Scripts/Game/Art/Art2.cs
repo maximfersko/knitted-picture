@@ -1,6 +1,7 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using KnittedPicture.Core;
 using UnityEngine;
 
@@ -22,13 +23,13 @@ namespace KnittedPicture.Game
         private const int KeepBalls = 12;
 
         public static Sprite Get(string key, System.Func<Raster> draw, Vector2? pivot = null, Vector4? border = null) =>
-            Sub(key, key, draw, null, pivot, border);
+            Sub(key, key, () => Texture(key, draw, TextureWrapMode.Clamp), null, pivot, border);
 
         /// <summary>
         /// Спрайт из части текстуры textureKey (rect — в пикселях; null — вся). Несколько спрайтов делят одну
         /// текстуру: клубок поля и клубок-значок — одна картинка в памяти.
         /// </summary>
-        private static Sprite Sub(string key, string textureKey, System.Func<Raster> draw, Rect? rect, Vector2? pivot = null,
+        private static Sprite Sub(string key, string textureKey, System.Func<Texture2D> make, Rect? rect, Vector2? pivot = null,
             Vector4? border = null)
         {
             if (textureKey.StartsWith("ball", System.StringComparison.Ordinal))
@@ -42,7 +43,7 @@ namespace KnittedPicture.Game
                 return sprite;
             }
 
-            var texture = Texture(textureKey, draw, TextureWrapMode.Clamp);
+            var texture = make();
             sprite = Sprite.Create(texture, rect ?? new Rect(0, 0, texture.width, texture.height), pivot ?? new Vector2(0.5f, 0.5f), 100f, 0,
                 SpriteMeshType.FullRect, border ?? Vector4.zero);
             Cache[key] = sprite;
@@ -61,7 +62,7 @@ namespace KnittedPicture.Game
             }
 
             var used = new HashSet<Texture>();
-            foreach (var image in Object.FindObjectsOfType<UnityEngine.UI.Image>(true))
+            foreach (var image in Object.FindObjectsByType<UnityEngine.UI.Image>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 if (image.sprite != null)
                 {
@@ -125,7 +126,7 @@ namespace KnittedPicture.Game
                 filterMode = FilterMode.Trilinear,
             };
             texture.SetPixelData(raster.ToBytes(), 0);
-            texture.Apply(true);
+            texture.Apply(true, true);
             Textures[key] = texture;
             return texture;
         }
@@ -139,7 +140,7 @@ namespace KnittedPicture.Game
                 filterMode = FilterMode.Trilinear,
             };
             texture.SetPixelData(raster.ToBytes(), 0);
-            texture.Apply(true);
+            texture.Apply(true, true);
             return texture;
         }
 
@@ -211,18 +212,25 @@ namespace KnittedPicture.Game
         public static Sprite Ball(Color c, bool deep = false, bool thick = false)
         {
             var color = deep ? Color.Lerp(c, new Color(0.91f, 0.89f, 0.92f), 0.5f) : c;
-            var kind = thick ? BallRaster.Kind.Thick : BallRaster.Kind.Plain;
-            return Get("ball" + Key(color) + kind, () => BallRaster.Ball(ToRgba(color), kind));
+            return BallSprite(color, thick ? BallRaster.Kind.Thick : BallRaster.Kind.Plain, false);
         }
 
         /// <summary>
         /// Детальный клубок в пропорциях старого спрайта (шар почти во весь квадрат, завиток внутри):
         /// подменяет окрашиваемый Art.YarnBall там, где клубок — значок или украшение.
         /// </summary>
-        public static Sprite YarnBall(Color c) =>
-            Sub("ballTight" + Key(c), "ball" + Key(c) + BallRaster.Kind.Plain, () => BallRaster.Ball(ToRgba(c)), Tight);
+        public static Sprite YarnBall(Color c) => BallSprite(c, BallRaster.Kind.Plain, true);
 
-        public static Sprite YarnBallRainbow => Sub("ballTightRainbow", "ballRainbow", () => BallRaster.Ball(Rgba.White, BallRaster.Kind.Rainbow), Tight);
+        public static Sprite YarnBallRainbow => BallSprite(Color.white, BallRaster.Kind.Rainbow, true);
+
+        private static string BallKey(Color c, BallRaster.Kind kind) => "ball" + Key(c) + kind;
+
+        private static Sprite BallSprite(Color c, BallRaster.Kind kind, bool tight)
+        {
+            var textureKey = BallKey(c, kind);
+            return Sub((tight ? "tight" : string.Empty) + textureKey, textureKey, () => BallTexture(textureKey, ToRgba(c), kind),
+                tight ? Tight : (Rect?)null);
+        }
 
         /// <summary>Квадрат вокруг шара (вместе с завитком) внутри текстуры клубка.</summary>
         private static Rect Tight
@@ -235,10 +243,148 @@ namespace KnittedPicture.Game
             }
         }
 
-        public static Sprite RainbowBall => Get("ballRainbow", () => BallRaster.Ball(Rgba.White, BallRaster.Kind.Rainbow));
+        public static Sprite RainbowBall => BallSprite(Color.white, BallRaster.Kind.Rainbow, false);
 
         /// <summary>Чужая пряжа цвета ткани: клубок, намотанный нитями канвы.</summary>
-        public static Sprite CanvasBall(Color c) => Get("ballCanvas" + Key(c), () => BallRaster.Ball(ToRgba(c), BallRaster.Kind.Canvas));
+        public static Sprite CanvasBall(Color c) => BallSprite(c, BallRaster.Kind.Canvas, false);
+
+        // ---------- Клубки заранее, в фоне ----------
+
+        /// <summary>Клубок, который сейчас красится в фоновом потоке.</summary>
+        private sealed class Job
+        {
+            public Job(string key, byte[] buffer, Task task)
+            {
+                Key = key;
+                Buffer = buffer;
+                Task = task;
+            }
+
+            public string Key { get; }
+
+            public byte[] Buffer { get; }
+
+            public Task Task { get; }
+        }
+
+        private static readonly Queue<(string Key, Rgba Color, BallRaster.Kind Kind)> Waiting = new Queue<(string, Rgba, BallRaster.Kind)>();
+        private static Job? _job;
+
+        /// <summary>Буферы байтов клубка (1,6 МБ): один у главного потока, один у фонового — переиспользуются, куча не растёт.</summary>
+        private static byte[]? _mainBuffer;
+
+        private static byte[]? _spareBuffer;
+
+        /// <summary>
+        /// Подготовить клубки уровня заранее: пока игрок на главной или на экране победы, фоновый поток красит
+        /// их по одному, а Pump кладёт готовые в текстуры по одной за кадр. Уровень потом открывается без паузы.
+        /// </summary>
+        public static void Prefetch(LevelData level)
+        {
+            Enqueue(Palette.Hidden, BallRaster.Kind.Plain);
+            foreach (var hex in level.colors)
+            {
+                Enqueue(Palette.Vivid(Palette.Hex(hex)), BallRaster.Kind.Plain);
+            }
+        }
+
+        private static void Enqueue(Color c, BallRaster.Kind kind)
+        {
+            var key = BallKey(c, kind);
+            if (HasTexture(key) || (_job != null && _job.Key == key))
+            {
+                return;
+            }
+
+            foreach (var waiting in Waiting)
+            {
+                if (waiting.Key == key)
+                {
+                    return;
+                }
+            }
+
+            Waiting.Enqueue((key, ToRgba(c), kind));
+        }
+
+        private static bool HasTexture(string key) => Textures.TryGetValue(key, out var texture) && texture != null;
+
+        /// <summary>Раз в кадр (App.Update): готовый клубок — в текстуру, следующий — в работу.</summary>
+        public static void Pump()
+        {
+            if (_job != null)
+            {
+                if (!_job.Task.IsCompleted)
+                {
+                    return;
+                }
+
+                Finish(_job);
+                return;
+            }
+
+            while (Waiting.Count > 0)
+            {
+                var (key, color, kind) = Waiting.Dequeue();
+                if (HasTexture(key))
+                {
+                    continue;
+                }
+
+                var buffer = _spareBuffer ?? new byte[BallRaster.Pixels * BallRaster.Pixels * 4];
+                _spareBuffer = null;
+                _job = new Job(key, buffer, Task.Run(() => BallRaster.BallBytes(color, kind, buffer)));
+                return;
+            }
+        }
+
+        private static void Finish(Job job)
+        {
+            _job = null;
+            _spareBuffer = job.Buffer;
+            if (job.Task.Status == TaskStatus.RanToCompletion && !HasTexture(job.Key))
+            {
+                Textures[job.Key] = Upload(job.Buffer);
+                Balls.Remove(job.Key);
+                Balls.Add(job.Key);
+            }
+        }
+
+        /// <summary>Текстура клубка: готовая, из фоновой работы (дождаться её) или покрасить сейчас.</summary>
+        private static Texture2D BallTexture(string key, Rgba color, BallRaster.Kind kind)
+        {
+            if (Textures.TryGetValue(key, out var texture) && texture != null)
+            {
+                return texture;
+            }
+
+            if (_job != null && _job.Key == key)
+            {
+                _job.Task.Wait();
+                Finish(_job);
+                if (Textures.TryGetValue(key, out texture) && texture != null)
+                {
+                    return texture;
+                }
+            }
+
+            _mainBuffer = BallRaster.BallBytes(color, kind, _mainBuffer);
+            texture = Upload(_mainBuffer);
+            Textures[key] = texture;
+            return texture;
+        }
+
+        private static Texture2D Upload(byte[] bytes)
+        {
+            var texture = new Texture2D(BallRaster.Pixels, BallRaster.Pixels, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+            };
+            texture.SetPixelData(bytes, 0);
+            texture.Apply(true, true);
+            return texture;
+        }
 
         public static Sprite HiddenBall => Get("ballHidden", BallRaster.Hidden);
 

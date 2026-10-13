@@ -72,7 +72,7 @@ namespace KnittedPicture.Editor
 
             var android = NamedBuildTarget.Android;
             PlayerSettings.SetScriptingBackend(android, ScriptingImplementation.IL2CPP);
-            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            ApplyPerformance(android);
             PlayerSettings.Android.bundleVersionCode += 1;
             EditorUserBuildSettings.buildAppBundle = appBundle;
             AssetDatabase.SaveAssets();
@@ -101,6 +101,28 @@ namespace KnittedPicture.Editor
             {
                 EditorUtility.DisplayDialog("Сборка не удалась", $"{report.summary.result}: смотри Console.", "OK");
             }
+        }
+
+        /// <summary>
+        /// Настройки под слабые телефоны (функции игры те же):
+        /// - ARMv7 вместе с ARM64: дешёвые телефоны часто на 32-битном Android Go и без ARMv7 игру просто не
+        ///   увидят; Google Play из AAB раздаёт каждому только его вариант, размер загрузки не растёт.
+        /// - OpenGL ES 3 первым, Vulkan запасным: для 2D-интерфейса GLES стабильнее и не медленнее на бюджетных Mali/PowerVR.
+        /// - IL2CPP «Master» и генерация кода на скорость: самый быстрый машинный код (сборка дольше).
+        /// - Пошаговая сборка мусора: паузы GC размазаны по кадрам, без рывков.
+        /// - Оптимизированный ритм кадров (Swappy) и блит «Auto»: без лишнего полноэкранного копирования.
+        /// </summary>
+        private static void ApplyPerformance(NamedBuildTarget android)
+        {
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
+            PlayerSettings.SetGraphicsAPIs(BuildTarget.Android,
+                new[] { UnityEngine.Rendering.GraphicsDeviceType.OpenGLES3, UnityEngine.Rendering.GraphicsDeviceType.Vulkan });
+            PlayerSettings.SetIl2CppCompilerConfiguration(android, Il2CppCompilerConfiguration.Master);
+            PlayerSettings.SetIl2CppCodeGeneration(android, Il2CppCodeGeneration.OptimizeSpeed);
+            PlayerSettings.gcIncremental = true;
+            PlayerSettings.Android.optimizedFramePacing = true;
+            PlayerSettings.Android.blitType = AndroidBlitType.Auto;
         }
 
         [Serializable]

@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading.Tasks;
 
 namespace KnittedPicture.Game
 {
@@ -44,19 +45,51 @@ namespace KnittedPicture.Game
             Pixels[i] = Rgba.Over(top, Pixels[i]);
         }
 
-        /// <summary>Пройти все пиксели: (x, y) — центр пикселя, y вверх.</summary>
+        /// <summary>
+        /// Пройти все пиксели: (x, y) — центр пикселя, y вверх. Большие растры — по строкам на всех ядрах:
+        /// шейдеры чистые (только читают захваченное), каждая строка пишет только свои пиксели.
+        /// </summary>
         public void Paint(Func<float, float, Rgba> shader)
         {
-            for (var py = 0; py < Height; py++)
+            if (Width * Height < ParallelFrom)
             {
-                for (var px = 0; px < Width; px++)
+                for (var py = 0; py < Height; py++)
                 {
-                    var top = shader(px + 0.5f, py + 0.5f);
-                    if (top.A > 0f)
-                    {
-                        var i = py * Width + px;
-                        Pixels[i] = Rgba.Over(top, Pixels[i]);
-                    }
+                    Row(shader, py);
+                }
+
+                return;
+            }
+
+            // Размер пикселя у потоков свой: передаём каждому значение вызывающего.
+            var pixel = Draw.Pixel;
+            Parallel.For(0, Height, py =>
+            {
+                var own = Draw.Pixel;
+                Draw.Pixel = pixel;
+                try
+                {
+                    Row(shader, py);
+                }
+                finally
+                {
+                    Draw.Pixel = own;
+                }
+            });
+        }
+
+        /// <summary>С какого числа пикселей рисовать параллельно (мельче — дороже раздать потокам).</summary>
+        private const int ParallelFrom = 64 * 64;
+
+        private void Row(Func<float, float, Rgba> shader, int py)
+        {
+            for (var px = 0; px < Width; px++)
+            {
+                var top = shader(px + 0.5f, py + 0.5f);
+                if (top.A > 0f)
+                {
+                    var i = py * Width + px;
+                    Pixels[i] = Rgba.Over(top, Pixels[i]);
                 }
             }
         }

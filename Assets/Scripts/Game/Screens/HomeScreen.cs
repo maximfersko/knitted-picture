@@ -221,7 +221,11 @@ namespace KnittedPicture.Game
                 }
             }
 
-            ApplyCarousel();
+            // Карусель стоит — ничего не двигаем: иначе экран пересобирался бы каждый кадр впустую.
+            if (_dragging || _pos != _appliedPos)
+            {
+                ApplyCarousel();
+            }
         }
 
         /// <summary>
@@ -332,8 +336,12 @@ namespace KnittedPicture.Game
         private static int IndexOf(CollectionInfo collection) => System.Array.IndexOf(Collections.All, collection);
 
         /// <summary>Сдвинуть ленту, отмасштабировать соседей и перетечь точкой — по текущей позиции.</summary>
+        /// <summary>Положение ленты, которое уже показано на экране.</summary>
+        private float _appliedPos = float.NaN;
+
         private void ApplyCarousel()
         {
+            _appliedPos = _pos;
             _strip.anchoredPosition = new Vector2(-_pos * W, _strip.anchoredPosition.y);
 
             // Фон перетекает вслед за лентой: оттенок между соседними коллекциями.
@@ -572,6 +580,9 @@ namespace KnittedPicture.Game
             if (App.Levels.Has(level))
             {
                 var data = App.Levels.Get(level);
+
+                // Клубки этого уровня красятся в фоне, пока игрок на главной: «Играть» открывает уровень без паузы.
+                Art2.Prefetch(data);
                 var frame = Ui.Box(face, "Preview", 14, Palette.Card);
                 Ui.Place(frame.rectTransform, 12, 10, 64, 64);
                 KnitPreview(frame.rectTransform, data, App.PreviousScreen != typeof(HomeScreen));

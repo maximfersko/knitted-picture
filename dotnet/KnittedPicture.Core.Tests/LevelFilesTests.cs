@@ -27,6 +27,48 @@ namespace KnittedPicture.Core.Tests
         }
 
         /// <summary>
+        /// Игра проверяет «победа уже решена» только при новой версии партии (после действия игрока).
+        /// Это верно, только если вязка без игрока версию не меняет и ответ на её пути тот же:
+        /// случайные ходы на каждом уровне, после каждого — ответ сверяется на каждом шаге вязки.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(LevelFiles))]
+        public void Win_certainty_only_changes_with_player_actions(string fileName)
+        {
+            var level = Load(fileName);
+            var random = new System.Random(level.id);
+            var game = new LoomGame(level);
+            for (var move = 0; move < 60 && game.Status == GameStatus.Playing; move++)
+            {
+                var columns = Enumerable.Range(0, game.ColumnCount).Where(game.CanTap).ToList();
+                if (columns.Count == 0)
+                {
+                    break;
+                }
+
+                var before = game.Version;
+                game.TapColumn(columns[random.Next(columns.Count)]);
+                Assert.True(game.Version > before);
+
+                var version = game.Version;
+                var certain = game.WinIsCertain();
+                for (var step = 0; step < 6 && game.Status == GameStatus.Playing; step++)
+                {
+                    if (!game.Step().Progress)
+                    {
+                        break;
+                    }
+
+                    Assert.Equal(version, game.Version);
+                    if (game.Status == GameStatus.Playing)
+                    {
+                        Assert.Equal(certain, game.WinIsCertain());
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Цвета клубков и рисунка в одном уровне должны легко различаться: игрок сравнивает клубок
         /// с клеткой. Иначе близкие зелёные или коричневые путаются (фидбэк тестировщика), а чужая
         /// пряжа цвета ткани сливается с белым рисунком. Разница — ΔE в Lab (CIE76), не меньше 18.

@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -46,16 +47,39 @@ namespace KnittedPicture.Game
             }
 
             _pressed = true;
+            if (!Held.Contains(this))
+            {
+                Held.Add(this);
+            }
+
             Press();
         }
 
-        private void LateUpdate()
+        /// <summary>Нажатые сейчас (обычно одна-две): их ведёт Tweens после анимаций кадра, а не LateUpdate у каждой кнопки.</summary>
+        private static readonly List<Tap> Held = new List<Tap>();
+
+        /// <summary>Анимация за этот кадр поменяла масштаб нажатого — проседаем уже от нового.</summary>
+        public static void FollowPressed()
         {
-            // Анимация за этот кадр поменяла масштаб — проседаем уже от нового.
-            if (_pressed && transform.localScale != _applied)
+            for (var i = Held.Count - 1; i >= 0; i--)
             {
-                Press();
+                var tap = Held[i];
+                if (tap == null || !tap._pressed)
+                {
+                    Held.RemoveAt(i);
+                    continue;
+                }
+
+                if (tap.transform.localScale != tap._applied)
+                {
+                    tap.Press();
+                }
             }
+        }
+
+        private void OnDisable()
+        {
+            Release();
         }
 
         private void Press()

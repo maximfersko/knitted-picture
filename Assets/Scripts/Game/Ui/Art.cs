@@ -154,7 +154,7 @@ namespace KnittedPicture.Game
                 }
 
                 texture.SetPixels32(pixels);
-                texture.Apply();
+                texture.Apply(false, true);
                 _knitPattern = texture;
                 return texture;
             }
@@ -186,7 +186,7 @@ namespace KnittedPicture.Game
                 }
             }
 
-            texture.Apply();
+            texture.Apply(false, true);
             return texture;
         }
 
@@ -265,7 +265,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect,
                 new Vector4(border, border, border, border));
         });
@@ -292,7 +292,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             var border = r + 1;
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect,
                 new Vector4(border, border, border, border));
@@ -319,7 +319,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect,
                 new Vector4(border, border, border, border));
         });
@@ -340,7 +340,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -426,7 +426,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -582,7 +582,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -640,7 +640,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -788,7 +788,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -870,7 +870,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, tw, th), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -911,7 +911,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -980,7 +980,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply();
+            texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 

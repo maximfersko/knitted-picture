@@ -107,7 +107,7 @@ namespace KnittedPicture.Game
             _nextLabel = Ui.Label((RectTransform)next.transform, "Дальше", 22, Color.white, 0, 0, W - 40, 64);
             next.OnClick(Next);
 
-            _fx = Ui.Stretch(Ui.Node(Root, "Fx"));
+            _fx = Ui.Layer(Ui.Stretch(Ui.Node(Root, "Fx")), false);
             Go(Shown[0]);
         }
 

@@ -195,6 +195,9 @@ namespace KnittedPicture.Game
             if (!app.Progress.AllDone && app.Levels.Has(nextId))
             {
                 var data = app.Levels.Get(nextId);
+
+                // Клубки следующего уровня красятся в фоне, пока идёт празднование.
+                Art2.Prefetch(data);
                 var frame = Ui.Box(face, "Preview", 12, Palette.Card);
                 Ui.Place(frame.rectTransform, 10, 9, 52, 52);
                 MiniPicture.Create(frame.rectTransform, data, 26, 26, 44, faded: true);
