@@ -338,8 +338,8 @@ namespace KnittedPicture.Game
             var picture = Picture(scene, game, colors, 26f, _sw / 2f, 22f);
 
             var ballSize = 64f;
-            var blue = Ui.Image(scene, "Blue", Art.YarnBall, Sky);
-            var pink = Ui.Image(scene, "Pink", Art.YarnBall, Pink);
+            var blue = Ui.Image(scene, "Blue", Art2.YarnBall(Sky), Color.white);
+            var pink = Ui.Image(scene, "Pink", Art2.YarnBall(Pink), Color.white);
             var left = new Vector2(_sw / 2f - 104f, _sh - 62f);
             var right = new Vector2(_sw / 2f + 104f, _sh - 62f);
             Roll(blue.rectTransform, new Vector2(-60f, left.y), left, ballSize, 1);

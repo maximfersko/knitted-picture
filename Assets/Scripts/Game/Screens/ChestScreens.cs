@@ -688,7 +688,7 @@ namespace KnittedPicture.Game
                 (big ? "бустер ×2" : "бустер", (c, cx) => Ui.IconImage(c, Icon.PlusSlot, Palette.Primary, cx, 22, 24)),
                 (big ? "редкий моток" : "моток", (c, cx) =>
                 {
-                    var ball = Ui.Image(c, "Ball", Art.YarnBall, big ? Palette.Hex("#A98BFF") : Palette.Hex("#FF6FA5"));
+                    var ball = Ui.Image(c, "Ball", Art2.YarnBall(big ? Palette.Hex("#A98BFF") : Palette.Hex("#FF6FA5")), Color.white);
                     Ui.PlaceCenter(ball.rectTransform, cx, 22, 28, 28);
                 }),
             };

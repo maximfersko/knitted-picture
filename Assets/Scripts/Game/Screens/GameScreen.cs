@@ -216,7 +216,7 @@ namespace KnittedPicture.Game
             _run = run;
             // Пряжа «в работе» меняет только награды, не правила: уровень остаётся честным.
             _goldPerLoop = Economy.GoldCoins + YarnCatalog.GoldBonus(app.Progress.PerkPower(YarnPerk.Gold));
-            _colors = level.colors.Select(Palette.Hex).ToArray();
+            _colors = level.colors.Select(c => Palette.Vivid(Palette.Hex(c))).ToArray();
             if (!run.Pattern)
             {
                 app.SetGround(Palette.GroundOfLevel(level.id));
@@ -425,7 +425,7 @@ namespace KnittedPicture.Game
             const float y = 60f;
             _timerX = 44f;
             _timerW = W - 44f - 100f;
-            var yarn = Ui.Image(Root, "Target", Art.YarnBall, _colors[0]);
+            var yarn = Ui.Image(Root, "Target", Art2.YarnBall(_colors[0]), Color.white);
             Ui.PlaceCenter(yarn.rectTransform, 26, y + 13, 24, 24);
             var track = Ui.Box(Root, "TimerTrack", 5, Palette.Track);
             Ui.Place(track.rectTransform, _timerX, y + 8, _timerW, 10);
@@ -2962,7 +2962,9 @@ namespace KnittedPicture.Game
                 var label = Ui.Label(root, type == BoosterType.Slot ? "Слот" : BoosterInfo.Name(type), 14, Palette.Ink);
                 var textW = label.preferredWidth;
                 var total = 22f + 6f + textW;
-                Ui.IconImage(root, BoosterInfo.Icon(type), Palette.Ink, w / 2f - total / 2f + 11f, 30, 22);
+                // Цветной детальный значок: латунные ножницы, стрелка из нити, лунка с плюсом.
+                var art = Ui.Image(root, "Icon", Art2.Booster(type), Color.white);
+                Ui.PlaceCenter(art.rectTransform, w / 2f - total / 2f + 11f, 30, 32, 32);
                 Ui.Place(label.rectTransform, w / 2f - total / 2f + 28f, 0, textW + 4f, 60);
                 label.alignment = TextAnchor.MiddleLeft;
 

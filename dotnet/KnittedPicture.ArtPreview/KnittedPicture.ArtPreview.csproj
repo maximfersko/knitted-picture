@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Превью растров 2.0 без Unity: тот же код рисовалок (Assets/Scripts/Game/Art), что и в игре,
+    рисует спрайты и собирает из них макеты в PNG. dotnet run -c Release -o out_dir
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Assets/Scripts/Game/Art/*Raster*.cs" Link="Art/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

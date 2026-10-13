@@ -404,7 +404,7 @@ namespace KnittedPicture.Game
             var banner = Ui.Card(content, "Basket", 16, y, cardW, bannerH, 24, Palette.Card, Palette.CardShadow, 3f);
             var circle = Ui.Image(banner, "Back", Art.Circle, Palette.DangerSoft);
             Ui.PlaceCenter(circle.rectTransform, 44, 32, 48, 48);
-            var logo = Ui.Image(banner, "Ball", Art.YarnBall, Palette.Hex("#FF6FA5"));
+            var logo = Ui.Image(banner, "Ball", Art2.YarnBall(Palette.Hex("#FF6FA5")), Color.white);
             Ui.PlaceCenter(logo.rectTransform, 44, 32, 32, 32);
             Ui.Label(banner, "Корзинка пряжи", 17, Palette.Ink, 80, 10, cardW - 140, 24, true, TextAnchor.MiddleLeft);
             Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 80, 32, cardW - 140, 18, false, TextAnchor.MiddleLeft);

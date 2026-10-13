@@ -45,8 +45,16 @@ namespace KnittedPicture.Game
             _thickRing = Ui.Image(root, "ThickRing", Art.Ring, Color.white);
             Ui.PlaceCenter(_thickRing.rectTransform, size / 2f, size / 2f, size + 8, size + 8);
 
-            _ball = Ui.Image(root, "Ball", Art.YarnBall, Color.white, true);
-            Ui.PlaceCenter(_ball.rectTransform, size / 2f, size / 2f, size, size);
+            // Мягкая лавандовая тень под клубком: он лежит на поле, а не висит.
+            var shadow = Ui.Image(root, "Shadow", Art2.BallShadow, Color.white);
+            Ui.PlaceCenter(shadow.rectTransform, size * 0.54f, size * 0.98f, size * 0.95f, size * 0.3f);
+
+            // Детальный клубок: спрайт шире шара (ворс, завиток), шар — по центру клетки.
+            var art = size / Art2.BallFill;
+            var shift = art / BallRaster.Size;
+            _ball = Ui.Image(root, "Ball", Art2.Ball(Color.white), Color.white, true);
+            Ui.PlaceCenter(_ball.rectTransform, size / 2f - (BallRaster.Cx - BallRaster.Size / 2f) * shift,
+                size / 2f + (BallRaster.Cy - BallRaster.Size / 2f) * shift, art, art);
 
             // Чужая пряжа цвета ткани: поверх клубка узор полотна.
             _fabric = Ui.Image(root, "Fabric", Art.FabricOverlay, Color.white);
@@ -124,8 +132,10 @@ namespace KnittedPicture.Game
         public void Bind(Spool spool, Color color, bool front, bool surplus = false, bool foreign = false)
         {
             var visible = spool.IsColorVisible;
-            _ball.sprite = spool.Rainbow && visible ? Art.RainbowBall : Art.YarnBall;
-            _ball.color = !visible ? Palette.Hidden : spool.Rainbow ? Color.white : color;
+            _ball.sprite = !visible ? Art2.Ball(Palette.Hidden)
+                : spool.Rainbow ? Art2.RainbowBall
+                : Art2.Ball(color, false, spool.Thick);
+            _ball.color = Color.white;
             _question.gameObject.SetActive(!visible);
 
             _thickRing.gameObject.SetActive(spool.Thick);

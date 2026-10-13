@@ -368,7 +368,7 @@ namespace KnittedPicture.Game
 
                 for (var i = 0; i < shown; i++)
                 {
-                    var yarn = Ui.Image(Card, "Needed", Art.YarnBall, needed[i]);
+                    var yarn = Ui.Image(Card, "Needed", Art2.YarnBall(needed[i]), Color.white);
                     Ui.PlaceCenter(yarn.rectTransform, x + i * (ball + gap) + ball / 2f, Cursor + ball / 2f, ball, ball);
                 }
 

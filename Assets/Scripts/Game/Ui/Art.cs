@@ -88,7 +88,10 @@ namespace KnittedPicture.Game
         public static Sprite RainbowBall => Cached("rainbow", () => BuildYarnBall(true));
 
         /// <summary>Вязаная петля: «галочка» светлее основы — картинка выглядит связанной.</summary>
-        public static Sprite StitchCell => Cached("stitch", () => BuildCell(true));
+        public static Sprite StitchCell => Art2.Get("stitchTile", () => KnitRaster.StitchTile(false));
+
+        /// <summary>Блики вязаной клетки: белый слой поверх окрашенной (окраска не гасит блеск).</summary>
+        public static Sprite StitchGloss => Art2.Get("stitchGloss", () => KnitRaster.StitchTile(true));
 
         public static Sprite PlainCell => Cached("cell", () => BuildCell(false));
 
@@ -97,7 +100,7 @@ namespace KnittedPicture.Game
         /// Клетка ткани-основы: гладкая канва из переплетённых нитей, без петель-«галочек».
         /// Так фон не путается со связанным рисунком: видно, что он готов с самого начала и вязать его не нужно.
         /// </summary>
-        public static Sprite FabricCell => Cached("canvas", BuildCanvasCell);
+        public static Sprite FabricCell => Art2.Get("canvasTile", KnitRaster.CanvasTile);
 
         public static Sprite Icon(Icon icon) => Cached("icon" + icon, () => BuildIcon(icon));
 
@@ -112,10 +115,12 @@ namespace KnittedPicture.Game
         public static Sprite Rays => Cached("rays", () => BuildRays(256, 12));
 
         /// <summary>Корпус вязаной шкатулки: петли «ёлочкой», лента посередине, кант сверху.</summary>
-        public static Sprite ChestBody(bool big) => Cached("chestBody" + big, () => BuildChest(false, big));
+        public static Sprite ChestBody(bool big) => Art2.Get("chestBody2" + big,
+            () => MetaRaster.ChestBody(Mathf.RoundToInt(ChestBodySize.x * Density), Mathf.RoundToInt(ChestBodySize.y * Density), big));
 
         /// <summary>Крышка шкатулки: купол той же вязки, кант снизу.</summary>
-        public static Sprite ChestLid(bool big) => Cached("chestLid" + big, () => BuildChest(true, big));
+        public static Sprite ChestLid(bool big) => Art2.Get("chestLid2" + big,
+            () => MetaRaster.ChestLid(Mathf.RoundToInt(ChestLidSize.x * Density), Mathf.RoundToInt(ChestLidSize.y * Density), big));
 
         /// <summary>Размеры частей сундука в точках макета при ширине корпуса 220.</summary>
         public static readonly Vector2 ChestBodySize = new Vector2(220f, 118f);
@@ -193,22 +198,20 @@ namespace KnittedPicture.Game
 
         public static Texture2D PictureTexture(LevelData level, bool done = true)
         {
-            var texture = new Texture2D(level.width, level.height, TextureFormat.RGBA32, false)
+            // 2.0: картинка — вязаная миниатюра из петель-«галочек», как полотно на уровне.
+            var colors = new Rgba?[level.width * level.height];
+            var canvas = new bool[level.width * level.height];
+            var palette = new Color[level.colors.Length];
+            for (var i = 0; i < palette.Length; i++)
             {
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp,
-            };
-            var colors = new Color[level.colors.Length];
-            for (var i = 0; i < colors.Length; i++)
-            {
-                colors[i] = Palette.Hex(level.colors[i]);
+                palette[i] = Palette.Vivid(Palette.Hex(level.colors[i]));
             }
 
             for (var y = 0; y < level.height; y++)
             {
                 for (var x = 0; x < level.width; x++)
                 {
-                    var color = colors[level.picture[y][x] - '0'];
+                    var color = palette[level.picture[y][x] - '0'];
                     var fabric = level.canvas != null && level.canvas.Length == level.height && level.canvas[y][x] == '1';
                     if (fabric)
                     {
@@ -220,12 +223,12 @@ namespace KnittedPicture.Game
                         color = level.mystery ? Palette.Track : Color.Lerp(Color.white, color, 0.22f);
                     }
 
-                    texture.SetPixel(x, level.height - 1 - y, color);
+                    colors[y * level.width + x] = Art2.ToRgba(color);
+                    canvas[y * level.width + x] = fabric;
                 }
             }
 
-            texture.Apply();
-            return texture;
+            return Art2.Texture(MetaRaster.Mini(level.width, level.height, colors, canvas));
         }
 
         private static Sprite Cached(string key, System.Func<Sprite> build)

@@ -53,13 +53,17 @@ namespace KnittedPicture.Game
             {
                 var angle = (i / (float)count + UnityEngine.Random.value * 0.3f) * Mathf.PI * 2f;
                 var dir = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0);
-                var dot = Dot(layer, Color.Lerp(color, Color.white, 0.5f), 5f);
+                // Искра-звёздочка: вспыхивает, разлетается с поворотом и гаснет.
+                var dot = Dot(layer, Color.Lerp(color, Color.white, 0.45f), 10f, Art2.Sparkle);
                 var reach = radius * (0.7f + UnityEngine.Random.value * 0.6f) * unit;
-                Tweens.Run(dot, 0.28f, t =>
+                var spin = (UnityEngine.Random.value < 0.5f ? -1f : 1f) * (60f + UnityEngine.Random.value * 60f);
+                var tint = dot.color;
+                Tweens.Run(dot, 0.36f, t =>
                 {
                     dot.rectTransform.position = at + dir * reach * t;
-                    dot.color = Palette.WithAlpha(dot.color, 1f - t);
-                    dot.rectTransform.localScale = Vector3.one * (1f - 0.6f * t);
+                    dot.color = Palette.WithAlpha(tint, 1f - t * t);
+                    dot.rectTransform.localScale = Vector3.one * (t < 0.2f ? Mathf.Lerp(0.3f, 1.25f, t / 0.2f) : Mathf.Lerp(1.25f, 0.2f, (t - 0.2f) / 0.8f));
+                    dot.rectTransform.localRotation = Quaternion.Euler(0f, 0f, spin * t);
                 }, Ease.OutCubic, () => Release(dot));
             }
         }
@@ -107,7 +111,7 @@ namespace KnittedPicture.Game
             return u * u * a + 2f * u * t * b + t * t * c;
         }
 
-        private static Image Dot(RectTransform layer, Color color, float size)
+        private static Image Dot(RectTransform layer, Color color, float size, Sprite? sprite = null)
         {
             Image? dot = null;
             while (Pool.Count > 0 && dot == null)
@@ -125,8 +129,10 @@ namespace KnittedPicture.Game
                 dot.gameObject.SetActive(true);
             }
 
+            dot.sprite = sprite ?? Art.Circle;
             dot.color = color;
             dot.rectTransform.sizeDelta = new Vector2(size, size);
+            dot.rectTransform.localRotation = Quaternion.identity;
             dot.rectTransform.localScale = Vector3.one;
             dot.rectTransform.SetAsLastSibling();
             return dot;

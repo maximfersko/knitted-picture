@@ -60,8 +60,14 @@ namespace KnittedPicture.Game
                 for (var x = 0; x < game.Width; x++)
                 {
                     var image = Ui.Image(Root, "Cell", Art.PlainCell, Color.white);
-                    Ui.Place(image.rectTransform, x * _step, y * _step, cell, cell);
+                    // Опора в центре клетки: петля впрыгивает и качается вокруг своей середины.
+                    Ui.PlaceCenter(image.rectTransform, x * _step + cell / 2f, y * _step + cell / 2f, cell, cell);
                     _cells[y * game.Width + x] = image;
+
+                    // Блики петли — отдельным слоем поверх окрашенной клетки: краска не гасит блеск.
+                    var gloss = Ui.Image(image.rectTransform, "Gloss", Art.StitchGloss, Color.white);
+                    Ui.Stretch(gloss.rectTransform);
+                    gloss.enabled = false;
                 }
             }
 
@@ -163,6 +169,7 @@ namespace KnittedPicture.Game
                 if (_game.IsFabric(x, y))
                 {
                     image.sprite = Art.FabricCell;
+                    Gloss(image, false);
                     image.color = Palette.Fabric(color);
                     continue;
                 }
@@ -170,11 +177,13 @@ namespace KnittedPicture.Game
                 if (_game.IsKnitted(x, y) && !pending)
                 {
                     image.sprite = Art.StitchCell;
+                    Gloss(image, true);
                     image.color = color;
                     continue;
                 }
 
                 image.sprite = Art.PlainCell;
+                Gloss(image, false);
                 if (pending || (y == front && active))
                 {
                     image.color = Palette.WithAlpha(color, FrontAlpha);
@@ -360,9 +369,23 @@ namespace KnittedPicture.Game
 
             var image = _cells[y * _game.Width + x];
             image.sprite = Art.StitchCell;
+            Gloss(image, true);
             image.color = _colors[_game.ColorAt(x, y)];
-            Tweens.Run(image.rectTransform, 0.22f, t =>
-                image.rectTransform.localScale = Vector3.one * (t < 0.5f ? Mathf.Lerp(0.5f, 1.18f, t * 2f) : Mathf.Lerp(1.18f, 1f, (t - 0.5f) * 2f)));
+            // Петля «впрыгивает»: из маленькой с перелётом, с поворотом-покачиванием и вспышкой цвета.
+            var color = _colors[_game.ColorAt(x, y)];
+            var rt = image.rectTransform;
+            var tilt = (x + y) % 2 == 0 ? 10f : -10f;
+            Tweens.Run(rt, 0.26f, t =>
+            {
+                rt.localScale = Vector3.one * Mathf.LerpUnclamped(0.4f, 1f, Ease.OutBack(t));
+                rt.localRotation = Quaternion.Euler(0f, 0f, tilt * (1f - t) * Mathf.Cos(t * Mathf.PI * 2f));
+                image.color = Color.Lerp(Color.Lerp(color, Color.white, 0.55f), color, t);
+            }, null, () =>
+            {
+                rt.localScale = Vector3.one;
+                rt.localRotation = Quaternion.identity;
+                image.color = color;
+            });
             return true;
         }
 
@@ -473,6 +496,7 @@ namespace KnittedPicture.Game
                     var image = _cells[y * _game.Width + x];
                     var color = _colors[_game.ColorAt(x, y)];
                     image.sprite = Art.StitchCell;
+                    Gloss(image, true);
                     image.rectTransform.localScale = Vector3.one;
                     Tweens.Run(image.rectTransform, 0.32f, t =>
                     {
@@ -487,5 +511,13 @@ namespace KnittedPicture.Game
         }
 
         private int Key(int x, int y) => y * _game.Width + x;
+
+        private static void Gloss(Image cell, bool on)
+        {
+            if (cell.transform.childCount > 0)
+            {
+                cell.transform.GetChild(0).GetComponent<Image>().enabled = on;
+            }
+        }
     }
 }

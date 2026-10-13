@@ -13,7 +13,7 @@ namespace KnittedPicture.Game
             var root = Ui.PlaceCenter(Ui.Node(parent, "Yarn" + yarn.Id), cx, cy, size, size);
             if (!owned)
             {
-                Ui.Stretch(Ui.Image(root, "Ball", Art.YarnBall, Palette.Track).rectTransform);
+                Ui.Stretch(Ui.Image(root, "Ball", Art2.YarnBall(Palette.Track), Color.white).rectTransform);
                 Ui.Label(root, "?", size * 0.45f, Palette.Ink3, 0, 0, size, size);
                 return root;
             }
@@ -21,7 +21,7 @@ namespace KnittedPicture.Game
             var main = Palette.Hex(yarn.Hex);
             var second = Palette.Hex(yarn.Hex2);
             var rainbow = yarn.Look == YarnLook.Rainbow;
-            Ui.Stretch(Ui.Image(root, "Ball", rainbow ? Art.RainbowBall : Art.YarnBall, rainbow ? Color.white : main).rectTransform);
+            Ui.Stretch(Ui.Image(root, "Ball", rainbow ? Art2.YarnBallRainbow : Art2.YarnBall(main), Color.white).rectTransform);
             if (yarn.Look == YarnLook.Melange)
             {
                 var ring = Ui.Image(root, "Melange", Art.Ring, Palette.WithAlpha(second, 0.9f));

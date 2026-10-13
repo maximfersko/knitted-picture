@@ -50,25 +50,9 @@ namespace KnittedPicture.Game
 
         private static void Gift(RectTransform root, float s)
         {
-            var red = Palette.Danger;
-            var dark = Color.Lerp(Palette.Danger, Palette.Ink, 0.25f);
-            var gold = Palette.Coin;
-
-            // Корпус и крышка чуть шире; лента крест-накрест; бант из двух петель и узелка.
-            Box(root, s * 0.16f, s * 0.44f, s * 0.68f, s * 0.46f, s * 0.08f, dark);
-            Box(root, s * 0.16f, s * 0.42f, s * 0.68f, s * 0.42f, s * 0.08f, red);
-            Box(root, s * 0.1f, s * 0.3f, s * 0.8f, s * 0.18f, s * 0.07f, red);
-            Box(root, s * 0.1f, s * 0.41f, s * 0.8f, s * 0.04f, 0f, Palette.WithAlpha(Palette.Ink, 0.12f));
-            Box(root, s * 0.43f, s * 0.3f, s * 0.14f, s * 0.6f, s * 0.03f, gold);
-            foreach (var side in new[] { -1f, 1f })
-            {
-                var loop = Ui.Image(root, "Bow", Art.Circle, gold);
-                Ui.PlaceCenter(loop.rectTransform, s * (0.5f + side * 0.12f), s * 0.22f, s * 0.24f, s * 0.18f);
-                loop.rectTransform.localRotation = Quaternion.Euler(0, 0, side * -25f);
-            }
-
-            var knot = Ui.Image(root, "Knot", Art.Circle, Palette.CoinShadow);
-            Ui.PlaceCenter(knot.rectTransform, s * 0.5f, s * 0.26f, s * 0.13f, s * 0.13f);
+            // Подарок 2.0: коробка в голубой вязке с розовым бантом.
+            var gift = Ui.Image(root, "Gift", Art2.Gift, Color.white);
+            Ui.PlaceCenter(gift.rectTransform, s / 2f, s / 2f, s * 1.05f, s * 1.05f);
         }
 
         private static void Missions(RectTransform root, float s)
@@ -90,7 +74,7 @@ namespace KnittedPicture.Game
         private static void Pattern(RectTransform root, float s)
         {
             // Клубок цвета «узора дня» и золотая звезда сверху: новый узор каждый день.
-            var ball = Ui.Image(root, "Ball", Art.YarnBall, Palette.Link);
+            var ball = Ui.Image(root, "Ball", Art2.YarnBall(Palette.Link), Color.white);
             Ui.PlaceCenter(ball.rectTransform, s * 0.46f, s * 0.56f, s * 0.78f, s * 0.78f);
             var star = Ui.Image(root, "Star", Art.Icon(Icon.Star), Palette.Coin);
             Ui.PlaceCenter(star.rectTransform, s * 0.74f, s * 0.24f, s * 0.42f, s * 0.42f);

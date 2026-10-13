@@ -84,6 +84,16 @@ namespace KnittedPicture.Game
             return ColorUtility.TryParseHtmlString(hex, out var color) ? color : Color.magenta;
         }
 
+        /// <summary>
+        /// Пряжа ярче: насыщенность ×1,15 и чуть светлее — цвета картинки и клубков сочные,
+        /// но оттенок тот же (близкие цвета уровня не путаются).
+        /// </summary>
+        public static Color Vivid(Color color)
+        {
+            Color.RGBToHSV(color, out var h, out var s, out var v);
+            return Color.HSVToRGB(h, Mathf.Clamp01(s * 1.15f), Mathf.Clamp01(v * 1.04f + 0.01f));
+        }
+
         /// <summary>Ткань ярче: насыщенность ×1,3 и едва заметно светлее — живой цвет, а не выцветший.</summary>
         public static Color Fabric(Color color)
         {

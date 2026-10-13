@@ -251,10 +251,9 @@ namespace KnittedPicture.Game
         /// <summary>Монетка: жёлтый круг с ободком.</summary>
         public static RectTransform Coin(RectTransform parent, float cx, float cy, float size)
         {
+            // Детальная монета: золото с ободом и выпуклым клубком.
             var root = PlaceCenter(Node(parent, "Coin"), cx, cy, size, size);
-            Stretch(Image(root, "Edge", Art.Circle, Palette.CoinShadow).rectTransform);
-            var face = Image(root, "Face", Art.Circle, Palette.Coin);
-            PlaceCenter(face.rectTransform, size / 2f, size / 2f - size * 0.06f, size * 0.84f, size * 0.84f);
+            Stretch(Image(root, "Face", Art2.Coin, Color.white).rectTransform);
             return root;
         }
 

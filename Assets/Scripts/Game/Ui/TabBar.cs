@@ -57,7 +57,7 @@ namespace KnittedPicture.Game
 
             if (tab == MainTab.Yarn)
             {
-                var ball = Ui.Image(rt, "Icon", Art.YarnBall, color);
+                var ball = Ui.Image(rt, "Icon", Art2.YarnBall(color), Color.white);
                 Ui.PlaceCenter(ball.rectTransform, cellW / 2f, 22, 24, 24);
             }
             else
