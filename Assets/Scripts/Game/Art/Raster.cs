@@ -61,6 +61,28 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>
+        /// Нарисовать в повышенном разрешении: растр width·quality × height·quality, а шейдер получает координаты
+        /// макета (как при quality = 1). Края форм остаются в один настоящий пиксель (Draw.Pixel), а мелкая фактура —
+        /// нити, ворс, плетение — получает вдвое больше пикселей и не рябит после mip-уменьшения на экране.
+        /// </summary>
+        public static Raster Render(int width, int height, int quality, Func<float, float, Rgba> shader)
+        {
+            var r = new Raster(width * quality, height * quality);
+            var pixel = Draw.Pixel;
+            Draw.Pixel = 1f / quality;
+            try
+            {
+                r.Paint((x, y) => shader(x / quality, y / quality));
+            }
+            finally
+            {
+                Draw.Pixel = pixel;
+            }
+
+            return r;
+        }
+
         /// <summary>Вырезать прямоугольник (x, y — левый нижний угол) в новый растр.</summary>
         public Raster Crop(int x, int y, int w, int h)
         {
@@ -183,8 +205,11 @@ namespace KnittedPicture.Game
             return t * t * (3f - 2f * t);
         }
 
+        /// <summary>Размер настоящего пикселя в единицах макета (меньше 1 внутри Raster.Render).</summary>
+        public static float Pixel = 1f;
+
         /// <summary>Покрытие пикселя по знаковому расстоянию: мягкий край шириной в пиксель.</summary>
-        public static float Cover(float distance) => Clamp01(0.5f - distance);
+        public static float Cover(float distance) => Clamp01(0.5f - distance / Pixel);
 
         /// <summary>Повторяемый шум 0..1 по целым координатам.</summary>
         public static float Hash(int x, int y)

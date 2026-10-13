@@ -376,8 +376,7 @@ namespace KnittedPicture.Game
         {
             const int s = 96;
             const float cx = s / 2f;
-            var r = new Raster(s, s);
-            r.Paint((x, y) =>
+            return Raster.Render(s, s, 2, (x, y) =>
             {
                 var box = Draw.RoundBox(x, y, cx, cx, cx - 1f, cx - 1f, 20f);
                 var cover = Draw.Cover(box);
@@ -433,15 +432,18 @@ namespace KnittedPicture.Game
                 var v = Draw.Clamp01(value * 1.16f);
                 return new Rgba(v, v, v, cover);
             });
-            return r;
         }
 
-        /// <summary>Клетка ткани-основы: гладкая канва из переплетённых нитей, серая (красится), скруглённая.</summary>
+        /// <summary>
+        /// Клетка ткани-основы: канва полотняного переплетения, серая (красится), скруглённая. Нити основы
+        /// и утка по очереди сверху и снизу: верхняя — круглая трубочка, нижняя у пересечения в тени.
+        /// Тон каждой нити чуть свой и плавно гуляет вдоль неё (утолщения пряжи), без пиксельного шума.
+        /// </summary>
         public static Raster CanvasTile()
         {
             const int s = 96;
-            var r = new Raster(s, s);
-            r.Paint((x, y) =>
+            const float period = 12f;
+            return Raster.Render(s, s, 2, (x, y) =>
             {
                 var box = Draw.RoundBox(x, y, s / 2f, s / 2f, s / 2f - 1f, s / 2f - 1f, 20f);
                 var cover = Draw.Cover(box);
@@ -450,20 +452,48 @@ namespace KnittedPicture.Game
                     return Rgba.Clear;
                 }
 
-                // Полотняное переплетение: нити по очереди сверху и снизу.
-                var cellX = (int)MathF.Floor(x / 8f);
-                var cellY = (int)MathF.Floor(y / 8f);
-                var u = (x % 8f) / 8f - 0.5f;
-                var w = (y % 8f) / 8f - 0.5f;
-                var horizontal = (cellX + cellY) % 2 == 0;
-                var across = horizontal ? w : u;
-                var thread = MathF.Sqrt(Draw.Clamp01(1f - across * across * 4f));
-                var v = 0.84f + 0.16f * thread;
-                v *= 0.97f + 0.05f * Draw.Hash((int)x, (int)y);
+                var u = x / period;
+                var w = y / period;
+                var i = (int)MathF.Floor(u);
+                var j = (int)MathF.Floor(w);
+                var fu = u - i;
+                var fw = w - j;
+
+                // Уток идёт по горизонтали (ряд j), основа — по вертикали (столбец i).
+                var weftProfile = MathF.Sqrt(Draw.Clamp01(1f - MathF.Pow(2f * fw - 1f, 2f) * 1.15f));
+                var warpProfile = MathF.Sqrt(Draw.Clamp01(1f - MathF.Pow(2f * fu - 1f, 2f) * 1.15f));
+                var weftOver = ((i + j) & 1) == 0;
+
+                // Нить, что сверху, выгибается горбиком над пересечением; нижняя уходит в тень у краёв верхней.
+                var arch = MathF.Sin(MathF.PI * (weftOver ? fu : fw));
+                var topProfile = weftOver ? weftProfile : warpProfile;
+                var underProfile = weftOver ? warpProfile : weftProfile;
+                var tone = weftOver
+                    ? 0.03f * (Draw.Noise(x / 9f, j * 3.7f) - 0.5f) + 0.03f * (Draw.Hash(j, 17) - 0.5f)
+                    : 0.03f * (Draw.Noise(i * 3.7f, y / 9f) - 0.5f) + 0.03f * (Draw.Hash(i, 29) - 0.5f);
+                float v;
+                if (topProfile > 0.02f)
+                {
+                    v = 0.84f + 0.12f * topProfile * (0.75f + 0.25f * arch) + tone;
+
+                    // Свет сверху слева: верхняя кромка нити светлее.
+                    var slope = weftOver ? 2f * fw - 1f : 1f - 2f * fu;
+                    v += 0.03f * slope * topProfile;
+                }
+                else
+                {
+                    v = 0.81f + 0.07f * underProfile + tone;
+                }
+
+                // Щели между нитями — глубже.
+                v -= 0.05f * (1f - Draw.SmoothStep(0f, 0.35f, MathF.Max(topProfile, underProfile)));
+
+                // Кромка клетки: снизу справа чуть темнее, сверху слева светлый кант.
                 v *= 1f - 0.12f * Draw.SmoothStep(-7f, 0f, box);
+                v += 0.05f * Draw.SmoothStep(-4f, -1.5f, box) * Draw.Clamp01((y - x) / s + 0.5f);
+                v = Draw.Clamp01(v * 1.05f);
                 return new Rgba(v, v, v, cover);
             });
-            return r;
         }
 
         /// <summary>Искра: мягкая четырёхлучевая звёздочка с ярким центром. Белая — красится.</summary>

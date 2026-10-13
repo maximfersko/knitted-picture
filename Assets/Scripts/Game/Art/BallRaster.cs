@@ -32,97 +32,313 @@ namespace KnittedPicture.Game
             Canvas,
         }
 
+        /// <summary>Во сколько раз текстура клубка подробнее макета (Size — в точках макета).</summary>
+        public const int Quality = 2;
+
+        /// <summary>
+        /// Клубок: три слоя намотки (основа по всему шару и две перекрещенные ленты поверх, каждая отбрасывает
+        /// мягкую тень на нижние), каждая нить — кручёная трубочка со своим чуть другим тоном. Свет сверху слева:
+        /// блики садятся на макушки нитей, снизу справа густой тот же оттенок и рефлекс по краю. Контур
+        /// неровный от нитей, по нему тонкие волоски ворса; слева внизу выходит кончик нити завитком.
+        /// Нити мельче пикселя на краю шара плавно сливаются в средний тон — без ряби.
+        /// </summary>
         public static Raster Ball(Rgba color, Kind kind = Kind.Plain)
         {
-            var r = new Raster(Size, Size);
-            var strand = kind == Kind.Thick ? 0.36f : 0.22f;
-            const float band = 0.55f;
-            var under = Normalize(0.3f, 0.9f, 0.3f);
-            var over = Normalize(-0.9f, 0.3f, 0.3f);
-            var light = Normalize(-0.55f, 0.6f, 0.6f);
+            var strand = kind switch
+            {
+                Kind.Thick => 0.25f,
+                Kind.Canvas => 0.2f,
+                _ => 0.15f,
+            };
+            var layers = new[]
+            {
+                new Layer(0.25f, 1f, 0.22f, 9f, strand),
+                new Layer(0.8f, 0.5f, 0.3f, 0.44f, strand),
+                new Layer(-0.62f, 0.72f, 0.3f, 0.34f, strand),
+            };
+            var light = Normalize(-0.5f, 0.62f, 0.6f);
             var halfway = Normalize(light.X, light.Y, light.Z + 1f);
             var tail = Tail();
-            var fuzz = color.Shade(-0.1f);
+            var fibres = Fibres();
 
-            r.Paint((x, y) =>
+            return Raster.Render(Size, Size, Quality, (x, y) =>
             {
-                var nx = (x - Cx) / Radius;
-                var ny = (y - Cy) / Radius;
-                var r2 = nx * nx + ny * ny;
-                var d = MathF.Sqrt(r2) * Radius - Radius;
-                var cover = Draw.Cover(d);
-                Rgba result = Rgba.Clear;
-                if (cover > 0f)
+                var dx = x - Cx;
+                var dy = y - Cy;
+                var dist = MathF.Sqrt(dx * dx + dy * dy);
+                var result = Rgba.Clear;
+                if (dist < Radius + 3f)
                 {
-                    var nz = MathF.Sqrt(MathF.Max(0f, 1f - r2));
-                    var tOver = nx * over.X + ny * over.Y + nz * over.Z;
-                    float value;
-                    float index;
-                    if (MathF.Abs(tOver) < band)
-                    {
-                        value = Strand(tOver, strand, out index) * (1f - 0.25f * Draw.SmoothStep(band - 0.06f, band, MathF.Abs(tOver)));
-                        index += 100f;
-                    }
-                    else
-                    {
-                        var shadow = 1f - 0.22f * (1f - Draw.SmoothStep(band, band + 0.12f, MathF.Abs(tOver)));
-                        value = Strand(nx * under.X + ny * under.Y + nz * under.Z, strand, out index) * shadow;
-                    }
+                    // Нормаль сферы; за краем — как на самом краю (нужна для неровного контура).
+                    var k = MathF.Min(dist, Radius * 0.999f) / MathF.Max(dist, 0.0001f);
+                    var nx = dx * k / Radius;
+                    var ny = dy * k / Radius;
+                    var nz = MathF.Sqrt(MathF.Max(0.0001f, 1f - nx * nx - ny * ny));
 
-                    var lambert = Draw.Clamp01(nx * light.X + ny * light.Y + nz * light.Z);
-                    var shine = MathF.Pow(Draw.Clamp01(nx * halfway.X + ny * halfway.Y + nz * halfway.Z), 16f);
-                    var baseColor = kind switch
+                    // Верхний слой, которому принадлежит точка, и тень от лент над ним.
+                    var top = 0;
+                    for (var l = layers.Length - 1; l > 0; l--)
                     {
-                        Kind.Rainbow => Hue(index * 0.11f),
-                        _ => color,
-                    };
-
-                    if (kind == Kind.Canvas)
-                    {
-                        // Нити канвы: мелкая клетка поверх намотки.
-                        var weave = MathF.Abs(MathF.Sin(x * 0.9f)) * MathF.Abs(MathF.Sin(y * 0.9f));
-                        value *= 0.9f + 0.1f * weave;
+                        if (MathF.Abs(layers[l].Dot(nx, ny, nz)) < layers[l].Band)
+                        {
+                            top = l;
+                            break;
+                        }
                     }
 
-                    // Светотень: густой тот же оттенок снизу справа, глянец сверху слева.
-                    var shade = (value - 1f) * 0.75f + (lambert - 0.75f) * 0.7f;
-                    var c = baseColor.Shade(shade);
-                    c = Rgba.Lerp(c, Rgba.White, shine * 0.55f + Draw.Clamp01(value - 0.97f) * lambert * 0.25f);
+                    var occlusion = 1f;
+                    for (var l = top + 1; l < layers.Length; l++)
+                    {
+                        var edge = MathF.Abs(layers[l].Dot(nx, ny, nz)) - layers[l].Band;
+                        occlusion *= 1f - 0.38f * (1f - Draw.SmoothStep(0f, 0.16f, edge));
+                    }
 
-                    // Мягкий обод по краю.
-                    c = c.Shade(-0.2f * Draw.SmoothStep(-8f, -1f, d));
-                    result = c.WithAlpha(cover);
+                    var layer = layers[top];
+                    var tube = layer.Strand(nx, ny, nz, Radius, out var index, out var twist, out var across);
+
+                    // Нить у края своей ленты чуть уходит вниз — лента читается выпуклой.
+                    if (top > 0)
+                    {
+                        var rim = layer.Band - MathF.Abs(layer.Dot(nx, ny, nz));
+                        occlusion *= 0.84f + 0.16f * Draw.SmoothStep(0f, 0.07f, rim);
+                    }
+
+                    // Неровный контур: макушки нитей чуть выступают за круг.
+                    var d = dist - (Radius + (tube - 0.7f) * 1.6f);
+                    var cover = Draw.Cover(d);
+                    if (cover > 0f)
+                    {
+                        var jitter = (Draw.Hash((int)index + top * 97, top * 31 + 5) - 0.5f) * 0.1f;
+                        var baseColor = kind == Kind.Rainbow ? Hue(index * 0.09f + top * 0.31f) : color;
+                        var value = 0.6f + 0.4f * MathF.Pow(tube, 0.7f);
+                        value *= 1f + 0.05f * twist;
+                        if (kind == Kind.Canvas)
+                        {
+                            // Пряжа цвета ткани — плоская тесьма полотняного плетения: нити поперёк ленты.
+                            value *= 0.82f + 0.18f * across;
+                        }
+
+                        var lambert = nx * light.X + ny * light.Y + nz * light.Z;
+                        var wrap = Draw.Clamp01((lambert + 0.35f) / 1.35f);
+                        var shade = (value - 1f) * 0.85f + (wrap - 0.72f) * 0.8f + jitter + (occlusion - 1f) * 0.9f;
+                        var c = baseColor.Shade(shade);
+
+                        // Блик ложится на макушки нитей, широкий мягкий глянец — на всю светлую сторону.
+                        var spec = MathF.Pow(Draw.Clamp01(nx * halfway.X + ny * halfway.Y + nz * halfway.Z), 18f);
+                        var sheen = MathF.Pow(Draw.Clamp01(lambert), 4f);
+                        c = Rgba.Lerp(c, Rgba.White, spec * 0.42f * (0.3f + 0.7f * tube) * occlusion + sheen * 0.08f);
+
+                        // Рефлекс по теневому краю и лёгкое затемнение у самого контура.
+                        var fresnel = MathF.Pow(1f - nz, 3f);
+                        c = Rgba.Lerp(c, baseColor.Shade(0.25f), fresnel * Draw.Clamp01(0.3f - lambert) * 0.7f);
+                        c = c.Shade(-0.12f * Draw.SmoothStep(-6f, 0f, d));
+                        result = c.WithAlpha(cover);
+                    }
                 }
 
-                // Ворс: волоски по контуру, чуть дальше снизу справа.
-                if (d > -1f && d < 6f && Draw.Hash((int)x * 3, (int)y * 7) > 0.84f)
+                // Ворс: тонкие изогнутые волоски по контуру и лёгкая дымка пуха.
+                if (dist > Radius - 4f && dist < Radius + 10f)
                 {
-                    var hair = fuzz.WithAlpha(0.5f * (1f - Draw.Clamp01(d / 6f)));
-                    result = Rgba.Over(result, hair);
+                    var haze = Draw.Clamp01(1f - (dist - Radius) / 4f) * Draw.SmoothStep(Radius - 1f, Radius + 0.5f, dist);
+                    var fuzzColor = (kind == Kind.Rainbow ? Hue(MathF.Atan2(dy, dx) * 0.16f) : color).Shade(-0.05f);
+                    result = Rgba.Over(fuzzColor.WithAlpha(0.08f * haze), result);
+                    var angle = MathF.Atan2(dy, dx);
+                    foreach (var f in fibres)
+                    {
+                        var delta = MathF.Abs(Wrap(angle - f.Angle));
+                        if (delta > 0.18f)
+                        {
+                            continue;
+                        }
+
+                        var hair = MathF.Min(Draw.Segment(x, y, f.Ax, f.Ay, f.Bx, f.By), Draw.Segment(x, y, f.Bx, f.By, f.Tx, f.Ty));
+                        var hairCover = Draw.Cover(hair - 0.32f);
+                        if (hairCover <= 0f)
+                        {
+                            continue;
+                        }
+
+                        var tip = Draw.Clamp01(MathF.Sqrt((x - f.Ax) * (x - f.Ax) + (y - f.Ay) * (y - f.Ay)) / f.Length);
+                        var lit = Draw.Clamp01(0.5f - 0.5f * MathF.Cos(f.Angle - 2.2f));
+                        var hairColor = (kind == Kind.Rainbow ? Hue(f.Angle * 0.16f) : color).Shade(-0.18f + 0.3f * lit);
+                        result = Rgba.Over(hairColor.WithAlpha(hairCover * 0.7f * (1f - 0.7f * tip)), result);
+                    }
                 }
 
-                // Завиток нити слева внизу.
-                var tailDistance = Polyline(tail, x, y, 7f);
-                var tailCover = Draw.Cover(tailDistance - 4.2f);
-                if (tailCover > 0f && (cover < 0.99f || tailDistance < 4f))
+                // Кончик нити слева внизу: кручёная трубочка завитком, с тенью на клубке.
+                var tailDistance = Polyline(tail, x, y, 8f, out var along);
+                if (tailDistance < 7.5f)
                 {
-                    var profile = MathF.Sqrt(Draw.Clamp01(1f - tailDistance * tailDistance / 17.6f));
-                    var tailColor = (kind == Kind.Rainbow ? Hue(0.92f) : color).Shade(-0.15f + 0.3f * profile);
-                    result = Rgba.Over(tailColor.WithAlpha(tailCover), result);
+                    const float tailRadius = 4.4f;
+                    if (result.A > 0f && tailDistance > tailRadius - 0.5f)
+                    {
+                        var shadow = 1f - Draw.Clamp01((tailDistance - tailRadius) / 3f);
+                        result = Rgba.Lerp(result, result.Shade(-0.35f).WithAlpha(result.A), shadow * 0.6f);
+                    }
+
+                    var tailCover = Draw.Cover(tailDistance - tailRadius);
+                    if (tailCover > 0f)
+                    {
+                        var profile = MathF.Sqrt(Draw.Clamp01(1f - tailDistance * tailDistance / (tailRadius * tailRadius)));
+                        var ply = MathF.Sin((along / 5.5f + tailDistance / tailRadius * 0.45f) * MathF.PI * 2f);
+                        var tailColor = (kind == Kind.Rainbow ? Hue(0.92f) : color)
+                            .Shade(-0.28f + 0.42f * profile + 0.06f * ply * profile);
+                        result = Rgba.Over(tailColor.WithAlpha(tailCover), result);
+                    }
                 }
 
                 return result;
             });
-            return r;
+        }
+
+        /// <summary>Волосок ворса: от контура наружу с изгибом (две отрезка).</summary>
+        private readonly struct Fibre
+        {
+            public Fibre(float angle, float ax, float ay, float bx, float by, float tx, float ty, float length)
+            {
+                Angle = angle;
+                Ax = ax;
+                Ay = ay;
+                Bx = bx;
+                By = by;
+                Tx = tx;
+                Ty = ty;
+                Length = length;
+            }
+
+            public float Angle { get; }
+
+            public float Ax { get; }
+
+            public float Ay { get; }
+
+            public float Bx { get; }
+
+            public float By { get; }
+
+            public float Tx { get; }
+
+            public float Ty { get; }
+
+            public float Length { get; }
+        }
+
+        private static List<Fibre> Fibres()
+        {
+            const int count = 34;
+            var list = new List<Fibre>();
+            for (var i = 0; i < count; i++)
+            {
+                var angle = (i + Draw.Hash(i, 11) * 0.8f) / count * MathF.PI * 2f - MathF.PI;
+                var length = 2.5f + Draw.Hash(i, 23) * 3.5f;
+                var lean = (Draw.Hash(i, 37) < 0.5f ? -1f : 1f) * (0.5f + Draw.Hash(i, 41) * 0.5f);
+                var ox = MathF.Cos(angle);
+                var oy = MathF.Sin(angle);
+                var ax = Cx + ox * (Radius - 1.5f);
+                var ay = Cy + oy * (Radius - 1.5f);
+
+                // Наружу и вбок по касательной; кончик загибается сильнее.
+                var mx = ox + -oy * lean * 0.6f;
+                var my = oy + ox * lean * 0.6f;
+                var bx = ax + mx * length * 0.5f;
+                var by = ay + my * length * 0.5f;
+                var tx = bx + (ox + -oy * lean * 1.3f) * length * 0.5f;
+                var ty = by + (oy + ox * lean * 1.3f) * length * 0.5f;
+                list.Add(new Fibre(angle, ax, ay, bx, by, tx, ty, length));
+            }
+
+            return list;
+        }
+
+        private static float Wrap(float angle)
+        {
+            while (angle > MathF.PI)
+            {
+                angle -= MathF.PI * 2f;
+            }
+
+            while (angle < -MathF.PI)
+            {
+                angle += MathF.PI * 2f;
+            }
+
+            return angle;
+        }
+
+        /// <summary>
+        /// Слой намотки: нити идут по параллелям вокруг оси (ax, ay, az), лента — пояс шириной band вокруг
+        /// её экватора (band ≥ 1 — весь шар). width — толщина нити в радианах широты.
+        /// </summary>
+        private sealed class Layer
+        {
+            private readonly float _ax;
+            private readonly float _ay;
+            private readonly float _az;
+            private readonly float _ux;
+            private readonly float _uy;
+            private readonly float _uz;
+            private readonly float _vx;
+            private readonly float _vy;
+            private readonly float _vz;
+            private readonly float _width;
+
+            public Layer(float ax, float ay, float az, float band, float width)
+            {
+                (_ax, _ay, _az) = Normalize(ax, ay, az);
+                Band = band;
+                _width = width;
+
+                // Базис в плоскости экватора — для долготы (кручение нити вдоль).
+                (_ux, _uy, _uz) = Normalize(-_ay, _ax, 0f);
+                _vx = _ay * _uz - _az * _uy;
+                _vy = _az * _ux - _ax * _uz;
+                _vz = _ax * _uy - _ay * _ux;
+            }
+
+            public float Band { get; }
+
+            public float Dot(float nx, float ny, float nz) => nx * _ax + ny * _ay + nz * _az;
+
+            /// <summary>
+            /// Профиль нити в точке: 1 — макушка трубочки, 0 — щель между нитями. index — номер нити,
+            /// twist — кручение (−1..1), across — плетение поперёк (0..1) для тесьмы. Где нити мельче
+            /// пикселя, профиль плавно уходит в средний.
+            /// </summary>
+            public float Strand(float nx, float ny, float nz, float radius, out float index, out float twist, out float across)
+            {
+                var dot = Draw.Clamp(Dot(nx, ny, nz), -0.9999f, 0.9999f);
+                var latitude = MathF.Asin(dot);
+                var k = latitude / _width;
+                index = MathF.Floor(k);
+                var f = k - index;
+                var tube = MathF.Sqrt(MathF.Max(0f, 1f - (2f * f - 1f) * (2f * f - 1f)));
+
+                // Сколько нитей приходится на пиксель: производная широты по экрану.
+                var z = MathF.Max(nz, 0.06f);
+                var gx = (_ax - _az * nx / z) / radius;
+                var gy = (_ay - _az * ny / z) / radius;
+                var perPixel = MathF.Sqrt(gx * gx + gy * gy) / MathF.Sqrt(1f - dot * dot) / _width * Draw.Pixel;
+                var blur = Draw.SmoothStep(0.12f, 0.45f, perPixel);
+                tube = Draw.Lerp(tube, 0.78f, blur);
+
+                // Кручение: косые светлые полоски вдоль нити; число витков по кругу целое — без шва.
+                var longitude = MathF.Atan2(nx * _vx + ny * _vy + nz * _vz, nx * _ux + ny * _uy + nz * _uz);
+                var circle = MathF.Cos((index + 0.5f) * _width) * radius * MathF.PI * 2f;
+                var turns = MathF.Max(1f, MathF.Round(circle / 7f));
+                var fade = (1f - blur) * Draw.SmoothStep(0.12f, 0.4f, nz);
+                twist = MathF.Sin(longitude * turns + f * MathF.PI * 1.8f) * tube * fade;
+                var weave = MathF.Sin(longitude * turns * 1.6f) * MathF.Sin(f * MathF.PI * 4f);
+                across = 0.5f + 0.5f * weave * fade;
+                return tube;
+            }
         }
 
         /// <summary>Скрытый цвет: клубок в бумажной обёртке со строчкой по краю (знак «?» рисует игра).</summary>
         public static Raster Hidden()
         {
-            var r = new Raster(Size, Size);
             var paper = Rgba.Hex("#FBF8F2");
             var stitch = Rgba.Hex("#C9BEF5");
-            r.Paint((x, y) =>
+            return Raster.Render(Size, Size, Quality, (x, y) =>
             {
                 var d = Draw.Circle(x, y, Cx, Cy, Radius);
                 var cover = Draw.Cover(d);
@@ -137,15 +353,12 @@ namespace KnittedPicture.Game
                 var c = paper.Shade(-0.12f * (1f - lambert));
                 var ring = MathF.Abs(d + 7f);
                 var angle = MathF.Atan2(y - Cy, x - Cx);
-                var dash = MathF.Sin(angle * 22f) > 0f;
-                if (ring < 1.6f && dash)
-                {
-                    c = Rgba.Lerp(c, stitch, 0.9f);
-                }
 
+                // Стежок строчки со сглаженными краями: и поперёк, и по концам.
+                var dash = Draw.Clamp01(0.5f + MathF.Sin(angle * 22f) * (Radius - 7f) / 22f / Draw.Pixel);
+                c = Rgba.Lerp(c, stitch, 0.9f * dash * Draw.Cover(ring - 1.6f));
                 return c.WithAlpha(cover);
             });
-            return r;
         }
 
         /// <summary>Лента связки: фиолетовая полоса поперёк клубка и бантик снизу. Белая — красится цветом пары.</summary>
@@ -375,21 +588,13 @@ namespace KnittedPicture.Game
             return r;
         }
 
-        private static float Strand(float t, float width, out float index)
-        {
-            var k = MathF.Asin(Draw.Clamp(t, -1f, 1f)) / width;
-            index = MathF.Floor(k);
-            var profile = MathF.Sin(MathF.PI * (k - index));
-            return 0.6f + 0.4f * MathF.Sqrt(MathF.Max(0f, profile));
-        }
-
         private static Rgba Hue(float h)
         {
             h = h - MathF.Floor(h);
             var r = Draw.Clamp01(MathF.Abs(h * 6f - 3f) - 1f);
             var g = Draw.Clamp01(2f - MathF.Abs(h * 6f - 2f));
             var b = Draw.Clamp01(2f - MathF.Abs(h * 6f - 4f));
-            return Rgba.Lerp(new Rgba(r, g, b), Rgba.White, 0.25f);
+            return Rgba.Lerp(new Rgba(r, g, b), Rgba.White, 0.32f);
         }
 
         private static (float X, float Y, float Z) Normalize(float x, float y, float z)
@@ -415,19 +620,29 @@ namespace KnittedPicture.Game
             return points;
         }
 
-        private static float Polyline(List<(float X, float Y)> line, float x, float y, float limit)
+        /// <summary>Расстояние до ломаной и путь вдоль неё до ближайшей точки (along, в точках макета).</summary>
+        private static float Polyline(List<(float X, float Y)> line, float x, float y, float limit, out float along)
         {
             var best = float.MaxValue;
+            along = 0f;
+            var walked = 0f;
             for (var i = 0; i + 1 < line.Count; i++)
             {
                 var (ax, ay) = line[i];
                 var (bx, by) = line[i + 1];
-                if (x < MathF.Min(ax, bx) - limit || x > MathF.Max(ax, bx) + limit || y < MathF.Min(ay, by) - limit || y > MathF.Max(ay, by) + limit)
+                var length = MathF.Sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
+                if (x >= MathF.Min(ax, bx) - limit && x <= MathF.Max(ax, bx) + limit && y >= MathF.Min(ay, by) - limit && y <= MathF.Max(ay, by) + limit)
                 {
-                    continue;
+                    var d = Draw.Segment(x, y, ax, ay, bx, by);
+                    if (d < best)
+                    {
+                        best = d;
+                        var t = length > 0f ? Draw.Clamp01(((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / (length * length)) : 0f;
+                        along = walked + t * length;
+                    }
                 }
 
-                best = MathF.Min(best, Draw.Segment(x, y, ax, ay, bx, by));
+                walked += length;
             }
 
             return best;

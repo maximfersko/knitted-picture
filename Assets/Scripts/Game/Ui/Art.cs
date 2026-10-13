@@ -78,12 +78,6 @@ namespace KnittedPicture.Game
         /// <summary>Вязальная спица: остриём вверх, бусина-набалдашник внизу. Цвета запечены, красить белым.</summary>
         public static Sprite KnittingNeedle => Cached("needle", BuildNeedle);
 
-        /// <summary>
-        /// Узор ткани поверх клубка (светлая сетка канвы в круге клубка): так выглядит чужая пряжа
-        /// цвета ткани — тот же узор, что у готовой ткани на картинке.
-        /// </summary>
-        public static Sprite FabricOverlay => Cached("fabricOverlay", BuildFabricOverlay);
-
         /// <summary>Радужный клубок: витки разных цветов, красится белым.</summary>
         public static Sprite RainbowBall => Cached("rainbow", () => BuildYarnBall(true));
 
@@ -772,36 +766,6 @@ namespace KnittedPicture.Game
             }
 
             return best;
-        }
-
-        private static Sprite BuildFabricOverlay()
-        {
-            const int size = 192;
-            const float c = size / 2f;
-            const float radius = c - 8f;
-            const float tile = 30f;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-            var pixels = new Color32[size * size];
-            for (var py = 0; py < size; py++)
-            {
-                for (var px = 0; px < size; px++)
-                {
-                    var x = px + 0.5f;
-                    var y = size - py - 0.5f;
-                    var d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c));
-                    var inside = Mathf.Clamp01(radius - 3f - d + 0.5f);
-
-                    // Та же канва, что у ткани на картинке: светлые нити вдоль и поперёк.
-                    var gx = Mathf.Abs(Mathf.Repeat(x, tile / 2f) - tile / 4f);
-                    var gy = Mathf.Abs(Mathf.Repeat(y, tile / 2f) - tile / 4f);
-                    var line = Mathf.Clamp01(2.2f - Mathf.Min(gx, gy) + 0.5f);
-                    pixels[py * size + px] = new Color32(255, 255, 255, (byte)(line * inside * 0.75f * 255));
-                }
-            }
-
-            texture.SetPixels32(pixels);
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
         private static Sprite BuildRays(int size, int count)

@@ -146,8 +146,9 @@ namespace KnittedPicture.Game
 
         private static Raster Tight(Raster ball)
         {
-            const int half = 74;
-            return ball.Crop((int)BallRaster.Cx - half, (int)BallRaster.Cy - half, half * 2, half * 2);
+            const int q = BallRaster.Quality;
+            const int half = 74 * q;
+            return ball.Crop((int)BallRaster.Cx * q - half, (int)BallRaster.Cy * q - half, half * 2, half * 2);
         }
 
         public static Sprite RainbowBall => Get("ballRainbow", () => BallRaster.Ball(Rgba.White, BallRaster.Kind.Rainbow));

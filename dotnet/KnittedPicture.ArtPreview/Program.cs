@@ -11,6 +11,7 @@ namespace KnittedPicture.ArtPreview
             var dir = args.Length > 0 ? args[0] : "preview";
             Directory.CreateDirectory(dir);
             Classic(dir);
+            Field(dir);
             Balls(dir);
             Loom(dir);
             Export(Path.Combine(dir, "sprites"));
@@ -54,6 +55,64 @@ namespace KnittedPicture.ArtPreview
             Png.Put(img, KnitRaster.Sparkle(), img.Width - 70, img.Height - 70, 40, 40, Rgba.Hex("#FFC23C"));
             Png.Save(img, Path.Combine(dir, "classic.png"));
         }
+
+        /// <summary>
+        /// Как на экране телефона: клубки поля в размере ~140 px и клетки картинки ~60 px (ткань и вязаные),
+        /// справа — крупный клубок, чтобы рассмотреть нити, ворс и завиток.
+        /// </summary>
+        private static void Field(string dir)
+        {
+            var img = new Raster(1240, 700);
+            Png.Fill(img, Rgba.Hex("#FFFFFF"));
+            var shadow = BallRaster.Shadow();
+            string[] row1 = { "#F2303F", "#F2303F", "#EFE3C4", "#C8102E", "#F5C542" };
+            string[] row2 = { "#D9828E", "#FA98A0", "#D9828E", "#FA98A0", "#5FD7A5" };
+            void Ball(Raster ball, float x, float y, float size)
+            {
+                Png.Put(img, shadow, x + size * 0.04f, y - size * 0.1f, size * 0.95f, size * 0.3f);
+                Png.Put(img, ball, x - size * 0.1f, y - size * 0.12f, size / Art2BallFill, size / Art2BallFill);
+            }
+
+            for (var i = 0; i < 5; i++)
+            {
+                var canvas = i == 2;
+                Ball(BallRaster.Ball(Rgba.Hex(row1[i]), canvas ? BallRaster.Kind.Canvas : BallRaster.Kind.Plain), 30 + i * 150, 520, 124);
+                Ball(BallRaster.Ball(Rgba.Hex(row2[i])), 30 + i * 150, 370, 124);
+            }
+
+            Ball(BallRaster.Ball(Rgba.White, BallRaster.Kind.Rainbow), 30, 220, 124);
+            Ball(BallRaster.Ball(Rgba.Hex("#C9C2E8")), 180, 220, 124);
+            Ball(BallRaster.Ball(Rgba.Hex("#F2303F"), BallRaster.Kind.Thick), 330, 220, 124);
+            Ball(BallRaster.Hidden(), 480, 220, 124);
+
+            var tile = KnitRaster.CanvasTile();
+            var stitch = KnitRaster.StitchTile(false);
+            var gloss = KnitRaster.StitchTile(true);
+            for (var i = 0; i < 9; i++)
+            {
+                var x = 30 + i * 66;
+                if (i < 5)
+                {
+                    Png.Put(img, tile, x, 40, 60, 60, Rgba.Hex("#EED9A6"));
+                    Png.Put(img, tile, x, 106, 60, 60, Rgba.Hex("#EED9A6"));
+                }
+                else
+                {
+                    Png.Put(img, stitch, x, 40, 60, 60, Rgba.Hex("#F2303F"));
+                    Png.Put(img, gloss, x, 40, 60, 60);
+                    Png.Put(img, stitch, x, 106, 60, 60, Rgba.Hex("#FA98A0"));
+                    Png.Put(img, gloss, x, 106, 60, 60);
+                }
+            }
+
+            Png.Put(img, BallRaster.Ball(Rgba.Hex("#F2303F")), 800, 230, 440, 440);
+            Png.Put(img, tile, 800, 20, 200, 200, Rgba.Hex("#EED9A6"));
+            Png.Put(img, stitch, 1020, 20, 200, 200, Rgba.Hex("#F2303F"));
+            Png.Put(img, gloss, 1020, 20, 200, 200);
+            Png.Save(img, Path.Combine(dir, "field.png"));
+        }
+
+        private const float Art2BallFill = BallRaster.Radius * 2f / BallRaster.Size;
 
         /// <summary>Мета: шкатулка (закрытая), подарок, монета, пяльцы с вязаным сердечком.</summary>
         private static void Meta(string dir)

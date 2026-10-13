@@ -26,7 +26,8 @@ namespace KnittedPicture.Game
         private readonly RectTransform _ice;
         private readonly Text _iceText;
         private readonly Image _iceDot;
-        private readonly Image _fabric;
+        private Sprite? _plain;
+        private Color _tint;
         private readonly RectTransform _double;
         private readonly RectTransform _surplus;
         private readonly RectTransform _foreign;
@@ -55,10 +56,6 @@ namespace KnittedPicture.Game
             _ball = Ui.Image(root, "Ball", Art2.Ball(Color.white), Color.white, true);
             Ui.PlaceCenter(_ball.rectTransform, size / 2f - (BallRaster.Cx - BallRaster.Size / 2f) * shift,
                 size / 2f + (BallRaster.Cy - BallRaster.Size / 2f) * shift, art, art);
-
-            // Чужая пряжа цвета ткани: поверх клубка узор полотна.
-            _fabric = Ui.Image(root, "Fabric", Art.FabricOverlay, Color.white);
-            Ui.PlaceCenter(_fabric.rectTransform, size / 2f, size / 2f, size, size);
 
             _question = Ui.Label(root, "?", size * 0.5f, Palette.Ink, 0, 0, size, size);
 
@@ -136,6 +133,8 @@ namespace KnittedPicture.Game
                 : spool.Rainbow ? Art2.RainbowBall
                 : Art2.Ball(color, false, spool.Thick);
             _ball.color = Color.white;
+            _plain = _ball.sprite;
+            _tint = color;
             _question.gameObject.SetActive(!visible);
 
             _thickRing.gameObject.SetActive(spool.Thick);
@@ -145,7 +144,6 @@ namespace KnittedPicture.Game
             _iceDot.color = visible ? color : Palette.Hidden;
             _surplus.gameObject.SetActive(surplus && visible);
             _foreign.gameObject.SetActive(foreign);
-            _fabric.gameObject.SetActive(false);
             _double.gameObject.SetActive(spool.Thick && !surplus && !foreign);
 
             // Число петель — только у тех, кого можно взять сейчас: задние ряды без цифр, меньше шума.
@@ -170,10 +168,10 @@ namespace KnittedPicture.Game
             _iceText.text = ice.ToString();
         }
 
-        /// <summary>Чужая пряжа на поле: узор ткани поверх клубка (сам крестик — только на станке).</summary>
+        /// <summary>Чужая пряжа на поле: клубок намотан тесьмой цвета ткани (сам крестик — только на станке).</summary>
         public void SetFabric(bool fabric)
         {
-            _fabric.gameObject.SetActive(fabric);
+            _ball.sprite = fabric ? Art2.CanvasBall(_tint) : _plain;
         }
 
         /// <summary>Метку «×2» на станке не показываем: там толстый клубок и так стоит на двух местах.</summary>
@@ -215,7 +213,6 @@ namespace KnittedPicture.Game
             _ice.gameObject.SetActive(false);
             _surplus.gameObject.SetActive(false);
             _foreign.gameObject.SetActive(false);
-            _fabric.gameObject.SetActive(false);
             _double.gameObject.SetActive(false);
         }
     }
