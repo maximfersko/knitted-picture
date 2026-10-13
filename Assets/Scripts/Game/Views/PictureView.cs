@@ -389,6 +389,37 @@ namespace KnittedPicture.Game
             return true;
         }
 
+        /// <summary>Ряд y закрыт: петли по очереди слева направо вспыхивают и чуть подпрыгивают.</summary>
+        public void Shimmer(int y)
+        {
+            if (y < 0 || y >= _game.Height)
+            {
+                return;
+            }
+
+            for (var x = 0; x < _game.Width; x++)
+            {
+                var image = _cells[y * _game.Width + x];
+                if (!_game.IsKnitted(x, y) || _pending.Contains(Key(x, y)))
+                {
+                    continue;
+                }
+
+                var rt = image.rectTransform;
+                var baseColor = image.color;
+                Tweens.Run(rt, 0.28f, t =>
+                {
+                    var bump = Ease.Bump(t);
+                    image.color = Color.Lerp(baseColor, Color.white, 0.45f * bump);
+                    rt.localScale = Vector3.one * (1f + 0.1f * bump);
+                }, null, () =>
+                {
+                    image.color = baseColor;
+                    rt.localScale = Vector3.one;
+                }, x * 0.03f);
+            }
+        }
+
         public Vector3 CellWorld(int x, int y) => Ui.WorldCenter(_cells[y * _game.Width + x].rectTransform);
 
         /// <summary>Клетка как цель для подсветки и выноски.</summary>
