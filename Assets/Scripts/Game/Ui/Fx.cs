@@ -153,6 +153,47 @@ namespace KnittedPicture.Game
             Sparkle(layer, at, color, 7, size * 0.9f);
         }
 
+        /// <summary>
+        /// Полёт монетки в счётчик: сначала «выстреливает» из источника в точку burst, раздуваясь, потом летит
+        /// по дуге (то левее, то правее) с разгоном, вращаясь, и у счётчика чуть сжимается. Цель спрашивается
+        /// каждый кадр: под окном экран мог перестроиться. До старта (delay) монетка невидима.
+        /// </summary>
+        public static void CoinFlight(RectTransform coin, Vector3 from, Vector3 burst, Func<Vector3> target, float delay, Action arrived)
+        {
+            var unit = coin.parent is RectTransform layer ? Unit(layer) : 1f;
+            _side = -_side;
+            var bend = _side * (40f + UnityEngine.Random.value * 40f) * unit;
+            var spin = _side * (160f + UnityEngine.Random.value * 120f);
+            coin.position = from;
+            coin.localScale = Vector3.zero;
+            Tweens.Run(coin, 0.78f, t =>
+            {
+                Vector3 p;
+                float scale;
+                if (t < 0.24f)
+                {
+                    var k = Ease.OutCubic(t / 0.24f);
+                    p = Vector3.LerpUnclamped(from, burst, k);
+                    scale = Mathf.Lerp(0.2f, 1.18f, k);
+                }
+                else
+                {
+                    var k = Ease.InOutCubic((t - 0.24f) / 0.76f);
+                    var end = target();
+                    var line = end - burst;
+                    var normal = new Vector3(-line.y, line.x, 0f).normalized;
+                    var mid = (burst + end) / 2f + normal * bend;
+                    var u = 1f - k;
+                    p = u * u * burst + 2f * u * k * mid + k * k * end;
+                    scale = Mathf.Lerp(1.18f, 0.72f, k * k);
+                }
+
+                coin.position = p;
+                coin.localScale = Vector3.one * scale;
+                coin.localRotation = Quaternion.Euler(0f, 0f, spin * Ease.OutCubic(t));
+            }, null, arrived, delay);
+        }
+
         /// <summary>Всплывающая надпись: подпрыгивает и уплывает вверх.</summary>
         public static void FloatText(RectTransform layer, Vector3 at, string text, Color color, float size = 22f)
         {

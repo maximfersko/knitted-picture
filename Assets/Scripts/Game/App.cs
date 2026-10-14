@@ -151,20 +151,15 @@ namespace KnittedPicture.Game
             for (var i = 0; i < count; i++)
             {
                 var coin = Ui.Coin(PopupLayer, 0, 0, 22);
-                coin.position = fromWorld;
-                coin.localScale = Vector3.zero;
                 var portion = i == count - 1 ? amount - given : perCoin;
                 given += portion;
-                var jitter = new Vector3(UnityEngine.Random.Range(-28f, 28f), UnityEngine.Random.Range(-12f, 20f), 0) * PopupLayer.lossyScale.x;
+                var jitter = new Vector3(UnityEngine.Random.Range(-34f, 34f), UnityEngine.Random.Range(-8f, 30f), 0) * PopupLayer.lossyScale.x;
                 var delay = 0.05f + i * 0.06f;
-                Tweens.Delay(coin, delay, () => coin.localScale = Vector3.one);
-                var start = fromWorld + jitter;
-                Tweens.Run(coin, 0.6f, t =>
-                {
-                    // Цель берём каждый кадр: под окном экран мог перестроиться, счётчик — новый.
-                    var target = CoinCounter != null ? Ui.WorldCenter((RectTransform)CoinCounter.transform.parent) : start;
-                    coin.position = Vector3.LerpUnclamped(start, target, t);
-                }, Ease.InOutCubic, () =>
+                var fallback = fromWorld + jitter;
+
+                // Цель берём каждый кадр: под окном экран мог перестроиться, счётчик — новый.
+                Fx.CoinFlight(coin, fromWorld, fromWorld + jitter,
+                    () => CoinCounter != null ? Ui.WorldCenter((RectTransform)CoinCounter.transform.parent) : fallback, delay, () =>
                 {
                     Destroy(coin.gameObject);
                     CoinsInFlight -= portion;
@@ -175,29 +170,31 @@ namespace KnittedPicture.Game
                     }
 
                     Sfx.Play(Sound.Coin, 0.4f);
-                }, delay);
+                });
             }
         }
 
-        /// <summary>Переход по вкладкам: новый экран коротко въезжает со стороны вкладки.</summary>
-        public void SlideIn(int direction)
+        /// <summary>Сторона, с которой въедет следующий экран (переход по вкладкам), 0 — обычный вход.</summary>
+        private int _slide;
+
+        /// <summary>Строящийся сейчас экран открыт вкладкой (±1) или обычно (0): панель вкладок решает, переезжать ли метке.</summary>
+        public int PendingSlide => _slide;
+
+        /// <summary>
+        /// Когда закончатся переходы экранов и окон (Time.unscaledTime). До этого элементы ещё проявляются и всплывают,
+        /// и проверки раскладки (QA-бот) их не судят.
+        /// </summary>
+        public float SettledAt { get; private set; }
+
+        private void Unsettle(float seconds)
         {
-            if (_screen == null || direction == 0)
-            {
-                return;
-            }
+            SettledAt = Mathf.Max(SettledAt, Time.unscaledTime + seconds);
+        }
 
-            var rt = _screen.Root;
-            var group = rt.GetComponent<CanvasGroup>();
-            if (group == null)
-            {
-                group = rt.gameObject.AddComponent<CanvasGroup>();
-            }
-
-            var offset = new Vector2(direction * 40f, 0);
-            rt.anchoredPosition = offset;
-            Tweens.Fade(group, 0f, 1f, 0.22f);
-            Tweens.Run(rt, 0.26f, t => rt.anchoredPosition = Vector2.LerpUnclamped(offset, Vector2.zero, t), Ease.OutCubic);
+        /// <summary>Следующий экран открывается вкладкой: въедет со стороны вкладки, а старый уедет в другую.</summary>
+        public void SlideNext(int direction)
+        {
+            _slide = direction;
         }
 
         public float Width { get; private set; }
@@ -518,12 +515,15 @@ namespace KnittedPicture.Game
             where T : Popup
         {
             _popups.Add(popup);
+            popup.Enter();
+            Unsettle(0.6f);
             return popup;
         }
 
         public void RemovePopup(Popup popup)
         {
             _popups.Remove(popup);
+            Unsettle(0.3f);
         }
 
         /// <summary>Плашка «видео-реклама» вместо настоящего SDK.</summary>
@@ -561,8 +561,14 @@ namespace KnittedPicture.Game
             label.rectTransform.sizeDelta = new Vector2(width - 24, height);
             var group = root.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
+
+            // Плашка падает сверху на пружине и, отслужив, уплывает вверх, растворяясь.
             Tweens.Fade(group, 0f, 1f, 0.18f);
+            Tweens.Offset(root, new Vector2(0, 30f), Vector2.zero, 0.42f, Ease.OutSoftBack);
+            root.localScale = Vector3.one * 0.92f;
+            Tweens.Run(root, 0.4f, t => root.localScale = Vector3.one * Mathf.LerpUnclamped(0.92f, 1f, t), Ease.Spring);
             var hold = Mathf.Clamp(1.2f + text.Length * 0.025f, 1.9f, 3.6f);
+            Tweens.Offset(root, Vector2.zero, new Vector2(0, 18f), 0.3f, Ease.InCubic, null, hold);
             Tweens.Fade(group, 1f, 0f, 0.3f, () =>
             {
                 if (_toast == root)
@@ -644,12 +650,28 @@ namespace KnittedPicture.Game
             SetGround(Palette.Ground);
             CloseAllPopups();
             PreviousScreen = _screen?.GetType();
-            _screen?.Dispose();
+            var old = _screen;
             _route = route;
             _screen = route();
 
-            // Старый экран уже снят: лишние текстуры клубков освобождаем, когда он исчезнет со сцены.
-            Tweens.Delay(this, 0.2f, Art2.Trim);
+            // Тот же экран перестраивается (главная после награды, перезапуск уровня) — мгновенно, без мигания;
+            // другой — старый гаснет под новым, а новый проявляется, и его блоки всплывают волной.
+            var slide = _slide;
+            _slide = 0;
+            Unsettle(0.65f);
+            if (old != null && old.GetType() == _screen.GetType() && slide == 0)
+            {
+                old.Dispose();
+            }
+            else
+            {
+                var hadBar = old != null && old.Root.Find("TabBar") != null;
+                old?.Leave(slide);
+                _screen.Enter(slide, hadBar);
+            }
+
+            // Старый экран снят: лишние текстуры клубков освобождаем, когда он исчезнет со сцены.
+            Tweens.Delay(this, 0.45f, Art2.Trim);
         }
 
         private void CloseAllPopups()

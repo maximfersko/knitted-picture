@@ -507,8 +507,20 @@ namespace KnittedPicture.Game
             Stretch(Box(root, "Back", 11, Palette.Danger).rectTransform);
             var label = Label(root, count > 0 ? count.ToString() : "!", 13, Color.white);
             Stretch(label.rectTransform);
-            Tweens.Run(root, 1.2f, t => root.localScale = Vector3.one * (1f + 0.12f * Ease.Bump(t)), null, null, 0f, true);
+            // Выпрыгивает, а потом «бьётся» двумя ударами с паузой: заметно, но не мельтешит, как ровный пульс.
+            Tweens.Scale(root, 0f, 1f, 0.4f, Ease.OutBack, () =>
+                Tweens.Run(root, 2.2f, t => root.localScale = Vector3.one * (1f + 0.16f * Ease.Heartbeat(t)), null, null, 0f, true), 0.25f);
             return root;
+        }
+
+        /// <summary>
+        /// CanvasGroup элемента, а нет — новая. Не через «??»: в редакторе отсутствующий компонент приходит
+        /// «поддельным null», и ?? вернул бы его вместо новой группы.
+        /// </summary>
+        public static CanvasGroup Group(Component target)
+        {
+            var group = target.GetComponent<CanvasGroup>();
+            return group != null ? group : target.gameObject.AddComponent<CanvasGroup>();
         }
 
         /// <summary>Мировая позиция центра элемента — для анимаций перелёта между панелями.</summary>

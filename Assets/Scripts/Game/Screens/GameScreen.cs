@@ -814,7 +814,7 @@ namespace KnittedPicture.Game
                     continue;
                 }
 
-                var group = plate.GetComponent<CanvasGroup>() ?? plate.gameObject.AddComponent<CanvasGroup>();
+                var group = Ui.Group(plate);
                 group.blocksRaycasts = false;
                 group.alpha = !_game.IsForeign(owner) && !_game.HasWork(owner) ? 0.5f : 1f;
             }

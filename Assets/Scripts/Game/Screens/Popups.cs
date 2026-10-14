@@ -275,7 +275,7 @@ namespace KnittedPicture.Game
             void Show(float t)
             {
                 track.color = Color.Lerp(Palette.Inactive, Palette.Primary, t);
-                knob.anchoredPosition = new Vector2(Mathf.Lerp(trackH / 2f, trackW - trackH / 2f, t), knob.anchoredPosition.y);
+                knob.anchoredPosition = new Vector2(Mathf.LerpUnclamped(trackH / 2f, trackW - trackH / 2f, t), knob.anchoredPosition.y);
             }
 
             Show(get() ? 1f : 0f);
@@ -283,7 +283,14 @@ namespace KnittedPicture.Game
             {
                 var on = !get();
                 set(on);
-                Tweens.Run(knob, 0.18f, t => Show(on ? t : 1f - t), Ease.OutCubic);
+                // Шарик перескакивает на пружине и чуть сплющивается в полёте, как капля.
+                Tweens.Kill(knob);
+                Tweens.Run(knob, 0.36f, t =>
+                {
+                    Show(on ? t : 1f - t);
+                    var squash = 0.18f * Ease.Bump(Mathf.Clamp01(t));
+                    knob.localScale = new Vector3(1f + squash, 1f - squash * 0.6f, 1f);
+                }, Ease.Spring, () => knob.localScale = Vector3.one);
             });
         }
     }

@@ -70,8 +70,9 @@ namespace KnittedPicture.Game
         {
             if (!_dragging)
             {
-                _pos = Mathf.SmoothDamp(_pos, _target, ref _speed, 0.14f, Mathf.Infinity, dt);
-                if (Mathf.Abs(_pos - _target) < 0.0005f)
+                // Пружина: бросок пальцем переходит в движение, у страницы — мягкий перелёт и успокоение.
+                Springs.Step(ref _pos, ref _speed, _target, dt);
+                if (Mathf.Abs(_pos - _target) < 0.0005f && Mathf.Abs(_speed) < 0.01f)
                 {
                     _pos = _target;
                     _speed = 0f;
@@ -164,6 +165,9 @@ namespace KnittedPicture.Game
                 }
 
                 _dragging = false;
+
+                // Скорость пальца (точки в секунду) — в скорость ленты (страницы в секунду), с запасом против перелёта на две.
+                _speed = Mathf.Clamp(-velocity / W, -4f, 4f);
                 var next = Mathf.RoundToInt(_pos);
                 if (Mathf.Abs(velocity) > 350f)
                 {

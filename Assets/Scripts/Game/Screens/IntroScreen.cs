@@ -187,6 +187,9 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>У экрана своя постановка входа: волна блоков ей бы мешала.</summary>
+        protected override bool CascadeOnEnter => false;
+
         public override bool OnBack()
         {
             Finish();

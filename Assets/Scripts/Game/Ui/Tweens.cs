@@ -21,8 +21,65 @@ namespace KnittedPicture.Game
             return 1f + c3 * Mathf.Pow(t - 1f, 3f) + c1 * Mathf.Pow(t - 1f, 2f);
         }
 
+        /// <summary>Мягкий перелёт: как OutBack, но на пару процентов — для сдвигов, где большой перелёт заметен.</summary>
+        public static float OutSoftBack(float t)
+        {
+            const float c1 = 0.9f;
+            const float c3 = c1 + 1f;
+            return 1f + c3 * Mathf.Pow(t - 1f, 3f) + c1 * Mathf.Pow(t - 1f, 2f);
+        }
+
+        public static float OutQuint(float t) => 1f - Mathf.Pow(1f - t, 5f);
+
+        public static float InCubic(float t) => t * t * t;
+
+        /// <summary>
+        /// Пружина: быстро к цели, перелёт и пара затухающих покачиваний. Ровно 1 в конце.
+        /// Для отпускания кнопок, выезда окон, переключателей — движение «живое», но не резиновое.
+        /// </summary>
+        public static float Spring(float t)
+        {
+            if (t >= 1f)
+            {
+                return 1f;
+            }
+
+            return 1f - Mathf.Exp(-6.5f * t) * Mathf.Cos(t * Mathf.PI * 3.2f) * (1f - t);
+        }
+
         /// <summary>Туда и обратно: 0 → 1 → 0, для «пульса».</summary>
         public static float Bump(float t) => Mathf.Sin(t * Mathf.PI);
+
+        /// <summary>Сердцебиение для повторяющейся анимации: два коротких удара подряд (второй слабее) и долгая пауза.</summary>
+        public static float Heartbeat(float t)
+        {
+            static float Beat(float x, float start, float width) =>
+                x >= start && x < start + width ? Mathf.Sin((x - start) / width * Mathf.PI) : 0f;
+
+            return Beat(t, 0f, 0.09f) + 0.7f * Beat(t, 0.12f, 0.09f);
+        }
+
+        /// <summary>Толчок с затуханием: резкий пик в начале, потом пара всё более мелких отскоков, в конце 0.</summary>
+        public static float Jolt(float t) => Mathf.Sin(t * Mathf.PI * 3f) * (1f - t) * (1f - t);
+    }
+
+    /// <summary>
+    /// Пружина для того, что ведётся каждый кадр (карусели): слегка недодемпфированная — доезжает с мягким
+    /// перелётом в пару процентов и сохраняет скорость броска пальцем. Шаг дробится, чтобы на просадке кадров
+    /// пружина не «взрывалась».
+    /// </summary>
+    public static class Springs
+    {
+        public static void Step(ref float position, ref float velocity, float target, float dt, float stiffness = 190f, float damping = 21f)
+        {
+            var steps = Mathf.Max(1, Mathf.CeilToInt(dt * 120f));
+            var h = dt / steps;
+            for (var i = 0; i < steps; i++)
+            {
+                velocity += ((target - position) * stiffness - velocity * damping) * h;
+                position += velocity * h;
+            }
+        }
     }
 
     /// <summary>
@@ -41,6 +98,7 @@ namespace KnittedPicture.Game
             public Func<float, float> Ease = KnittedPicture.Game.Ease.Linear;
             public Action? Done;
             public bool Loop;
+            public int Channel;
         }
 
         private static Tweens? _instance;
@@ -56,7 +114,7 @@ namespace KnittedPicture.Game
         }
 
         public static void Run(UnityEngine.Object owner, float duration, Action<float> step, Func<float, float>? ease = null,
-            Action? done = null, float delay = 0f, bool loop = false)
+            Action? done = null, float delay = 0f, bool loop = false, int channel = 0)
         {
             if (_instance == null)
             {
@@ -79,7 +137,100 @@ namespace KnittedPicture.Game
             tween.Ease = ease ?? KnittedPicture.Game.Ease.Linear;
             tween.Done = done;
             tween.Loop = loop;
+            tween.Channel = channel;
             _instance._adding.Add(tween);
+        }
+
+        /// <summary>
+        /// Остановить твины владельца на канале (0 — все неповторяющиеся). Так новое движение не борется
+        /// со старым: окно закрывают, пока оно ещё выезжает, — выезд останавливается, а не дописывает масштаб поверх.
+        /// Done остановленных не вызывается.
+        /// </summary>
+        public static void Kill(UnityEngine.Object owner, int channel = 0)
+        {
+            if (_instance == null)
+            {
+                return;
+            }
+
+            bool Match(Tween tween) => tween.Owner == owner && (channel == 0 ? !tween.Loop : tween.Channel == channel);
+            for (var i = _instance._active.Count - 1; i >= 0; i--)
+            {
+                if (Match(_instance._active[i]))
+                {
+                    _instance.RemoveAt(i);
+                }
+            }
+
+            for (var i = _instance._adding.Count - 1; i >= 0; i--)
+            {
+                if (Match(_instance._adding[i]))
+                {
+                    _instance._adding.RemoveAt(i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сдвиг «поверх»: каждый кадр к позиции добавляется только изменение смещения. Если элемент тем временем
+        /// переставила раскладка или другая анимация, смещение отсчитывается уже от новой позиции, и в конце
+        /// элемент стоит там, куда его поставили они, а не на запомненном на старте месте.
+        /// </summary>
+        public static void Offset(RectTransform rt, Vector2 from, Vector2 to, float duration, Func<float, float>? ease = null,
+            Action? done = null, float delay = 0f, int channel = 0)
+        {
+            var applied = Vector2.zero;
+            var written = Vector2.zero;
+            var started = false;
+            Run(rt, duration, t =>
+            {
+                var position = rt.anchoredPosition;
+                if (!started || position != written)
+                {
+                    // Начало или позицию поставили заново без нашего смещения — считаем от неё.
+                    started = true;
+                    applied = Vector2.zero;
+                }
+
+                var next = Vector2.LerpUnclamped(from, to, t);
+                position += next - applied;
+                rt.anchoredPosition = position;
+                applied = next;
+                written = position;
+            }, ease ?? KnittedPicture.Game.Ease.OutCubic, done, delay, false, channel);
+        }
+
+        /// <summary>
+        /// Появление: элемент проявляется и всплывает на rise точек к своему месту. Прозрачность — через свою
+        /// временную CanvasGroup (чужую, которой управляет экран, не трогаем), после конца её убираем.
+        /// До старта элемент прозрачен и стоит на месте — раскладка, которая двигает его в это время, не сбивается.
+        /// </summary>
+        public static void Appear(RectTransform rt, float delay, float rise = 16f, float duration = 0.34f)
+        {
+            if (rt.GetComponent<CanvasGroup>() != null)
+            {
+                // Прозрачностью управляет экран: элемент виден сразу, поэтому всплывает без задержки, а не стоит и потом прыгает.
+                delay = 0f;
+            }
+            else
+            {
+                var group = rt.gameObject.AddComponent<CanvasGroup>();
+                group.alpha = 0f;
+                Run(group, duration * 0.7f, t => group.alpha = t, KnittedPicture.Game.Ease.OutCubic, () => Destroy(group), delay);
+            }
+
+            if (rise != 0f)
+            {
+                Offset(rt, new Vector2(0, -rise), Vector2.zero, duration, KnittedPicture.Game.Ease.OutSoftBack, null, delay);
+            }
+        }
+
+        /// <summary>Число «набегает» от from до to: счётчики монет и наград.</summary>
+        public static void Count(UnityEngine.UI.Text label, int from, int to, float duration, float delay = 0f, string format = "{0}")
+        {
+            label.text = string.Format(format, from);
+            Run(label, duration, t => label.text = string.Format(format, Mathf.RoundToInt(Mathf.Lerp(from, to, t))),
+                KnittedPicture.Game.Ease.OutCubic, null, delay);
         }
 
         public static void Delay(UnityEngine.Object owner, float seconds, Action action) =>
@@ -101,21 +252,36 @@ namespace KnittedPicture.Game
             Run(target, duration, t => target.localScale = Vector3.one * Mathf.LerpUnclamped(from, to, t), ease ?? KnittedPicture.Game.Ease.OutBack, done, delay);
         }
 
-        /// <summary>Короткий «прыжок» размера: подтверждение действия.</summary>
+        /// <summary>
+        /// Короткий «прыжок» размера: подтверждение действия. Упруго, как желе: раздувается, по ширине
+        /// чуть больше, чем по высоте, и пару раз затухающе отскакивает.
+        /// </summary>
         public static void Punch(Transform target, float amount = 0.12f, float duration = 0.22f)
         {
-            Run(target, duration, t => target.localScale = Vector3.one * (1f + amount * KnittedPicture.Game.Ease.Bump(t)));
+            var length = Mathf.Max(duration * 1.6f, 0.28f);
+            Run(target, length, t =>
+            {
+                var j = amount * KnittedPicture.Game.Ease.Jolt(t);
+                target.localScale = new Vector3(1f + j * 1.1f, 1f + j * 0.8f, 1f);
+            }, null, () => target.localScale = Vector3.one);
         }
 
         /// <summary>Покачать по горизонтали: «нельзя» или затор.</summary>
         public static void Shake(RectTransform rt, float amount = 8f, float duration = 0.35f)
         {
             var origin = rt.anchoredPosition;
+            var tilt = rt.localRotation;
             Run(rt, duration, t =>
             {
-                var offset = Mathf.Sin(t * Mathf.PI * 6f) * amount * (1f - t);
-                rt.anchoredPosition = origin + new Vector2(offset, 0);
-            }, null, () => rt.anchoredPosition = origin);
+                // Затухание квадратом: первый рывок сильный, хвост быстро стихает; лёгкий наклон в такт — «мотает головой».
+                var wave = Mathf.Sin(t * Mathf.PI * 6f) * (1f - t) * (1f - t);
+                rt.anchoredPosition = origin + new Vector2(wave * amount, 0);
+                rt.localRotation = tilt * Quaternion.Euler(0, 0, -wave * amount * 0.25f);
+            }, null, () =>
+            {
+                rt.anchoredPosition = origin;
+                rt.localRotation = tilt;
+            });
         }
 
         public static void Fade(CanvasGroup group, float from, float to, float duration, Action? done = null, float delay = 0f)

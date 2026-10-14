@@ -8,17 +8,23 @@ using UnityEngine.EventSystems;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Нажимаемый элемент: слегка проседает под пальцем, звучит и вызывает действие.
-    /// Проседание накладывается поверх текущего масштаба: «дышащие» кнопки и клубки тоже
-    /// отзываются на палец, а после отпускания возвращаются к своей анимации, а не к масштабу из Awake.
+    /// Нажимаемый элемент: проседает под пальцем, звучит и вызывает действие.
+    /// Нажатие — на пружине: быстро вдавливается (по высоте чуть сильнее, как подушка под пальцем),
+    /// а отпущенный элемент отскакивает с лёгким перелётом и затихает. Проседание накладывается поверх
+    /// текущего масштаба: «дышащие» кнопки и клубки тоже отзываются на палец и возвращаются к своей анимации.
     /// </summary>
     public sealed class Tap : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler, IPointerClickHandler
     {
-        private const float Pressed = 0.94f;
+        /// <summary>Насколько проседает по ширине и по высоте при полном нажатии.</summary>
+        private const float SquashX = 0.055f;
+        private const float SquashY = 0.075f;
 
         private Vector3 _base = Vector3.one;
         private Vector3 _applied = Vector3.one;
         private bool _pressed;
+        private bool _moving;
+        private float _depth;
+        private float _velocity;
 
         public event Action? Clicked;
 
@@ -47,50 +53,108 @@ namespace KnittedPicture.Game
             }
 
             _pressed = true;
-            if (!Held.Contains(this))
-            {
-                Held.Add(this);
-            }
-
-            Press();
+            Begin();
         }
 
-        /// <summary>Нажатые сейчас (обычно одна-две): их ведёт Tweens после анимаций кадра, а не LateUpdate у каждой кнопки.</summary>
-        private static readonly List<Tap> Held = new List<Tap>();
+        /// <summary>Пружинящие сейчас (обычно одна-две): их ведёт Tweens после анимаций кадра, а не LateUpdate у каждой кнопки.</summary>
+        private static readonly List<Tap> Moving = new List<Tap>();
 
-        /// <summary>Анимация за этот кадр поменяла масштаб нажатого — проседаем уже от нового.</summary>
+        /// <summary>Шаг пружин: после анимаций кадра, поэтому проседание ложится поверх их масштаба.</summary>
         public static void FollowPressed()
         {
-            for (var i = Held.Count - 1; i >= 0; i--)
+            var dt = Mathf.Min(Time.unscaledDeltaTime, 1f / 30f);
+            for (var i = Moving.Count - 1; i >= 0; i--)
             {
-                var tap = Held[i];
-                if (tap == null || !tap._pressed)
+                var tap = Moving[i];
+                if (tap == null || !tap.Step(dt))
                 {
-                    Held.RemoveAt(i);
-                    continue;
-                }
-
-                if (tap.transform.localScale != tap._applied)
-                {
-                    tap.Press();
+                    Moving.RemoveAt(i);
                 }
             }
+        }
+
+        private void Begin()
+        {
+            if (!_moving)
+            {
+                _moving = true;
+                _base = transform.localScale;
+                _applied = _base;
+                if (!Moving.Contains(this))
+                {
+                    Moving.Add(this);
+                }
+            }
+        }
+
+        /// <summary>Один шаг пружины. false — успокоилась, масштаб вернулся к своему.</summary>
+        private bool Step(float dt)
+        {
+            if (!_moving)
+            {
+                return false;
+            }
+
+            // Масштаб за кадр поменяла чужая анимация — проседаем уже от нового.
+            if (transform.localScale != _applied)
+            {
+                _base = transform.localScale;
+            }
+
+            // Вдавливание — жёсткая пружина почти без перелёта (~80 мс); отпускание — мягче, с отскоком выше своего размера.
+            float stiffness, damping;
+            if (_pressed)
+            {
+                stiffness = 900f;
+                damping = 52f;
+            }
+            else
+            {
+                stiffness = 380f;
+                damping = 15f;
+            }
+
+            var target = _pressed ? 1f : 0f;
+            _velocity += ((target - _depth) * stiffness - _velocity * damping) * dt;
+            _depth += _velocity * dt;
+            if (!_pressed && Mathf.Abs(_depth) < 0.003f && Mathf.Abs(_velocity) < 0.05f)
+            {
+                Settle();
+                return false;
+            }
+
+            _applied = Vector3.Scale(_base, new Vector3(1f - SquashX * _depth, 1f - SquashY * _depth, 1f));
+            transform.localScale = _applied;
+            return true;
+        }
+
+        /// <summary>Остановить пружину и вернуть свой масштаб (если его никто не поменял).</summary>
+        private void Settle()
+        {
+            if (_moving && transform.localScale == _applied)
+            {
+                transform.localScale = _base;
+            }
+
+            _moving = false;
+            _depth = 0f;
+            _velocity = 0f;
         }
 
         private void OnDisable()
         {
-            Release();
-        }
-
-        private void Press()
-        {
-            _base = transform.localScale;
-            _applied = _base * Pressed;
-            transform.localScale = _applied;
+            _pressed = false;
+            Settle();
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
+            // Быстрый тап (палец успел подняться раньше, чем кнопка просела): толчок, чтобы отклик был виден и тогда.
+            if (_pressed && _depth < 0.6f)
+            {
+                _velocity = Mathf.Max(_velocity, 22f);
+            }
+
             Release();
         }
 
@@ -116,14 +180,7 @@ namespace KnittedPicture.Game
 
         private void Release()
         {
-            if (_pressed)
-            {
-                _pressed = false;
-                if (transform.localScale == _applied)
-                {
-                    transform.localScale = _base;
-                }
-            }
+            _pressed = false;
         }
     }
 }

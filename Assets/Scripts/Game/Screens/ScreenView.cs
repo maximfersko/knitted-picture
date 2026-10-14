@@ -32,6 +32,99 @@ namespace KnittedPicture.Game
         {
             Object.Destroy(Root.gameObject);
         }
+
+        /// <summary>Разносить ли блоки экрана волной при входе. Экраны со своей постановкой входа отключают.</summary>
+        protected virtual bool CascadeOnEnter => true;
+
+        /// <summary>
+        /// Вход: экран проявляется, а его блоки (шапка, карточки, кнопки) всплывают на место волной сверху вниз,
+        /// с шагом в несколько сотых секунды. Фоны во весь экран только проявляются.
+        /// По вкладке (slide ±1) блоки разом въезжают сбоку, без волны.
+        /// Нижняя панель вкладок общая для разделов: при переходе между ними она не мигает и не ездит, на ней только
+        /// переезжает метка вкладки (hadBar — у прошлого экрана панель была). С уровня панель выезжает снизу.
+        /// </summary>
+        public void Enter(int slide = 0, bool hadBar = false)
+        {
+            var group = Ui.Group(Root);
+            Tweens.Fade(group, 0f, 1f, slide != 0 ? 0.16f : 0.2f);
+            var bar = Root.Find("TabBar") as RectTransform;
+            if (bar != null && hadBar)
+            {
+                var own = Ui.Group(bar);
+                own.ignoreParentGroups = true;
+            }
+            else if (bar != null)
+            {
+                Tweens.Offset(bar, new Vector2(0, -(bar.sizeDelta.y + 12f)), Vector2.zero, 0.42f, Ease.OutSoftBack);
+            }
+
+            if (slide == 0 && !CascadeOnEnter)
+            {
+                return;
+            }
+
+            var corners = new Vector3[4];
+            Root.GetWorldCorners(corners);
+            var top = corners[1].y;
+            var height = Mathf.Max(1f, corners[1].y - corners[0].y);
+            for (var i = 0; i < Root.childCount; i++)
+            {
+                if (!(Root.GetChild(i) is RectTransform child) || !child.gameObject.activeSelf || child == bar)
+                {
+                    continue;
+                }
+
+                if (slide != 0)
+                {
+                    Tweens.Offset(child, new Vector2(slide * 56f, 0), Vector2.zero, 0.34f, Ease.OutQuint);
+                    continue;
+                }
+
+                child.GetWorldCorners(corners);
+                var size = corners[1].y - corners[0].y;
+                if (size <= 0.5f || size > height * 0.8f)
+                {
+                    continue;
+                }
+
+                var depth = Mathf.Clamp01((top - corners[1].y) / height);
+                Tweens.Appear(child, 0.02f + 0.24f * depth, 18f);
+            }
+        }
+
+        /// <summary>
+        /// Уход: экран гаснет и чуть уменьшается, пока поверх проявляется новый; нажать на него уже нельзя.
+        /// По вкладке блоки уезжают в сторону, противоположную новым. Потом экран уничтожается, как при Dispose.
+        /// </summary>
+        public void Leave(int slide = 0)
+        {
+            var group = Ui.Group(Root);
+            group.blocksRaycasts = false;
+            group.interactable = false;
+            var from = group.alpha;
+            Tweens.Kill(Root);
+            Tweens.Kill(group);
+            if (slide != 0)
+            {
+                var bar = Root.Find("TabBar");
+                for (var i = 0; i < Root.childCount; i++)
+                {
+                    if (Root.GetChild(i) is RectTransform child && child != bar)
+                    {
+                        Tweens.Offset(child, Vector2.zero, new Vector2(-slide * 40f, 0), 0.16f, Ease.OutCubic);
+                    }
+                }
+            }
+
+            Tweens.Run(Root, 0.16f, t =>
+            {
+                group.alpha = from * (1f - t);
+                if (slide == 0)
+                {
+                    Root.localScale = Vector3.one * (1f - 0.025f * t);
+                }
+            }, Ease.OutCubic, Dispose);
+        }
     }
 
     /// <summary>
@@ -84,17 +177,42 @@ namespace KnittedPicture.Game
 
             _cursor = 28f;
             Sfx.Play(Sound.Puff, 0.35f);
-            Tweens.Fade(_group, 0f, 1f, 0.18f);
-            if (bottomSheet)
+
+            // До Enter окно прозрачно: содержимое ещё строится, а появление зависит от итоговой высоты.
+            _group.alpha = 0f;
+        }
+
+        /// <summary>
+        /// Появление (зовёт App.ShowPopup, когда окно построено): затемнение проявляется, карточка выпрыгивает
+        /// на пружине с лёгким перелётом (лист снизу выезжает на всю свою высоту), а строки карточки
+        /// всплывают по очереди сверху вниз.
+        /// </summary>
+        public void Enter()
+        {
+            Tweens.Fade(_group, 0f, 1f, 0.2f);
+            if (_bottomSheet)
             {
-                var from = -400f;
-                Tweens.Run(Card, 0.28f, t => Card.anchoredPosition = new Vector2(0, Mathf.Lerp(from, -30f, t)), Ease.OutCubic);
+                Tweens.Offset(Card, new Vector2(0, -(Card.sizeDelta.y + 40f)), Vector2.zero, 0.42f, Ease.OutSoftBack, null, 0f, Motion);
             }
             else
             {
-                Tweens.Scale(Card, 0.9f, 1f, 0.22f);
+                Card.localScale = Vector3.one * 0.86f;
+                Tweens.Run(Card, 0.44f, t => Card.localScale = Vector3.one * Mathf.LerpUnclamped(0.86f, 1f, t), Ease.Spring, null, 0f, false, Motion);
+                Tweens.Offset(Card, new Vector2(0, -24f), Vector2.zero, 0.36f, Ease.OutSoftBack, null, 0f, Motion);
+            }
+
+            var order = 0;
+            for (var i = 0; i < Card.childCount; i++)
+            {
+                if (Card.GetChild(i) is RectTransform child && child.gameObject.activeSelf && child.name != "Face")
+                {
+                    Tweens.Appear(child, 0.06f + Mathf.Min(0.24f, order++ * 0.035f), 10f, 0.3f);
+                }
             }
         }
+
+        /// <summary>Канал твинов появления и ухода карточки: закрытие останавливает только их, а не таймеры окна.</summary>
+        private const int Motion = 17;
 
         public RectTransform Root { get; }
 
@@ -122,8 +240,22 @@ namespace KnittedPicture.Game
         public void Close()
         {
             App.RemovePopup(this);
-            Root.GetComponent<CanvasGroup>().blocksRaycasts = false;
-            Tweens.Fade(_group, 1f, 0f, 0.15f, Destroy);
+            _group.blocksRaycasts = false;
+
+            // Закрыли, пока окно ещё выпрыгивало: выезд останавливается и не спорит с уходом.
+            Tweens.Kill(Card, Motion);
+            Tweens.Kill(_group);
+            if (_bottomSheet)
+            {
+                Tweens.Offset(Card, Vector2.zero, new Vector2(0, -(Card.sizeDelta.y + 40f)), 0.22f, Ease.InCubic);
+            }
+            else
+            {
+                var scale = Card.localScale.x;
+                Tweens.Run(Card, 0.16f, t => Card.localScale = Vector3.one * Mathf.Lerp(scale, 0.92f, t), Ease.InCubic);
+            }
+
+            Tweens.Fade(_group, _group.alpha, 0f, 0.17f, Destroy);
             var closed = Closed;
             Closed = null;
             closed?.Invoke();

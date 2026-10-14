@@ -178,6 +178,9 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>У экрана своя постановка входа: волна блоков ей бы мешала.</summary>
+        protected override bool CascadeOnEnter => false;
+
         public override bool OnBack()
         {
             App.ShowHome();
@@ -477,22 +480,19 @@ namespace KnittedPicture.Game
             {
                 var start = Ui.WorldCenter(from);
                 var coin = Ui.Coin(Root, 0, 0, 20);
-                coin.position = start;
-                coin.localScale = Vector3.zero;
                 var last = i == count - 1;
                 var portion = last ? amount - given : perCoin;
                 given += portion;
-                var jitter = new Vector3(Random.Range(-24f, 24f), Random.Range(-10f, 18f), 0) * Root.lossyScale.x;
+                var jitter = new Vector3(Random.Range(-30f, 30f), Random.Range(-6f, 28f), 0) * Root.lossyScale.x;
                 var itemDelay = delay + i * 0.06f;
-                Tweens.Delay(coin, itemDelay, () => coin.localScale = Vector3.one);
-                Tweens.Move(coin, start + jitter, target, 0.55f, Ease.InOutCubic, () =>
+                Fx.CoinFlight(coin, start, start + jitter, () => target, itemDelay, () =>
                 {
                     Object.Destroy(coin.gameObject);
                     _shownCoins += portion;
                     _coins.text = _shownCoins.ToString();
                     Tweens.Punch(_coins.transform.parent, 0.12f, 0.15f);
                     Sfx.Play(Sound.Coin, 0.4f);
-                }, itemDelay);
+                });
             }
         }
 

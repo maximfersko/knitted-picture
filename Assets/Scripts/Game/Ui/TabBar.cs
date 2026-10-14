@@ -24,6 +24,9 @@ namespace KnittedPicture.Game
     {
         public const float Height = 64f;
 
+        /// <summary>Какая вкладка была активна на прошлой панели: метка переезжает оттуда.</summary>
+        private static MainTab? _last;
+
         public static void Create(App app, RectTransform root, float w, float h, MainTab active)
         {
             var bar = Ui.Place(Ui.Node(root, "TabBar"), 0, h - Height, w, Height + app.BottomInset);
@@ -39,6 +42,7 @@ namespace KnittedPicture.Game
             Item(app, bar, 0, cellW, MainTab.Album, active, "Альбом", albumBadge, () => app.ShowCollections(CollectionsTab.Album));
             Item(app, bar, 1, cellW, MainTab.Home, active, "Главная", 0, app.ShowHome);
             Item(app, bar, 2, cellW, MainTab.Yarn, active, "Пряжа", yarnBadge, () => app.ShowCollections(CollectionsTab.Yarn));
+            _last = active;
         }
 
         private static void Item(App app, RectTransform bar, int index, float cellW, MainTab tab, MainTab active, string title, int badge, System.Action open)
@@ -53,6 +57,15 @@ namespace KnittedPicture.Game
                 // Активная вкладка — мягкая «пилюля» под значком (как в Material 3 и iOS 26).
                 var pill = Ui.Box(rt, "Active", 15, Palette.WithAlpha(Palette.Primary, 0.12f));
                 Ui.PlaceCenter(pill.rectTransform, cellW / 2f, 22, 64, 30);
+
+                // Пришли с другой вкладки: метка переезжает от неё, вытягиваясь в пути, и пружинисто встаёт на место.
+                if (app.PendingSlide != 0 && _last != null && _last != tab)
+                {
+                    var pillRt = pill.rectTransform;
+                    var from = ((int)_last.Value - index) * cellW;
+                    Tweens.Offset(pillRt, new Vector2(from, 0), Vector2.zero, 0.42f, Ease.OutSoftBack);
+                    Tweens.Run(pillRt, 0.42f, t => pillRt.localScale = new Vector3(1f + 0.35f * Ease.Bump(t), 1f - 0.12f * Ease.Bump(t), 1f));
+                }
             }
 
             if (tab == MainTab.Yarn)
@@ -76,8 +89,8 @@ namespace KnittedPicture.Game
             {
                 if (!on)
                 {
+                    app.SlideNext(tab > active ? 1 : -1);
                     open();
-                    app.SlideIn(tab > active ? 1 : -1);
                 }
             });
         }

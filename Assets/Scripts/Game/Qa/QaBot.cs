@@ -178,7 +178,8 @@ namespace KnittedPicture.Game.Qa
                 SampleMemory();
             }
 
-            if (t >= _nextUiCheck)
+            // Пока экран или окно появляется, элементы прозрачны и смещены — раскладку судим, когда всё встало.
+            if (t >= _nextUiCheck && (App.Instance == null || Time.unscaledTime >= App.Instance.SettledAt))
             {
                 _nextUiCheck = t + 3f;
                 CheckUi();
