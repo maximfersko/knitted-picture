@@ -489,8 +489,12 @@ namespace KnittedPicture.Game
                 {
                     if (progress.PatternDone(App.Today))
                     {
+                        // Часы переводили назад: узор связан «в будущем» и откроется после той даты, а не завтра.
+                        var when = progress.PatternAhead(App.Today)
+                            ? "Новый узор появится после даты, когда был связан последний: на телефоне часы переводили назад."
+                            : "Новый узор появится завтра.";
                         App.ShowPopup(new InfoPopup(App, "Узор дня связан",
-                            $"Новый узор появится завтра. Серия: {progress.PatternStreak(App.Today)} дн. подряд, каждый {DailyPattern.YarnEvery}-й день — моток в подарок."));
+                            $"{when} Серия: {progress.PatternStreak(App.Today)} дн. подряд, каждый {DailyPattern.YarnEvery}-й день моток в подарок."));
                         return;
                     }
 

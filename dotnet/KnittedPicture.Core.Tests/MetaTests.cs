@@ -361,6 +361,28 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Pattern_of_the_day_cannot_be_farmed_by_turning_the_clock_back()
+        {
+            var progress = Fresh();
+            progress.Data.nextLevel = DailyPattern.FromLevel;
+            Assert.NotNull(progress.CompletePattern(500, new Random(1)));
+            Assert.NotNull(progress.CompletePattern(501, new Random(2)));
+
+            // Часы назад на день: вчерашний узор уже связан, повторной награды нет.
+            var coins = progress.Coins;
+            Assert.True(progress.PatternDone(500));
+            Assert.True(progress.PatternAhead(500));
+            Assert.Null(progress.CompletePattern(500, new Random(3)));
+            Assert.Null(progress.CompletePattern(480, new Random(4)));
+            Assert.Equal(coins, progress.Coins);
+            Assert.Equal(2, progress.PatternStreak(500));
+
+            // Часы вернулись: следующий день открывает узор, серия продолжается.
+            Assert.NotNull(progress.CompletePattern(502, new Random(5)));
+            Assert.Equal(3, progress.PatternStreak(502));
+        }
+
+        [Fact]
         public void Daily_gift_once_a_day_and_a_missed_day_only_pauses_the_week()
         {
             var progress = Fresh();
