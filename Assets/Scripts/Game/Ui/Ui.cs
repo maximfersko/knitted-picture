@@ -161,12 +161,72 @@ namespace KnittedPicture.Game
             return image;
         }
 
-        /// <summary>Скруглённая плашка.</summary>
+        /// <summary>Объём плашки.</summary>
+        public enum Relief
+        {
+            /// <summary>Плоская: тени, подложки, нитки, стрелки, вуали.</summary>
+            Flat,
+
+            /// <summary>Выпуклая «подушка»: кнопки, плашки, бирки, строки списков.</summary>
+            Raised,
+
+            /// <summary>Глянцевый «леденец»: заполнения полосок.</summary>
+            Glossy,
+
+            /// <summary>Вдавленная: дорожки полосок, слоты, лоток станка, переключатели, ячейки.</summary>
+            Inset,
+        }
+
+        /// <summary>
+        /// Объём по роли плашки — в одном месте на всю игру, а не в каждом экране: имя говорит, что это.
+        /// Неизвестное имя — плоская (так новые подложки и тени не станут случайно выпуклыми).
+        /// </summary>
+        public static Relief ReliefOf(string name)
+        {
+            if (name.EndsWith("Track", System.StringComparison.Ordinal))
+            {
+                return Relief.Inset;
+            }
+
+            switch (name)
+            {
+                case "Slot": case "Loom": case "Tabs": case "Switch": case "Preview": case "Mat": case "Inside": case "Tile":
+                case "Yarn": case "Segment":
+                    return Relief.Inset;
+                case "Fill": case "Heat":
+                    return Relief.Glossy;
+                case "Face": case "Back": case "Chip": case "Count": case "Claim": case "Reward": case "Rarity": case "Status":
+                case "State": case "Mission": case "StarRow": case "Row": case "Section": case "Group": case "Shelf": case "ShelfLip":
+                case "More": case "Active": case "Indicator": case "Part": case "Level": case "Dot": case "Visible": case "Glow":
+                    return Relief.Raised;
+                default:
+                    return Relief.Flat;
+            }
+        }
+
+        /// <summary>Скруглённая плашка; объём — по роли (<see cref="ReliefOf"/>).</summary>
         public static Image Box(RectTransform parent, string name, float radius, Color color, bool raycast = false)
         {
-            var image = Image(parent, name, Art.RoundRect(radius), color, raycast);
+            var relief = ReliefOf(name);
+            var sprite = relief switch
+            {
+                Relief.Raised => Art.SoftCard(radius),
+                Relief.Inset => Art.InsetBox(radius),
+                Relief.Glossy => Art.GlossBox(radius),
+                _ => Art.RoundRect(radius),
+            };
+            var image = Image(parent, name, sprite, color, raycast);
             image.type = UnityEngine.UI.Image.Type.Sliced;
             image.pixelsPerUnitMultiplier = Art.Density;
+            if (relief == Relief.Glossy)
+            {
+                // Блик — дочерний слой: тянется вместе с заполнением, не перекрашивается его цветом.
+                var gloss = Image(image.rectTransform, "Gloss", Art.GlossOverlay(radius), Color.white);
+                gloss.type = UnityEngine.UI.Image.Type.Sliced;
+                gloss.pixelsPerUnitMultiplier = Art.Density;
+                Stretch(gloss.rectTransform);
+            }
+
             return image;
         }
 
@@ -252,7 +312,26 @@ namespace KnittedPicture.Game
             label.verticalOverflow = VerticalWrapMode.Overflow;
             label.raycastTarget = false;
             label.supportRichText = false;
+            Emboss(label);
             return label;
+        }
+
+        /// <summary>
+        /// Тиснение крупного текста (заголовки, кнопки): тёмный — со светлой кромкой снизу, будто вдавлен;
+        /// светлый — с мягкой тенью, будто выпуклый. Мелкий текст не трогаем: тень удваивает вершины.
+        /// </summary>
+        private static void Emboss(Text label)
+        {
+            if (label.fontSize < 20)
+            {
+                return;
+            }
+
+            var c = label.color;
+            var light = c.r * 0.3f + c.g * 0.59f + c.b * 0.11f > 0.6f;
+            var shadow = label.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = light ? new Color(0.12f, 0.08f, 0.25f, 0.28f) : new Color(1f, 1f, 1f, 0.7f);
+            shadow.effectDistance = new Vector2(0f, light ? -1.5f : -1f);
         }
 
         /// <summary>
@@ -359,7 +438,7 @@ namespace KnittedPicture.Game
                 Place(shadow.rectTransform, 0, 2, size, size);
             }
 
-            var face = Image(root, "Face", Art.Circle, onCard ? Palette.ButtonFill : Palette.Card, true);
+            var face = Image(root, "Face", Art.SoftDisc, onCard ? Palette.ButtonFill : Palette.Card, true);
             Place(face.rectTransform, 0, 0, size, size);
             IconImage(root, icon, Palette.Ink, size / 2f, size / 2f, size * 0.45f);
             return root.gameObject.AddComponent<Tap>();

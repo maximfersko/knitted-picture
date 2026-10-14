@@ -529,6 +529,133 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
+        /// Вдавленная плашка для Image.Type.Sliced (дорожки полосок, слоты станка, лоток, переключатели, ячейки):
+        /// сверху внутри тень от края, к низу светлее, по нижнему краю тонкая светлая кромка. Белая — красится.
+        /// </summary>
+        public static Raster Inset(int r)
+        {
+            var size = r * 2 + 4;
+            var border = r + 1;
+            var half = size / 2f;
+            var raster = new Raster(size, size);
+            raster.Paint((x, y) =>
+            {
+                var d = Draw.RoundBox(x, y, half, half, half, half, r);
+                var cover = Draw.Cover(d);
+                if (cover <= 0f)
+                {
+                    return Rgba.Clear;
+                }
+
+                var t = y >= size - border ? 1f : y < border ? 0f : (y - border) / (size - 2f * border);
+                var v = Draw.Lerp(0.975f, 0.9f, t);
+                var inside = -d;
+                var up = Draw.Clamp01((y - half) / half * 2f);
+                var down = Draw.Clamp01((half - y) / half * 2f);
+                v *= 1f - 0.14f * up * (1f - Draw.SmoothStep(0f, MathF.Min(7f, r * 0.9f + 1f), inside));
+                v = Draw.Lerp(v, 1f, down * Draw.Clamp01(1f - MathF.Abs(inside - 1.6f) / 1.2f));
+                return new Rgba(v, v, v, cover);
+            });
+            return raster;
+        }
+
+        /// <summary>
+        /// Глянцевая («леденец») плашка для заполнений полосок: заметно темнее к низу; блик даёт отдельный слой
+        /// <see cref="GlossOverlay"/>, потому что окраска цветом не может сделать светлее белого.
+        /// </summary>
+        public static Raster Gloss(int r)
+        {
+            var size = r * 2 + 4;
+            var border = r + 1;
+            var half = size / 2f;
+            var raster = new Raster(size, size);
+            raster.Paint((x, y) =>
+            {
+                var d = Draw.RoundBox(x, y, half, half, half, half, r);
+                var cover = Draw.Cover(d);
+                if (cover <= 0f)
+                {
+                    return Rgba.Clear;
+                }
+
+                var t = y >= size - border ? 1f : y < border ? 0f : (y - border) / (size - 2f * border);
+                var v = Draw.Lerp(0.8f, 1f, Draw.SmoothStep(0f, 1f, (y - 0.5f) / (size - 1f)) * 0.5f + t * 0.5f);
+                var inside = -d;
+                var down = Draw.Clamp01((half - y) / half * 2f);
+                v *= 1f - 0.1f * down * (1f - Draw.SmoothStep(0f, 3f, inside));
+                return new Rgba(v, v, v, cover);
+            });
+            return raster;
+        }
+
+        /// <summary>Блик «леденца»: белая полупрозрачная полоса в верхней половине, со скруглением как у плашки.</summary>
+        public static Raster GlossOverlay(int r)
+        {
+            var size = r * 2 + 4;
+            var half = size / 2f;
+            var raster = new Raster(size, size);
+            raster.Paint((x, y) =>
+            {
+                var hh = MathF.Max(1f, half * 0.42f);
+                var cy = size - 1.4f - hh;
+                var d = Draw.RoundBox(x, y, half, cy, half - 2.2f, hh, MathF.Max(1f, r * 0.7f));
+                var cover = Draw.Cover(d * 1.3f);
+                if (cover <= 0f)
+                {
+                    return Rgba.Clear;
+                }
+
+                var fade = Draw.Clamp01((y - (cy - hh)) / (2f * hh));
+                return Rgba.White.WithAlpha(cover * (0.12f + 0.3f * fade));
+            });
+            return raster;
+        }
+
+        /// <summary>Круглая выпуклая «пуговица» (кнопки паузы, настроек): сверху светлее, по краю мягкий обод.</summary>
+        public static Raster SoftDisc()
+        {
+            const int s = 64;
+            return Raster.Render(s, s, 3, (x, y) =>
+            {
+                const float c = s / 2f;
+                var d = Draw.Circle(x, y, c, c, c - 1f);
+                var cover = Draw.Cover(d);
+                if (cover <= 0f)
+                {
+                    return Rgba.Clear;
+                }
+
+                var ny = (y - c) / c;
+                var inside = -d;
+                var v = Draw.Lerp(0.91f, 0.985f, 0.5f + 0.5f * ny);
+                v = Draw.Lerp(v, 1f, Draw.Clamp01(ny * 2f) * Draw.Clamp01(1f - MathF.Abs(inside - 2.2f) / 1.4f));
+                v *= 1f - 0.08f * Draw.Clamp01(-ny * 2f) * (1f - Draw.SmoothStep(0f, 6f, inside));
+                return new Rgba(v, v, v, cover);
+            });
+        }
+
+        /// <summary>Выпуклая клетка картинки (эскиз и фронт): 48×48, скругление 11, свет сверху. Белая — красится.</summary>
+        public static Raster SoftTile()
+        {
+            const int s = 48;
+            return Raster.Render(s, s, 2, (x, y) =>
+            {
+                var d = Draw.RoundBox(x, y, s / 2f, s / 2f, s / 2f, s / 2f, 11f);
+                var cover = Draw.Cover(d);
+                if (cover <= 0f)
+                {
+                    return Rgba.Clear;
+                }
+
+                var ny = (y - s / 2f) / (s / 2f);
+                var inside = -d;
+                var v = Draw.Lerp(0.9f, 1f, 0.5f + 0.5f * ny);
+                v *= 1f - 0.06f * Draw.Clamp01(-ny * 2f) * (1f - Draw.SmoothStep(0f, 5f, inside));
+                return new Rgba(v, v, v, cover);
+            });
+        }
+
+        /// <summary>
         /// Бирка на ниточке для числа: бумажный ярлычок с дырочкой слева, из неё к клубку уходит нитка.
         /// Белая (красится цветом), бумага чуть светлее сверху, мягкая тень снизу. 72×40 точек, тело — правые 58.
         /// </summary>

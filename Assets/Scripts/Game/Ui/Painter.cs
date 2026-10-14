@@ -94,7 +94,22 @@ namespace KnittedPicture.Game
             return this;
         }
 
-        /// <summary>Белая фигура с прозрачным фоном: цвет задаёт Image.color.</summary>
+        private float Distance(float x, float y)
+        {
+            var d = float.MaxValue;
+            foreach (var shape in _shapes)
+            {
+                d = Mathf.Min(d, shape(x, y));
+            }
+
+            return d;
+        }
+
+        /// <summary>
+        /// Белая объёмная фигура с прозрачным фоном (цвет задаёт Image.color): фаска — кромка, обращённая к свету
+        /// (сверху слева), светлее, противоположная темнее; под фигурой мягкая тень вниз. Тень и фаска — оттенки
+        /// того же цвета, поэтому иконка любого цвета выглядит выпуклой, а не наклейкой.
+        /// </summary>
         public Sprite ToSprite(int size = 96)
         {
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
@@ -103,21 +118,38 @@ namespace KnittedPicture.Game
                 filterMode = FilterMode.Bilinear,
             };
             var scale = size / Grid;
+            var pixel = 1f / scale;
+            var bevel = 1.1f;
+            var drop = 0.75f;
             var pixels = new Color32[size * size];
             for (var py = 0; py < size; py++)
             {
                 for (var px = 0; px < size; px++)
                 {
+                    // Сетка фигур — y вниз: свет сверху слева — это направление (-x, -y).
                     var x = (px + 0.5f) / scale;
                     var y = (size - py - 0.5f) / scale;
-                    var d = float.MaxValue;
-                    foreach (var shape in _shapes)
+                    var d = Distance(x, y);
+                    var alpha = Mathf.Clamp01(0.5f - d * scale);
+
+                    var value = 1f;
+                    if (alpha > 0f)
                     {
-                        d = Mathf.Min(d, shape(x, y));
+                        // Нормаль наружу — по градиенту расстояния; у кромки, к свету — светлее, от света — темнее.
+                        var gx = Distance(x + pixel, y) - d;
+                        var gy = Distance(x, y + pixel) - d;
+                        var length = Mathf.Sqrt(gx * gx + gy * gy);
+                        var facing = length > 0f ? (-gx * 0.6f - gy * 0.8f) / length : 0f;
+                        var edge = 1f - Mathf.Clamp01(-d / bevel);
+                        value = Mathf.Clamp01(0.93f + 0.1f * facing * edge - 0.03f * edge);
                     }
 
-                    var alpha = Mathf.Clamp01(0.5f - d * scale);
-                    pixels[py * size + px] = new Color32(255, 255, 255, (byte)(alpha * 255));
+                    // Тень: та же фигура, сдвинутая вниз, мягкая.
+                    var shadow = Mathf.Clamp01(0.5f - (Distance(x, y - drop) - 0.15f) * scale * 0.55f) * 0.32f;
+                    var a = alpha + shadow * (1f - alpha);
+                    var v = a > 0f ? (value * alpha + 0.42f * shadow * (1f - alpha)) / a : 0f;
+                    var c = (byte)(Mathf.Clamp01(v) * 255);
+                    pixels[py * size + px] = new Color32(c, c, c, (byte)(a * 255));
                 }
             }
 

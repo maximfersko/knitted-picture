@@ -119,15 +119,16 @@ namespace KnittedPicture.ArtPreview
         private static void Panels(string dir)
         {
             const float k = 2f;
-            var img = new Raster((int)(390 * k), (int)(330 * k));
+            var img = new Raster((int)(390 * k), (int)(470 * k));
             Png.Fill(img, Rgba.Hex("#EDE7FF"));
             const int density = 3;
-            void Card(float x, float top, float w, float h, float radius, Rgba tint)
+            void Relief(Func<int, Raster> make, float x, float top, float w, float h, float radius, Rgba tint)
             {
-                var r = (int)MathF.Ceiling(radius * density);
-                var src = KnitRaster.SoftCard(r);
-                Sliced(img, src, r + 1, x * k, img.Height - (top + h) * k, w * k, h * k, (r + 1) * k / density, tint);
+                var r = Math.Max(2, (int)MathF.Ceiling(radius * density));
+                Sliced(img, make(r), r + 1, x * k, img.Height - (top + h) * k, w * k, h * k, (r + 1) * k / density, tint);
             }
+
+            void Card(float x, float top, float w, float h, float radius, Rgba tint) => Relief(KnitRaster.SoftCard, x, top, w, h, radius, tint);
 
             // Поле с клубками и бирками.
             Card(12, 10, 366, 150, 24, Rgba.White);
@@ -159,6 +160,20 @@ namespace KnittedPicture.ArtPreview
             }
 
             Card(20, 280, 350, 44, 22, Rgba.Hex("#17945F"));
+
+            // Объём: вдавленная дорожка с глянцевой заливкой, круглые кнопки, выпуклые клетки.
+            Relief(KnitRaster.Inset, 20, 340, 220, 22, 11, Rgba.Hex("#E4DDF7"));
+            Relief(KnitRaster.Gloss, 22, 342, 140, 18, 9, Rgba.Hex("#FFB43C"));
+            Relief(KnitRaster.GlossOverlay, 22, 342, 140, 18, 9, Rgba.White);
+            var disc = KnitRaster.SoftDisc();
+            Png.Put(img, disc, 260 * k, img.Height - (330 + 44) * k, 44 * k, 44 * k, Rgba.White);
+            Png.Put(img, disc, 316 * k, img.Height - (330 + 44) * k, 44 * k, 44 * k, Rgba.Hex("#8B6BE8"));
+            var tile = KnitRaster.SoftTile();
+            for (var i = 0; i < 6; i++)
+            {
+                Png.Put(img, tile, (20 + i * 58) * k, img.Height - (395 + 52) * k, 52 * k, 52 * k, i % 2 == 0 ? Rgba.White : Rgba.Hex("#D9CCFF"));
+            }
+
             Png.Save(img, Path.Combine(dir, "panels.png"));
         }
 

@@ -66,6 +66,25 @@ namespace KnittedPicture.Game
             return Art2.Get("softCard" + r, () => KnitRaster.SoftCard(r), null, new Vector4(b, b, b, b));
         }
 
+        /// <summary>Вдавленная плашка (дорожки, слоты, лоток, ячейки): тень сверху внутри, светлая кромка снизу.</summary>
+        public static Sprite InsetBox(float radius) => Relief("insetBox", radius, KnitRaster.Inset);
+
+        /// <summary>Глянцевая плашка для заполнений: темнее к низу (блик — <see cref="GlossOverlay"/>).</summary>
+        public static Sprite GlossBox(float radius) => Relief("glossBox", radius, KnitRaster.Gloss);
+
+        /// <summary>Белый блик «леденца» поверх глянцевой плашки.</summary>
+        public static Sprite GlossOverlay(float radius) => Relief("glossOverlay", radius, KnitRaster.GlossOverlay);
+
+        /// <summary>Круглая выпуклая «пуговица».</summary>
+        public static Sprite SoftDisc => Art2.Get("softDisc", KnitRaster.SoftDisc);
+
+        private static Sprite Relief(string key, float radius, System.Func<int, Raster> draw)
+        {
+            var r = Mathf.Max(2, Mathf.CeilToInt(radius * Density));
+            var b = r + 1;
+            return Art2.Get(key + r, () => draw(r), null, new Vector4(b, b, b, b));
+        }
+
         /// <summary>Контур скруглённого прямоугольника (рамка пустого слота).</summary>
         public static Sprite RoundRectOutline(float radius, float stroke) =>
             Cached("ro" + radius + "_" + stroke, () => SlicedBox(radius, stroke));
@@ -98,7 +117,8 @@ namespace KnittedPicture.Game
         /// <summary>Блики вязаной клетки: белый слой поверх окрашенной (окраска не гасит блеск).</summary>
         public static Sprite StitchGloss => Art2.Get("stitchGloss", () => KnitRaster.StitchTile(true));
 
-        public static Sprite PlainCell => Cached("cell", () => BuildCell(false));
+        /// <summary>Клетка картинки (эскиз, фронт): выпуклая, свет сверху — в одном стиле с петлями и клубками.</summary>
+        public static Sprite PlainCell => Art2.Get("cellSoft", KnitRaster.SoftTile);
 
         /// <summary>Ткань-основа: та же вязка, но тише — рисунок и фронт заметнее фона.</summary>
         /// <summary>

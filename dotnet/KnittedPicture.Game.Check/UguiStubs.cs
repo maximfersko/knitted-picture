@@ -232,6 +232,19 @@ namespace UnityEngine.UI
         public bool fillCenter { get; set; } = true;
     }
 
+    public abstract class BaseMeshEffect : UIBehaviour
+    {
+    }
+
+    public class Shadow : BaseMeshEffect
+    {
+        public Color effectColor { get; set; }
+
+        public Vector2 effectDistance { get; set; }
+
+        public bool useGraphicAlpha { get; set; }
+    }
+
     public class RawImage : MaskableGraphic
     {
         public Texture texture { get; set; }
