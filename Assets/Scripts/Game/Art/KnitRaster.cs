@@ -655,6 +655,146 @@ namespace KnittedPicture.Game
             });
         }
 
+        /// <summary>Сколько разных значков цвета: у соседних цветов уровня фигуры разные по силуэту.</summary>
+        public const int ColorMarkCount = 10;
+
+        /// <summary>
+        /// Значок цвета для режима «Значки цветов»: белая фигура с тёмной обводкой, читается на клубке любого цвета
+        /// и на клетке картинки. Порядок подобран так, чтобы первые цвета уровня получали самые непохожие силуэты:
+        /// круг, треугольник, квадрат, звезда, сердце, плюс, ромб, шестиугольник, месяц, кольцо.
+        /// </summary>
+        public static Raster ColorMark(int kind)
+        {
+            const int size = 64;
+            const float c = 32f;
+            return Raster.Render(size, size, 3, (x, y) =>
+            {
+                var d = MarkShape(kind % ColorMarkCount, x - c, y - c);
+                var result = Rgba.Clear;
+
+                // Мягкая тень вниз: значок лежит на клубке, а не плавает.
+                var shadow = Draw.Clamp01(1f - (MarkShape(kind % ColorMarkCount, x - c, y - c + 2.2f) - 3.6f + 1f) / 3f);
+                if (shadow > 0f)
+                {
+                    result = new Rgba(0.1f, 0.07f, 0.2f, 0.3f * shadow);
+                }
+
+                var outline = Draw.Cover(d - 3.6f);
+                if (outline > 0f)
+                {
+                    result = Rgba.Over(new Rgba(0.17f, 0.14f, 0.31f, outline), result);
+                }
+
+                var fill = Draw.Cover(d);
+                if (fill > 0f)
+                {
+                    // Чуть темнее к низу: фигура выпуклая, как всё в интерфейсе.
+                    var v = Draw.Lerp(0.86f, 1f, Draw.Clamp01((y - 12f) / 36f));
+                    result = Rgba.Over(new Rgba(v, v, v, fill), result);
+                }
+
+                return result;
+            });
+        }
+
+        /// <summary>Расстояние до фигуры значка (меньше нуля — внутри); координаты от центра, y вверх.</summary>
+        private static float MarkShape(int kind, float x, float y)
+        {
+            switch (kind)
+            {
+                case 0:
+                    return Draw.Circle(x, y, 0f, 0f, 19f);
+                case 1:
+                    return Draw.Triangle(x, y, 0f, 22f, 22f, -17f, -22f, -17f) - 2f;
+                case 2:
+                    return Draw.RoundBox(x, y, 0f, 0f, 16.5f, 16.5f, 3.5f);
+                case 3:
+                    return Star5(x, y + 1.5f, 23f, 0.5f) - 1.2f;
+                case 4:
+                    return Heart(x, y + 19f, 38f);
+                case 5:
+                    return MathF.Min(Draw.RoundBox(x, y, 0f, 0f, 19f, 7f, 2.5f), Draw.RoundBox(x, y, 0f, 0f, 7f, 19f, 2.5f));
+                case 6:
+                {
+                    var u = (x + y) * 0.70710678f;
+                    var v = (y - x) * 0.70710678f;
+                    return Draw.RoundBox(u, v, 0f, 0f, 15f, 15f, 3f);
+                }
+
+                case 7:
+                    return Hexagon(x, y, 18f);
+                case 8:
+                    return MathF.Max(Draw.Circle(x, y, -2f, 0f, 20f), -Draw.Circle(x, y, 8f, 6f, 16f));
+                default:
+                    return MathF.Abs(Draw.Circle(x, y, 0f, 0f, 14f)) - 6.5f;
+            }
+        }
+
+        /// <summary>Пятиконечная звезда (по Иниго Килесу): r — до вершины, rf — доля внутреннего радиуса.</summary>
+        private static float Star5(float px, float py, float r, float rf)
+        {
+            const float k1x = 0.809016994f;
+            const float k1y = -0.587785252f;
+            const float k2x = -k1x;
+            const float k2y = k1y;
+            px = MathF.Abs(px);
+            var dot = MathF.Max(k1x * px + k1y * py, 0f);
+            px -= 2f * dot * k1x;
+            py -= 2f * dot * k1y;
+            dot = MathF.Max(k2x * px + k2y * py, 0f);
+            px -= 2f * dot * k2x;
+            py -= 2f * dot * k2y;
+            px = MathF.Abs(px);
+            py -= r;
+            var bax = rf * -k1y;
+            var bay = rf * k1x - 1f;
+            var h = Draw.Clamp((px * bax + py * bay) / (bax * bax + bay * bay), 0f, r);
+            var dx = px - bax * h;
+            var dy = py - bay * h;
+            return MathF.Sqrt(dx * dx + dy * dy) * MathF.Sign(py * bax - px * bay);
+        }
+
+        /// <summary>Сердце (по Иниго Килесу): острый низ в начале координат, высота около s.</summary>
+        private static float Heart(float x, float y, float s)
+        {
+            var px = MathF.Abs(x) / s;
+            var py = y / s;
+            float d;
+            if (py + px > 1f)
+            {
+                var ax = px - 0.25f;
+                var ay = py - 0.75f;
+                d = MathF.Sqrt(ax * ax + ay * ay) - 0.35355339f;
+            }
+            else
+            {
+                var bx = px;
+                var by = py - 1f;
+                var m = 0.5f * MathF.Max(px + py, 0f);
+                var cx = px - m;
+                var cy = py - m;
+                d = MathF.Sqrt(MathF.Min(bx * bx + by * by, cx * cx + cy * cy)) * MathF.Sign(px - py);
+            }
+
+            return d * s;
+        }
+
+        /// <summary>Правильный шестиугольник с апофемой r.</summary>
+        private static float Hexagon(float x, float y, float r)
+        {
+            const float kx = -0.866025404f;
+            const float ky = 0.5f;
+            const float kz = 0.577350269f;
+            var px = MathF.Abs(x);
+            var py = MathF.Abs(y);
+            var dot = 2f * MathF.Min(kx * px + ky * py, 0f);
+            px -= dot * kx;
+            py -= dot * ky;
+            px -= Draw.Clamp(px, -kz * r, kz * r);
+            py -= r;
+            return MathF.Sqrt(px * px + py * py) * MathF.Sign(py);
+        }
+
         /// <summary>
         /// Бирка на ниточке для числа: бумажный ярлычок с дырочкой слева, из неё к клубку уходит нитка.
         /// Белая (красится цветом), бумага чуть светлее сверху, мягкая тень снизу. 72×40 точек, тело — правые 58.

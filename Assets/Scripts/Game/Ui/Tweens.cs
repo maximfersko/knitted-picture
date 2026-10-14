@@ -72,6 +72,12 @@ namespace KnittedPicture.Game
     {
         public static void Step(ref float position, ref float velocity, float target, float dt, float stiffness = 190f, float damping = 21f)
         {
+            if (Tweens.Calm)
+            {
+                // «Меньше движения»: критическое затухание — доезжает без перелёта.
+                damping = Mathf.Max(damping, 2f * Mathf.Sqrt(stiffness));
+            }
+
             var steps = Mathf.Max(1, Mathf.CeilToInt(dt * 120f));
             var h = dt / steps;
             for (var i = 0; i < steps; i++)
@@ -102,6 +108,12 @@ namespace KnittedPicture.Game
         }
 
         private static Tweens? _instance;
+
+        /// <summary>
+        /// «Меньше движения» (настройки удобства): бесконечные украшения стоят на месте, элементы появляются
+        /// без всплытия и пружин, толчки и встряски слабее. Важное (полёт нитки, клубок в слот) остаётся.
+        /// </summary>
+        public static bool Calm { get; set; }
         private readonly List<Tween> _active = new List<Tween>();
         private readonly List<Tween> _adding = new List<Tween>();
 
@@ -120,6 +132,13 @@ namespace KnittedPicture.Game
             {
                 step(1f);
                 done?.Invoke();
+                return;
+            }
+
+            if (loop && Calm)
+            {
+                // Повторяющееся украшение замирает в начальной позе, а не качается.
+                step(0f);
                 return;
             }
 
@@ -219,7 +238,7 @@ namespace KnittedPicture.Game
                 Run(group, duration * 0.7f, t => group.alpha = t, KnittedPicture.Game.Ease.OutCubic, () => Destroy(group), delay);
             }
 
-            if (rise != 0f)
+            if (rise != 0f && !Calm)
             {
                 Offset(rt, new Vector2(0, -rise), Vector2.zero, duration, KnittedPicture.Game.Ease.OutSoftBack, null, delay);
             }
@@ -259,6 +278,11 @@ namespace KnittedPicture.Game
         public static void Punch(Transform target, float amount = 0.12f, float duration = 0.22f)
         {
             var length = Mathf.Max(duration * 1.6f, 0.28f);
+            if (Calm)
+            {
+                amount *= 0.35f;
+            }
+
             Run(target, length, t =>
             {
                 var j = amount * KnittedPicture.Game.Ease.Jolt(t);
@@ -271,12 +295,18 @@ namespace KnittedPicture.Game
         {
             var origin = rt.anchoredPosition;
             var tilt = rt.localRotation;
+            var lean = Calm ? 0f : 0.25f;
+            if (Calm)
+            {
+                amount *= 0.35f;
+            }
+
             Run(rt, duration, t =>
             {
                 // Затухание квадратом: первый рывок сильный, хвост быстро стихает; лёгкий наклон в такт — «мотает головой».
                 var wave = Mathf.Sin(t * Mathf.PI * 6f) * (1f - t) * (1f - t);
                 rt.anchoredPosition = origin + new Vector2(wave * amount, 0);
-                rt.localRotation = tilt * Quaternion.Euler(0, 0, -wave * amount * 0.25f);
+                rt.localRotation = tilt * Quaternion.Euler(0, 0, -wave * amount * lean);
             }, null, () =>
             {
                 rt.anchoredPosition = origin;

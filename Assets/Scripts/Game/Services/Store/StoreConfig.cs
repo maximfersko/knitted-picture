@@ -29,6 +29,12 @@ namespace KnittedPicture.Game
         /// <summary>Политика конфиденциальности (docs/privacy.html, опубликованная через GitHub Pages).</summary>
         public const string PrivacyPolicyUrl = "https://maximfersko.github.io/knitted-picture/privacy.html";
 
+        /// <summary>
+        /// Почта поддержки для строки «Написать нам» в «Об игре». Пусто — строки нет. Впиши адрес перед выпуском:
+        /// письмо откроется уже с версией игры, моделью телефона и уровнем.
+        /// </summary>
+        public const string SupportEmail = "";
+
         /// <summary>Видео за награду. «demo-…» — тестовые блоки Яндекса: показывают пробную рекламу, денег не приносят.</summary>
         public const string RewardedAdUnit = "demo-rewarded-yandex";
 

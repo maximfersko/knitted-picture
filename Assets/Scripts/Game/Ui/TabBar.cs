@@ -59,7 +59,7 @@ namespace KnittedPicture.Game
                 Ui.PlaceCenter(pill.rectTransform, cellW / 2f, 22, 64, 30);
 
                 // Пришли с другой вкладки: метка переезжает от неё, вытягиваясь в пути, и пружинисто встаёт на место.
-                if (app.PendingSlide != 0 && _last != null && _last != tab)
+                if (app.PendingSlide != 0 && _last != null && _last != tab && !Tweens.Calm)
                 {
                     var pillRt = pill.rectTransform;
                     var from = ((int)_last.Value - index) * cellW;

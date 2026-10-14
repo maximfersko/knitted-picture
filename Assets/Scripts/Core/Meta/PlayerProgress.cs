@@ -91,6 +91,21 @@ namespace KnittedPicture.Core
         /// <summary>Вибрация (тактильный отклик) включена.</summary>
         public bool hapticsOn = true;
 
+        /// <summary>Удобство: значки-фигуры у цветов (различать клубки не только по цвету).</summary>
+        public bool colorMarks;
+
+        /// <summary>Удобство: меньше движения — без покачиваний, всплытий, пружин и тряски.</summary>
+        public bool reduceMotion;
+
+        /// <summary>Удобство: мелкий текст крупнее (где помещается).</summary>
+        public bool largeText;
+
+        /// <summary>Удобство: рука-подсказка, если долго нет хода (на первых уровнях — всегда, это обучение).</summary>
+        public bool idleHints = true;
+
+        /// <summary>Удобство: экономия заряда — 30 кадров в секунду вместо 60.</summary>
+        public bool batterySaver;
+
         /// <summary>Напоминания на телефон включены; спрашивали ли уже разрешение у системы.</summary>
         public bool remindersOn = true;
         public bool remindersAsked;

@@ -292,6 +292,12 @@ namespace KnittedPicture.Game
         public static int TypeSize(float size) =>
             size < 12f ? 11 : size < 14.5f ? 13 : size < 17.5f ? 16 : size < 23f ? 20 : Mathf.RoundToInt(size);
 
+        /// <summary>
+        /// «Крупный текст» (настройки удобства): мелкий текст (меньше 20) на ~20% крупнее там, где помещается.
+        /// Через автоподбор размера: не влезает — ужимается обратно до обычного, раскладка не ломается.
+        /// </summary>
+        public static bool LargeText { get; set; }
+
         public static Text Label(RectTransform parent, string text, float size, Color color, bool bold = true,
             TextAnchor anchor = TextAnchor.MiddleCenter)
         {
@@ -312,6 +318,15 @@ namespace KnittedPicture.Game
             label.verticalOverflow = VerticalWrapMode.Overflow;
             label.raycastTarget = false;
             label.supportRichText = false;
+            if (LargeText && label.fontSize < 20)
+            {
+                var normal = label.fontSize;
+                label.fontSize = Mathf.RoundToInt(normal * 1.2f);
+                label.resizeTextForBestFit = true;
+                label.resizeTextMaxSize = label.fontSize;
+                label.resizeTextMinSize = normal;
+            }
+
             Emboss(label);
             return label;
         }

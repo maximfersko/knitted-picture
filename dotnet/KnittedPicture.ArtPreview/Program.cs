@@ -13,6 +13,7 @@ namespace KnittedPicture.ArtPreview
             Classic(dir);
             Field(dir);
             Panels(dir);
+            Marks(dir);
             Balls(dir);
             Loom(dir);
             Export(Path.Combine(dir, "sprites"));
@@ -175,6 +176,24 @@ namespace KnittedPicture.ArtPreview
             }
 
             Png.Save(img, Path.Combine(dir, "panels.png"));
+        }
+
+        /// <summary>Значки цветов на клубках разных цветов (режим «Значки цветов»).</summary>
+        private static void Marks(string dir)
+        {
+            string[] colors = { "#F2303F", "#F5C542", "#5FD7A5", "#3D8FD1", "#8B5CF6", "#FF9A3C", "#FF6FA5", "#7A5230", "#FFFFFF", "#2B2350" };
+            var img = new Raster(10 * 120 + 20, 140);
+            Png.Fill(img, Rgba.Hex("#EDE7FF"));
+            for (var i = 0; i < colors.Length; i++)
+            {
+                var size = 100f;
+                var art = size / Art2BallFill;
+                var x = 20 + i * 120;
+                Png.Put(img, BallRaster.Ball(Rgba.Hex(colors[i])), x + size / 2f - art / 2f, 20 + size / 2f - art / 2f, art, art);
+                Png.Put(img, KnitRaster.ColorMark(i), x + size * 0.3f, 20 + size * 0.3f, size * 0.4f, size * 0.4f);
+            }
+
+            Png.Save(img, Path.Combine(dir, "marks.png"));
         }
 
         /// <summary>9-срез: углы в масштабе, края и середина растянуты.</summary>

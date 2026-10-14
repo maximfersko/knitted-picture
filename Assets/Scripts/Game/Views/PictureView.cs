@@ -31,6 +31,9 @@ namespace KnittedPicture.Game
 
         /// <summary>Рамка на клетке, которая свяжется следующей в столбике (по одной на столбик).</summary>
         private readonly Image[] _fronts;
+
+        /// <summary>Значок цвета на следующей петле столбика (настройка «Значки цветов»).</summary>
+        private readonly Image[] _frontMarks;
         private readonly HashSet<int> _pending = new HashSet<int>();
         private readonly Dictionary<int, Image> _gold = new Dictionary<int, Image>();
         private readonly List<(int X, int Y, Image Hole)> _holes = new List<(int X, int Y, Image Hole)>();
@@ -81,6 +84,15 @@ namespace KnittedPicture.Game
                 Ui.Place(mark.rectTransform, x * _step + 2f, 0f, cell - 4f, cell - 4f);
                 mark.enabled = false;
                 _fronts[x] = mark;
+            }
+
+            _frontMarks = new Image[game.Width];
+            for (var x = 0; x < game.Width; x++)
+            {
+                var sign = Ui.Image(Root, "Mark", null, Color.white);
+                sign.rectTransform.sizeDelta = new Vector2(cell * 0.72f, cell * 0.72f);
+                sign.enabled = false;
+                _frontMarks[x] = sign;
             }
 
             for (var y = 0; y < game.Height; y++)
@@ -153,6 +165,19 @@ namespace KnittedPicture.Game
 
                 // На светлой клетке белая рамка не видна — тогда тёмная.
                 mark.color = Luminance(frontColor) > 0.78f ? Palette.WithAlpha(Palette.Ink, 0.45f) : Palette.WithAlpha(Color.white, 0.9f);
+            }
+
+            // Значок цвета — та же фигура, что на клубке: петля и клубок сверяются не только цветом.
+            var sign = _frontMarks[x];
+            sign.enabled = Comfort.ColorMarks && active && front >= 0;
+            if (sign.enabled)
+            {
+                sign.sprite = Art2.ColorMark(_game.ColorAt(x, front));
+                sign.rectTransform.anchorMin = mark.rectTransform.anchorMin;
+                sign.rectTransform.anchorMax = mark.rectTransform.anchorMax;
+                sign.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                sign.rectTransform.anchoredPosition = new Vector2(x * _step + _cell / 2f, -(front * _step + _cell / 2f));
+                sign.rectTransform.SetAsLastSibling();
             }
 
             for (var y = 0; y < _game.Height; y++)
@@ -232,7 +257,9 @@ namespace KnittedPicture.Game
                 _lagRings[x] = ring;
             }
 
-            Tweens.Run(_lagLayer, 1.2f, t => lagGroup.alpha = 0.3f + 0.7f * Ease.Bump(t), null, null, 0f, true);
+            // «Меньше движения»: рамки не мигают, а горят ровно.
+            lagGroup.alpha = 0.85f;
+            Tweens.Run(_lagLayer, 1.2f, t => lagGroup.alpha = Tweens.Calm ? 0.85f : 0.3f + 0.7f * Ease.Bump(t), null, null, 0f, true);
 
             // Пунктир — «натянутая нить» с булавками по краям.
             var width = Width + 8f;

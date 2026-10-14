@@ -25,6 +25,11 @@ namespace KnittedPicture.Game
         {
         }
 
+        /// <summary>Поменялись настройки удобства, пока экран открыт: обновить то, что их читает (значки цветов).</summary>
+        public virtual void ComfortChanged()
+        {
+        }
+
         /// <summary>Кнопка «назад» на Android. false — уйти на главную.</summary>
         public virtual bool OnBack() => false;
 
@@ -48,6 +53,17 @@ namespace KnittedPicture.Game
             var group = Ui.Group(Root);
             Tweens.Fade(group, 0f, 1f, slide != 0 ? 0.16f : 0.2f);
             var bar = Root.Find("TabBar") as RectTransform;
+            if (Tweens.Calm)
+            {
+                // «Меньше движения»: только мягкое проявление, ничего не едет.
+                if (bar != null && hadBar)
+                {
+                    Ui.Group(bar).ignoreParentGroups = true;
+                }
+
+                return;
+            }
+
             if (bar != null && hadBar)
             {
                 var own = Ui.Group(bar);
@@ -104,7 +120,7 @@ namespace KnittedPicture.Game
             var from = group.alpha;
             Tweens.Kill(Root);
             Tweens.Kill(group);
-            if (slide != 0)
+            if (slide != 0 && !Tweens.Calm)
             {
                 var bar = Root.Find("TabBar");
                 for (var i = 0; i < Root.childCount; i++)
@@ -119,7 +135,7 @@ namespace KnittedPicture.Game
             Tweens.Run(Root, 0.16f, t =>
             {
                 group.alpha = from * (1f - t);
-                if (slide == 0)
+                if (slide == 0 && !Tweens.Calm)
                 {
                     Root.localScale = Vector3.one * (1f - 0.025f * t);
                 }
@@ -190,7 +206,11 @@ namespace KnittedPicture.Game
         public void Enter()
         {
             Tweens.Fade(_group, 0f, 1f, 0.2f);
-            if (_bottomSheet)
+            if (Tweens.Calm)
+            {
+                // «Меньше движения»: окно просто проявляется.
+            }
+            else if (_bottomSheet)
             {
                 Tweens.Offset(Card, new Vector2(0, -(Card.sizeDelta.y + 40f)), Vector2.zero, 0.42f, Ease.OutSoftBack, null, 0f, Motion);
             }
@@ -245,7 +265,11 @@ namespace KnittedPicture.Game
             // Закрыли, пока окно ещё выпрыгивало: выезд останавливается и не спорит с уходом.
             Tweens.Kill(Card, Motion);
             Tweens.Kill(_group);
-            if (_bottomSheet)
+            if (Tweens.Calm)
+            {
+                // Только гаснет.
+            }
+            else if (_bottomSheet)
             {
                 Tweens.Offset(Card, Vector2.zero, new Vector2(0, -(Card.sizeDelta.y + 40f)), 0.22f, Ease.InCubic);
             }

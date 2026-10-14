@@ -111,7 +111,7 @@ namespace KnittedPicture.Game
             else
             {
                 stiffness = 380f;
-                damping = 15f;
+                damping = Tweens.Calm ? 39f : 15f;
             }
 
             var target = _pressed ? 1f : 0f;

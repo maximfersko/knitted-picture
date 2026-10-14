@@ -382,11 +382,23 @@ namespace KnittedPicture.Game
             {
                 _idle += dt;
                 // Дальше — мягкий толчок, если игрок долго не делает ничего: 20 секунд без хода, станок стоит.
-                var threshold = _level.id == 1 ? 3f : _level.id <= 3 ? 6f : _level.id <= 5 ? 12f : IdleNudge;
+                // На первых пяти уровнях это обучение — всегда; дальше — по настройке «Подсказка при паузе».
+                var threshold = _level.id == 1 ? 3f : _level.id <= 3 ? 6f : _level.id <= 5 ? 12f : Comfort.IdleHints ? IdleNudge : 0f;
                 if (threshold > 0 && _idle > threshold)
                 {
                     ShowHint();
                 }
+            }
+        }
+
+        /// <summary>Значки цветов включили или выключили из паузы: поле, станок и картинка обновляются сразу.</summary>
+        public override void ComfortChanged()
+        {
+            RefreshField();
+            _picture.RefreshColumns();
+            foreach (var slot in _slotViews)
+            {
+                slot?.View.RefreshMark();
             }
         }
 

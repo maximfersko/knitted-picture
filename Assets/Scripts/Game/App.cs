@@ -220,7 +220,6 @@ namespace KnittedPicture.Game
         private void Awake()
         {
             Instance = this;
-            Application.targetFrameRate = 60;
 
             // Плоский интерфейс: сглаживание и анизотропия ничего не дают, а стоят памяти и заполнения.
             QualitySettings.antiAliasing = 0;
@@ -240,6 +239,7 @@ namespace KnittedPicture.Game
             Progress = new ProgressService(SaveStore.Load(), Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
             Haptics.Enabled = Progress.Data.hapticsOn;
+            Comfort.Apply(Progress.Data);
             Analytics.Init();
             Analytics.Event("app_open", ("level", Progress.CurrentLevel), ("wins", Progress.Data.totalWins), ("coins", Progress.Coins),
                 ("store", StoreConfig.Flavor.ToString()), ("ads_removed", Progress.Data.adsRemoved), ("first", !Progress.Data.introSeen));
@@ -564,11 +564,15 @@ namespace KnittedPicture.Game
 
             // Плашка падает сверху на пружине и, отслужив, уплывает вверх, растворяясь.
             Tweens.Fade(group, 0f, 1f, 0.18f);
-            Tweens.Offset(root, new Vector2(0, 30f), Vector2.zero, 0.42f, Ease.OutSoftBack);
-            root.localScale = Vector3.one * 0.92f;
-            Tweens.Run(root, 0.4f, t => root.localScale = Vector3.one * Mathf.LerpUnclamped(0.92f, 1f, t), Ease.Spring);
             var hold = Mathf.Clamp(1.2f + text.Length * 0.025f, 1.9f, 3.6f);
-            Tweens.Offset(root, Vector2.zero, new Vector2(0, 18f), 0.3f, Ease.InCubic, null, hold);
+            if (!Tweens.Calm)
+            {
+                Tweens.Offset(root, new Vector2(0, 30f), Vector2.zero, 0.42f, Ease.OutSoftBack);
+                root.localScale = Vector3.one * 0.92f;
+                Tweens.Run(root, 0.4f, t => root.localScale = Vector3.one * Mathf.LerpUnclamped(0.92f, 1f, t), Ease.Spring);
+                Tweens.Offset(root, Vector2.zero, new Vector2(0, 18f), 0.3f, Ease.InCubic, null, hold);
+            }
+
             Tweens.Fade(group, 1f, 0f, 0.3f, () =>
             {
                 if (_toast == root)
@@ -585,6 +589,26 @@ namespace KnittedPicture.Game
             Progress.SoundOn = on;
             Sfx.Enabled = on;
             Save();
+        }
+
+        /// <summary>Применить настройки удобства, сохранить и обновить открытый экран (значки цветов — сразу).</summary>
+        public void ApplyComfort()
+        {
+            Comfort.Apply(Progress.Data);
+            Save();
+            _screen?.ComfortChanged();
+        }
+
+        /// <summary>
+        /// Перестроить открытый экран на месте (крупный текст ложится только на новые подписи). Уровень не трогаем:
+        /// партия идёт, перестройка его сбросила бы — там текст обновится на следующем экране.
+        /// </summary>
+        public void RefreshScreen()
+        {
+            if (_route != null && !(_screen is GameScreen))
+            {
+                Show(_route);
+            }
         }
 
         public void SetHaptics(bool on)
@@ -669,6 +693,9 @@ namespace KnittedPicture.Game
                 old?.Leave(slide);
                 _screen.Enter(slide, hadBar);
             }
+
+            // На уровне экран не гаснет, пока игрок думает над ходом; вне уровня — как в системе.
+            Screen.sleepTimeout = _screen is GameScreen ? SleepTimeout.NeverSleep : SleepTimeout.SystemSetting;
 
             // Старый экран снят: лишние текстуры клубков освобождаем, когда он исчезнет со сцены.
             Tweens.Delay(this, 0.45f, Art2.Trim);

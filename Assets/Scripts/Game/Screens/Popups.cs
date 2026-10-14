@@ -125,6 +125,13 @@ namespace KnittedPicture.Game
                 restart();
             });
             toHome.OnClick(home);
+
+            // Значки цветов и «меньше движения» нужнее всего прямо в уровне — без выхода на главную.
+            AddLink("Удобство").OnClick(() =>
+            {
+                Close();
+                app.ShowPopup(new ComfortPopup(app, () => app.ShowPopup(new PausePopup(app, restart, home, warning))));
+            });
             Finish(12);
         }
 
@@ -132,16 +139,172 @@ namespace KnittedPicture.Game
     }
 
     /// <summary>
+    /// Шторка-список, как системные настройки iOS и Android: сгруппированные строки со значком, подписью
+    /// (и пояснением), переключателем или стрелкой. Общая основа для «Настроек», «Удобства» и «Об игре».
+    /// </summary>
+    public abstract class ListSheet : Popup
+    {
+        protected const float RowH = 56f;
+
+        /// <summary>Строка с пояснением в две строки.</summary>
+        protected const float TallRowH = 70f;
+
+        protected ListSheet(App app)
+            : base(app, true)
+        {
+        }
+
+        /// <summary>Значок строки: фигура из набора иконок, готовый спрайт или пара букв.</summary>
+        protected readonly struct Badge
+        {
+            public Badge(KnittedPicture.Game.Icon icon) : this(icon, null, null)
+            {
+            }
+
+            public Badge(Sprite sprite) : this(null, sprite, null)
+            {
+            }
+
+            public Badge(string glyph) : this(null, null, glyph)
+            {
+            }
+
+            private Badge(KnittedPicture.Game.Icon? icon, Sprite? sprite, string? glyph)
+            {
+                Icon = icon;
+                Sprite = sprite;
+                Glyph = glyph;
+            }
+
+            public KnittedPicture.Game.Icon? Icon { get; }
+
+            public Sprite? Sprite { get; }
+
+            public string? Glyph { get; }
+
+            public static implicit operator Badge(KnittedPicture.Game.Icon icon) => new Badge(icon);
+        }
+
+        /// <summary>
+        /// Кнопка «назад» слева от заголовка вложенной шторки: закрывает её и открывает ту, откуда пришли.
+        /// Крестик и тап мимо закрывают совсем.
+        /// </summary>
+        protected void AddBack(Action back)
+        {
+            Ui.RoundButton(Card, KnittedPicture.Game.Icon.Back, 10f, 10f, 44f, true).OnClick(() =>
+            {
+                Close();
+                back();
+            });
+        }
+
+        /// <summary>Сгруппированный список: светлая подложка, строки через тонкие разделители.</summary>
+        protected RectTransform Group(int rows, float rowH = RowH)
+        {
+            var box = Ui.Box(Card, "Group", 16, Palette.Surface).rectTransform;
+            Ui.Place(box, 24, Cursor, Inner, rows * rowH);
+            Ui.Outline(box, 16, Palette.Line, 1.5f);
+            for (var i = 1; i < rows; i++)
+            {
+                var line = Ui.Box(box, "Divider", 1, Palette.Line).rectTransform;
+                Ui.Place(line, 60f, i * rowH - 0.75f, Inner - 60f, 1.5f);
+            }
+
+            Space(rows * rowH);
+            return box;
+        }
+
+        /// <summary>Строка: значок в цветном кружке, подпись и (если есть) пояснение мельче под ней.</summary>
+        protected RectTransform Row(RectTransform group, int index, Badge badge, Color tint, string title, string? note = null, float rowH = RowH)
+        {
+            var row = Ui.Place(Ui.Node(group, title), 0, index * rowH, Inner, rowH);
+            Ui.Stretch(Ui.Image(row, "Hit", null, Color.clear, true).rectTransform);
+            var circle = Ui.Image(row, "IconBack", Art.Circle, Palette.WithAlpha(tint, 0.16f));
+            Ui.PlaceCenter(circle.rectTransform, 30f, rowH / 2f, 34f, 34f);
+            if (badge.Sprite != null)
+            {
+                var image = Ui.Image(row, "Badge", badge.Sprite, Color.white);
+                Ui.PlaceCenter(image.rectTransform, 30f, rowH / 2f, 24f, 24f);
+            }
+            else if (badge.Glyph != null)
+            {
+                Ui.Label(row, badge.Glyph, 15, tint, 13f, rowH / 2f - 17f, 34f, 34f);
+            }
+            else if (badge.Icon != null)
+            {
+                Ui.IconImage(row, badge.Icon.Value, tint, 30f, rowH / 2f, 20f);
+            }
+
+            var textW = Inner - 140f;
+            if (note == null)
+            {
+                Ui.Label(row, title, 16, Palette.Ink, 58f, 0, textW, rowH, false, TextAnchor.MiddleLeft);
+            }
+            else
+            {
+                Ui.Fit(Ui.Label(row, title, 16, Palette.Ink, 58f, 9f, textW, 24f, false, TextAnchor.MiddleLeft), 13);
+                var hint = Ui.Label(row, note, 12, Palette.Ink2, 58f, 32f, textW, rowH - 38f, false, TextAnchor.UpperLeft);
+                hint.lineSpacing = 0.9f;
+                Ui.Fit(hint, 10);
+            }
+
+            return row;
+        }
+
+        /// <summary>Строка-переход: значок, подпись и стрелка вправо; тап по всей строке.</summary>
+        protected void NavRow(RectTransform group, int index, Badge badge, Color tint, string title, Action open, string? note = null, float rowH = RowH)
+        {
+            var row = Row(group, index, badge, tint, title, note, rowH);
+            var chevron = Ui.IconImage(row, KnittedPicture.Game.Icon.Back, Palette.Ink3, Inner - 24f, rowH / 2f, 18f);
+            chevron.rectTransform.localScale = new Vector3(-1f, 1f, 1f);
+            row.gameObject.AddComponent<Tap>().OnClick(open);
+        }
+
+        /// <summary>Строка с переключателем справа; тап по всей строке переключает.</summary>
+        protected void ToggleRow(RectTransform group, int index, Badge badge, Color tint, string title,
+            Func<bool> get, Action<bool> set, string? note = null, float rowH = RowH)
+        {
+            var row = Row(group, index, badge, tint, title, note, rowH);
+            const float trackW = 52f;
+            const float trackH = 32f;
+            var track = Ui.Box(row, "Switch", trackH / 2f, Palette.Inactive);
+            Ui.PlaceCenter(track.rectTransform, Inner - 16f - trackW / 2f, rowH / 2f, trackW, trackH);
+            var knob = Ui.Image(track.rectTransform, "Knob", Art.Circle, Color.white).rectTransform;
+            Ui.PlaceCenter(knob, trackH / 2f, trackH / 2f, trackH - 6f, trackH - 6f);
+
+            void Show(float t)
+            {
+                track.color = Color.Lerp(Palette.Inactive, Palette.Primary, t);
+                knob.anchoredPosition = new Vector2(Mathf.LerpUnclamped(trackH / 2f, trackW - trackH / 2f, t), knob.anchoredPosition.y);
+            }
+
+            Show(get() ? 1f : 0f);
+            row.gameObject.AddComponent<Tap>().OnClick(() =>
+            {
+                var on = !get();
+                set(on);
+                // Шарик перескакивает на пружине и чуть сплющивается в полёте, как капля.
+                Tweens.Kill(knob);
+                Tweens.Run(knob, 0.36f, t =>
+                {
+                    Show(on ? t : 1f - t);
+                    var squash = 0.18f * Ease.Bump(Mathf.Clamp01(t));
+                    knob.localScale = new Vector3(1f + squash, 1f - squash * 0.6f, 1f);
+                }, Tweens.Calm ? Ease.OutCubic : Ease.Spring, () => knob.localScale = Vector3.one);
+            });
+        }
+    }
+
+    /// <summary>
     /// Настройки — нижняя шторка, как в системных настройках iOS и Android: всё в зоне большого пальца,
     /// закрыть — крестиком, тапом мимо или системной «Назад». Переключатели меняются на месте, без
-    /// переоткрытия окна. Опасное действие отдельно и красным, с подтверждением вторым касанием.
+    /// переоткрытия окна. Частое — сверху (звук, вибрация, напоминания), удобство и справка — переходами,
+    /// редкое и опасное (покупки, связь, сброс) — во вложенной шторке «Об игре».
     /// </summary>
-    public sealed class SettingsPopup : Popup
+    public sealed class SettingsPopup : ListSheet
     {
-        private const float RowH = 56f;
-
         public SettingsPopup(App app)
-            : base(app, true)
+            : base(app)
         {
             AddTitle("Настройки", 24);
 
@@ -170,11 +333,15 @@ namespace KnittedPicture.Game
 
             Space(12f);
 
-            // Покупки — только там, где они работают (RuStore с SDK). «Без рекламы» пропадает после покупки.
-            var purchases = app.Purchases.Available;
-            var buyNoAds = purchases && !app.Progress.Data.adsRemoved;
-            var help = Group(1 + (buyNoAds ? 1 : 0) + (purchases ? 1 : 0));
+            // «Без рекламы» — только там, где покупки работают (RuStore с SDK), и пропадает после покупки.
+            var buyNoAds = app.Purchases.Available && !app.Progress.Data.adsRemoved;
+            var help = Group(3 + (buyNoAds ? 1 : 0));
             var row = 0;
+            NavRow(help, row++, new Badge(Art2.ColorMark(3)), Palette.Link, "Удобство", () =>
+            {
+                Close();
+                app.ShowPopup(new ComfortPopup(app, () => app.ShowPopup(new SettingsPopup(app))));
+            });
             NavRow(help, row++, KnittedPicture.Game.Icon.Info, Palette.Primary, "Как играть", () =>
             {
                 Close();
@@ -189,10 +356,108 @@ namespace KnittedPicture.Game
                 });
             }
 
+            NavRow(help, row, KnittedPicture.Game.Icon.Album, Palette.Ink2, "Об игре", () =>
+            {
+                Close();
+                app.ShowPopup(new AboutPopup(app));
+            });
+
+            Finish(12);
+        }
+    }
+
+    /// <summary>
+    /// Удобство: игра, где всё решает цвет, должна читаться и без различения цветов, без лишнего движения,
+    /// с текстом покрупнее и не сажать батарею. По Game Accessibility Guidelines и Xbox Accessibility Guidelines:
+    /// не передавать информацию одним цветом, давать остановить повторяющееся движение, крупный текст.
+    /// Открывается из настроек и из паузы; изменения видны сразу (значки — на поле и картинке, движение —
+    /// со следующей анимации), крупный текст — на перестроенном экране.
+    /// </summary>
+    public sealed class ComfortPopup : ListSheet
+    {
+        private readonly bool _largeText;
+
+        public ComfortPopup(App app, Action? back = null)
+            : base(app)
+        {
+            _largeText = app.Progress.Data.largeText;
+            if (back != null)
+            {
+                AddBack(back);
+            }
+
+            AddTitle("Удобство", 24);
+            var data = app.Progress.Data;
+            var group = Group(5, TallRowH);
+            ToggleRow(group, 0, new Badge(Art2.ColorMark(3)), Palette.Link, "Значки цветов",
+                () => data.colorMarks, on => Set(() => data.colorMarks = on),
+                "Фигура на клубке и на петле, которая вяжется следующей: не путать похожие цвета", TallRowH);
+            ToggleRow(group, 1, KnittedPicture.Game.Icon.Pause, Palette.Primary, "Меньше движения",
+                () => data.reduceMotion, on => Set(() => data.reduceMotion = on),
+                "Без покачиваний, всплытий, пружин и тряски", TallRowH);
+            ToggleRow(group, 2, new Badge("Aa"), Palette.CoinShadow, "Крупный текст",
+                () => data.largeText, on => Set(() => data.largeText = on),
+                "Мелкие подписи крупнее, где помещаются", TallRowH);
+            ToggleRow(group, 3, KnittedPicture.Game.Icon.Hand, Palette.Danger, "Подсказка при паузе",
+                () => data.idleHints, on => Set(() => data.idleHints = on),
+                "Рука покажет ход, если долго нет хода", TallRowH);
+            ToggleRow(group, 4, KnittedPicture.Game.Icon.Bolt, Palette.Ink2, "Экономия заряда",
+                () => data.batterySaver, on => Set(() => data.batterySaver = on),
+                "30 кадров в секунду вместо 60: телефон меньше греется", TallRowH);
+
+            // Крупный текст ложится на новые подписи: экран под шторкой перестраивается, когда она закрыта.
+            Closed = () =>
+            {
+                if (App.Progress.Data.largeText != _largeText)
+                {
+                    App.RefreshScreen();
+                }
+            };
+            Finish(12);
+        }
+
+        private void Set(Action change)
+        {
+            change();
+            App.ApplyComfort();
+        }
+    }
+
+    /// <summary>
+    /// Об игре: оценить в магазине, написать разработчику (письмо уже с версией и моделью телефона),
+    /// восстановить покупки, политика, версия и — отдельно, красным, с подтверждением — сброс прогресса.
+    /// </summary>
+    public sealed class AboutPopup : ListSheet
+    {
+        public AboutPopup(App app)
+            : base(app)
+        {
+            AddBack(() => app.ShowPopup(new SettingsPopup(app)));
+            AddTitle("Об игре", 24);
+
+            var rate = StoreLinks.Rate;
+            var mail = StoreLinks.Support(app);
+            var purchases = app.Purchases.Available;
+            var rows = 1 + (rate != null ? 1 : 0) + (mail != null ? 1 : 0) + (purchases ? 1 : 0);
+            var group = Group(rows);
+            var row = 0;
+            if (rate != null)
+            {
+                NavRow(group, row++, KnittedPicture.Game.Icon.Star, Palette.CoinShadow, "Оценить игру", () => Application.OpenURL(rate));
+            }
+
+            if (mail != null)
+            {
+                NavRow(group, row++, KnittedPicture.Game.Icon.Bell, Palette.Link, "Написать нам", () => Application.OpenURL(mail));
+            }
+
             if (purchases)
             {
-                NavRow(help, row, KnittedPicture.Game.Icon.Restart, Palette.Link, "Восстановить покупки", () => app.RestorePurchases(true));
+                NavRow(group, row++, KnittedPicture.Game.Icon.Restart, Palette.Link, "Восстановить покупки", () => app.RestorePurchases(true));
             }
+
+            NavRow(group, row, KnittedPicture.Game.Icon.Info, Palette.Ink2, "Политика конфиденциальности",
+                () => Application.OpenURL(StoreConfig.PrivacyPolicyUrl));
 
             Space(12f);
 
@@ -202,8 +467,7 @@ namespace KnittedPicture.Game
             Ui.Stretch(Ui.Image(resetRow, "Hit", null, Color.clear, true).rectTransform);
             var resetLabel = Ui.Label(resetRow, "Сбросить прогресс", 16, Palette.Danger, 0, 0, Inner, RowH);
             var armed = false;
-            var resetTap = resetRow.gameObject.AddComponent<Tap>();
-            resetTap.OnClick(() =>
+            resetRow.gameObject.AddComponent<Tap>().OnClick(() =>
             {
                 if (armed)
                 {
@@ -216,82 +480,10 @@ namespace KnittedPicture.Game
                 Haptics.Play(Haptic.Medium);
             });
 
-            Space(6f);
-            AddLink("Политика конфиденциальности").OnClick(() => Application.OpenURL(StoreConfig.PrivacyPolicyUrl));
+            Space(10f);
             var version = AddText("Версия " + Application.version, 12, 1);
             version.color = Palette.Ink3;
             Finish(8);
-        }
-
-        /// <summary>Строка-переход: значок, подпись и стрелка вправо; тап по всей строке.</summary>
-        private void NavRow(RectTransform group, int index, KnittedPicture.Game.Icon icon, Color tint, string title, System.Action open)
-        {
-            var row = Row(group, index, icon, tint, title);
-            var chevron = Ui.IconImage(row, KnittedPicture.Game.Icon.Back, Palette.Ink3, Inner - 24f, RowH / 2f, 18f);
-            chevron.rectTransform.localScale = new Vector3(-1f, 1f, 1f);
-            row.gameObject.AddComponent<Tap>().OnClick(open);
-        }
-
-        /// <summary>Сгруппированный список: светлая подложка, строки через тонкие разделители.</summary>
-        private RectTransform Group(int rows)
-        {
-            var box = Ui.Box(Card, "Group", 16, Palette.Surface).rectTransform;
-            Ui.Place(box, 24, Cursor, Inner, rows * RowH);
-            Ui.Outline(box, 16, Palette.Line, 1.5f);
-            for (var i = 1; i < rows; i++)
-            {
-                var line = Ui.Box(box, "Divider", 1, Palette.Line).rectTransform;
-                Ui.Place(line, 60f, i * RowH - 0.75f, Inner - 60f, 1.5f);
-            }
-
-            Space(rows * RowH);
-            return box;
-        }
-
-        /// <summary>Строка: значок в цветном кружке и подпись слева.</summary>
-        private RectTransform Row(RectTransform group, int index, KnittedPicture.Game.Icon icon, Color tint, string title)
-        {
-            var row = Ui.Place(Ui.Node(group, title), 0, index * RowH, Inner, RowH);
-            Ui.Stretch(Ui.Image(row, "Hit", null, Color.clear, true).rectTransform);
-            var circle = Ui.Image(row, "IconBack", Art.Circle, Palette.WithAlpha(tint, 0.16f));
-            Ui.PlaceCenter(circle.rectTransform, 30f, RowH / 2f, 34f, 34f);
-            Ui.IconImage(row, icon, tint, 30f, RowH / 2f, 20f);
-            Ui.Label(row, title, 16, Palette.Ink, 58f, 0, Inner - 140f, RowH, false, TextAnchor.MiddleLeft);
-            return row;
-        }
-
-        /// <summary>Строка с переключателем справа; тап по всей строке переключает.</summary>
-        private void ToggleRow(RectTransform group, int index, KnittedPicture.Game.Icon icon, Color tint, string title,
-            System.Func<bool> get, System.Action<bool> set)
-        {
-            var row = Row(group, index, icon, tint, title);
-            const float trackW = 52f;
-            const float trackH = 32f;
-            var track = Ui.Box(row, "Switch", trackH / 2f, Palette.Inactive);
-            Ui.PlaceCenter(track.rectTransform, Inner - 16f - trackW / 2f, RowH / 2f, trackW, trackH);
-            var knob = Ui.Image(track.rectTransform, "Knob", Art.Circle, Color.white).rectTransform;
-            Ui.PlaceCenter(knob, trackH / 2f, trackH / 2f, trackH - 6f, trackH - 6f);
-
-            void Show(float t)
-            {
-                track.color = Color.Lerp(Palette.Inactive, Palette.Primary, t);
-                knob.anchoredPosition = new Vector2(Mathf.LerpUnclamped(trackH / 2f, trackW - trackH / 2f, t), knob.anchoredPosition.y);
-            }
-
-            Show(get() ? 1f : 0f);
-            row.gameObject.AddComponent<Tap>().OnClick(() =>
-            {
-                var on = !get();
-                set(on);
-                // Шарик перескакивает на пружине и чуть сплющивается в полёте, как капля.
-                Tweens.Kill(knob);
-                Tweens.Run(knob, 0.36f, t =>
-                {
-                    Show(on ? t : 1f - t);
-                    var squash = 0.18f * Ease.Bump(Mathf.Clamp01(t));
-                    knob.localScale = new Vector3(1f + squash, 1f - squash * 0.6f, 1f);
-                }, Ease.Spring, () => knob.localScale = Vector3.one);
-            });
         }
     }
 

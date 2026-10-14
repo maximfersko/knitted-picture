@@ -15,6 +15,9 @@ namespace KnittedPicture.Game
     {
         private readonly Image _ball;
         private readonly Text _question;
+        private readonly Image _mark;
+        private bool _markable;
+        private int _markColor;
         private readonly RectTransform _badge;
         private readonly Text _badgeText;
         private readonly RectTransform _knot;
@@ -58,6 +61,11 @@ namespace KnittedPicture.Game
                 size / 2f + (BallRaster.Cy - BallRaster.Size / 2f) * shift, art, art);
 
             _question = Ui.Label(root, "?", size * 0.5f, Palette.Ink, 0, 0, size, size);
+
+            // Значок цвета (настройка «Значки цветов»): фигура по центру клубка, под замком и льдом.
+            _mark = Ui.Image(root, "Mark", null, Color.white);
+            Ui.PlaceCenter(_mark.rectTransform, size / 2f, size / 2f, size * 0.48f, size * 0.48f);
+            _mark.gameObject.SetActive(false);
 
             _lock = Ui.PlaceCenter(Ui.Node(root, "Lock"), size / 2f, size / 2f, size * 0.62f, size * 0.62f);
             Ui.Stretch(Ui.Image(_lock, "Back", Art.Circle, Palette.WithAlpha(Palette.Ink, 0.8f)).rectTransform);
@@ -164,6 +172,20 @@ namespace KnittedPicture.Game
             _linkRing.color = Palette.LinkPair(spool.Link);
 
             _group.alpha = front ? surplus ? 0.75f : 1f : 0.5f;
+            _markable = visible && !rainbow;
+            _markColor = spool.Color;
+            RefreshMark();
+        }
+
+        /// <summary>Показать или убрать значок цвета по текущей настройке (зовут и после смены настройки на ходу).</summary>
+        public void RefreshMark()
+        {
+            var on = Comfort.ColorMarks && _markable && !_lock.gameObject.activeSelf;
+            _mark.gameObject.SetActive(on);
+            if (on)
+            {
+                _mark.sprite = Art2.ColorMark(_markColor);
+            }
         }
 
         /// <summary>Лёд с числом петель до оттаивания; 0 — льда нет.</summary>
@@ -210,6 +232,7 @@ namespace KnittedPicture.Game
 
         public void HideBadges()
         {
+            _mark.gameObject.SetActive(false);
             _badge.gameObject.SetActive(false);
             _knot.gameObject.SetActive(false);
             _lock.gameObject.SetActive(false);
