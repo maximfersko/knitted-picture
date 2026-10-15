@@ -78,6 +78,20 @@ namespace KnittedPicture.Game
             new Look("#2B2F6B", "#14163A", "#B98CFF", "#FFFFFF"), // Космос — планеты
         };
 
+        // Точки украшений — общие, а не новый массив на каждый пиксель.
+        private static readonly (float X, float Y)[] Corners = { (C - Mid, C - Mid), (C + Mid, C - Mid), (C - Mid, C + Mid), (C + Mid, C + Mid) };
+
+        private static readonly (float X, float Y)[] Rosettes =
+        {
+            (C - Mid + 0.5f, C - Mid + 0.5f), (C + Mid - 0.5f, C - Mid + 0.5f), (C - Mid + 0.5f, C + Mid - 0.5f), (C + Mid - 0.5f, C + Mid - 0.5f),
+        };
+
+        private static readonly (float X, float Y, float R)[] Buttons =
+        {
+            (C - Mid, C - Mid, 5f), (C + Mid, C - Mid, 5f), (C - Mid, C + Mid, 5f), (C + Mid, C + Mid, 5f),
+            (C, C + Mid, 3.4f), (C, C - Mid, 3.4f), (C - Mid, C, 3.4f), (C + Mid, C, 3.4f),
+        };
+
         public static Raster Frame(int style)
         {
             style = style < 0 || style >= Styles ? 0 : style;
@@ -105,7 +119,8 @@ namespace KnittedPicture.Game
             var facing = nx * Light.X + ny * Light.Y;
 
             // Багет: узор, затем объём молдинги (скруглённый профиль и свет по стороне) и стык на углу.
-            if (outer < 1f)
+            // Глубоко под паспарту багет не виден (паспарту непрозрачно) — там его не считаем.
+            if (outer < 1f && inner > -1f)
             {
                 var band = Pattern(style, look, x, y, s, depth, u);
                 var profile = MathF.Cos(Draw.Clamp(u, -1f, 1f) * MathF.PI / 2f);
@@ -295,11 +310,7 @@ namespace KnittedPicture.Game
             switch (style)
             {
                 case 5:
-                    foreach (var (bx, by, r) in new[]
-                             {
-                                 (C - k, C - k, 5f), (C + k, C - k, 5f), (C - k, C + k, 5f), (C + k, C + k, 5f),
-                                 (C, C + k, 3.4f), (C, C - k, 3.4f), (C - k, C, 3.4f), (C + k, C, 3.4f),
-                             })
+                    foreach (var (bx, by, r) in Buttons)
                     {
                         result = Button(result, look, x, y, bx, by, r);
                     }
@@ -307,7 +318,7 @@ namespace KnittedPicture.Game
                     return result;
 
                 case 6:
-                    foreach (var (bx, by) in new[] { (C - k, C - k), (C + k, C - k), (C - k, C + k), (C + k, C + k) })
+                    foreach (var (bx, by) in Corners)
                     {
                         result = Shadow(result, Draw.Circle(x, y, bx, by - 0.8f, 4.4f), 1.6f, 0.25f);
                         result = Flower(result, look, x - bx, y - by, 4.2f);
@@ -334,7 +345,7 @@ namespace KnittedPicture.Game
                 }
 
                 case 8:
-                    foreach (var (bx, by) in new[] { (C - k, C - k), (C + k, C - k), (C - k, C + k), (C + k, C + k) })
+                    foreach (var (bx, by) in Corners)
                     {
                         result = Shadow(result, Star(x, y, bx, by - 0.8f, 5.6f, 0.5f), 1.5f, 0.3f);
                         var star = Star(x, y, bx, by, 5.6f, 0.5f);
@@ -365,7 +376,7 @@ namespace KnittedPicture.Game
                         result = Layer(result, bead, Rgba.Lerp(look.Edge, look.Accent, 0.3f + 0.7f * lit));
                     }
 
-                    foreach (var (bx, by) in new[] { (C - k + 0.5f, C - k + 0.5f), (C + k - 0.5f, C - k + 0.5f), (C - k + 0.5f, C + k - 0.5f), (C + k - 0.5f, C + k - 0.5f) })
+                    foreach (var (bx, by) in Rosettes)
                     {
                         result = Rosette(result, look, x, y, bx, by);
                     }

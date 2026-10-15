@@ -561,9 +561,14 @@ namespace KnittedPicture.Core
         public LoomGame Clone() => new LoomGame(this);
 
         /// <summary>Ключ состояния для поиска решения (после Settle): одинаковые ключи — одинаковое будущее.</summary>
+        /// <summary>Строитель ключа на поток: решатель зовёт StateKey десятки тысяч раз, новый на каждый вызов — мусор.</summary>
+        [System.ThreadStatic]
+        private static StringBuilder? _keyBuilder;
+
         internal string StateKey()
         {
-            var sb = new StringBuilder();
+            var sb = _keyBuilder ??= new StringBuilder(256);
+            sb.Clear();
             _grid.AppendState(sb);
             sb.Append('|');
             foreach (var column in _columns)
@@ -603,7 +608,16 @@ namespace KnittedPicture.Core
                 }
                 else
                 {
-                    sb.Append(spool.Rainbow ? "R" : spool.Color.ToString()).Append(':').Append(spool.Loops);
+                    if (spool.Rainbow)
+                    {
+                        sb.Append('R');
+                    }
+                    else
+                    {
+                        sb.Append(spool.Color);
+                    }
+
+                    sb.Append(':').Append(spool.Loops);
                 }
 
                 sb.Append(',');

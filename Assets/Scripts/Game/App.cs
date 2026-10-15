@@ -309,13 +309,14 @@ namespace KnittedPicture.Game
             // Форма клубка (640 px, четыре слоя намотки) рисуется в фоне, пока грузится остальное.
             System.Threading.Tasks.Task.Run(BallRaster.Warm);
 
-            // Значки, медали, монета, подарок — тоже заранее и в фоне: при первом открытии альбома или наград
-            // кадр не тратится на рисование.
-            Art2.Warm();
             Reminders.CancelAll();
             Sfx.Install(gameObject);
             Levels = new LevelRepository();
             Progress = new ProgressService(SaveStore.Load(), Levels.Count);
+
+            // Значки, медали, монета, подарок, рамки — заранее и в фоне, по приоритету (сначала главная и выбранная
+            // рамка альбома): при первом открытии альбома или наград кадр не тратится на рисование.
+            Art2.Warm(Progress.Data.frame);
             Sfx.Enabled = Progress.SoundOn;
             Music.Install(gameObject, Progress.Data.musicOn);
             Haptics.Enabled = Progress.Data.hapticsOn;
@@ -394,6 +395,7 @@ namespace KnittedPicture.Game
 
             _screen?.StepDeferred();
             Comfort.Governor(Time.unscaledDeltaTime);
+            Comfort.Idle(Time.unscaledDeltaTime, Touched(), _screen is GameScreen);
         }
 
         private void OnApplicationPause(bool paused)
@@ -917,6 +919,17 @@ namespace KnittedPicture.Game
             {
                 ShowHome();
             }
+        }
+
+        /// <summary>Палец или мышь нажаты в этом кадре (для простоя: касание возвращает полную частоту кадров).</summary>
+        private static bool Touched()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var pointer = UnityEngine.InputSystem.Pointer.current;
+            return pointer != null && pointer.press.isPressed;
+#else
+            return Input.GetMouseButton(0) || Input.touchCount > 0;
+#endif
         }
 
         private static bool BackPressed()

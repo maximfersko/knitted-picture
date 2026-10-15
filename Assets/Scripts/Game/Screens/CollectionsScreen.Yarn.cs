@@ -206,7 +206,7 @@ namespace KnittedPicture.Game
             if (has)
             {
                 // Свечение редкости: голубое у редкой, тёплое с лучами у эпической (YarnView.Aura).
-                YarnView.Aura(cell, yarn.Rarity, cellW / 2f, ballY, ballSize, index * 0.21f);
+                YarnView.Aura(cell, yarn.Rarity, cellW / 2f, ballY, ballSize, index * 0.21f, lite: true);
             }
 
             var shadow = Ui.Image(cell, "Shadow", Art2.BallShadow, Palette.WithAlpha(Color.white, has ? 1f : 0.5f));

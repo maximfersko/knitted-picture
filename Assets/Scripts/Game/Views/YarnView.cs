@@ -65,7 +65,12 @@ namespace KnittedPicture.Game
         /// зелёное сияние; редкая — синее дышащее сияние, волна света раз в несколько секунд и две искры на орбите;
         /// эпическая — фиолетовое сияние, медленные лучи, волна и три искры; легендарная — золото и четыре искры. Без вспышек на весь экран; «Меньше движения» всё останавливает.
         /// </summary>
-        public static RectTransform? Aura(RectTransform parent, Rarity rarity, float cx, float cy, float size, float delay = 0f)
+        /// <param name="lite">
+        /// Облегчённо — для сеток, где мотков много (вкладка «Пряжа»): неподвижное сияние, у эпической и легендарной
+        /// ещё медленные лучи; без пульса, волны и искр на орбите. Десятки бесконечных анимаций на экране
+        /// каждый кадр перестраивают слой интерфейса, а в сетке их всё равно не разглядеть.
+        /// </param>
+        public static RectTransform? Aura(RectTransform parent, Rarity rarity, float cx, float cy, float size, float delay = 0f, bool lite = false)
         {
             if (rarity == Rarity.Common)
             {
@@ -92,6 +97,11 @@ namespace KnittedPicture.Game
             var glow = Ui.Image(root, "Glow", Art.Glow, Palette.WithAlpha(color, baseAlpha));
             var glowRt = glow.rectTransform;
             Ui.PlaceCenter(glowRt, size / 2f, size / 2f, size * 1.75f, size * 1.75f);
+            if (lite)
+            {
+                return root;
+            }
+
             Tweens.Run(glowRt, 2.6f, t =>
             {
                 var b = Ease.Bump(t);

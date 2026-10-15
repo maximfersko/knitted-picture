@@ -44,6 +44,37 @@ namespace KnittedPicture.Playtest
             var findings = new Findings();
             var rules = new RulesCheck(findings, opt.Seed);
 
+            if (opt.SolverBench)
+            {
+                // Скорость решателя: полное решение каждого уровня и подсказка с середины партии (как в игре).
+                var timer = System.Diagnostics.Stopwatch.StartNew();
+                var solved = 0;
+                foreach (var level in levels)
+                {
+                    solved += LevelSolver.Solve(level) != null ? 1 : 0;
+                }
+
+                var solveMs = timer.Elapsed.TotalMilliseconds;
+                timer.Restart();
+                var hints = 0;
+                foreach (var level in levels)
+                {
+                    var game = new LoomGame(level);
+                    game.Settle();
+                    var path = LevelSolver.Solve(level);
+                    for (var i = 0; path != null && i < path.Count / 2; i++)
+                    {
+                        game.TapColumn(path[i]);
+                        game.Settle();
+                    }
+
+                    hints += LevelSolver.Hint(game) >= 0 ? 1 : 0;
+                }
+
+                Console.WriteLine($"решено {solved}/{levels.Count} за {solveMs:0} мс; подсказок {hints} за {timer.Elapsed.TotalMilliseconds:0} мс");
+                return 0;
+            }
+
             if (opt.Economy)
             {
                 // Только баланс экономики по типам игроков: таблица в консоль (и в отчёт, если задан).
@@ -224,6 +255,8 @@ namespace KnittedPicture.Playtest
         /// <summary>--economy: только симуляция экономики по типам игроков.</summary>
         public bool Economy;
 
+        public bool SolverBench;
+
         public static Options Parse(string[] args)
         {
             var o = new Options();
@@ -242,6 +275,7 @@ namespace KnittedPicture.Playtest
                     case "--repro": o.Repro = Next(); break;
                     case "--meta-player": Next(); break;
                     case "--economy": o.Economy = true; break;
+                    case "--solver-bench": o.SolverBench = true; break;
                     default: throw new ArgumentException($"неизвестный ключ {args[i]}");
                 }
             }

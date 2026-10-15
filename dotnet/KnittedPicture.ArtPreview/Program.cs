@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using KnittedPicture.Game;
 
 namespace KnittedPicture.ArtPreview
@@ -8,6 +9,12 @@ namespace KnittedPicture.ArtPreview
     {
         public static void Main(string[] args)
         {
+            if (args.Length > 0 && args[0] == "--bench")
+            {
+                Bench();
+                return;
+            }
+
             var dir = args.Length > 0 ? args[0] : "preview";
             Directory.CreateDirectory(dir);
             Classic(dir);
@@ -331,6 +338,58 @@ namespace KnittedPicture.ArtPreview
             }
 
             Png.Save(img, Path.Combine(dir, "badges.png"));
+        }
+
+        /// <summary>
+        /// Замер: сколько миллисекунд рисуется каждый растр игры в один поток (на телефоне в 5–10 раз дольше).
+        /// Первый прогон прогревает JIT, считаем лучший из трёх. dotnet run -c Release -- --bench
+        /// </summary>
+        private static void Bench()
+        {
+            var cases = new System.Collections.Generic.List<(string Name, Func<Raster> Draw, int Count)>
+            {
+                ("Frame (×27)", () => FrameRaster.Frame(26), FrameRaster.Styles),
+                ("Medal (×24)", () => IconRaster.Badge(BadgeArt.Basket, true), 24),
+                ("Gem (×5)", () => IconRaster.Gem(4), 5),
+                ("Trophy (×2)", () => IconRaster.Trophy(true), 2),
+                ("ChestBody (×5)", () => MetaRaster.ChestBody(660, 354, 4), 5),
+                ("ChestLid (×5)", () => MetaRaster.ChestLid(696, 222, 4), 5),
+                ("Gift", MetaRaster.Gift, 1),
+                ("Coin", MetaRaster.Coin, 1),
+                ("Hoop", MetaRaster.Hoop, 1),
+                ("Ball plain (×12)", () => BallRaster.Ball(Rgba.Hex("#E8333A")), 12),
+                ("LevelStar", IconRaster.LevelStar, 1),
+                ("House", IconRaster.House, 1),
+                ("Album", IconRaster.Album, 1),
+                ("Gear", IconRaster.Gear, 1),
+                ("BasketBack", IconRaster.BasketBack, 1),
+                ("BasketFront", IconRaster.BasketFront, 1),
+                ("WoodFrame", KnitRaster.WoodFrame, 1),
+                ("LoomBar", LoomRaster.Bar, 1),
+                ("Sparkle", KnitRaster.Sparkle, 1),
+            };
+            var rows = new System.Collections.Generic.List<(string, double, double)>();
+            foreach (var (name, draw, count) in cases)
+            {
+                var best = double.MaxValue;
+                for (var i = 0; i < 3; i++)
+                {
+                    var clock = System.Diagnostics.Stopwatch.StartNew();
+                    draw();
+                    best = Math.Min(best, clock.Elapsed.TotalMilliseconds);
+                }
+
+                rows.Add((name, best, best * count));
+            }
+
+            rows.Sort((a, b) => b.Item3.CompareTo(a.Item3));
+            Console.WriteLine($"{"растр",-20} {"одна, мс",9} {"все, мс",9}");
+            foreach (var (name, one, all) in rows)
+            {
+                Console.WriteLine($"{name,-20} {one,9:0.0} {all,9:0.0}");
+            }
+
+            Console.WriteLine($"{"итого",-20} {"",9} {rows.Sum(r => r.Item3),9:0.0}");
         }
 
         /// <summary>Рамки альбома: все стили в ряд, крупно и в размере плитки.</summary>

@@ -29,7 +29,8 @@ namespace KnittedPicture.Game
             // это игнорирует, а в редакторе и на планшетах с высоким уровнем качества vSync включён.
             QualitySettings.vSyncCount = 0;
             _saver = data.batterySaver;
-            Application.targetFrameRate = data.batterySaver ? 30 : _cap;
+            _applied = data.batterySaver ? 30 : _cap;
+            Application.targetFrameRate = _applied;
         }
 
         private static bool _saver;
@@ -60,7 +61,8 @@ namespace KnittedPicture.Game
         {
             // Первые секунды (загрузка, рисование графики) и одиночные долгие кадры (строится экран) не в счёт:
             // смотрим только на устойчивую нехватку времени.
-            if (_saver || _cap <= 60 || Time.realtimeSinceStartup < 8f || dt > 0.1f)
+            // В простое частота снижена нарочно: длинные кадры там не значат, что телефон не успевает.
+            if (_saver || _cap <= 60 || Time.realtimeSinceStartup < 8f || dt > 0.1f || _idle >= IdleAfter)
             {
                 return;
             }
@@ -69,7 +71,32 @@ namespace KnittedPicture.Game
             if (_slowFor > 3f)
             {
                 _cap = 60;
+                _applied = 60;
                 Application.targetFrameRate = 60;
+            }
+        }
+
+        /// <summary>Сколько секунд без касаний считается простоем.</summary>
+        private const float IdleAfter = 5f;
+
+        private static float _idle;
+
+        private static int _applied = -1;
+
+        /// <summary>
+        /// Простой: раз в кадр. 5 секунд без касаний — в меню частота падает до 30 (там только медленные «дышащие»
+        /// украшения), в игре — до 60 (моль и станок движутся всё время). Касание сразу возвращает полную частоту.
+        /// Телефон меньше греется и дольше держит заряд, пока игрок читает или думает.
+        /// </summary>
+        public static void Idle(float dt, bool touched, bool inGame)
+        {
+            _idle = touched ? 0f : _idle + Mathf.Min(dt, 0.1f);
+            var full = _saver ? 30 : _cap;
+            var target = _idle < IdleAfter ? full : Mathf.Min(full, inGame ? 60 : 30);
+            if (target != _applied)
+            {
+                _applied = target;
+                Application.targetFrameRate = target;
             }
         }
     }

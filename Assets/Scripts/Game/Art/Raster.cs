@@ -49,9 +49,15 @@ namespace KnittedPicture.Game
         /// Пройти все пиксели: (x, y) — центр пикселя, y вверх. Большие растры — по строкам на всех ядрах:
         /// шейдеры чистые (только читают захваченное), каждая строка пишет только свои пиксели.
         /// </summary>
+        /// <summary>
+        /// Рисовать в этом потоке без раздачи по ядрам: так рисует фоновый прогрев, чтобы не отнимать ядра у интерфейса.
+        /// </summary>
+        [ThreadStatic]
+        public static bool Sequential;
+
         public void Paint(Func<float, float, Rgba> shader)
         {
-            if (Width * Height < ParallelFrom)
+            if (Sequential || Width * Height < ParallelFrom)
             {
                 for (var py = 0; py < Height; py++)
                 {

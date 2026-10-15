@@ -118,23 +118,132 @@ namespace KnittedPicture.Game
         /// <summary>Повторяемая текстура (бумага, верёвка) для RawImage и мешей.</summary>
         public static Texture2D Tile(string key, System.Func<Raster> draw) => Texture(key, draw, TextureWrapMode.Repeat);
 
-        /// <summary>Растры, которые рисуются заранее в фоне (Warm): готовый берётся вместо рисования в кадре.</summary>
-        private static readonly Dictionary<string, Task<Raster>> Prefetched = new Dictionary<string, Task<Raster>>();
+        /// <summary>
+        /// Растр в очереди прогрева: рисуется в фоне; готовый берётся вместо рисования в кадре.
+        /// Done завершается, когда фоновый работник его нарисовал.
+        /// </summary>
+        private sealed class WarmItem
+        {
+            public WarmItem(string key, System.Func<Raster> draw)
+            {
+                Key = key;
+                Draw = draw;
+            }
+
+            public string Key { get; }
+
+            public System.Func<Raster> Draw { get; }
+
+            public TaskCompletionSource<Raster> Done { get; } = new TaskCompletionSource<Raster>();
+        }
+
+        private static readonly object WarmLock = new object();
+
+        /// <summary>Очередь прогрева по приоритету: сначала то, что на главной, потом медали и рамки.</summary>
+        private static readonly LinkedList<WarmItem> WarmQueue = new LinkedList<WarmItem>();
+
+        /// <summary>Все ещё не забранные растры прогрева — и в очереди, и уже нарисованные.</summary>
+        private static readonly Dictionary<string, WarmItem> WarmItems = new Dictionary<string, WarmItem>();
+
+        /// <summary>
+        /// Сколько фоновых работников рисуют прогрев. Каждый рисует в один поток (Raster.Sequential): ядра остаются
+        /// главному потоку и отрисовке, запуск и первые экраны не дёргаются.
+        /// </summary>
+        private const int WarmWorkers = 2;
 
         private static void Prefetch(string key, System.Func<Raster> draw)
         {
-            if (!Prefetched.ContainsKey(key) && !HasTexture(key))
+            lock (WarmLock)
             {
-                Prefetched[key] = Task.Run(draw);
+                if (!WarmItems.ContainsKey(key) && !HasTexture(key))
+                {
+                    var item = new WarmItem(key, draw);
+                    WarmItems[key] = item;
+                    WarmQueue.AddLast(item);
+                }
+            }
+        }
+
+        private static void WarmWorker()
+        {
+            Raster.Sequential = true;
+            while (true)
+            {
+                WarmItem item;
+                lock (WarmLock)
+                {
+                    if (WarmQueue.First == null)
+                    {
+                        return;
+                    }
+
+                    item = WarmQueue.First.Value;
+                    WarmQueue.RemoveFirst();
+                }
+
+                try
+                {
+                    item.Done.SetResult(item.Draw());
+                }
+                catch (System.Exception e)
+                {
+                    item.Done.SetException(e);
+                }
             }
         }
 
         /// <summary>
-        /// Нарисовать заранее (в фоновых потоках) то, что открывается в первые минуты: медали, кубки, камни
-        /// редкости, звёзды, значки вкладок, монету, подарок. В кадре остаётся только загрузить текстуру.
+        /// Взять растр из прогрева: нарисованный или рисующийся — дождаться (это быстрее, чем начать заново);
+        /// ещё не начатый — убрать из очереди и нарисовать сразу самим, а не ждать, пока до него дойдёт очередь.
         /// </summary>
-        public static void Warm()
+        private static System.Func<Raster>? TakeWarm(string key)
         {
+            lock (WarmLock)
+            {
+                if (!WarmItems.TryGetValue(key, out var item))
+                {
+                    return null;
+                }
+
+                WarmItems.Remove(key);
+                if (WarmQueue.Remove(item))
+                {
+                    return null;
+                }
+
+                var task = item.Done.Task;
+                return () => task.Status == TaskStatus.Faulted ? item.Draw() : task.Result;
+            }
+        }
+
+        /// <summary>
+        /// Нарисовать заранее (в фоне) то, что открывается в первые минуты, по приоритету: значки главной и вкладок,
+        /// монета, подарок, звёзды, камни редкости, выбранная рамка альбома; потом кубки, медали и остальные рамки.
+        /// </summary>
+        public static void Warm(int selectedFrame = 0)
+        {
+            Prefetch("house", IconRaster.House);
+            Prefetch("albumBook", IconRaster.Album);
+            Prefetch("gear", IconRaster.Gear);
+            Prefetch("coin2", MetaRaster.Coin);
+            Prefetch("gift2", MetaRaster.Gift);
+            Prefetch("sparkle", KnitRaster.Sparkle);
+            Prefetch("levelStar", IconRaster.LevelStar);
+            Prefetch("rewardStar", () => IconRaster.RewardStar(true));
+            Prefetch("rewardStarEmpty", () => IconRaster.RewardStar(false));
+            for (var tier = 0; tier < 5; tier++)
+            {
+                var t = tier;
+                Prefetch("gem" + t, () => IconRaster.Gem(t));
+            }
+
+            var selected = selectedFrame < 0 || selectedFrame >= FrameRaster.Styles ? 0 : selectedFrame;
+            Prefetch("frame" + selected, () => FrameRaster.Frame(selected));
+            Prefetch("frame0", () => FrameRaster.Frame(0));
+            Prefetch("basketBack", IconRaster.BasketBack);
+            Prefetch("basketFront", IconRaster.BasketFront);
+            Prefetch("trophyGold", () => IconRaster.Trophy(true));
+            Prefetch("trophySilver", () => IconRaster.Trophy(false));
             foreach (BadgeArt art in System.Enum.GetValues(typeof(BadgeArt)))
             {
                 var a = art;
@@ -142,29 +251,15 @@ namespace KnittedPicture.Game
                 Prefetch("medal" + a + "S", () => IconRaster.Badge(a, false));
             }
 
-            Prefetch("trophyGold", () => IconRaster.Trophy(true));
-            Prefetch("trophySilver", () => IconRaster.Trophy(false));
-            for (var tier = 0; tier < 5; tier++)
-            {
-                var t = tier;
-                Prefetch("gem" + t, () => IconRaster.Gem(t));
-            }
-
-            Prefetch("rewardStar", () => IconRaster.RewardStar(true));
-            Prefetch("rewardStarEmpty", () => IconRaster.RewardStar(false));
-            Prefetch("levelStar", IconRaster.LevelStar);
-            Prefetch("basketBack", IconRaster.BasketBack);
-            Prefetch("basketFront", IconRaster.BasketFront);
-            Prefetch("house", IconRaster.House);
-            Prefetch("albumBook", IconRaster.Album);
-            Prefetch("gear", IconRaster.Gear);
-            Prefetch("coin2", MetaRaster.Coin);
-            Prefetch("gift2", MetaRaster.Gift);
-            Prefetch("sparkle", KnitRaster.Sparkle);
             for (var style = 0; style < FrameRaster.Styles; style++)
             {
                 var st = style;
                 Prefetch("frame" + st, () => FrameRaster.Frame(st));
+            }
+
+            for (var i = 0; i < WarmWorkers; i++)
+            {
+                Task.Run(WarmWorker);
             }
         }
 
@@ -175,15 +270,11 @@ namespace KnittedPicture.Game
                 return texture;
             }
 
-            // Нарисован заранее в фоне — взять готовый (дождаться, если ещё рисуется: это быстрее, чем начать заново).
-            if (Prefetched.TryGetValue(key, out var pending))
+            // Прогрев: нарисованный — взять, рисующийся — дождаться, не начатый — нарисовать сейчас самим.
+            var warm = TakeWarm(key);
+            if (warm != null)
             {
-                Prefetched.Remove(key);
-                if (pending.Status != TaskStatus.Faulted && pending.Status != TaskStatus.Canceled)
-                {
-                    var ready = pending.Result;
-                    draw = () => ready;
-                }
+                draw = warm;
             }
 
             // Плашки «девять частей» (с border) рисуются один к одному и mip-уровни им не нужны: уменьшенные копии

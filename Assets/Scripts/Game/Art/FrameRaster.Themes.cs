@@ -75,8 +75,7 @@ namespace KnittedPicture.Game
                 result = Layer(result, cap, Rgba.Lerp(Rgba.Hex("#EAF6FF"), Rgba.White, Draw.Clamp01((y - wave) / 3f)));
             }
 
-            var k = Mid;
-            foreach (var (bx, by) in new[] { (C - k, C - k), (C + k, C - k), (C - k, C + k), (C + k, C + k) })
+            foreach (var (bx, by) in Corners)
             {
                 if (MathF.Abs(x - bx) > 7.5f || MathF.Abs(y - by) > 7.5f)
                 {
@@ -118,8 +117,9 @@ namespace KnittedPicture.Game
                         var ex = MathF.Cos(a) * r;
                         var ey = MathF.Sin(a) * r;
                         d = MathF.Min(d, Draw.Segment(x, y, cx - ex, cy - ey, cx + ex, cy + ey));
-                        foreach (var side in new[] { -1f, 1f })
+                        for (var sd = -1; sd <= 1; sd += 2)
                         {
+                            var side = (float)sd;
                             var bx = cx + side * ex * 0.6f;
                             var by = cy + side * ey * 0.6f;
                             var b1 = a + 0.6f;

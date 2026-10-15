@@ -63,12 +63,20 @@ namespace KnittedPicture.Game
             const float cy = 36f;
             return Raster.Render(64, 64, 3, (x, y) =>
             {
+                // Далеко за медалью, тенью и лентами — пусто: дальше не считаем (углы растра — почти треть пикселей).
+                var outer = Draw.Circle(x, y, cx, cy - 2.2f, 25f);
+                if (outer > 4f && (y > 25f || MathF.Abs(x - cx) > 17f))
+                {
+                    return Rgba.Clear;
+                }
+
                 var result = Rgba.Clear;
-                result = Shadow(result, Draw.Circle(x, y, cx, cy - 2.2f, 25f), 4f, 0.3f);
+                result = Shadow(result, outer, 4f, 0.3f);
 
                 // Ленты: два хвоста с вырезом «ласточкин хвост», уходят из-под медали вниз.
-                foreach (var side in new[] { -1f, 1f })
+                for (var s = -1; s <= 1; s += 2)
                 {
+                    var side = (float)s;
                     var tail = Draw.RoundBox(x, y, cx + side * 9f, 12f, 6.5f, 11f, 1.2f);
                     var notch = Draw.Circle(x, y, cx + side * 9f, -1.5f, 6.8f);
                     tail = MathF.Max(tail, -notch);
@@ -98,8 +106,12 @@ namespace KnittedPicture.Game
                 var gloss = MathF.Max(Draw.Circle(x, y, cx, cy, 17.5f), -Draw.Circle(x, y, cx + 3f, cy - 3.5f, 17.5f));
                 result = Layer(result, gloss, Rgba.White.WithAlpha(0.28f));
 
-                // Рисунок: сливочный, выпуклый, с тенью вниз на эмали.
-                result = Emblem(art, x, y, cx, cy, result, cream, enamel);
+                // Рисунок: сливочный, выпуклый, с тенью вниз на эмали. Он весь внутри эмали — снаружи не считаем:
+                // это самая дорогая часть (объём формы считается по нескольким соседним точкам).
+                if (face < 0.5f)
+                {
+                    result = Emblem(art, x, y, cx, cy, result, cream, enamel);
+                }
 
                 // Искра на ободе.
                 var spark = Draw.Circle(x, y, cx - 15f, cy + 17f, 1.6f);
