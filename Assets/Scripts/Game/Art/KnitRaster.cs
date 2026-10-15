@@ -401,7 +401,8 @@ namespace KnittedPicture.Game
                             var profile = MathF.Sqrt(Draw.Clamp01(1f - across * across));
                             var ply = MathF.Pow(MathF.Abs(MathF.Sin((t * 6f - across * 0.7f * side) * MathF.PI)), 0.45f);
                             var lit = Draw.Clamp01(0.5f - 0.5f * across);
-                            value = (0.8f + 0.2f * profile) * (0.86f + 0.14f * ply) * (0.9f + 0.12f * lit);
+                            // Контраст долек и кручения выше: петля читается и в маленькой клетке.
+                            value = (0.72f + 0.28f * profile) * (0.8f + 0.2f * ply) * (0.88f + 0.14f * lit);
                             value *= 1f - 0.2f * Draw.Clamp01(1f - t * 3.5f) * (1f - profile * 0.5f);
                             shine = Draw.Clamp01(profile * ply - 0.55f) * 1.4f * lit * (0.4f + 0.6f * t);
                         }
@@ -414,22 +415,25 @@ namespace KnittedPicture.Game
 
                 if (best >= 0.5f)
                 {
-                    // Между петлями — глубина полотна: темнее.
-                    value = 0.72f;
+                    // Между петлями — глубина полотна: заметно темнее.
+                    value = 0.6f;
                 }
                 else
                 {
-                    value *= 1f - 0.25f * Draw.Clamp01(1f - MathF.Abs(best - other) / 2.2f);
+                    // Шов между дольками — глубокая чёткая бороздка.
+                    value *= 1f - 0.38f * Draw.Clamp01(1f - MathF.Abs(best - other) / 3f);
                 }
 
-                // Кромка клетки чуть темнее: клетки читаются отдельно, полотно — объёмно.
-                value *= 1f - 0.16f * Draw.SmoothStep(-7f, 0f, box);
+                // Кромка клетки: мягкая тень к краю и узкая резкая линия — клетки не сливаются в пятно.
+                value *= 1f - 0.1f * Draw.SmoothStep(-7f, 0f, box);
+                value *= 1f - 0.2f * (1f - Draw.SmoothStep(1.2f, 3f, -box));
                 if (gloss)
                 {
                     return Rgba.White.WithAlpha(shine * 0.6f * cover);
                 }
 
-                var v = Draw.Clamp01(value * 1.16f);
+                // Средняя яркость — как была: цвет петли должен совпадать с цветом клубка, по нему их сравнивают.
+                var v = Draw.Clamp01(value * 1.27f);
                 return new Rgba(v, v, v, cover);
             });
         }
@@ -474,7 +478,7 @@ namespace KnittedPicture.Game
                 float v;
                 if (topProfile > 0.02f)
                 {
-                    v = 0.84f + 0.12f * topProfile * (0.75f + 0.25f * arch) + tone;
+                    v = 0.82f + 0.16f * topProfile * (0.75f + 0.25f * arch) + tone;
 
                     // Свет сверху слева: верхняя кромка нити светлее.
                     var slope = weftOver ? 2f * fw - 1f : 1f - 2f * fu;
@@ -486,11 +490,12 @@ namespace KnittedPicture.Game
                 }
 
                 // Щели между нитями — глубже.
-                v -= 0.05f * (1f - Draw.SmoothStep(0f, 0.35f, MathF.Max(topProfile, underProfile)));
+                v -= 0.09f * (1f - Draw.SmoothStep(0f, 0.35f, MathF.Max(topProfile, underProfile)));
 
                 // Кромка клетки: снизу справа чуть темнее, сверху слева светлый кант.
                 v *= 1f - 0.12f * Draw.SmoothStep(-7f, 0f, box);
                 v += 0.05f * Draw.SmoothStep(-4f, -1.5f, box) * Draw.Clamp01((y - x) / s + 0.5f);
+                v *= 1f - 0.14f * (1f - Draw.SmoothStep(1.2f, 3f, -box));
                 v = Draw.Clamp01(v * 1.05f);
                 return new Rgba(v, v, v, cover);
             });

@@ -154,7 +154,7 @@ namespace KnittedPicture.Game
 
                         if (data[o + 4] > 0)
                         {
-                            c = c.Shade(-0.12f * data[o + 4] / 255f);
+                            c = c.Shade(-0.26f * data[o + 4] / 255f);
                         }
 
                         result = c.WithAlpha(cover / 255f);
@@ -354,7 +354,8 @@ namespace KnittedPicture.Game
                         var jitter = (Draw.Hash((int)index + top * 97, top * 31 + 5) - 0.5f) * 0.1f;
                         hue = index * 0.09f + top * 0.31f;
                         hue -= MathF.Floor(hue);
-                        var value = 0.56f + 0.44f * MathF.Pow(tube, 0.7f);
+                        // Бороздки между нитками глубже: нитки читаются по отдельности и на маленьком клубке.
+                        var value = 0.45f + 0.55f * MathF.Pow(tube, 0.85f);
                         value *= 1f + 0.05f * twist + 0.05f * streak;
                         if (_kind == Kind.Canvas)
                         {
@@ -374,11 +375,12 @@ namespace KnittedPicture.Game
                         var spec = MathF.Pow(Draw.Clamp01(mx * _halfway.X + my * _halfway.Y + mz * _halfway.Z), 26f);
                         var broad = MathF.Pow(Draw.Clamp01(nx * _halfway.X + ny * _halfway.Y + nz * _halfway.Z), 10f);
                         var sheen = MathF.Pow(Draw.Clamp01(lambert), 4f);
-                        white = (spec * 0.4f + broad * 0.12f) * (0.35f + 0.65f * tube) * occlusion + sheen * 0.07f;
+                        white = (spec * 0.5f + broad * 0.12f) * (0.35f + 0.65f * tube) * occlusion + sheen * 0.06f;
 
                         // Рефлекс по теневому краю и лёгкое затемнение у самого контура.
                         fresnelMix = MathF.Pow(1f - nz, 3f) * Draw.Clamp01(0.3f - lambert) * 0.7f;
-                        edge = Draw.SmoothStep(-6f, 0f, d);
+                        // Контур: широкое мягкое затемнение к краю и узкая резкая кромка по самому силуэту.
+                        edge = 0.4f * Draw.SmoothStep(-6f, 0f, d) + 0.6f * Draw.SmoothStep(-1.6f, -0.3f, d);
                     }
                 }
 
@@ -387,7 +389,7 @@ namespace KnittedPicture.Game
                 var angle = MathF.Atan2(dy, dx);
                 if (dist > Radius - 4f && dist < Radius + 10f)
                 {
-                    haze = Draw.Clamp01(1f - (dist - Radius) / 4f) * Draw.SmoothStep(Radius - 1f, Radius + 0.5f, dist) * 0.08f;
+                    haze = Draw.Clamp01(1f - (dist - Radius) / 3f) * Draw.SmoothStep(Radius - 1f, Radius + 0.5f, dist) * 0.03f;
                     hairHue = angle * 0.16f;
                     foreach (var f in _fibres)
                     {
@@ -405,7 +407,7 @@ namespace KnittedPicture.Game
 
                         var tip = Draw.Clamp01(MathF.Sqrt((x - f.Ax) * (x - f.Ax) + (y - f.Ay) * (y - f.Ay)) / f.Length);
                         var lit = Draw.Clamp01(0.5f - 0.5f * MathF.Cos(f.Angle - 2.2f));
-                        AddHair(ref hairAlpha, ref hairShade, hairCover * 0.7f * (1f - 0.7f * tip), -0.2f + 0.32f * lit);
+                        AddHair(ref hairAlpha, ref hairShade, hairCover * 0.5f * (1f - 0.8f * tip), -0.2f + 0.32f * lit);
                     }
                 }
 
@@ -544,12 +546,13 @@ namespace KnittedPicture.Game
 
         private static List<Fibre> Fibres()
         {
-            const int count = 64;
+            const int count = 40;
             var list = new List<Fibre>();
             for (var i = 0; i < count; i++)
             {
                 var angle = (i + Draw.Hash(i, 11) * 0.8f) / count * MathF.PI * 2f - MathF.PI;
-                var length = 2.2f + Draw.Hash(i, 23) * 4f;
+                // Короче и реже, чем раньше: ворс не размывает силуэт на маленьком клубке.
+                var length = 1.6f + Draw.Hash(i, 23) * 2.4f;
                 var lean = (Draw.Hash(i, 37) < 0.5f ? -1f : 1f) * (0.5f + Draw.Hash(i, 41) * 0.5f);
                 var ox = MathF.Cos(angle);
                 var oy = MathF.Sin(angle);
