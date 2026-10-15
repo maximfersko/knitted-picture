@@ -126,6 +126,26 @@ namespace KnittedPicture.Core
         /// <summary>Согласие на персональную рекламу: 0 — ещё не спрашивали, 1 — да, 2 — нет.</summary>
         public int adsConsent;
 
+        /// <summary>
+        /// Новое сохранение для «Сбросить прогресс»: игровой прогресс с нуля, а настройки игрока (звук, музыка,
+        /// вибрация, язык, удобство, напоминания), покупка «Без рекламы» и ответ про рекламу остаются.
+        /// </summary>
+        public PlayerProgress FreshKeepingSettings() => new PlayerProgress
+        {
+            soundOn = soundOn,
+            musicOn = musicOn,
+            language = language,
+            hapticsOn = hapticsOn,
+            reduceMotion = reduceMotion,
+            largeText = largeText,
+            idleHints = idleHints,
+            batterySaver = batterySaver,
+            remindersOn = remindersOn,
+            remindersAsked = remindersAsked,
+            adsRemoved = adsRemoved,
+            adsConsent = adsConsent,
+        };
+
         /// <summary>Сколько раз начинали каждый уровень (индекс — номер уровня − 1): для аналитики «с какой попытки проходят».</summary>
         public List<int> attempts = new List<int>();
     }

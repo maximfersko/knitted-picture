@@ -308,28 +308,36 @@ namespace KnittedPicture.Game
         {
             AddTitle(L.T("Настройки"), 24);
 
+            // Строки только для того, что в этой сборке действительно работает: напоминания — при пакете
+            // уведомлений на телефоне, персональная реклама — когда SDK рекламы спрашивает согласие.
             var consent = app.Ads.NeedsConsent;
-            var group = Group(consent ? 5 : 4);
-            ToggleRow(group, 0, KnittedPicture.Game.Icon.SoundOn, Palette.Link, L.T("Звук"),
+            var reminders = Reminders.Supported;
+            var group = Group(3 + (reminders ? 1 : 0) + (consent ? 1 : 0));
+            var line = 0;
+            ToggleRow(group, line++, KnittedPicture.Game.Icon.SoundOn, Palette.Link, L.T("Звук"),
                 () => app.Progress.SoundOn, app.SetSound);
-            ToggleRow(group, 1, KnittedPicture.Game.Icon.Star, Palette.Primary, L.T("Музыка"),
+            ToggleRow(group, line++, KnittedPicture.Game.Icon.Star, Palette.Primary, L.T("Музыка"),
                 () => app.Progress.Data.musicOn, app.SetMusic);
-            ToggleRow(group, 2, KnittedPicture.Game.Icon.Vibrate, Palette.Danger, L.T("Вибрация"),
+            ToggleRow(group, line++, KnittedPicture.Game.Icon.Vibrate, Palette.Danger, L.T("Вибрация"),
                 () => app.Progress.Data.hapticsOn, app.SetHaptics);
-            ToggleRow(group, 3, KnittedPicture.Game.Icon.Bell, Palette.CoinShadow, L.T("Напоминания"),
-                () => app.Progress.Data.remindersOn, on =>
-                {
-                    app.Progress.Data.remindersOn = on;
-                    if (on)
+            if (reminders)
+            {
+                ToggleRow(group, line++, KnittedPicture.Game.Icon.Bell, Palette.CoinShadow, L.T("Напоминания"),
+                    () => app.Progress.Data.remindersOn, on =>
                     {
-                        Reminders.AskPermission();
-                    }
+                        app.Progress.Data.remindersOn = on;
+                        if (on)
+                        {
+                            Reminders.AskPermission();
+                        }
 
-                    app.Save();
-                });
+                        app.Save();
+                    });
+            }
+
             if (consent)
             {
-                ToggleRow(group, 4, KnittedPicture.Game.Icon.Gift, Palette.Primary, L.T("Персональная реклама"),
+                ToggleRow(group, line, KnittedPicture.Game.Icon.Gift, Palette.Primary, L.T("Персональная реклама"),
                     () => app.Progress.Data.adsConsent == 1, app.SetAdsConsent);
             }
 

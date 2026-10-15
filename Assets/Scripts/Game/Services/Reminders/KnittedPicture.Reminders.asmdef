@@ -3,7 +3,8 @@
     "rootNamespace": "KnittedPicture.Game",
     "references": [
         "KnittedPicture.Core",
-        "Unity.Notifications.Android"
+        "Unity.Notifications.Android",
+        "Unity.Notifications.iOS"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

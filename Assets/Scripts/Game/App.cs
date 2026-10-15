@@ -755,13 +755,15 @@ namespace KnittedPicture.Game
         public void ResetProgress()
         {
             CloseAllPopups();
-            // Покупка и ответ про рекламу — не игровой прогресс: после сброса они остаются.
-            var adsRemoved = Progress.Data.adsRemoved;
-            var adsConsent = Progress.Data.adsConsent;
+            // Настройки, покупка и ответ про рекламу — не игровой прогресс: после сброса они остаются,
+            // и переключатели в настройках показывают то, что действительно работает.
+            var fresh = Progress.Data.FreshKeepingSettings();
             SaveStore.Reset();
-            Progress = new ProgressService(new PlayerProgress { adsRemoved = adsRemoved, adsConsent = adsConsent }, Levels.Count);
+            Progress = new ProgressService(fresh, Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
+            Music.Enabled = Progress.Data.musicOn;
             Haptics.Enabled = Progress.Data.hapticsOn;
+            Comfort.Apply(Progress.Data);
             HomeScreen.ResetCarousel();
             SaveStore.Save(Progress.Data);
             ShowIntro();

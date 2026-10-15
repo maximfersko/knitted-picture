@@ -4,6 +4,36 @@ namespace KnittedPicture.Core.Tests
 {
     public class ProgressServiceTests
     {
+        [Fact]
+        public void Reset_starts_progress_over_but_keeps_player_settings()
+        {
+            var old = new PlayerProgress
+            {
+                soundOn = false, musicOn = false, language = "en", hapticsOn = false, reduceMotion = true, largeText = true,
+                idleHints = false, batterySaver = true, remindersOn = false, remindersAsked = true, adsRemoved = true, adsConsent = 2,
+                coins = 999, totalWins = 40,
+            };
+            old.completed.Add(1);
+
+            var fresh = old.FreshKeepingSettings();
+
+            Assert.False(fresh.soundOn);
+            Assert.False(fresh.musicOn);
+            Assert.Equal("en", fresh.language);
+            Assert.False(fresh.hapticsOn);
+            Assert.True(fresh.reduceMotion);
+            Assert.True(fresh.largeText);
+            Assert.False(fresh.idleHints);
+            Assert.True(fresh.batterySaver);
+            Assert.False(fresh.remindersOn);
+            Assert.True(fresh.remindersAsked);
+            Assert.True(fresh.adsRemoved);
+            Assert.Equal(2, fresh.adsConsent);
+            Assert.Empty(fresh.completed);
+            Assert.Equal(new PlayerProgress().coins, fresh.coins);
+            Assert.Equal(0, fresh.totalWins);
+        }
+
         private static ProgressService Fresh() => new ProgressService(new PlayerProgress(), levelCount: 15);
 
         [Fact]

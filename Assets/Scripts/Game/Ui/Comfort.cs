@@ -24,6 +24,9 @@ namespace KnittedPicture.Game
             IdleHints = data.idleHints;
 
             // Интерфейс без быстрых движений: 30 кадров хватает, а батарея и нагрев телефона заметно меньше.
+            // targetFrameRate работает, только когда кадры не привязаны к частоте экрана: на телефонах Unity и так
+            // это игнорирует, а в редакторе и на планшетах с высоким уровнем качества vSync включён.
+            QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = data.batterySaver ? 30 : 60;
         }
     }

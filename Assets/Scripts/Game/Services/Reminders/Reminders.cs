@@ -6,6 +6,8 @@ using KnittedPicture.Core;
 #if UNITY_ANDROID && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
 using Unity.Notifications.Android;
 using UnityEngine.Android;
+#elif UNITY_IOS && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
+using Unity.Notifications.iOS;
 #endif
 
 namespace KnittedPicture.Game
@@ -14,12 +16,20 @@ namespace KnittedPicture.Game
     /// Напоминания на телефон (локальные, без сервера). Ставятся, когда игру сворачивают или закрывают,
     /// и снимаются, когда игрок вернулся. Немного и по делу: подарок или узор дня завтра вечером,
     /// серия узоров, которую жалко потерять, готовый сундук и мягкое «возвращайся» через три дня.
-    /// На Android — пакет com.unity.mobile.notifications; в редакторе, на других платформах и без пакета —
-    /// тихо ничего. Своя сборка (KnittedPicture.Reminders.asmdef) включает код уведомлений только когда пакет
+    /// На Android и iOS — пакет com.unity.mobile.notifications; в редакторе, на других платформах и без пакета —
+    /// тихо ничего, а строки «Напоминания» в настройках нет (Supported), чтобы переключатель не обманывал. Своя сборка (KnittedPicture.Reminders.asmdef) включает код уведомлений только когда пакет
     /// установлен (versionDefines → KNITTED_NOTIFICATIONS), так что игра собирается и без него.
     /// </summary>
     public static class Reminders
     {
+        /// <summary>Напоминания реально работают в этой сборке: есть пакет уведомлений и это телефон.</summary>
+        public static bool Supported =>
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
+            true;
+#else
+            false;
+#endif
+
         /// <summary>Вечернее время напоминаний: после работы и учёбы.</summary>
         private const int EveningHour = 19;
 
@@ -74,6 +84,10 @@ namespace KnittedPicture.Game
         {
 #if UNITY_ANDROID && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
             AndroidNotificationCenter.CancelAllNotifications();
+#elif UNITY_IOS && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
+            iOSNotificationCenter.RemoveAllScheduledNotifications();
+            iOSNotificationCenter.RemoveAllDeliveredNotifications();
+            iOSNotificationCenter.ApplicationBadge = 0;
 #endif
         }
 
@@ -86,8 +100,34 @@ namespace KnittedPicture.Game
             {
                 Permission.RequestUserPermission(permission);
             }
+#elif UNITY_IOS && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
+            // Запрос живёт, пока система не ответит; повторный вызов после ответа ничего не показывает.
+            _authorization ??= new AuthorizationRequest(AuthorizationOption.Alert | AuthorizationOption.Sound, false);
 #endif
         }
+
+#if UNITY_IOS && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
+        private static AuthorizationRequest? _authorization;
+        private static int _sent;
+
+        private static void Send(string title, string text, DateTime at)
+        {
+            var delay = at - DateTime.Now;
+            if (delay <= TimeSpan.Zero)
+            {
+                return;
+            }
+
+            iOSNotificationCenter.ScheduleNotification(new iOSNotification
+            {
+                Identifier = "knitted-" + _sent++,
+                Title = title,
+                Body = text,
+                ShowInForeground = false,
+                Trigger = new iOSNotificationTimeIntervalTrigger { TimeInterval = delay, Repeats = false },
+            });
+        }
+#endif
 
 #if UNITY_ANDROID && !UNITY_EDITOR && KNITTED_NOTIFICATIONS
         private const string Channel = "reminders";
@@ -104,7 +144,7 @@ namespace KnittedPicture.Game
 
             AndroidNotificationCenter.SendNotification(new AndroidNotification(title, text, at), Channel);
         }
-#else
+#elif !(UNITY_IOS && !UNITY_EDITOR && KNITTED_NOTIFICATIONS)
         private static void Send(string title, string text, DateTime at)
         {
         }
