@@ -63,5 +63,6 @@
   "maxForced": 0.55,
   "minDanger": 0.02,
   "maxDanger": 0.35,
-  "seed": 611
+  "seed": 611,
+  "minSkilled": 0.8
 }

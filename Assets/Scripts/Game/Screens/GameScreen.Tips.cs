@@ -13,9 +13,43 @@ namespace KnittedPicture.Game
     {
         // ---------- Подсказки ----------
 
+        /// <summary>
+        /// Подсказка ищется в фоне (перебор на сложном поле на слабом телефоне — секунды), не дольше 1,5 с.
+        /// Пока ищет, кадры идут как обычно; ответ показываем, только если игрок за это время не сходил.
+        /// </summary>
         private void ShowHint()
         {
-            var column = LevelSolver.Hint(_game);
+            if (_hintSearching)
+            {
+                return;
+            }
+
+            _hintSearching = true;
+            var snapshot = _game.Clone();
+            var taps = _game.Taps;
+            var app = App;
+            System.Threading.Tasks.Task.Run(() => LevelSolver.Hint(snapshot, 20_000, HintBudgetMs)).ContinueWith(task =>
+            {
+                var column = task.Status == System.Threading.Tasks.TaskStatus.RanToCompletion ? task.Result : -1;
+                app.RunOnMain(() =>
+                {
+                    _hintSearching = false;
+                    if (Root == null || _finishing || _game.Taps != taps || _hint != null || _game.Status != GameStatus.Playing)
+                    {
+                        return;
+                    }
+
+                    PlaceHint(column);
+                });
+            });
+        }
+
+        private const int HintBudgetMs = 1500;
+
+        private bool _hintSearching;
+
+        private void PlaceHint(int column)
+        {
             if (column < 0)
             {
                 // Пути нет (или перебор упёрся в предел): не перебирать заново каждый кадр — только после нового хода.

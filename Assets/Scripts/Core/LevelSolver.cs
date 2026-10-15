@@ -24,14 +24,20 @@ namespace KnittedPicture.Core
             copy.Settle();
             var visited = new HashSet<string>();
             var path = new List<int>();
-            return Search(copy, visited, path, maxStates) ? path : null;
+            return Search(copy, visited, path, maxStates, null, int.MaxValue) ? path : null;
         }
 
-        /// <summary>Колонка для следующего тапа по пути к победе или -1, если пути нет.</summary>
-        public static int Hint(LoomGame game, int maxStates = 20_000)
+        /// <summary>
+        /// Колонка для следующего тапа по пути к победе или -1, если пути нет. maxMilliseconds — предел по времени:
+        /// перебор останавливается, даже если не упёрся в maxStates (на слабом телефоне он в 5–10 раз медленнее).
+        /// </summary>
+        public static int Hint(LoomGame game, int maxStates = 20_000, int maxMilliseconds = int.MaxValue)
         {
-            var path = Solve(game, maxStates);
-            return path != null && path.Count > 0 ? path[0] : -1;
+            var copy = game.Clone();
+            copy.Settle();
+            var path = new List<int>();
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            return Search(copy, new HashSet<string>(), path, maxStates, clock, maxMilliseconds) && path.Count > 0 ? path[0] : -1;
         }
 
         /// <summary>
@@ -89,7 +95,8 @@ namespace KnittedPicture.Core
             }
         }
 
-        private static bool Search(LoomGame game, HashSet<string> visited, List<int> path, int maxStates)
+        private static bool Search(LoomGame game, HashSet<string> visited, List<int> path, int maxStates, System.Diagnostics.Stopwatch? clock,
+            int maxMilliseconds)
         {
             if (game.Status == GameStatus.Won)
             {
@@ -97,6 +104,12 @@ namespace KnittedPicture.Core
             }
 
             if (game.Status != GameStatus.Playing || visited.Count >= maxStates || !visited.Add(game.StateKey()))
+            {
+                return false;
+            }
+
+            // Время проверяем раз в 256 состояний: часы дороже, чем кажется.
+            if (clock != null && (visited.Count & 255) == 0 && clock.ElapsedMilliseconds > maxMilliseconds)
             {
                 return false;
             }
@@ -115,7 +128,7 @@ namespace KnittedPicture.Core
 
                     game.Settle();
                     path.Add(column);
-                    if (Search(game, visited, path, maxStates))
+                    if (Search(game, visited, path, maxStates, clock, maxMilliseconds))
                     {
                         return true;
                     }

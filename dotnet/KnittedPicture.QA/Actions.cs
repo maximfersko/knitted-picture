@@ -198,7 +198,7 @@ namespace KnittedPicture.QA
                         break;
                     }
 
-                    o.HintColumn = LevelSolver.Hint(g);
+                    o.HintColumn = LevelSolver.Hint(g, 20_000, 1500);
                     if (o.HintColumn >= 0)
                     {
                         o.Move = g.TapColumn(o.HintColumn);

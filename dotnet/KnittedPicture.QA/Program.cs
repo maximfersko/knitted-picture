@@ -205,7 +205,8 @@ namespace KnittedPicture.QA
             meta.Run(findings, opt.Quick ? 30 : 120, 400, opt.Seed);
             Console.WriteLine($"  мета: {meta.Ops:N0} действий");
 
-            foreach (var s in slowest.Where(s => s.Item2 > 25 || s.Item4 > 800))
+            // Подсказка ищется в фоне (кадры не ждут) и не дольше 1,5 с: тревожно, только если она упёрлась в этот предел.
+            foreach (var s in slowest.Where(s => s.Item2 > 25 || s.Item4 > 1500))
             {
                 findings.Add(new Violation("slow:" + s.Item1, Severity.Warning, $"медленно на уровне {s.Item1}",
                     $"самое долгое действие {s.Item2:0.0} мс ({s.Item3}), подсказка {s.Item4:0} мс; на слабом телефоне в 5–10 раз дольше"),
