@@ -31,7 +31,7 @@ namespace KnittedPicture.Game
             var left = _game.TotalStitches - _game.KnittedCount;
             if (left >= 8)
             {
-                Fx.FloatText(_fx, Ui.WorldCenter(_loomBg) + new Vector3(0f, 30f * _fx.lossyScale.y, 0f), "Финиш!", Palette.Primary, 24f);
+                Fx.FloatText(_fx, Ui.WorldCenter(_loomBg) + new Vector3(0f, 30f * _fx.lossyScale.y, 0f), L.T("Финиш!"), Palette.Primary, 24f);
                 Sfx.Play(Sound.Combo, 0.6f);
                 Haptics.Play(Haptic.Medium);
             }
@@ -173,12 +173,12 @@ namespace KnittedPicture.Game
                             var problem = JamMark(view, Palette.Danger);
                             var key = _field.FirstOrDefault(f => f.Depth < _game.Column(f.Column).Count && _game.Column(f.Column)[f.Depth].IsKey);
                             target = key != null ? JamMark(key.View.Root, Palette.Primary) : problem;
-                            text = key != null ? "Ключ от замка лежит глубже" : "Замок откроет клубок с ключом";
+                            text = key != null ? L.T("Ключ от замка лежит глубже") : L.T("Замок откроет клубок с ключом");
                         }
                         else if (spool.Frozen)
                         {
                             target = JamMark(view, Palette.Danger);
-                            text = "Лёд тает от петель этого цвета";
+                            text = L.T("Лёд тает от петель этого цвета");
                         }
                         else if (spool.Link != 0)
                         {
@@ -190,7 +190,7 @@ namespace KnittedPicture.Game
                                 JamMark(partner, Palette.Primary);
                             }
 
-                            text = "Пара этого клубка ещё не впереди";
+                            text = L.T("Пара этого клубка ещё не впереди");
                         }
                     }
 
@@ -204,7 +204,7 @@ namespace KnittedPicture.Game
                         if (slot != null && spool != null && _game.IsForeign(spool))
                         {
                             target = JamMark(slot.View.Root, Palette.Danger);
-                            text = "Эта пряжа картинке не нужна";
+                            text = L.T("Эта пряжа картинке не нужна");
                         }
                     }
 
@@ -221,7 +221,7 @@ namespace KnittedPicture.Game
                         }
                     }
 
-                    text = "Сначала довяжи этот ряд";
+                    text = L.T("Сначала довяжи этот ряд");
                     below = true;
                     break;
 
@@ -233,7 +233,7 @@ namespace KnittedPicture.Game
                         if (column.Count > 0 && column[0].Knots > 0 && view != null)
                         {
                             target = JamMark(view, Palette.Danger);
-                            text = "Узелки лучше развязывать заранее";
+                            text = L.T("Узелки лучше развязывать заранее");
                         }
                     }
 
@@ -262,7 +262,7 @@ namespace KnittedPicture.Game
                     if (_jamMarks.Count > 0)
                     {
                         target = _loomBg;
-                        text = "Станок занят, а картинке нужны другие цвета";
+                        text = L.T("Станок занят, а картинке нужны другие цвета");
                     }
 
                     break;
@@ -446,7 +446,7 @@ namespace KnittedPicture.Game
         private void ShowFail(FailKind kind)
         {
             BoosterType? rescue = BoosterType.Time;
-            var reason = "Время вышло. Отгони моль и довяжи картинку";
+            var reason = L.T("Время вышло. Отгони моль и довяжи картинку");
             if (kind == FailKind.Jam)
             {
                 // Затор при свободных местах: станок пуст, но все передние клубки заперты.
@@ -454,25 +454,25 @@ namespace KnittedPicture.Game
                 if (_game.SlotWouldHelp)
                 {
                     rescue = BoosterType.Slot;
-                    reason = "Места заняты, а нужного цвета на станке нет";
+                    reason = L.T("Места заняты, а нужного цвета на станке нет");
                 }
                 else if (_game.ScissorsWouldHelp && App.Progress.IsBoosterOpen(BoosterType.Scissors, BoosterLevel))
                 {
                     rescue = BoosterType.Scissors;
                     reason = blocked
-                        ? "Передние клубки под замком, во льду или без пары. Ножницы достанут любой клубок с поля"
+                        ? L.T("Передние клубки под замком, во льду или без пары. Ножницы достанут любой клубок с поля")
                         : _picture.TensionHolding
-                        ? "Столбики выше пунктира ждут нижний ряд, а его цвета на станке нет. Ножницы срежут лишний клубок со станка или достанут нужный с поля"
-                        : "Станок занят, а картинке нужен другой цвет. Ножницы срежут лишний клубок или достанут нужный";
+                        ? L.T("Столбики выше пунктира ждут нижний ряд, а его цвета на станке нет. Ножницы срежут лишний клубок со станка или достанут нужный с поля")
+                        : L.T("Станок занят, а картинке нужен другой цвет. Ножницы срежут лишний клубок или достанут нужный");
                 }
                 else
                 {
                     rescue = null;
                     reason = blocked
-                        ? "Передние клубки под замком, во льду или без пары. Попробуй ещё раз"
+                        ? L.T("Передние клубки под замком, во льду или без пары. Попробуй ещё раз")
                         : _game.Slots.Count >= LoomGame.MaxSlots
-                        ? "Станок заполнен до предела. Попробуй ещё раз"
-                        : "Нужной пряжи больше нет. Попробуй ещё раз";
+                        ? L.T("Станок заполнен до предела. Попробуй ещё раз")
+                        : L.T("Нужной пряжи больше нет. Попробуй ещё раз");
                 }
             }
 
@@ -497,15 +497,15 @@ namespace KnittedPicture.Game
             switch (advice)
             {
                 case JamAdvice.Blocked:
-                    return "Совет: не закапывай ключи, пары связанных и цвет, от которого тает лёд";
+                    return L.T("Совет: не закапывай ключи, пары связанных и цвет, от которого тает лёд");
                 case JamAdvice.ForeignYarn:
-                    return "Совет: не бери клубки в сеточку, они только занимают место";
+                    return L.T("Совет: не бери клубки в сеточку, они только занимают место");
                 case JamAdvice.Tension:
-                    return "Совет: сначала довязывай нижний ряд, иначе столбики выше пунктира ждут";
+                    return L.T("Совет: сначала довязывай нижний ряд, иначе столбики выше пунктира ждут");
                 case JamAdvice.Knots:
-                    return "Совет: развязывай узелки заранее, это не занимает место на станке";
+                    return L.T("Совет: развязывай узелки заранее, это не занимает место на станке");
                 default:
-                    return "Совет: сначала бери короткие клубки, они быстрее освобождают место";
+                    return L.T("Совет: сначала бери короткие клубки, они быстрее освобождают место");
             }
         }
 

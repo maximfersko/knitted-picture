@@ -42,8 +42,8 @@ namespace KnittedPicture.Core
         public YarnInfo(int id, string name, string description, string hex, string hex2, YarnLook look, Rarity rarity)
         {
             Id = id;
-            Name = name;
-            Description = description;
+            _name = name;
+            _description = description;
             Hex = hex;
             Hex2 = hex2;
             Look = look;
@@ -52,9 +52,12 @@ namespace KnittedPicture.Core
 
         public int Id { get; }
 
-        public string Name { get; }
+        private readonly string _name;
+        private readonly string _description;
 
-        public string Description { get; }
+        public string Name => L.T(_name);
+
+        public string Description => L.T(_description);
 
         public string Hex { get; }
 
@@ -71,7 +74,7 @@ namespace KnittedPicture.Core
         public YarnSet(int id, string name, int first, int count, Reward reward)
         {
             Id = id;
-            Name = name;
+            _name = name;
             First = first;
             Count = count;
             Reward = reward;
@@ -79,7 +82,9 @@ namespace KnittedPicture.Core
 
         public int Id { get; }
 
-        public string Name { get; }
+        private readonly string _name;
+
+        public string Name => L.T(_name);
 
         public int First { get; }
 
@@ -176,7 +181,7 @@ namespace KnittedPicture.Core
             return System.Math.Min(100, DropBasePercent + DropStepPercent * dry);
         }
 
-        public static string RarityName(Rarity rarity) => rarity == Rarity.Common ? "обычная" : rarity == Rarity.Rare ? "редкая" : "эпическая";
+        public static string RarityName(Rarity rarity) => rarity == Rarity.Common ? L.T("обычная") : rarity == Rarity.Rare ? L.T("редкая") : L.T("эпическая");
 
         /// <summary>Монеты за повторный моток, когда он уже максимального уровня.</summary>
         public static int DuplicateCoins(Rarity rarity) => rarity == Rarity.Common ? 10 : rarity == Rarity.Rare ? 20 : 40;
@@ -208,19 +213,12 @@ namespace KnittedPicture.Core
         /// <summary>+монет за каждую пойманную золотую петлю.</summary>
         public static int GoldBonus(int power) => power;
 
-        public static string PerkTitle(YarnPerk perk) => perk == YarnPerk.Coins ? "Тёплая копилка" : "Золотые руки";
+        public static string PerkTitle(YarnPerk perk) => perk == YarnPerk.Coins ? L.T("Тёплая копилка") : L.T("Золотые руки");
 
         /// <summary>«монета», «монеты» или «монет» — по числу.</summary>
         public static string CoinsWord(int n)
         {
-            var mod10 = n % 10;
-            var mod100 = n % 100;
-            if (mod10 == 1 && mod100 != 11)
-            {
-                return "монета";
-            }
-
-            return mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? "монеты" : "монет";
+            return L.Plural(n, "монета", "монеты", "монет");
         }
 
         /// <summary>Что даёт бонус при этой силе — коротко: для полоски «В работе», тостов и строки победы.</summary>
@@ -228,15 +226,15 @@ namespace KnittedPicture.Core
         {
             var n = perk == YarnPerk.Coins ? CoinsBonus(power) : GoldBonus(power);
             return perk == YarnPerk.Coins
-                ? $"+{n} {CoinsWord(n)} за каждую новую картинку"
-                : $"+{n} {CoinsWord(n)} сверху за каждую золотую петлю";
+                ? L.F("+{0} {1} за каждую новую картинку", n, CoinsWord(n))
+                : L.F("+{0} {1} сверху за каждую золотую петлю", n, CoinsWord(n));
         }
 
         /// <summary>То же, но совсем коротко: для строки «следующий уровень».</summary>
         public static string PerkShort(YarnPerk perk, int power)
         {
             var n = perk == YarnPerk.Coins ? CoinsBonus(power) : GoldBonus(power);
-            return perk == YarnPerk.Coins ? $"+{n} {CoinsWord(n)} за картинку" : $"+{n} {CoinsWord(n)} за золотую петлю";
+            return perk == YarnPerk.Coins ? L.F("+{0} {1} за картинку", n, CoinsWord(n)) : L.F("+{0} {1} за золотую петлю", n, CoinsWord(n));
         }
 
         /// <summary>Понятное предложение для карточки мотка: как именно работает бонус.</summary>
@@ -244,8 +242,8 @@ namespace KnittedPicture.Core
         {
             var n = perk == YarnPerk.Coins ? CoinsBonus(power) : GoldBonus(power);
             return perk == YarnPerk.Coins
-                ? $"Каждая новая картинка приносит ещё +{n} {CoinsWord(n)}"
-                : $"Каждая золотая петля, пойманная в комбо, даёт ещё +{n} {CoinsWord(n)}";
+                ? L.F("Каждая новая картинка приносит ещё +{0} {1}", n, CoinsWord(n))
+                : L.F("Каждая золотая петля, пойманная в комбо, даёт ещё +{0} {1}", n, CoinsWord(n));
         }
     }
 }

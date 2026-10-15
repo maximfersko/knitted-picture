@@ -22,7 +22,7 @@ namespace KnittedPicture.Game
 
             if (!App.Progress.IsBoosterOpen(type, BoosterLevel))
             {
-                App.Toast($"Откроется на уровне {Economy.UnlockLevel(type)}");
+                App.Toast(L.F("Откроется на уровне {0}", Economy.UnlockLevel(type)));
                 return;
             }
 
@@ -47,7 +47,7 @@ namespace KnittedPicture.Game
                 case BoosterType.Undo:
                     if (!_game.CanUndo)
                     {
-                        App.Toast("Пока нечего отменять");
+                        App.Toast(L.T("Пока нечего отменять"));
                     }
                     else if (_run.FreeUndo == 0 && App.Progress.Pay(type) == Payment.NotEnough)
                     {
@@ -81,7 +81,7 @@ namespace KnittedPicture.Game
                 case BoosterType.Slot:
                     if (_game.Slots.Count >= LoomGame.MaxSlots)
                     {
-                        App.Toast($"На станке уже {LoomGame.MaxSlots} мест, больше нельзя");
+                        App.Toast(L.F("На станке уже {0} мест, больше нельзя", LoomGame.MaxSlots));
                     }
                     else if (App.Progress.Pay(type) == Payment.NotEnough)
                     {
@@ -190,7 +190,7 @@ namespace KnittedPicture.Game
                 HideTip();
                 _scissorsBanner = Ui.Card(Root, "ScissorsBanner", Pad, _fieldY - 50f, W - 2 * Pad, 40, 20, Palette.Primary, Palette.Primary, 0f);
                 Ui.IconImage(_scissorsBanner, Icon.Scissors, Color.white, 24, 20, 20);
-                Ui.Label(_scissorsBanner, "Выбери клубок на поле или на станке", 15, Color.white, 40, 0, W - 2 * Pad - 52, 40, true, TextAnchor.MiddleLeft);
+                Ui.Label(_scissorsBanner, L.T("Выбери клубок на поле или на станке"), 15, Color.white, 40, 0, W - 2 * Pad - 52, 40, true, TextAnchor.MiddleLeft);
                 var group = _scissorsBanner.gameObject.AddComponent<CanvasGroup>();
                 group.blocksRaycasts = false;
             }

@@ -96,7 +96,7 @@ namespace KnittedPicture.Game
                     if (_game.IsForeign(spool) && !_foreignShown)
                     {
                         _foreignShown = true;
-                        ToastOnce("foreign-loom", "Эта пряжа картинке не нужна: срежь её ножницами");
+                        ToastOnce("foreign-loom", L.T("Эта пряжа картинке не нужна: срежь её ножницами"));
                     }
                     view = _slotViews[i];
                 }
@@ -126,7 +126,7 @@ namespace KnittedPicture.Game
             }
 
             var free = _game.FreeSlots;
-            _loomLabel.text = free == 1 && _slotFrames.Length > 1 ? "Осталось 1 место!" : free == 0 ? "Мест нет" : string.Empty;
+            _loomLabel.text = free == 1 && _slotFrames.Length > 1 ? L.T("Осталось 1 место!") : free == 0 ? L.T("Мест нет") : string.Empty;
             _loomLabel.color = free <= 1 ? Palette.Danger : Palette.Ink2;
         }
 
@@ -299,18 +299,18 @@ namespace KnittedPicture.Game
             var (partnerColumn, partnerDepth) = FindLinkPartner(column, depth);
             if (partnerColumn < 0)
             {
-                return "Связанные клубки едут на станок только вдвоём";
+                return L.T("Связанные клубки едут на станок только вдвоём");
             }
 
-            var where = $"в {partnerColumn + 1}-й колонке";
+            var where = L.F("в {0}-й колонке", partnerColumn + 1);
             if (partnerDepth > 0)
             {
-                return $"Пара {where}, перед ней {partnerDepth} {Plural(partnerDepth, "клубок", "клубка", "клубков")}";
+                return L.F("Пара {0}, перед ней {1} {2}", where, partnerDepth, L.Plural(partnerDepth, "клубок", "клубка", "клубков"));
             }
 
             var partner = _game.Column(partnerColumn)[0];
-            var block = partner.Locked ? "под замком" : partner.Knots > 0 ? "с узелком" : partner.Frozen ? "во льду" : "не готова";
-            return $"Пара с таким же кольцом {where} пока {block}";
+            var block = partner.Locked ? L.T("под замком") : partner.Knots > 0 ? L.T("с узелком") : partner.Frozen ? L.T("во льду") : L.T("не готова");
+            return L.F("Пара с таким же кольцом {0} пока {1}", where, block);
         }
 
         private (int Column, int Depth) FindLinkPartner(int column, int depth)
@@ -416,7 +416,7 @@ namespace KnittedPicture.Game
             var near = fraction < 0.25f && _game.TimerStarted && _game.Status == GameStatus.Playing;
             if (near && !_mothNear && _built)
             {
-                Fx.FloatText(_fx, MothWorld() ?? Ui.WorldCenter(_timerText.rectTransform), "Моль близко!", Palette.Danger, 18f);
+                Fx.FloatText(_fx, MothWorld() ?? Ui.WorldCenter(_timerText.rectTransform), L.T("Моль близко!"), Palette.Danger, 18f);
                 _moth?.Startle();
                 Sfx.Play(Sound.Deny, 0.5f);
                 Haptics.Play(Haptic.Medium);

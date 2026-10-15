@@ -19,6 +19,12 @@ namespace KnittedPicture.Core
         /// <summary>Подсказка на старте уровня; пустая — без подсказки.</summary>
         public string tip = string.Empty;
 
+        /// <summary>Название на языке игры (в файле уровня — русское).</summary>
+        public string Title => L.T(name);
+
+        /// <summary>Подсказка на языке игры.</summary>
+        public string Tip => L.T(tip);
+
         /// <summary>Сложный уровень: плашка на старте и двойная награда.</summary>
         public bool hard;
 

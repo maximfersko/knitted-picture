@@ -104,25 +104,25 @@ namespace KnittedPicture.Game
             // Монеты по источникам: одна крупная сумма и мелкие плашки «откуда» — вместо стены строк.
             var goldBonus = stats.GoldCaught * YarnCatalog.GoldBonus(app.Progress.PerkPower(YarnPerk.Gold));
             goldBonus = Mathf.Clamp(goldBonus, 0, stats.GoldCoins);
-            var parts = new List<(string name, int coins)> { ("за картинку", reward.BaseCoins) };
+            var parts = new List<(string name, int coins)> { (L.T("за картинку"), reward.BaseCoins) };
             if (stats.RushCoins > 0)
             {
-                parts.Add(($"разгон ×{stats.BestCombo}", stats.RushCoins));
+                parts.Add((L.F("разгон ×{0}", stats.BestCombo), stats.RushCoins));
             }
 
             if (stats.GoldCoins - goldBonus > 0)
             {
-                parts.Add(($"золото {stats.GoldCaught}/{stats.GoldTotal}", stats.GoldCoins - goldBonus));
+                parts.Add((L.F("золото {0}/{1}", stats.GoldCaught, stats.GoldTotal), stats.GoldCoins - goldBonus));
             }
 
             if (reward.PerkCoins + goldBonus > 0)
             {
-                parts.Add(("пряжа", reward.PerkCoins + goldBonus));
+                parts.Add((L.T("пряжа"), reward.PerkCoins + goldBonus));
             }
 
             if (reward.YarnCoins > 0)
             {
-                parts.Add(("повтор мотка", reward.YarnCoins));
+                parts.Add((L.T("повтор мотка"), reward.YarnCoins));
             }
 
             var compact = H < 760f || parts.Count >= 4;
@@ -156,7 +156,7 @@ namespace KnittedPicture.Game
             BuildStars(y, reward.Stars, news.Record);
             y += 48f;
 
-            Ui.Label(Root, reward.NewRecord ? "Новый рекорд!" : "Готово!", compact ? 32 : 36, Palette.Ink, 16, y, W - 32, 42);
+            Ui.Label(Root, reward.NewRecord ? L.T("Новый рекорд!") : L.T("Готово!"), compact ? 32 : 36, Palette.Ink, 16, y, W - 32, 42);
             y += 40f;
             Ui.Fit(Ui.Label(Root, StarsHint(level, reward.Stars, stats), 15, Palette.Ink2, 16, y, W - 32, 22, false), 11);
             y += 30f;
@@ -169,19 +169,19 @@ namespace KnittedPicture.Game
 
             if (news.AllMissions)
             {
-                Tweens.Delay(Root, 2.2f, () => app.Toast("Все задания дня выполнены! Награда ждёт на главной"));
+                Tweens.Delay(Root, 2.2f, () => app.Toast(L.T("Все задания дня выполнены! Награда ждёт на главной")));
             }
             else if (news.Chest)
             {
-                Tweens.Delay(Root, 2.2f, () => app.Toast("Звёздный сундук готов! Открой его на главной"));
+                Tweens.Delay(Root, 2.2f, () => app.Toast(L.T("Звёздный сундук готов! Открой его на главной")));
             }
             else if (news.Achievement)
             {
-                Tweens.Delay(Root, 2.2f, () => app.Toast("Новое достижение! Награда ждёт в альбоме"));
+                Tweens.Delay(Root, 2.2f, () => app.Toast(L.T("Новое достижение! Награда ждёт в альбоме")));
             }
             else if (news.Mission)
             {
-                Tweens.Delay(Root, 2.2f, () => app.Toast($"Задание дня выполнено: {app.Progress.MissionsDone(app.Today)} из {DailyMissions.Count}"));
+                Tweens.Delay(Root, 2.2f, () => app.Toast(L.F("Задание дня выполнено: {0} из {1}", app.Progress.MissionsDone(app.Today), DailyMissions.Count)));
             }
         }
 
@@ -230,17 +230,17 @@ namespace KnittedPicture.Game
                     Ui.Label(frame.rectTransform, "?", 26, Palette.Ink2, 0, 0, 52, 52);
                 }
 
-                Ui.Label(face, "Дальше", 22, Color.white, 62, 10, W - 40 - 72, 30);
-                Ui.Label(face, data.hard ? $"Уровень {nextId} · сложный" : $"Уровень {nextId}", 13, Color.white, 62, 38, W - 40 - 72, 20, false);
+                Ui.Label(face, L.T("Дальше"), 22, Color.white, 62, 10, W - 40 - 72, 30);
+                Ui.Label(face, data.hard ? L.F("Уровень {0} · сложный", nextId) : L.F("Уровень {0}", nextId), 13, Color.white, 62, 38, W - 40 - 72, 20, false);
             }
             else
             {
-                Ui.Label(face, "На главную", 22, Color.white, 0, 0, W - 40, 70);
+                Ui.Label(face, L.T("На главную"), 22, Color.white, 0, 0, W - 40, 70);
             }
 
-            var doubleTap = Ui.TextButton(Root, "Удвоить награду за видео", 20, H - 24f - 44f, W - 40, 44, Palette.Ink2, 15, Icon.Video);
+            var doubleTap = Ui.TextButton(Root, L.T("Удвоить награду за видео"), 20, H - 24f - 44f, W - 40, 44, Palette.Ink2, 15, Icon.Video);
             var total = _flights.Count > 0 ? TotalFlights() : 0;
-            doubleTap.DeniedHint = "Видео уже загружается";
+            doubleTap.DeniedHint = L.T("Видео уже загружается");
             doubleTap.OnClick(() =>
             {
                 doubleTap.Interactable = false;
@@ -277,10 +277,10 @@ namespace KnittedPicture.Game
         {
             if (stars >= 3)
             {
-                return $"«{level.name}» теперь в альбоме";
+                return L.F("«{0}» теперь в альбоме", level.Title);
             }
 
-            return stats.Helped ? "Третья звезда: пройди без бустеров и спасений" : $"«{level.name}» теперь в альбоме";
+            return stats.Helped ? L.T("Третья звезда: пройди без бустеров и спасений") : L.F("«{0}» теперь в альбоме", level.Title);
         }
 
         /// <summary>
@@ -354,7 +354,7 @@ namespace KnittedPicture.Game
             var face = Ui.Box(stamp, "Face", 10, Palette.Danger);
             Ui.Stretch(face.rectTransform);
             Ui.Outline(stamp, 10, Color.white, 2f);
-            Ui.Label(stamp, "Рекорд!", 17, Color.white, 0, 0, w, h);
+            Ui.Label(stamp, L.T("Рекорд!"), 17, Color.white, 0, 0, w, h);
             stamp.localRotation = Quaternion.Euler(0f, 0f, -12f);
             stamp.localScale = Vector3.zero;
             Tweens.Delay(stamp, delay, () =>
@@ -383,7 +383,7 @@ namespace KnittedPicture.Game
             }
 
             var card = Ui.Card(Root, "Reward", 16, y, cardW, 100, 20, Palette.Card, Palette.CardShadow);
-            Ui.Label(card, "НАГРАДА", 12, Palette.Ink3, 18, 12, 120, 26, true, TextAnchor.MiddleLeft);
+            Ui.Label(card, L.T("НАГРАДА"), 12, Palette.Ink3, 18, 12, 120, 26, true, TextAnchor.MiddleLeft);
             var sum = Ui.Label(card, "+" + total, 26, Palette.Ink, cardW - 16 - 120, 6, 120, 38, true, TextAnchor.MiddleRight);
             // Сумма набегает с нуля, пока монеты не полетели: видно, из чего она складывается.
             sum.text = "+0";
@@ -456,9 +456,9 @@ namespace KnittedPicture.Game
                 var ball = Ui.Image(tile, "Ball", Art2.YarnBall(Palette.Track), Color.white);
                 Ui.PlaceCenter(ball.rectTransform, 30, TileH / 2f, 34, 34);
                 Ui.Label(tile, "?", 16, Palette.Ink3, 13, TileH / 2f - 17f, 34, 34);
-                Ui.Fit(Ui.Label(tile, reward.NextYarnChance >= 100 ? "Моток в следующий раз" : "Моток не выпал", 12, Palette.Ink2,
+                Ui.Fit(Ui.Label(tile, reward.NextYarnChance >= 100 ? L.T("Моток в следующий раз") : L.T("Моток не выпал"), 12, Palette.Ink2,
                     54, 10, tileW - 62, 18, true, TextAnchor.MiddleLeft), 9);
-                Ui.Fit(Ui.Label(tile, reward.NextYarnChance >= 100 ? "наверняка" : $"дальше шанс {reward.NextYarnChance}%", 15, Palette.Ink,
+                Ui.Fit(Ui.Label(tile, reward.NextYarnChance >= 100 ? L.T("наверняка") : L.F("дальше шанс {0}%", reward.NextYarnChance), 15, Palette.Ink,
                     54, 28, tileW - 62, 22, true, TextAnchor.MiddleLeft), 10);
                 x += tileW + TileGap;
             }
@@ -475,9 +475,9 @@ namespace KnittedPicture.Game
                     Fx.Sparkle(Root, Ui.WorldCenter(ball), Palette.Hex(yarn.Hex), 10, 30f);
                     Sfx.Play(Sound.Star, 0.6f);
                 });
-                var caption = reward.NewYarn ? "Новый моток"
-                    : reward.YarnLevelUp ? $"Уровень {App.Progress.YarnLevel(yarn.Id)}!"
-                    : "Повтор мотка";
+                var caption = reward.NewYarn ? L.T("Новый моток")
+                    : reward.YarnLevelUp ? L.F("Уровень {0}!", App.Progress.YarnLevel(yarn.Id))
+                    : L.T("Повтор мотка");
                 Ui.Fit(Ui.Label(tile, caption, 12, reward.NewYarn ? YarnView.RarityColor(yarn.Rarity) : reward.YarnLevelUp ? Palette.Primary : Palette.Ink2,
                     54, 10, tileW - 62, 18, true, TextAnchor.MiddleLeft), 9);
                 Ui.Fit(Ui.Label(tile, yarn.Name, 15, Palette.Ink, 54, 28, tileW - 62, 22, true, TextAnchor.MiddleLeft), 10);
@@ -489,7 +489,7 @@ namespace KnittedPicture.Game
             var ready = progress.CanOpenChest;
             var chest = Ui.Card(Root, "ChestTile", x, y, tileW, TileH, 18, ready ? Palette.CoinSoft : Palette.Card, Palette.CardShadow, 3f);
             Ui.IconImage(chest, Icon.Chest, Palette.CoinShadow, 28, TileH / 2f, 26);
-            Ui.Fit(Ui.Label(chest, ready ? "Сундук готов!" : "Сундук", 12, ready ? Palette.CoinInk : Palette.Ink2, 50, 10, tileW - 58, 18, true,
+            Ui.Fit(Ui.Label(chest, ready ? L.T("Сундук готов!") : L.T("Сундук"), 12, ready ? Palette.CoinInk : Palette.Ink2, 50, 10, tileW - 58, 18, true,
                 TextAnchor.MiddleLeft), 9);
             Ui.Label(chest, $"{value}/{ProgressService.ChestEvery} ★", 13, Palette.Ink, 50, 27, tileW - 58, 18, true, TextAnchor.MiddleLeft);
             Ui.ProgressBar(chest, 50, 47, tileW - 64, 6, (float)value / ProgressService.ChestEvery, Palette.Coin);

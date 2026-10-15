@@ -28,6 +28,8 @@ Hybrid-casual головоломка: игрок отправляет клубк
 
 Для сборки на телефон: Player Settings → Default Orientation = Portrait.
 
+Языки: русский и английский. Новую строку для игрока пишите как `L.T("Текст")` или `L.F("Текст {0}", x)` и добавьте перевод в `Assets/Scripts/Core/Loc/En.cs`; без перевода упадёт `LocalizationTests`.
+
 Звуки интерфейса: `Assets/Resources/Sounds` — записи из Kenney Interface Sounds (CC0, [лицензия](docs/licenses/Kenney-Interface-Sounds.txt)); победа, звёзды, комбо и тупик синтезируются кодом. Чтобы заменить звук, положите файл с тем же именем; удалите файл — зазвучит синтезированный вариант.
 
 Шрифт: по умолчанию встроенный. Чтобы поставить Nunito, положите `Nunito-Black.ttf` как `Assets/Resources/Fonts/Main.ttf`.

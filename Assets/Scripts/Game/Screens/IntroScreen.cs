@@ -21,28 +21,28 @@ namespace KnittedPicture.Game
 
         private static readonly string[] Titles =
         {
-            "Вязаная картинка",
-            "Тапни клубок",
-            "Станок вяжет сам",
-            "Места мало",
-            "Чужая пряжа",
-            "Темп и комбо",
-            "Особые клубки",
-            "Бустеры",
-            "Звёзды и награды",
+            L.T("Вязаная картинка"),
+            L.T("Тапни клубок"),
+            L.T("Станок вяжет сам"),
+            L.T("Места мало"),
+            L.T("Чужая пряжа"),
+            L.T("Темп и комбо"),
+            L.T("Особые клубки"),
+            L.T("Бустеры"),
+            L.T("Звёзды и награды"),
         };
 
         private static readonly string[] Texts =
         {
-            "Клубки пряжи превращаются в картинку петля за петлёй",
-            "Попробуй: тапни передний клубок, и он поедет на станок",
-            "Фон уже связан, вяжется только картинка. Столбики растут снизу вверх, клетка в рамке следующая",
-            "Места кончились, а работы нет? Это затор. Бери клубки, которым сразу есть дело",
-            "Клубок в сеточку картинке не нужен. На станке он займёт место насовсем",
-            "Ставь клубки, пока станок вяжет: комбо растёт. На ×5 включается «Разгон», и станок вяжет вдвое быстрее",
-            "Тапни любой клубок и узнай, как он работает",
-            "Тапни бустер и посмотри, что он делает. Бустеры дают в подарках, сундуках и за монеты",
-            "Три звезды: без бустеров и спасений. Звёзды копят сундук, а новые картинки дарят пряжу",
+            L.T("Клубки пряжи превращаются в картинку петля за петлёй"),
+            L.T("Попробуй: тапни передний клубок, и он поедет на станок"),
+            L.T("Фон уже связан, вяжется только картинка. Столбики растут снизу вверх, клетка в рамке следующая"),
+            L.T("Места кончились, а работы нет? Это затор. Бери клубки, которым сразу есть дело"),
+            L.T("Клубок в сеточку картинке не нужен. На станке он займёт место насовсем"),
+            L.T("Ставь клубки, пока станок вяжет: комбо растёт. На ×5 включается «Разгон», и станок вяжет вдвое быстрее"),
+            L.T("Тапни любой клубок и узнай, как он работает"),
+            L.T("Тапни бустер и посмотри, что он делает. Бустеры дают в подарках, сундуках и за монеты"),
+            L.T("Три звезды: без бустеров и спасений. Звёзды копят сундук, а новые картинки дарят пряжу"),
         };
 
         /// <summary>Сцены, где игрок сам тапает элементы: тап по пустому месту сцены их не листает.</summary>
@@ -80,7 +80,7 @@ namespace KnittedPicture.Game
         public IntroScreen(App app)
             : base(app, "Intro")
         {
-            Ui.TextButton(Root, "Пропустить", W - 136, 8, 120, 44, Palette.Ink2, 15).OnClick(Finish);
+            Ui.TextButton(Root, L.T("Пропустить"), W - 136, 8, 120, 44, Palette.Ink2, 15).OnClick(Finish);
 
             _sw = W - 32f;
             _sh = Mathf.Clamp(H * 0.5f, 300f, 430f);
@@ -104,7 +104,7 @@ namespace KnittedPicture.Game
             BuildSegments(H - 24f - 64f - 26f);
 
             var next = Ui.Button(Root, "", 20, H - 24f - 64f, W - 40, 64, Palette.Primary, Palette.PrimaryShadow, Color.white, 22);
-            _nextLabel = Ui.Label((RectTransform)next.transform, "Дальше", 22, Color.white, 0, 0, W - 40, 64);
+            _nextLabel = Ui.Label((RectTransform)next.transform, L.T("Дальше"), 22, Color.white, 0, 0, W - 40, 64);
             next.OnClick(Next);
 
             _fx = Ui.Layer(Ui.Stretch(Ui.Node(Root, "Fx")), false);
@@ -231,7 +231,7 @@ namespace KnittedPicture.Game
             _page = page;
             _title.text = Titles[page];
             _text.text = Texts[page];
-            _nextLabel.text = page == Shown[Shown.Length - 1] ? "Начать вязать" : "Дальше";
+            _nextLabel.text = page == Shown[Shown.Length - 1] ? L.T("Начать вязать") : L.T("Дальше");
             Tweens.Scale(_title.transform, 0.9f, 1f, 0.25f);
             UpdateSegments();
             BuildScene(true);
@@ -438,12 +438,12 @@ namespace KnittedPicture.Game
 
                     if (placed == 1)
                     {
-                        Fx.FloatText(_fx, target + new Vector3(0, 40f * _fx.lossyScale.y, 0), "Вот так!", Palette.Primary, 22f);
+                        Fx.FloatText(_fx, target + new Vector3(0, 40f * _fx.lossyScale.y, 0), L.T("Вот так!"), Palette.Primary, 22f);
                     }
 
                     if (queue.Count == 0)
                     {
-                        Tweens.Delay(scene, 0.5f, () => Fx.FloatText(_fx, Ui.WorldCenter((RectTransform)frames[0].parent), "Станок полон!", Palette.Ink, 22f));
+                        Tweens.Delay(scene, 0.5f, () => Fx.FloatText(_fx, Ui.WorldCenter((RectTransform)frames[0].parent), L.T("Станок полон!"), Palette.Ink, 22f));
                         Loop(scene, 1.6f);
                     }
                     else
@@ -466,7 +466,7 @@ namespace KnittedPicture.Game
             var loomY = 20f + picture.Height + 30f;
             var frames = Loom(scene, 2, loomY);
             var chip = Ui.Card(scene, "Front", _sw / 2f - 92f, loomY - 26f, 184, 22, 11, Palette.Track, Palette.Track, 0f);
-            Ui.Label(chip, "в рамке: вяжутся следующими", 12, Palette.Ink2, 0, 0, 184, 22);
+            Ui.Label(chip, L.T("в рамке: вяжутся следующими"), 12, Palette.Ink2, 0, 0, 184, 22);
 
             var views = SlotViews(frames, game, colors);
             var demo = new Demo(game, picture, colors, scene, 0.12f, slot => Ui.WorldCenter(frames[slot]))
@@ -515,7 +515,7 @@ namespace KnittedPicture.Game
                     Tweens.Run(face, 0.6f, t => face.color = Color.Lerp(Palette.DangerSoft, Color.white, t));
                 }
 
-                Fx.FloatText(_fx, Ui.WorldCenter(loom), "Затор!", Palette.Danger, 26f);
+                Fx.FloatText(_fx, Ui.WorldCenter(loom), L.T("Затор!"), Palette.Danger, 26f);
             });
 
             Tweens.Delay(scene, 0.5f + 3 * 0.45f + 1.4f, () =>
@@ -546,7 +546,7 @@ namespace KnittedPicture.Game
                             Idle = () =>
                             {
                                 Sfx.Play(Sound.Star, 0.7f);
-                                Fx.FloatText(_fx, Ui.WorldCenter((RectTransform)frames[0].parent), "Вот так!", Palette.Primary, 24f);
+                                Fx.FloatText(_fx, Ui.WorldCenter((RectTransform)frames[0].parent), L.T("Вот так!"), Palette.Primary, 24f);
                                 Loop(scene, 1.6f);
                             },
                         };
@@ -582,7 +582,7 @@ namespace KnittedPicture.Game
                     demo.Running = true;
                     combo++;
                     Fx.FloatText(_fx, Ui.WorldCenter((RectTransform)frames[0].parent) + new Vector3(0, 40f * _fx.lossyScale.y, 0),
-                        $"Комбо ×{combo}", combo >= 4 ? Palette.Primary : Palette.Link, 22f);
+                        L.F("Комбо ×{0}", combo), combo >= 4 ? Palette.Primary : Palette.Link, 22f);
                     Sfx.Play(Sound.Combo, 0.5f);
                 }
             };
@@ -666,7 +666,7 @@ namespace KnittedPicture.Game
                 {
                     Sfx.Play(Sound.Deny, 0.7f);
                     Tweens.Shake((RectTransform)frames[0].parent, 6f, 0.3f);
-                    Fx.FloatText(_fx, Ui.WorldCenter(frames[0]) + new Vector3(0, 46f * _fx.lossyScale.y, 0), "Не нужна!", Palette.Danger, 20f);
+                    Fx.FloatText(_fx, Ui.WorldCenter(frames[0]) + new Vector3(0, 46f * _fx.lossyScale.y, 0), L.T("Не нужна!"), Palette.Danger, 20f);
                 });
 
                 PressAt(new Vector2(_sw / 2f + 58f, fieldY + 26f), 0.9f, () =>
@@ -681,7 +681,7 @@ namespace KnittedPicture.Game
                         Sync = () => SyncSlots(views, game, frames, colors),
                         Idle = () =>
                         {
-                            Fx.FloatText(_fx, Ui.WorldCenter(frames[0]) + new Vector3(0, 46f * _fx.lossyScale.y, 0), "Место занято", Palette.Danger, 18f);
+                            Fx.FloatText(_fx, Ui.WorldCenter(frames[0]) + new Vector3(0, 46f * _fx.lossyScale.y, 0), L.T("Место занято"), Palette.Danger, 18f);
                             Loop(scene, 1.8f);
                         },
                         Won = () => Loop(scene, 1.8f),
@@ -701,13 +701,13 @@ namespace KnittedPicture.Game
         {
             var items = new (string name, string text, Spool spool, Color color)[]
             {
-                ("Скрытый", "Цвет откроется, когда клубок выйдет вперёд", new Spool(0, 0, 6, hidden: true), Sky),
-                ("Узелок", "Первый тап развязывает, второй отправляет на станок", new Spool(0, 0, 5, knots: 1), Pink),
-                ("Замок", "Откроется, когда на станок встанет клубок с ключом", new Spool(0, 0, 7, locked: true), Leaf),
-                ("Связка", "Едут на станок только вдвоём: нужно 2 свободных места", new Spool(0, 0, 4, link: 1), Sun),
-                ("Радужный", "Вяжет любой цвет. Выручает, когда нужного нет", new Spool(0, 0, 5, rainbow: true), Color.white),
-                ("Толстый", "Занимает 2 места, зато вяжет вдвое быстрее", new Spool(0, 0, 24, thick: true), Palette.Hex("#3C78D8")),
-                ("Ледяной", "Оттает, когда станок свяжет столько петель его цвета, сколько на льду", new Spool(0, 0, 6, ice: 4), Sky),
+                (L.T("Скрытый"), L.T("Цвет откроется, когда клубок выйдет вперёд"), new Spool(0, 0, 6, hidden: true), Sky),
+                (L.T("Узелок"), L.T("Первый тап развязывает, второй отправляет на станок"), new Spool(0, 0, 5, knots: 1), Pink),
+                (L.T("Замок"), L.T("Откроется, когда на станок встанет клубок с ключом"), new Spool(0, 0, 7, locked: true), Leaf),
+                (L.T("Связка"), L.T("Едут на станок только вдвоём: нужно 2 свободных места"), new Spool(0, 0, 4, link: 1), Sun),
+                (L.T("Радужный"), L.T("Вяжет любой цвет. Выручает, когда нужного нет"), new Spool(0, 0, 5, rainbow: true), Color.white),
+                (L.T("Толстый"), L.T("Занимает 2 места, зато вяжет вдвое быстрее"), new Spool(0, 0, 24, thick: true), Palette.Hex("#3C78D8")),
+                (L.T("Ледяной"), L.T("Оттает, когда станок свяжет столько петель его цвета, сколько на льду"), new Spool(0, 0, 6, ice: 4), Sky),
             };
 
             const float size = 48f;
@@ -789,8 +789,8 @@ namespace KnittedPicture.Game
             var by = _sh - 16f - 56f;
             var titleY = by - 10f - 44f - 26f;
             var fieldY = (loomY + 74f + titleY) / 2f;
-            var title = Ui.Label(scene, "Выбери бустер", 17, Palette.Ink, 20, titleY, _sw - 40, 24);
-            var text = Ui.Fit(Ui.Label(scene, "Ножницы, отмена хода или ещё одно место на станке", 14, Palette.Ink2, 24, titleY + 26f, _sw - 48, 44,
+            var title = Ui.Label(scene, L.T("Выбери бустер"), 17, Palette.Ink, 20, titleY, _sw - 40, 24);
+            var text = Ui.Fit(Ui.Label(scene, L.T("Ножницы, отмена хода или ещё одно место на станке"), 14, Palette.Ink2, 24, titleY + 26f, _sw - 48, 44,
                 false, TextAnchor.UpperCenter), 11);
             text.lineSpacing = 0.95f;
 
@@ -802,7 +802,7 @@ namespace KnittedPicture.Game
                 var type = types[i];
                 var card = Ui.Card(scene, "Booster" + type, 16 + i * (bw + 8f), by, bw, 56, 16, Palette.Card, Palette.CardShadow, 3f, true);
                 Ui.IconImage(card, BoosterInfo.Icon(type), Palette.Ink, bw / 2f, 20, 20);
-                Ui.Label(card, type == BoosterType.Slot ? "+1 место" : BoosterInfo.Name(type), 12, Palette.Ink, 0, 34, bw, 18);
+                Ui.Label(card, type == BoosterType.Slot ? L.T("+1 место") : BoosterInfo.Name(type), 12, Palette.Ink, 0, 34, bw, 18);
                 var tap = card.gameObject.AddComponent<Tap>();
                 tap.OnClick(() =>
                 {
@@ -862,9 +862,9 @@ namespace KnittedPicture.Game
         {
             var rows = new[]
             {
-                (1, "Довязать картинку"),
-                (2, "Без спасения после затора"),
-                (3, "Без бустеров"),
+                (1, L.T("Довязать картинку")),
+                (2, L.T("Без спасения после затора")),
+                (3, L.T("Без бустеров")),
             };
             const float rowH = 40f;
             var y = 20f;
@@ -905,7 +905,7 @@ namespace KnittedPicture.Game
             }
 
             y += 3 * (rowH + 6f) + 12f;
-            var chips = new[] { (Icon.Star, Palette.Coin, "Золото 2/3") };
+            var chips = new[] { (Icon.Star, Palette.Coin, L.T("Золото 2/3")) };
             const float chipW = 150f;
             for (var i = 0; i < chips.Length; i++)
             {
@@ -918,7 +918,7 @@ namespace KnittedPicture.Game
             }
 
             y += 46f;
-            var rewards = new[] { (Icon.Gift, Palette.Danger, "Подарок дня"), (Icon.Chest, Palette.CoinShadow, "Сундук за ★"), (Icon.Trophy, Palette.Link, "Коллекции") };
+            var rewards = new[] { (Icon.Gift, Palette.Danger, L.T("Подарок дня")), (Icon.Chest, Palette.CoinShadow, L.T("Сундук за ★")), (Icon.Trophy, Palette.Link, L.T("Коллекции")) };
             var rw = (_sw - 40f) / 3f;
             for (var i = 0; i < rewards.Length; i++)
             {

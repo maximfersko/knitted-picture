@@ -26,9 +26,9 @@ namespace KnittedPicture.Game
             Ui.PlaceCenter(trophy.rectTransform, CardWidth / 2f, Cursor + cup / 2f, cup, cup);
             Tweens.Scale(trophy.rectTransform, 0.6f, 1f, 0.45f, Ease.OutBack, null, 0.1f);
             Space(cup + 10f);
-            AddTitle("Вязальный марафон", 22);
+            AddTitle(L.T("Вязальный марафон"), 22);
             var days = WeeklyMarathon.DaysLeft(today);
-            AddText($"Вяжи петли на любых уровнях. Новая неделя начнётся через {days} {Days(days)}", 14, 2);
+            AddText(L.F("Вяжи петли на любых уровнях. Новая неделя начнётся через {0} {1}", days, Days(days)), 14, 2);
 
             // Общая полоска до последней ступени: с отметками ступеней.
             var last = targets[targets.Length - 1];
@@ -40,8 +40,8 @@ namespace KnittedPicture.Game
             }
 
             Space(18f);
-            var count = Ui.Label(Card, $"{Mathf.Min(stitches, last)} из {last} петель", 13, Palette.Ink2, 24, Cursor, Inner, 18, true, TextAnchor.MiddleRight);
-            Ui.RollTo(count, Mathf.Min(stitches, last), 0.6f, "{0} из " + last + " петель", 0.2f);
+            var count = Ui.Label(Card, L.F("{0} из {1} петель", Mathf.Min(stitches, last), last), 13, Palette.Ink2, 24, Cursor, Inner, 18, true, TextAnchor.MiddleRight);
+            Ui.RollTo(count, Mathf.Min(stitches, last), 0.6f, L.F("{{0}} из {0} петель", last), 0.2f);
             Space(26f);
 
             for (var i = 0; i < targets.Length; i++)
@@ -52,7 +52,7 @@ namespace KnittedPicture.Game
                 var row = Ui.Box(Card, "Tier", 14, ready ? Palette.CoinSoft : done ? Palette.PrimarySoft : Palette.Surface).rectTransform;
                 Ui.Place(row, 24, Cursor, Inner, 48);
                 Ui.Outline(row, 14, ready ? Palette.Coin : done ? Palette.Primary : Palette.Line, ready ? 2f : 1.5f);
-                Ui.Label(row, $"{targets[i]} петель", 14, Palette.Ink, 14, 0, 110, 48, true, TextAnchor.MiddleLeft);
+                Ui.Label(row, L.F("{0} петель", targets[i]), 14, Palette.Ink, 14, 0, 110, 48, true, TextAnchor.MiddleLeft);
                 var x = 130f;
                 if (reward.Coins > 0)
                 {
@@ -89,7 +89,7 @@ namespace KnittedPicture.Game
             Space(4f);
             if (progress.CanClaimMarathon(today))
             {
-                var claim = AddPrimary("Забрать");
+                var claim = AddPrimary(L.T("Забрать"));
                 Ui.Sheen((RectTransform)claim.transform, Inner, 60f, 3.2f, 0.5f);
                 claim.OnClick(() =>
                 {
@@ -99,18 +99,18 @@ namespace KnittedPicture.Game
                     Close();
                     if (granted != null)
                     {
-                        app.ShowPopup(new RewardPopup(app, "Вязальный марафон", Icon.Trophy, granted.Value, changed));
+                        app.ShowPopup(new RewardPopup(app, L.T("Вязальный марафон"), Icon.Trophy, granted.Value, changed));
                     }
                 });
             }
             else if (claimed >= targets.Length)
             {
-                AddText("Все ступени этой недели взяты. Новый марафон в понедельник", 14, 1);
-                AddPrimary("Понятно", 54).OnClick(Close);
+                AddText(L.T("Все ступени этой недели взяты. Новый марафон в понедельник"), 14, 1);
+                AddPrimary(L.T("Понятно"), 54).OnClick(Close);
             }
             else
             {
-                AddPrimary("Играть").OnClick(() =>
+                AddPrimary(L.T("Играть")).OnClick(() =>
                 {
                     Close();
                     app.StartLevel(progress.CurrentLevel);
@@ -122,14 +122,7 @@ namespace KnittedPicture.Game
 
         private static string Days(int n)
         {
-            var mod10 = n % 10;
-            var mod100 = n % 100;
-            if (mod10 == 1 && mod100 != 11)
-            {
-                return "день";
-            }
-
-            return mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? "дня" : "дней";
+            return L.Plural(n, "день", "дня", "дней");
         }
     }
 }

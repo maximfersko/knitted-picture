@@ -98,7 +98,7 @@ namespace KnittedPicture.Game
             }
 
             App.Save();
-            ShowTip("Столбики выше пунктира ждут, пока довяжется ряд внизу", line, false);
+            ShowTip(L.T("Столбики выше пунктира ждут, пока довяжется ряд внизу"), line, false);
             _tipKeep = true;
         }
 
@@ -126,7 +126,7 @@ namespace KnittedPicture.Game
             var root = Ui.Node(Root, "Tip");
             _tip = root;
 
-            var label = Ui.Label(root, tipText, 14, Palette.Ink, 40, 0, maxW - 52, 10, true, TextAnchor.MiddleLeft);
+            var label = Ui.Label(root, L.T(tipText), 14, Palette.Ink, 40, 0, maxW - 52, 10, true, TextAnchor.MiddleLeft);
             label.lineSpacing = 0.9f;
             var textW = Mathf.Min(maxW - 52, Mathf.Max(label.preferredWidth, 60f));
             label.rectTransform.sizeDelta = new Vector2(textW, 10);

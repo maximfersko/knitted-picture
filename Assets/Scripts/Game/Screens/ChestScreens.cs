@@ -78,15 +78,15 @@ namespace KnittedPicture.Game
             catcherTap.ClickSound = false;
             catcherTap.OnClick(OnStageTap);
 
-            Ui.Label(_stage, _contents.Big ? "Большой сундук" : "Звёздный сундук", 26, Color.white, 16, _h * 0.06f, _w - 32, 36);
+            Ui.Label(_stage, _contents.Big ? L.T("Большой сундук") : L.T("Звёздный сундук"), 26, Color.white, 16, _h * 0.06f, _w - 32, 36);
             _chest = ChestView.Create(_stage, _w / 2f, _h * 0.42f, 210f, _contents.Big);
-            _hint = Ui.Label(_stage, "Тапни, чтобы открыть", 16, Palette.WithAlpha(Color.white, 0.8f), 16, _h * 0.42f + 120f, _w - 32, 24, false);
+            _hint = Ui.Label(_stage, L.T("Тапни, чтобы открыть"), 16, Palette.WithAlpha(Color.white, 0.8f), 16, _h * 0.42f + 120f, _w - 32, 24, false);
             _stepTitle = Ui.Label(_stage, string.Empty, 21, Color.white, 16, StepTitleY, _w - 32, 30);
             _description = Ui.Label(_stage, string.Empty, 14, Palette.WithAlpha(Color.white, 0.82f), 24, CardsTop + CardH + 14f, _w - 48, 44, false);
             _description.lineSpacing = 0.95f;
             Ui.Fit(_description, 11);
 
-            var tap = Ui.Button(_stage, "Взять", 24, _h - 96f, _w - 48f, 60f, Palette.Primary, Palette.PrimaryShadow, Color.white, 20);
+            var tap = Ui.Button(_stage, L.T("Взять"), 24, _h - 96f, _w - 48f, 60f, Palette.Primary, Palette.PrimaryShadow, Color.white, 20);
             _button = (RectTransform)tap.transform;
             _buttonLabel = _button.GetComponentInChildren<Text>();
             _buttonGroup = _button.gameObject.AddComponent<CanvasGroup>();
@@ -336,15 +336,15 @@ namespace KnittedPicture.Game
                 var level = App.Progress.YarnLevel(yarn.Id);
                 var perk = YarnCatalog.PerkOf(yarn.Id);
                 _description.text = !App.Progress.PerksOpen
-                    ? (level == 0 ? $"{yarn.Description}. Набор «{set}»" : $"Уже есть: повтор поднимет уровень мотка")
+                    ? (level == 0 ? L.F("{0}. Набор «{1}»", yarn.Description, set) : L.T("Уже есть: повтор поднимет уровень мотка"))
                     : level == 0
-                    ? $"Набор «{set}». Бонус: {YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, 1))}"
+                    ? L.F("Набор «{0}». Бонус: {1}", set, YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, 1)))
                     : level < YarnCatalog.MaxLevel
-                        ? $"Уровень {level + 1}: {YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, level + 1))}"
-                        : $"Уже максимальный уровень: повтор даст {YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
+                        ? L.F("Уровень {0}: {1}", level + 1, YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, level + 1)))
+                        : L.F("Уже максимальный уровень: повтор даст {0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity));
             }
 
-            ShowButton("Взять");
+            ShowButton(L.T("Взять"));
         }
 
         private void ShowButton(string text)
@@ -398,9 +398,9 @@ namespace KnittedPicture.Game
         private void ShowBoosters()
         {
             _step = Step.Boosters;
-            _stepTitle.text = "Выбери бустер";
+            _stepTitle.text = L.T("Выбери бустер");
             var count = _contents.BoosterCount;
-            _description.text = count > 1 ? "Большой сундук: возьмёшь сразу 2 штуки" : "Выбери 1 из 3. Тапни, чтобы узнать, что он делает";
+            _description.text = count > 1 ? L.T("Большой сундук: возьмёшь сразу 2 штуки") : L.T("Выбери 1 из 3. Тапни, чтобы узнать, что он делает");
             var options = _contents.Boosters;
             Tweens.Delay(_stage, 0.12f * (options.Length - 1) + 0.75f, () => _selectable = true);
             for (var i = 0; i < options.Length; i++)
@@ -415,7 +415,7 @@ namespace KnittedPicture.Game
                 var chip = Ui.Box(visual, "Count", 11, Palette.Surface).rectTransform;
                 Ui.PlaceCenter(chip, w / 2f, 116, 44, 22);
                 Ui.Label(chip, "×" + count, 13, Palette.Ink, 0, 0, 44, 22);
-                Ui.Fit(Ui.Label(visual, $"в запасе {App.Progress.Stock(type)}", 11, Palette.Ink3, 4, 130, w - 8, 16, false), 9);
+                Ui.Fit(Ui.Label(visual, L.F("в запасе {0}", App.Progress.Stock(type)), 11, Palette.Ink3, 4, 130, w - 8, 16, false), 9);
             }
 
             _confirm = () =>
@@ -444,8 +444,8 @@ namespace KnittedPicture.Game
         private void ShowYarns()
         {
             _step = Step.Yarns;
-            _stepTitle.text = "Выбери моток";
-            _description.text = "Рубашка подсказывает редкость";
+            _stepTitle.text = L.T("Выбери моток");
+            _description.text = L.T("Рубашка подсказывает редкость");
             var options = _contents.Yarns;
             Tweens.Delay(_stage, 0.8f + 0.28f * (options.Length - 1) + 0.45f, () => _selectable = true);
             for (var i = 0; i < options.Length; i++)
@@ -481,7 +481,7 @@ namespace KnittedPicture.Game
                 var isNew = !App.Progress.HasYarn(yarn.Id);
                 var yarnLevel = App.Progress.YarnLevel(yarn.Id);
                 var levelUp = !isNew && yarnLevel < YarnCatalog.MaxLevel;
-                var chipText = isNew ? "новый!" : levelUp ? $"ур. {yarnLevel + 1}!" : $"+{YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
+                var chipText = isNew ? L.T("новый!") : levelUp ? L.F("ур. {0}!", yarnLevel + 1) : L.F("+{0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity));
                 var chip = Ui.Box(front, "State", 11, isNew ? Palette.DangerSoft : levelUp ? Palette.PrimarySoft : Palette.CoinSoft).rectTransform;
                 Ui.PlaceCenter(chip, w / 2f, 130, w - 16, 22);
                 Ui.Fit(Ui.Label(chip, chipText, 12, isNew ? Palette.Danger : levelUp ? Palette.Primary : Palette.CoinInk, 0, 0, w - 16, 22), 9);
@@ -562,20 +562,20 @@ namespace KnittedPicture.Game
             var duplicate = granted != null && !granted.Value.NewYarn && !levelUp;
             var level = App.Progress.YarnLevel(yarn.Id);
             var chip = AddTrayChip(c => YarnView.Create(c, yarn, 22, 20, 28, true),
-                duplicate ? "+" + granted!.Value.DuplicateCoins : levelUp ? $"ур. {level}" : yarn.Name);
+                duplicate ? "+" + granted!.Value.DuplicateCoins : levelUp ? L.F("ур. {0}", level) : yarn.Name);
             ClearCards(yarnChoice, Ui.WorldCenter(chip));
 
-            _stepTitle.text = "Всё в корзинке";
+            _stepTitle.text = L.T("Всё в корзинке");
             _description.text = duplicate
-                ? $"«{yarn.Name}» уже на максимуме: повтор стал монетами"
+                ? L.F("«{0}» уже на максимуме: повтор стал монетами", yarn.Name)
                 : levelUp
-                    ? $"«{yarn.Name}» теперь уровня {level}: бонус сильнее"
-                    : $"Новый моток «{yarn.Name}» в коллекции";
+                    ? L.F("«{0}» теперь уровня {1}: бонус сильнее", yarn.Name, level)
+                    : L.F("Новый моток «{0}» в коллекции", yarn.Name);
             _description.rectTransform.anchoredPosition = new Vector2(24, -(CardsTop + 10f));
             Fx.Sparkle(_stage, Ui.WorldCenter(chip), Palette.Coin, 10, 60f);
             Sfx.Play(Sound.Win, 0.5f);
             Haptics.Play(Haptic.Success);
-            Tweens.Delay(_stage, 0.5f, () => ShowButton("Готово"));
+            Tweens.Delay(_stage, 0.5f, () => ShowButton(L.T("Готово")));
             _confirm = () =>
             {
                 Close();
@@ -598,7 +598,7 @@ namespace KnittedPicture.Game
             : base(app, "ChestScreen")
         {
             Ui.RoundButton(Root, Icon.Back, 16, 8).OnClick(app.ShowHome);
-            Ui.Fit(Ui.Label(Root, "Сундук", 22, Palette.Ink, 66, 8, W - 66 - 136, 44, true, TextAnchor.MiddleLeft), 15);
+            Ui.Fit(Ui.Label(Root, L.T("Сундук"), 22, Palette.Ink, 66, 8, W - 66 - 136, 44, true, TextAnchor.MiddleLeft), 15);
             Ui.CoinPill(Root, app.Progress.Coins, W - 16, 8);
             var h = H - 64f;
             var content = Ui.Scroll(Root, 0, 64, W, h);
@@ -649,10 +649,10 @@ namespace KnittedPicture.Game
                 }
             });
 
-            Ui.Label(card, big ? "Большой сундук" : "Звёздный сундук", 20, Palette.Ink, 16, 186, cardW - 32, 28);
+            Ui.Label(card, big ? L.T("Большой сундук") : L.T("Звёздный сундук"), 20, Palette.Ink, 16, 186, cardW - 32, 28);
             if (ready)
             {
-                Ui.Button(card, "Открыть", 24, 222, cardW - 48, 56, Palette.Primary, Palette.PrimaryShadow, Color.white, 20).OnClick(Open);
+                Ui.Button(card, L.T("Открыть"), 24, 222, cardW - 48, 56, Palette.Primary, Palette.PrimaryShadow, Color.white, 20).OnClick(Open);
             }
             else
             {
@@ -685,8 +685,8 @@ namespace KnittedPicture.Game
             var items = new (string text, System.Action<RectTransform, float> icon)[]
             {
                 ($"{Chest.CoinRange(big).Min}–{Chest.CoinRange(big).Max}", (c, cx) => Ui.Coin(c, cx, 22, 26)),
-                (big ? "бустер ×2" : "бустер", (c, cx) => Ui.IconImage(c, Icon.PlusSlot, Palette.Primary, cx, 22, 24)),
-                (big ? "редкий моток" : "моток", (c, cx) =>
+                (big ? L.T("бустер ×2") : L.T("бустер"), (c, cx) => Ui.IconImage(c, Icon.PlusSlot, Palette.Primary, cx, 22, 24)),
+                (big ? L.T("редкий моток") : L.T("моток"), (c, cx) =>
                 {
                     var ball = Ui.Image(c, "Ball", Art2.YarnBall(big ? Palette.Hex("#3C78D8") : Palette.Hex("#E2683C")), Color.white);
                     Ui.PlaceCenter(ball.rectTransform, cx, 22, 28, 28);
@@ -736,7 +736,7 @@ namespace KnittedPicture.Game
                 // Подпись только у большого: галочка и кольцо понятны без слов.
                 if (big && !done)
                 {
-                    Ui.Label(card, "большой", 11, Palette.CoinInk, cx - 32, y + 54, 64, 16, true);
+                    Ui.Label(card, L.T("большой"), 11, Palette.CoinInk, cx - 32, y + 54, 64, 16, true);
                 }
             }
         }
@@ -749,7 +749,7 @@ namespace KnittedPicture.Game
         {
             var progress = App.Progress;
             var types = (BoosterType[])Enum.GetValues(typeof(BoosterType));
-            Ui.Label(content, "Запасы", 18, Palette.Ink, 20, y, W - 40, 26, true, TextAnchor.MiddleLeft);
+            Ui.Label(content, L.T("Запасы"), 18, Palette.Ink, 20, y, W - 40, 26, true, TextAnchor.MiddleLeft);
             y += 34f;
             const float gap = 10f;
             const float tileH = 104f;
@@ -770,14 +770,14 @@ namespace KnittedPicture.Game
                     Ui.Label(chip, "×" + stock, 12, Color.white, 0, 0, 34, 22);
                 }
 
-                Ui.Fit(Ui.Label(tile, unlocked ? BoosterInfo.Name(type) : $"ур. {Economy.UnlockLevel(type)}", 13,
+                Ui.Fit(Ui.Label(tile, unlocked ? BoosterInfo.Name(type) : L.F("ур. {0}", Economy.UnlockLevel(type)), 13,
                     unlocked ? Palette.Ink : Palette.Ink3, 4, 68, tileW - 8, 28, unlocked), 9).lineSpacing = 0.85f;
 
                 var target = type;
                 tile.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, BoosterInfo.Name(target),
                     App.Progress.IsUnlocked(target, App.Progress.CurrentLevel)
                         ? BoosterInfo.Description(target)
-                        : $"{BoosterInfo.Description(target)}. Откроется на уровне {Economy.UnlockLevel(target)}")));
+                        : L.F("{0}. Откроется на уровне {1}", BoosterInfo.Description(target), Economy.UnlockLevel(target)))));
             }
 
             return y + tileH;

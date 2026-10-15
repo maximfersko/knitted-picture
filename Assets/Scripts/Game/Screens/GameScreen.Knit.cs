@@ -102,7 +102,7 @@ namespace KnittedPicture.Game
                     {
                         // Лишняя пряжа: цвет довязан, клубок уходит недовязанным.
                         Fx.Poof(_fx, at, Palette.Ink3, _slotSpool);
-                        Fx.FloatText(_fx, at, "лишняя пряжа", Palette.Ink2, 14f);
+                        Fx.FloatText(_fx, at, L.T("лишняя пряжа"), Palette.Ink2, 14f);
                     }
                     else
                     {
@@ -193,7 +193,7 @@ namespace KnittedPicture.Game
                     return;
                 }
 
-                Fx.FloatText(_fx, at.Value, "Цвет готов!", Color.Lerp(_colors[color], Palette.Ink, 0.45f), 22f);
+                Fx.FloatText(_fx, at.Value, L.T("Цвет готов!"), Color.Lerp(_colors[color], Palette.Ink, 0.45f), 22f);
                 Fx.Sparkle(_fx, at.Value, _colors[color], 10, 50f);
                 Fx.Poof(_fx, at.Value, Color.Lerp(_colors[color], Color.white, 0.3f), 110f);
                 Sfx.Play(Sound.Star, 0.55f);
@@ -228,7 +228,7 @@ namespace KnittedPicture.Game
             var at = _picture.CellWorld(x, y);
             if (!caught)
             {
-                Fx.FloatText(_fx, at, "мимо", Palette.Ink3, 14f);
+                Fx.FloatText(_fx, at, L.T("мимо"), Palette.Ink3, 14f);
                 return;
             }
 
@@ -257,7 +257,7 @@ namespace KnittedPicture.Game
             var at = Ui.WorldCenter(_loomBg) + new Vector3(0, 46f * _fx.lossyScale.y, 0);
             if (combo == TempoCombo.RushFrom)
             {
-                Fx.FloatText(_fx, at, "Разгон!", RushColor, 30f);
+                Fx.FloatText(_fx, at, L.T("Разгон!"), RushColor, 30f);
                 Sfx.Play(Sound.Combo, 0.9f);
                 Haptics.Play(Haptic.Medium);
                 Tweens.Punch(_loomBg, 0.06f, 0.3f);
@@ -277,7 +277,7 @@ namespace KnittedPicture.Game
             if (wasRush)
             {
                 var at = Ui.WorldCenter(_loomBg) + new Vector3(0, 46f * _fx.lossyScale.y, 0);
-                Fx.FloatText(_fx, at, "Разгон погас", Palette.Ink3, 16f);
+                Fx.FloatText(_fx, at, L.T("Разгон погас"), Palette.Ink3, 16f);
             }
         }
 
@@ -301,7 +301,7 @@ namespace KnittedPicture.Game
                 if (shown != _comboShown)
                 {
                     _comboShown = shown;
-                    _comboText.text = rush ? $"Разгон ×{_tempo.Combo}" : $"Комбо ×{_tempo.Combo}";
+                    _comboText.text = rush ? L.F("Разгон ×{0}", _tempo.Combo) : L.F("Комбо ×{0}", _tempo.Combo);
                     _comboBack.color = rush ? RushColor : Palette.Link;
                     _comboBolt.enabled = rush;
                     _comboText.rectTransform.anchoredPosition = new Vector2(rush ? 24f : 10f, 0f);

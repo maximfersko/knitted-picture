@@ -40,7 +40,7 @@ namespace KnittedPicture.Game
 
                 Sfx.Play(Sound.Deny, 0.6f);
                 Haptics.Play(Haptic.Soft);
-                ToastOnce("depth", "Сначала уходит передний клубок");
+                ToastOnce("depth", L.T("Сначала уходит передний клубок"));
                 return;
             }
 
@@ -94,7 +94,7 @@ namespace KnittedPicture.Game
             // а способ расчистить колонку. Без пояснения исчезновение клубка выглядело багом.
             if (result.Placed.Any(p => _game.IsSurplus(p.Spool)))
             {
-                ToastOnce("surplus", "Цвет довязан: клубок сразу уйдёт со станка");
+                ToastOnce("surplus", L.T("Цвет довязан: клубок сразу уйдёт со станка"));
             }
 
             foreach (var id in result.Revealed)
@@ -179,15 +179,15 @@ namespace KnittedPicture.Game
             {
                 if (_game.IsForeign(spool))
                 {
-                    ToastOnce("foreign-loom", "Эта пряжа картинке не нужна: срежь её ножницами");
+                    ToastOnce("foreign-loom", L.T("Эта пряжа картинке не нужна: срежь её ножницами"));
                 }
                 else if (spool.Warmup == 0 && !_game.HasWork(spool) && !_game.IsSurplus(spool))
                 {
                     // Бледный клубок на станке: почему он не вяжет.
                     var held = Enumerable.Range(0, _game.Width).Any(x => _game.IsHeld(x) && _game.ColorAt(x, _game.FrontY(x)) == spool.Color);
                     ToastOnce("waiting", held
-                        ? "Ждёт: сначала довяжи клетки ниже пунктира"
-                        : "Ждёт своей очереди: его цвета пока нет внизу");
+                        ? L.T("Ждёт: сначала довяжи клетки ниже пунктира")
+                        : L.T("Ждёт своей очереди: его цвета пока нет внизу"));
                 }
 
                 return;
@@ -209,7 +209,7 @@ namespace KnittedPicture.Game
             if (back)
             {
                 // Нужный рисунку клубок не пропадает: он вернулся вперёд своей колонки.
-                App.Toast("Клубок вернулся на поле: его пряжа ещё нужна картинке");
+                App.Toast(L.T("Клубок вернулся на поле: его пряжа ещё нужна картинке"));
             }
             Sfx.Play(Sound.Knot);
             Haptics.Play(Haptic.Medium);
@@ -250,7 +250,7 @@ namespace KnittedPicture.Game
             switch (reason)
             {
                 case RejectReason.Locked:
-                    ToastOnce("locked", "Под замком: сначала поставь на станок клубок с ключом");
+                    ToastOnce("locked", L.T("Под замком: сначала поставь на станок клубок с ключом"));
                     break;
                 case RejectReason.LinkNotReady:
                     ToastOnce("link", LinkPartnerText(column, depth));
@@ -258,15 +258,15 @@ namespace KnittedPicture.Game
                     break;
                 case RejectReason.Frozen:
                     var ice = _game.Column(column)[0].Ice;
-                    ToastOnce("ice", $"Во льду: оттает через {ice} {Plural(ice, "петлю", "петли", "петель")} этого цвета");
+                    ToastOnce("ice", L.F("Во льду: оттает через {0} {1} этого цвета", ice, L.Plural(ice, "петлю", "петли", "петель")));
                     break;
                 case RejectReason.NoFreeSlot:
                     var spool = depth < _game.Column(column).Count ? _game.Column(column)[depth] : null;
                     ToastOnce("noslot", spool != null && spool.Link != 0 && !_scissors
-                        ? "Связанным клубкам нужно 2 свободных места"
+                        ? L.T("Связанным клубкам нужно 2 свободных места")
                         : spool != null && spool.Thick
-                            ? "Толстому клубку нужно 2 свободных места"
-                            : "Нет места: подожди, пока клубок довяжет");
+                            ? L.T("Толстому клубку нужно 2 свободных места")
+                            : L.T("Нет места: подожди, пока клубок довяжет"));
                     Tweens.Shake(_loomBg, 5f, 0.25f);
                     break;
             }

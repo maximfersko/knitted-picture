@@ -46,7 +46,7 @@ namespace KnittedPicture.Game
             // Раздел нижней панели: «Пряжа» — одна страница; «Альбом» — картинки и достижения переключателем.
             var yarn = tab == CollectionsTab.Yarn;
             _pages = yarn ? new[] { CollectionsTab.Yarn } : new[] { CollectionsTab.Album, CollectionsTab.Achievements };
-            _titles = yarn ? new[] { "Пряжа" } : new[] { "Картинки", "Достижения" };
+            _titles = yarn ? new[] { L.T("Пряжа") } : new[] { L.T("Картинки"), L.T("Достижения") };
             _contentY = _pages.Length > 1 ? 116f : 62f;
             _scrolls = new UnityEngine.UI.ScrollRect[_pages.Length];
             _tabLabels = new UnityEngine.UI.Text[_pages.Length];
@@ -54,7 +54,7 @@ namespace KnittedPicture.Game
             _pos = _target;
 
             // Крупный заголовок раздела слева, как на верхних экранах iOS и Android; «назад» не нужен — есть вкладки.
-            Ui.Label(Root, yarn ? "Пряжа" : "Альбом", 28, Palette.Ink, 20, 8, W - 160, 44, true, TextAnchor.MiddleLeft);
+            Ui.Label(Root, yarn ? L.T("Пряжа") : L.T("Альбом"), 28, Palette.Ink, 20, 8, W - 160, 44, true, TextAnchor.MiddleLeft);
             Ui.CoinPill(Root, app.Progress.Coins, W - 16, 8);
             if (_pages.Length > 1)
             {
@@ -316,7 +316,7 @@ namespace KnittedPicture.Game
                 var stripY = tilesY + tile + MiniPicture.StarsOverhang + 34f;
                 var cardH = stripY + 48f + 14f;
                 var card = Ui.Card(content, collection.Name, 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
-                Header(card, cardW, collection.Name, $"{done} из {collection.Count} картинок", done == collection.Count ? "Собрана" : null,
+                Header(card, cardW, collection.Name, L.F("{0} из {1} картинок", done, collection.Count), done == collection.Count ? L.T("Собрана") : null,
                     $"{stars}/{collection.Count * 3}");
 
                 MiniPicture.Shelf(card, 8f, tilesY + tile - 4f, collection.Count * (tile + gap) - gap + 12f);
@@ -339,7 +339,7 @@ namespace KnittedPicture.Game
                         NewInAlbum(card, rt, x, tilesY, tile);
                     }
                     tap.OnClick(() => LevelInfoPopup.OnTile(App, levelId, rt));
-                    var name = Ui.Label(card, state == TileState.Locked ? $"Ур. {id}" : level.name, 11,
+                    var name = Ui.Label(card, state == TileState.Locked ? L.F("Ур. {0}", id) : level.Title, 11,
                         state == TileState.Current ? Palette.Primary : state == TileState.Locked ? Palette.Ink3 : Palette.Ink2,
                         x - 6, tilesY + tile + MiniPicture.StarsOverhang + 3f, tile + 12, 26, state == TileState.Current, TextAnchor.UpperCenter);
                     name.lineSpacing = 0.85f;
@@ -373,7 +373,7 @@ namespace KnittedPicture.Game
 
             var label = Ui.Box(card, "NewLabel", 9, Palette.Danger).rectTransform;
             Ui.Place(label, x + size / 2f - 26f, y - 12f, 52f, 18f);
-            Ui.Label(label, "Новая", 11, Color.white, 0, 0, 52, 18);
+            Ui.Label(label, L.T("Новая"), 11, Color.white, 0, 0, 52, 18);
             Tweens.Scale(label, 0f, 1f, 0.4f, Ease.OutBack, null, 0.35f);
             Tweens.Delay(tile, 0.5f, () => Fx.Sparkle(Root, Ui.WorldCenter(tile), Palette.Coin, 10, size * 0.7f));
         }
@@ -395,7 +395,7 @@ namespace KnittedPicture.Game
             if (active < 0 || !open)
             {
                 // До 9-го уровня пряжа — просто красивая коллекция: про бонусы только одна тихая строка.
-                var text = !open ? $"Бонусы пряжи откроются на уровне {YarnCatalog.PerksFromLevel}" : "В работе пока ничего: найди первый моток";
+                var text = !open ? L.F("Бонусы пряжи откроются на уровне {0}", YarnCatalog.PerksFromLevel) : L.T("В работе пока ничего: найди первый моток");
                 Ui.Fit(Ui.Label(strip, text, 12, Palette.Ink2, 12, 0, w - 24, 40, false, TextAnchor.MiddleLeft), 9);
                 return;
             }
@@ -403,7 +403,7 @@ namespace KnittedPicture.Game
             var yarn = YarnCatalog.All[active];
             var perk = YarnCatalog.PerkOf(active);
             YarnView.Create(strip, yarn, 22, 20, 26, true);
-            Ui.Fit(Ui.Label(strip, $"В работе: {yarn.Name} · ур. {progress.YarnLevel(active)}", 13, Palette.Ink, 42, 3, w - 52, 18, true,
+            Ui.Fit(Ui.Label(strip, L.F("В работе: {0} · ур. {1}", yarn.Name, progress.YarnLevel(active)), 13, Palette.Ink, 42, 3, w - 52, 18, true,
                 TextAnchor.MiddleLeft), 10);
             Ui.Fit(Ui.Label(strip, YarnCatalog.PerkText(perk, YarnCatalog.Power(active, progress.YarnLevel(active))), 11, Palette.Primary,
                 42, 20, w - 52, 16, false, TextAnchor.MiddleLeft), 8);
@@ -452,13 +452,13 @@ namespace KnittedPicture.Game
             var banner = Ui.Card(content, "Basket", 16, y, cardW, bannerH, 24, Palette.Card, Palette.CardShadow, 3f);
             BuildBasket(banner, progress);
             const float textX = 118f;
-            Ui.Fit(Ui.Label(banner, "Корзинка пряжи", 18, Palette.Ink, textX, 14, cardW - textX - 48, 26, true, TextAnchor.MiddleLeft), 13);
-            var kinds = Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, textX, 40, cardW - textX - 48, 18, false,
+            Ui.Fit(Ui.Label(banner, L.T("Корзинка пряжи"), 18, Palette.Ink, textX, 14, cardW - textX - 48, 26, true, TextAnchor.MiddleLeft), 13);
+            var kinds = Ui.Label(banner, L.F("{0} из {1} мотков", progress.YarnKinds, YarnCatalog.Count), 13, Palette.Ink2, textX, 40, cardW - textX - 48, 18, false,
                 TextAnchor.MiddleLeft);
             if (entering)
             {
-                kinds.text = $"0 из {YarnCatalog.Count} мотков";
-                Ui.RollTo(kinds, progress.YarnKinds, 0.8f, "{0} из " + YarnCatalog.Count + " мотков", 0.15f);
+                kinds.text = L.F("0 из {0} мотков", YarnCatalog.Count);
+                Ui.RollTo(kinds, progress.YarnKinds, 0.8f, L.F("{{0}} из {0} мотков", YarnCatalog.Count), 0.15f);
             }
             var fill = Ui.ProgressBar(banner, textX, 66, cardW - textX - 18, 10, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Link);
             if (entering && !Tweens.Calm)
@@ -468,10 +468,10 @@ namespace KnittedPicture.Game
                 Tweens.Run(fill, 0.8f, t => fill.sizeDelta = new Vector2(Mathf.Max(10f, full * t), fill.sizeDelta.y), Ease.OutCubic, null, 0.15f);
             }
 
-            Ui.InfoButton(banner, cardW - 30, 26, "Пряжа и её бонусы",
-                "Мотки выпадают за новые картинки, в звёздном сундуке и на 7-й день подарков. " +
-                $"С уровня {YarnCatalog.PerksFromLevel} моток «в работе» даёт бонус: монеты за картинку или дороже золотые петли. " +
-                "Повтор поднимает уровень мотка до 3, дальше даёт монеты. Полный набор приносит награду.", 26);
+            Ui.InfoButton(banner, cardW - 30, 26, L.T("Пряжа и её бонусы"),
+                L.T("Мотки выпадают за новые картинки, в звёздном сундуке и на 7-й день подарков. ") +
+                L.F("С уровня {0} моток «в работе» даёт бонус: монеты за картинку или дороже золотые петли. ", YarnCatalog.PerksFromLevel) +
+                L.T("Повтор поднимает уровень мотка до 3, дальше даёт монеты. Полный набор приносит награду."), 26);
             ActiveYarnStrip(banner, 12, 98, cardW - 24, () => App.ShowCollections(CollectionsTab.Yarn));
             y += bannerH + 16f;
 
@@ -492,7 +492,7 @@ namespace KnittedPicture.Game
                 var stripY = cellsY + cellH + 14f;
                 var cardH = stripY + 48f + 14f;
                 var card = Ui.Card(content, set.Name, 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
-                Header(card, cardW, set.Name, $"{owned} из {set.Count} мотков", owned == set.Count ? "Собран" : null, "");
+                Header(card, cardW, set.Name, L.F("{0} из {1} мотков", owned, set.Count), owned == set.Count ? L.T("Собран") : null, "");
 
                 for (var i = 0; i < set.Count; i++)
                 {
@@ -509,9 +509,9 @@ namespace KnittedPicture.Game
 
                 var target = set;
                 var booster = BoosterInfo.Name(set.Reward.Booster!.Value).ToLower();
-                RewardStrip.Build(card, 12, stripY, cardW - 24, $"За весь набор: {set.Reward.Coins} монет и {booster} ×{set.Reward.BoosterCount}",
-                    (float)owned / set.Count, progress.CanClaimSet(set), progress.IsSetClaimed(set), "Набор собран!",
-                    () => Claim(progress.ClaimSet(target, App.Random), "Набор «" + target.Name + "»", Icon.Gift, CollectionsTab.Yarn));
+                RewardStrip.Build(card, 12, stripY, cardW - 24, L.F("За весь набор: {0} монет и {1} ×{2}", set.Reward.Coins, booster, set.Reward.BoosterCount),
+                    (float)owned / set.Count, progress.CanClaimSet(set), progress.IsSetClaimed(set), L.T("Набор собран!"),
+                    () => Claim(progress.ClaimSet(target, App.Random), L.F("Набор «{0}»", target.Name), Icon.Gift, CollectionsTab.Yarn));
                 y += cardH + 16f;
                 setIndex++;
             }
@@ -691,9 +691,9 @@ namespace KnittedPicture.Game
             var y = 4f;
             var sections = new[]
             {
-                ("Можно забрать", 0),
-                ("В процессе", 1),
-                ("Получено", 2),
+                (L.T("Можно забрать"), 0),
+                (L.T("В процессе"), 1),
+                (L.T("Получено"), 2),
             };
             foreach (var (title, rank) in sections)
             {
@@ -794,7 +794,7 @@ namespace KnittedPicture.Game
             if (can)
             {
                 var target = a;
-                var claimButton = Ui.Button(row, "Забрать", w - claimW - 14f, 17, claimW, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
+                var claimButton = Ui.Button(row, L.T("Забрать"), w - claimW - 14f, 17, claimW, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
                 claimButton.OnClick(() => Claim(progress.ClaimAchievement(target, App.Random), target.Title, Icon.Trophy, CollectionsTab.Achievements));
                 Ui.Sheen((RectTransform)claimButton.transform, claimW, 36f, 3.2f, 0.6f + y * 0.002f);
             }
@@ -802,7 +802,7 @@ namespace KnittedPicture.Game
             {
                 var chip = Ui.Card(row, "Done", right + 4, 22, rightW - 4, 28, 14, Palette.PrimarySoft, Palette.PrimarySoft, 0f);
                 Ui.IconImage(chip, Icon.Check, Palette.Primary, 16, 14, 14);
-                Ui.Label(chip, "Получено", 12, Palette.Primary, 26, 0, rightW - 32, 28, true, TextAnchor.MiddleLeft);
+                Ui.Label(chip, L.T("Получено"), 12, Palette.Primary, 26, 0, rightW - 32, 28, true, TextAnchor.MiddleLeft);
             }
             else
             {
@@ -889,13 +889,13 @@ namespace KnittedPicture.Game
             if (canClaim)
             {
                 Ui.Fit(Ui.Label(bar, readyText, 14, Palette.Ink, 50, 12, w - 160, 24, true, TextAnchor.MiddleLeft), 10);
-                var claimButton = Ui.Button(bar, "Забрать", w - 100, 6, 92, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
+                var claimButton = Ui.Button(bar, L.T("Забрать"), w - 100, 6, 92, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
                 claimButton.OnClick(claim);
                 Ui.Sheen((RectTransform)claimButton.transform, 92f, 36f, 3.2f, 0.6f);
             }
             else if (claimed)
             {
-                Ui.Label(bar, "Награда получена", 14, Palette.Ink2, 50, 0, w - 60, 48, true, TextAnchor.MiddleLeft);
+                Ui.Label(bar, L.T("Награда получена"), 14, Palette.Ink2, 50, 0, w - 60, 48, true, TextAnchor.MiddleLeft);
             }
             else
             {
@@ -918,8 +918,8 @@ namespace KnittedPicture.Game
                 done += progress.IsCompleted(id) ? 1 : 0;
             }
 
-            RewardStrip.Build(parent, x, y, w, $"Собери все {collection.Count}: монеты и моток", (float)done / collection.Count,
-                progress.CanClaimCollection(index), progress.IsCollectionClaimed(index), "Коллекция собрана!", () => Claim(app, index, refresh));
+            RewardStrip.Build(parent, x, y, w, L.F("Собери все {0}: монеты и моток", collection.Count), (float)done / collection.Count,
+                progress.CanClaimCollection(index), progress.IsCollectionClaimed(index), L.T("Коллекция собрана!"), () => Claim(app, index, refresh));
         }
 
         /// <summary>Забрать награду коллекции и показать её; refresh — перестроить экран после окна.</summary>

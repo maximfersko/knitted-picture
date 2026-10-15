@@ -7,12 +7,15 @@ namespace KnittedPicture.Core
     {
         public CollectionInfo(string name, int firstLevel, int lastLevel)
         {
-            Name = name;
+            _name = name;
             FirstLevel = firstLevel;
             LastLevel = lastLevel;
         }
 
-        public string Name { get; }
+        private readonly string _name;
+
+        /// <summary>Название на языке игры (исходник — русский).</summary>
+        public string Name => L.T(_name);
 
         public int FirstLevel { get; }
 

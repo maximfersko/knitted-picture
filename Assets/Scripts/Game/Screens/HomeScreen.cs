@@ -161,7 +161,7 @@ namespace KnittedPicture.Game
                 {
                     var perk = YarnCatalog.PerkOf(info.Id);
                     var power = App.Progress.PerkPower(perk);
-                    App.Toast(power > 0 ? $"{info.Name} в работе: {YarnCatalog.PerkShort(perk, power)}" : $"{info.Name} в работе");
+                    App.Toast(power > 0 ? L.F("{0} в работе: {1}", info.Name, YarnCatalog.PerkShort(perk, power)) : L.F("{0} в работе", info.Name));
                 }
                 var flip = taps % 7 == 0;
                 Sfx.Play(flip ? Sound.Star : Sound.Pick);
@@ -431,13 +431,13 @@ namespace KnittedPicture.Game
                 var claim = Ui.Box(card, "Claim", 11, Palette.CoinSoft, true).rectTransform;
                 Ui.PlaceCenter(claim, cardW / 2f, 42, Mathf.Min(cardW - 112, 200), 22);
                 Ui.Outline(claim, 11, Palette.Coin, 1.5f);
-                Ui.Label(claim, "Забрать награду", 12, Palette.CoinInk, 0, 0, Mathf.Min(cardW - 112, 200), 22);
+                Ui.Label(claim, L.T("Забрать награду"), 12, Palette.CoinInk, 0, 0, Mathf.Min(cardW - 112, 200), 22);
                 var collectionIndex = index;
                 claim.gameObject.AddComponent<Tap>().OnClick(() => CollectionReward.Claim(App, collectionIndex, App.ShowHome));
             }
             else
             {
-                Ui.Fit(Ui.Label(card, $"{done} из {collection.Count} · {stars}/{collection.Count * 3} ★", 13, Palette.Ink2, 24, 32, cardW - 48, 18, false), 10);
+                Ui.Fit(Ui.Label(card, L.F("{0} из {1} · {2}/{3} ★", done, collection.Count, stars, collection.Count * 3), 13, Palette.Ink2, 24, 32, cardW - 48, 18, false), 10);
             }
 
             var x0 = (cardW - tilesW) / 2f;
@@ -457,7 +457,7 @@ namespace KnittedPicture.Game
                 var tap = MiniPicture.Tile(card, level, state, x, 58, tile, progress.StarsOf(id));
                 var rt = (RectTransform)tap.transform;
                 tap.OnClick(() => LevelInfoPopup.OnTile(App, levelId, rt));
-                var name = Ui.Label(card, state == TileState.Locked ? $"Ур. {id}" : level.name, 11,
+                var name = Ui.Label(card, state == TileState.Locked ? L.F("Ур. {0}", id) : level.Title, 11,
                     state == TileState.Current ? Palette.Primary : state == TileState.Locked ? Palette.Ink3 : Palette.Ink2,
                     x - 6, 58 + tile + MiniPicture.StarsOverhang + 3f, tile + 12, 26, state == TileState.Current, TextAnchor.UpperCenter);
                 name.lineSpacing = 0.85f;
@@ -483,34 +483,34 @@ namespace KnittedPicture.Game
             var progress = App.Progress;
             var items = new System.Collections.Generic.List<(EventKind kind, Color tint, string title, bool waiting, System.Action open)>
             {
-                (EventKind.Gift, Palette.Danger, "Подарок", progress.CanClaimDaily(App.Today),
+                (EventKind.Gift, Palette.Danger, L.T("Подарок"), progress.CanClaimDaily(App.Today),
                     () => App.ShowPopup(new DailyGiftPopup(App, App.ShowHome))),
             };
             if (progress.MissionsOpen)
             {
-                items.Add((EventKind.Missions, Palette.Primary, "Задания", progress.CanClaimMissions(App.Today),
+                items.Add((EventKind.Missions, Palette.Primary, L.T("Задания"), progress.CanClaimMissions(App.Today),
                     () => App.ShowPopup(new MissionsPopup(App, App.ShowHome))));
             }
 
-            items.Add((EventKind.Chest, Palette.CoinShadow, "Сундук", progress.CanOpenChest, App.ShowChest));
+            items.Add((EventKind.Chest, Palette.CoinShadow, L.T("Сундук"), progress.CanOpenChest, App.ShowChest));
             if (progress.MarathonOpen)
             {
-                items.Add((EventKind.Marathon, Palette.CoinInk, "Марафон", progress.CanClaimMarathon(App.Today),
+                items.Add((EventKind.Marathon, Palette.CoinInk, L.T("Марафон"), progress.CanClaimMarathon(App.Today),
                     () => App.ShowPopup(new MarathonPopup(App, App.ShowHome))));
             }
 
             if (progress.PatternOpen)
             {
-                items.Add((EventKind.Pattern, Palette.Link, "Узор дня", !progress.PatternDone(App.Today), () =>
+                items.Add((EventKind.Pattern, Palette.Link, L.T("Узор дня"), !progress.PatternDone(App.Today), () =>
                 {
                     if (progress.PatternDone(App.Today))
                     {
                         // Часы переводили назад: узор связан «в будущем» и откроется после той даты, а не завтра.
                         var when = progress.PatternAhead(App.Today)
-                            ? "Новый узор откроется после даты последнего: на телефоне переводили часы назад."
-                            : "Новый узор появится завтра.";
-                        App.ShowPopup(new InfoPopup(App, "Узор дня связан",
-                            $"{when} Серия: {progress.PatternStreak(App.Today)} дн. подряд, каждый {DailyPattern.YarnEvery}-й день моток в подарок."));
+                            ? L.T("Новый узор откроется после даты последнего: на телефоне переводили часы назад.")
+                            : L.T("Новый узор появится завтра.");
+                        App.ShowPopup(new InfoPopup(App, L.T("Узор дня связан"),
+                            L.F("{0} Серия: {1} дн. подряд, каждый {2}-й день моток в подарок.", when, progress.PatternStreak(App.Today), DailyPattern.YarnEvery)));
                         return;
                     }
 
@@ -592,8 +592,8 @@ namespace KnittedPicture.Game
             if (progress.AllDone)
             {
                 var done = Ui.Button(Root, "", 20, buttonY, playW, 84, Palette.Primary, Palette.PrimaryShadow, Color.white);
-                Ui.Fit(Ui.Label((RectTransform)done.transform, "Все картинки связаны!", 22, Color.white, 8, 14, playW - 16, 30), 14);
-                Ui.Fit(Ui.Label((RectTransform)done.transform, "Собирай звёзды в альбоме и пряжу", 14, Color.white, 8, 46, playW - 16, 22, false), 10);
+                Ui.Fit(Ui.Label((RectTransform)done.transform, L.T("Все картинки связаны!"), 22, Color.white, 8, 14, playW - 16, 30), 14);
+                Ui.Fit(Ui.Label((RectTransform)done.transform, L.T("Собирай звёзды в альбоме и пряжу"), 14, Color.white, 8, 46, playW - 16, 22, false), 10);
                 done.OnClick(App.ShowAlbum);
                 return;
             }
@@ -616,12 +616,12 @@ namespace KnittedPicture.Game
                 }
             }
 
-            Ui.Fit(Ui.Label(face, "Играть", 28, Color.white, 76, 12, playW - 88, 36), 18);
+            Ui.Fit(Ui.Label(face, L.T("Играть"), 28, Color.white, 76, 12, playW - 88, 36), 18);
             Ui.Sheen(face, playW, 84f, 4f, 1.2f);
             var hard = App.Levels.Has(level) && App.Levels.Get(level).hard;
             // Тёплая серия — в подписи кнопки, а не отдельной плашкой: «Уровень 12 · серия ×3».
-            var streak = App.Progress.WarmStartFor(level).Any ? $" · серия ×{App.Progress.Streak}" : string.Empty;
-            Ui.Fit(Ui.Label(face, (hard ? $"Уровень {level} · сложный" : $"Уровень {level}") + streak, 15, Color.white, 76, 46, playW - 88, 22, false), 10);
+            var streak = App.Progress.WarmStartFor(level).Any ? L.F(" · серия ×{0}", App.Progress.Streak) : string.Empty;
+            Ui.Fit(Ui.Label(face, (hard ? L.F("Уровень {0} · сложный", level) : L.F("Уровень {0}", level)) + streak, 15, Color.white, 76, 46, playW - 88, 22, false), 10);
             play.OnClick(() =>
             {
                 // Эскиз с кнопки перелетит и станет картинкой уровня: переход читается как одно движение.

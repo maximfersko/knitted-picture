@@ -74,7 +74,7 @@ namespace KnittedPicture.Game
             var ad = _rewarded;
             if (ad == null)
             {
-                _app.Toast("Видео ещё не загрузилось, попробуй чуть позже");
+                _app.Toast(L.T("Видео ещё не загрузилось, попробуй чуть позже"));
                 LoadRewarded();
                 done(false);
                 return;

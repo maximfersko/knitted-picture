@@ -35,6 +35,11 @@ namespace KnittedPicture.Core
         /// </summary>
         private static void Repair(PlayerProgress d)
         {
+            if (d.language != L.Russian && d.language != L.English)
+            {
+                d.language = string.Empty;
+            }
+
             d.completed ??= new System.Collections.Generic.List<int>();
             d.introsShown ??= new System.Collections.Generic.List<int>();
             d.stars ??= new System.Collections.Generic.List<int>();

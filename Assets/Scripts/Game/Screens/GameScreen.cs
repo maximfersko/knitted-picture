@@ -408,17 +408,6 @@ namespace KnittedPicture.Game
             return true;
         }
 
-        private static string Plural(int n, string one, string few, string many)
-        {
-            var mod10 = n % 10;
-            var mod100 = n % 100;
-            if (mod10 == 1 && mod100 != 11)
-            {
-                return one;
-            }
-
-            return mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? few : many;
-        }
 
         private sealed class SlotSpool
         {
@@ -468,7 +457,7 @@ namespace KnittedPicture.Game
                 var root = Ui.Card(parent, "Booster" + type, x, y, w, 60, 18, Palette.Card, Palette.CardShadow, 3f, true);
                 _face = root.Find("Face").GetComponent<Image>();
                 _group = root.gameObject.AddComponent<CanvasGroup>();
-                var label = Ui.Label(root, type == BoosterType.Slot ? "Место" : BoosterInfo.Name(type), 14, Palette.Ink);
+                var label = Ui.Label(root, type == BoosterType.Slot ? L.T("Место") : BoosterInfo.Name(type), 14, Palette.Ink);
                 var textW = label.preferredWidth;
                 var well = Mathf.Min(44f, w * 0.38f);
                 var total = well + 6f + textW;
@@ -511,7 +500,7 @@ namespace KnittedPicture.Game
                     _group.alpha = 0.55f;
                     _badgeBack.color = Palette.Track;
                     _badgeText.color = Palette.Ink2;
-                    _badgeText.text = "ур. " + unlockLevel;
+                    _badgeText.text = L.T("ур. ") + unlockLevel;
                     return;
                 }
 
@@ -521,7 +510,7 @@ namespace KnittedPicture.Game
                     // Подарок «тёплой серии»: зелёная плашка, бесплатно.
                     _badgeBack.color = Palette.Primary;
                     _badgeText.color = Color.white;
-                    _badgeText.text = "даром";
+                    _badgeText.text = L.T("даром");
                 }
                 else if (stock > 0)
                 {

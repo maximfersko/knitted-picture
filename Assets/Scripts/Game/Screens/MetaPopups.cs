@@ -79,7 +79,7 @@ namespace KnittedPicture.Game
 
             Space(112);
             var coinsFrom = items.Count > 0 && granted.Reward.Coins > 0 ? (RectTransform)Card.Find("Item") : null;
-            AddPrimary("Забрать").OnClick(() =>
+            AddPrimary(L.T("Забрать")).OnClick(() =>
             {
                 // Монеты летят из плитки в счётчик экрана: награда «переезжает» к игроку.
                 if (coinsFrom != null)
@@ -118,9 +118,9 @@ namespace KnittedPicture.Game
             if (reward.Yarn >= 0)
             {
                 var yarn = YarnCatalog.All[reward.Yarn];
-                var caption = granted.NewYarn ? $"{yarn.Name}\nновый моток!"
-                    : granted.YarnLevelUp ? $"{yarn.Name}\nуровень {app.Progress.YarnLevel(yarn.Id)}!"
-                    : $"{yarn.Name}\nповтор: +{granted.DuplicateCoins}";
+                var caption = granted.NewYarn ? L.F("{0}\nновый моток!", yarn.Name)
+                    : granted.YarnLevelUp ? L.F("{0}\nуровень {1}!", yarn.Name, app.Progress.YarnLevel(yarn.Id))
+                    : L.F("{0}\nповтор: +{1}", yarn.Name, granted.DuplicateCoins);
                 items.Add((cell => YarnView.Create(cell, yarn, 46, 30, 56, true), caption, granted.NewYarn ? YarnView.RarityColor(yarn.Rarity) : Palette.Ink2));
             }
 
@@ -135,10 +135,10 @@ namespace KnittedPicture.Game
             : base(app)
         {
             AddIcon(Icon.Gift, Palette.Danger, Palette.DangerSoft, 72);
-            Ui.InfoButton(Card, CardWidth - 30, 30, "Как работает подарок",
-                "Подарки идут по кругу 7 дней и растут. Пропустишь день, не страшно: неделя продолжится с того же места. " +
-                "На 7-й день: 150 монет и моток пряжи.", 26);
-            AddTitle("Подарок дня", 24);
+            Ui.InfoButton(Card, CardWidth - 30, 30, L.T("Как работает подарок"),
+                L.T("Подарки идут по кругу 7 дней и растут. Пропустишь день, не страшно: неделя продолжится с того же места. ") +
+                L.T("На 7-й день: 150 монет и моток пряжи."), 26);
+            AddTitle(L.T("Подарок дня"), 24);
 
             var today = app.Today;
             var index = app.Progress.DailyIndex(today);
@@ -164,12 +164,12 @@ namespace KnittedPicture.Game
                     Ui.Outline(cell, 14, Palette.Primary, 2.5f);
                 }
 
-                Ui.Label(cell, isToday ? "Сегодня" : $"День {day + 1}", 12, isToday ? Palette.Primary : claimed ? Palette.Ink3 : Palette.Ink2, 0, 4, cellW, 18);
+                Ui.Label(cell, isToday ? L.T("Сегодня") : L.F("День {0}", day + 1), 12, isToday ? Palette.Primary : claimed ? Palette.Ink3 : Palette.Ink2, 0, 4, cellW, 18);
                 var reward = DailyGift.Days[day];
                 if (reward.Yarn == DailyGift.RandomYarn)
                 {
                     Ui.IconImage(cell, Icon.Gift, Palette.Danger, cellW / 2f, 40, 30);
-                    Ui.Fit(Ui.Label(cell, $"+{reward.Coins} и моток", 11, Palette.Ink, 0, 56, cellW, 18), 8);
+                    Ui.Fit(Ui.Label(cell, L.F("+{0} и моток", reward.Coins), 11, Palette.Ink, 0, 56, cellW, 18), 8);
                 }
                 else if (reward.Booster != null)
                 {
@@ -200,7 +200,7 @@ namespace KnittedPicture.Game
             Space(2 * cellH + gap + 18f);
             if (canClaim)
             {
-                AddPrimary("Забрать").OnClick(() =>
+                AddPrimary(L.T("Забрать")).OnClick(() =>
                 {
                     var granted = app.Progress.ClaimDaily(today, app.Random);
                     Analytics.Event("daily_gift", ("day", index + 1), ("level", app.Progress.CurrentLevel));
@@ -208,14 +208,14 @@ namespace KnittedPicture.Game
                     Close();
                     if (granted != null)
                     {
-                        app.ShowPopup(new RewardPopup(app, $"День {index + 1}", Icon.Gift, granted.Value, changed));
+                        app.ShowPopup(new RewardPopup(app, L.F("День {0}", index + 1), Icon.Gift, granted.Value, changed));
                     }
                 });
             }
             else
             {
-                AddText("Следующий подарок будет завтра", 15, 1);
-                AddPrimary("Понятно").OnClick(Close);
+                AddText(L.T("Следующий подарок будет завтра"), 15, 1);
+                AddPrimary(L.T("Понятно")).OnClick(Close);
             }
 
             Finish(8);
@@ -247,8 +247,8 @@ namespace KnittedPicture.Game
             var textX = 24 + pic + 16;
             var textW = CardWidth - textX - 20;
             // Длинные названия («Мордочка котика») ужимаются в свою строку и не наезжают на подпись.
-            Ui.Fit(Ui.Label(Card, level.name, 21, Palette.Ink, textX, top + 6, textW, 28, true, TextAnchor.MiddleLeft), 14);
-            Ui.Fit(Ui.Label(Card, $"Уровень {level.id} · {collection.Name}", 13, Palette.Ink2, textX, top + 36, textW, 20, false,
+            Ui.Fit(Ui.Label(Card, level.Title, 21, Palette.Ink, textX, top + 6, textW, 28, true, TextAnchor.MiddleLeft), 14);
+            Ui.Fit(Ui.Label(Card, L.F("Уровень {0} · {1}", level.id, collection.Name), 13, Palette.Ink2, textX, top + 36, textW, 20, false,
                 TextAnchor.MiddleLeft), 10);
             for (var i = 0; i < 3; i++)
             {
@@ -262,22 +262,22 @@ namespace KnittedPicture.Game
             var chips = new List<(string text, Color back, Color ink)>();
             if (level.hard)
             {
-                chips.Add(("Сложный", Palette.DangerSoft, Palette.Danger));
+                chips.Add((L.T("Сложный"), Palette.DangerSoft, Palette.Danger));
             }
 
             if (level.timeLimit > 0)
             {
-                chips.Add(($"Моль {level.timeLimit} с", Palette.Surface, Palette.Ink));
+                chips.Add((L.F("Моль {0} с", level.timeLimit), Palette.Surface, Palette.Ink));
             }
 
             if (level.mystery)
             {
-                chips.Add(("Загадка", Palette.Hex("#E1EAF8"), Palette.Link));
+                chips.Add((L.T("Загадка"), Palette.Hex("#E1EAF8"), Palette.Link));
             }
 
             if (level.gold.Length > 0)
             {
-                chips.Add(($"Золото ×{level.gold.Length}", Palette.CoinSoft, Palette.CoinShadow));
+                chips.Add((L.F("Золото ×{0}", level.gold.Length), Palette.CoinSoft, Palette.CoinShadow));
             }
 
             var chipX = 24f;
@@ -302,19 +302,19 @@ namespace KnittedPicture.Game
             Space(38f);
 
             // Разбор звёзд: каждая строка — условие и отметка, получено ли.
-            Ui.Label(Card, "Как получить звёзды", 14, Palette.Ink, 24, Cursor, Inner - 40, 20, true, TextAnchor.MiddleLeft);
-            Ui.InfoButton(Card, 24 + Inner - 13, Cursor + 10, "Повтор уровня",
-                $"Повтор даёт +{KnittedPicture.Core.Economy.ReplayReward} монет. Сохраняется лучший результат по звёздам. " +
-                "Три звезды: пройди уровень без бустеров и без спасения.", 24);
+            Ui.Label(Card, L.T("Как получить звёзды"), 14, Palette.Ink, 24, Cursor, Inner - 40, 20, true, TextAnchor.MiddleLeft);
+            Ui.InfoButton(Card, 24 + Inner - 13, Cursor + 10, L.T("Повтор уровня"),
+                L.F("Повтор даёт +{0} монет. Сохраняется лучший результат по звёздам. ", KnittedPicture.Core.Economy.ReplayReward) +
+                L.T("Три звезды: пройди уровень без бустеров и без спасения."), 24);
             Space(28f);
-            const string third = "Без бустеров";
-            StarRow(1, "Довязать картинку", stars >= 1);
-            StarRow(2, "Без спасения после затора или моли", stars >= 2);
+            var third = L.T("Без бустеров");
+            StarRow(1, L.T("Довязать картинку"), stars >= 1);
+            StarRow(2, L.T("Без спасения после затора или моли"), stars >= 2);
             StarRow(3, third, stars >= 3);
 
             Space(6f);
 
-            AddPrimary(stars >= 3 ? "Перевязать" : "Перевязать на три звезды").OnClick(() => app.StartLevel(level.id));
+            AddPrimary(stars >= 3 ? L.T("Перевязать") : L.T("Перевязать на три звезды")).OnClick(() => app.StartLevel(level.id));
             Finish(6);
         }
 
@@ -354,7 +354,7 @@ namespace KnittedPicture.Game
                 Tweens.Shake(tile, 6f, 0.3f);
                 Sfx.Play(Sound.Deny, 0.5f);
                 Haptics.Play(Haptic.Soft);
-                app.Toast($"Уровень {levelId} пока закрыт. Сейчас ты на уровне {progress.CurrentLevel}");
+                app.Toast(L.F("Уровень {0} пока закрыт. Сейчас ты на уровне {1}", levelId, progress.CurrentLevel));
                 return;
             }
 
@@ -380,7 +380,7 @@ namespace KnittedPicture.Game
             AddIcon(Icon.Info, Palette.Link, Palette.Hex("#E1EAF8"), 52);
             AddTitle(title, 19);
             AddText(text, 14, 1);
-            AddPrimary("Понятно", 50).OnClick(Close);
+            AddPrimary(L.T("Понятно"), 50).OnClick(Close);
             Finish(4);
         }
     }

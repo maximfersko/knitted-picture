@@ -96,6 +96,9 @@ namespace KnittedPicture.Core
         /// <summary>Фоновая музыка (отдельно от звуков).</summary>
         public bool musicOn = true;
 
+        /// <summary>Язык: "ru", "en" или пусто — как в системе телефона.</summary>
+        public string language = string.Empty;
+
         /// <summary>Вибрация (тактильный отклик) включена.</summary>
         public bool hapticsOn = true;
 

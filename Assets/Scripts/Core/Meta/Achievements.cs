@@ -9,8 +9,8 @@ namespace KnittedPicture.Core
         public AchievementInfo(int id, string title, string description, int target, Func<ProgressService, int> value, Reward reward)
         {
             Id = id;
-            Title = title;
-            Description = description;
+            _title = title;
+            _description = description;
             Target = target;
             Value = value;
             Reward = reward;
@@ -18,9 +18,13 @@ namespace KnittedPicture.Core
 
         public int Id { get; }
 
-        public string Title { get; }
+        private readonly string _title;
+        private readonly string _description;
 
-        public string Description { get; }
+        /// <summary>Название на языке игры (исходник — русский).</summary>
+        public string Title => L.T(_title);
+
+        public string Description => L.T(_description);
 
         public int Target { get; }
 

@@ -113,13 +113,13 @@ namespace KnittedPicture.Core
         {
             switch (kind)
             {
-                case MissionKind.Win: return $"Пройди {n} {Plural(n, "уровень", "уровня", "уровней")}";
-                case MissionKind.ThreeStars: return n == 1 ? "Пройди уровень на 3 звезды" : $"Пройди {n} {Plural(n, "уровень", "уровня", "уровней")} на 3 звезды";
-                case MissionKind.Gold: return $"Поймай {n} {Plural(n, "золотую петлю", "золотые петли", "золотых петель")}";
-                case MissionKind.Rush: return $"Включи «Разгон» {n} {Plural(n, "раз", "раза", "раз")}";
-                case MissionKind.Combo: return $"Разгони комбо до ×{n}";
-                case MissionKind.Stitches: return $"Свяжи {n} {Plural(n, "петлю", "петли", "петель")}";
-                default: return n == 1 ? "Пройди уровень без бустеров" : $"Пройди {n} {Plural(n, "уровень", "уровня", "уровней")} без бустеров";
+                case MissionKind.Win: return L.F("Пройди {0} {1}", n, L.Plural(n, "уровень", "уровня", "уровней"));
+                case MissionKind.ThreeStars: return n == 1 ? L.T("Пройди уровень на 3 звезды") : L.F("Пройди {0} {1} на 3 звезды", n, L.Plural(n, "уровень", "уровня", "уровней"));
+                case MissionKind.Gold: return L.F("Поймай {0} {1}", n, L.Plural(n, "золотую петлю", "золотые петли", "золотых петель"));
+                case MissionKind.Rush: return L.F("Включи «Разгон» {0} {1}", n, L.Plural(n, "раз", "раза", "раз"));
+                case MissionKind.Combo: return L.F("Разгони комбо до ×{0}", n);
+                case MissionKind.Stitches: return L.F("Свяжи {0} {1}", n, L.Plural(n, "петлю", "петли", "петель"));
+                default: return n == 1 ? L.T("Пройди уровень без бустеров") : L.F("Пройди {0} {1} без бустеров", n, L.Plural(n, "уровень", "уровня", "уровней"));
             }
         }
 
@@ -135,18 +135,6 @@ namespace KnittedPicture.Core
                 case MissionKind.Stitches: return 150 + 50 * rng.Next(3);
                 default: return 1 + rng.Next(2);
             }
-        }
-
-        private static string Plural(int n, string one, string few, string many)
-        {
-            var mod10 = n % 10;
-            var mod100 = n % 100;
-            if (mod10 == 1 && mod100 != 11)
-            {
-                return one;
-            }
-
-            return mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? few : many;
         }
     }
 }

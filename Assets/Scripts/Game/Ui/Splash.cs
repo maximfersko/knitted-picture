@@ -28,7 +28,7 @@ namespace KnittedPicture.Game
             ball.sizeDelta = new Vector2(112f, 112f);
             ball.anchoredPosition = Vector2.zero;
 
-            var title = Ui.Label(center, "Вязаная картинка", 30, Palette.Ink);
+            var title = Ui.Label(center, L.T("Вязаная картинка"), 30, Palette.Ink);
             var titleRt = title.rectTransform;
             titleRt.anchorMin = titleRt.anchorMax = new Vector2(0.5f, 0.5f);
             titleRt.sizeDelta = new Vector2(340f, 44f);

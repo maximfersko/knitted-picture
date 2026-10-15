@@ -29,10 +29,10 @@ namespace KnittedPicture.Game
 
             var subject = $"{Application.productName} {Application.version}";
             var body = "\n\n\n---\n"
-                + $"Версия: {Application.version} ({StoreConfig.Flavor})\n"
-                + $"Телефон: {SystemInfo.deviceModel}\n"
-                + $"Система: {SystemInfo.operatingSystem}\n"
-                + $"Уровень: {app.Progress.CurrentLevel}";
+                + L.F("Версия: {0} ({1})\n", Application.version, StoreConfig.Flavor)
+                + L.F("Телефон: {0}\n", SystemInfo.deviceModel)
+                + L.F("Система: {0}\n", SystemInfo.operatingSystem)
+                + L.F("Уровень: {0}", app.Progress.CurrentLevel);
             return $"mailto:{StoreConfig.SupportEmail}?subject={Uri.EscapeDataString(subject)}&body={Uri.EscapeDataString(body)}";
         }
     }

@@ -15,20 +15,20 @@ namespace KnittedPicture.Game
             : base(app, true)
         {
             AddIcon(KnittedPicture.Game.Icon.Gift, Palette.Primary, Palette.PrimarySoft, 64);
-            AddTitle("Реклама в игре", 24);
-            AddText("Игра бесплатная: её поддерживает реклама. Разрешить показывать рекламу с учётом твоих интересов? " +
-                    "Если нет, реклама будет обычной. Ответ можно поменять в настройках.", 15, 4);
-            AddPrimary("Разрешить").OnClick(() =>
+            AddTitle(L.T("Реклама в игре"), 24);
+            AddText(L.T("Игра бесплатная: её поддерживает реклама. Разрешить показывать рекламу с учётом твоих интересов? ") +
+                    L.T("Если нет, реклама будет обычной. Ответ можно поменять в настройках."), 15, 4);
+            AddPrimary(L.T("Разрешить")).OnClick(() =>
             {
                 app.SetAdsConsent(true);
                 Close();
             });
-            AddLink("Нет, обычная реклама").OnClick(() =>
+            AddLink(L.T("Нет, обычная реклама")).OnClick(() =>
             {
                 app.SetAdsConsent(false);
                 Close();
             });
-            AddLink("Политика конфиденциальности").OnClick(() => Application.OpenURL(StoreConfig.PrivacyPolicyUrl));
+            AddLink(L.T("Политика конфиденциальности")).OnClick(() => Application.OpenURL(StoreConfig.PrivacyPolicyUrl));
             Finish(8);
         }
 

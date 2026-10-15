@@ -34,23 +34,23 @@ namespace KnittedPicture.Game
 
             var tomorrowEvening = now.Date.AddDays(1).AddHours(EveningHour);
             plan.Add(progress.PatternOpen
-                ? (tomorrowEvening, "Новый узор дня", "Сегодняшняя картинка уже ждёт. Свяжем?")
-                : (tomorrowEvening, "Подарок дня", "Загляни за подарком: он уже ждёт"));
+                ? (tomorrowEvening, L.T("Новый узор дня"), L.T("Сегодняшняя картинка уже ждёт. Свяжем?"))
+                : (tomorrowEvening, L.T("Подарок дня"), L.T("Загляни за подарком: он уже ждёт")));
 
             // Серия узоров не связана сегодня — напомнить вечером, пока ещё не поздно.
             var streak = progress.PatternStreak(today);
             var todayEvening = now.Date.AddHours(20);
             if (progress.PatternOpen && streak >= 2 && !progress.PatternDone(today) && todayEvening > now.AddMinutes(30))
             {
-                plan.Add((todayEvening, "Серия узоров", $"Уже {streak} дн. подряд. Свяжи сегодняшний узор, чтобы не прервать серию"));
+                plan.Add((todayEvening, L.T("Серия узоров"), L.F("Уже {0} дн. подряд. Свяжи сегодняшний узор, чтобы не прервать серию", streak)));
             }
 
             if (progress.CanOpenChest)
             {
-                plan.Add((now.AddHours(3), "Звёздный сундук готов", "Внутри монеты, бустер на выбор и моток пряжи"));
+                plan.Add((now.AddHours(3), L.T("Звёздный сундук готов"), L.T("Внутри монеты, бустер на выбор и моток пряжи")));
             }
 
-            plan.Add((now.Date.AddDays(3).AddHours(EveningHour), "Клубки скучают", "Свяжем ещё одну картинку?"));
+            plan.Add((now.Date.AddDays(3).AddHours(EveningHour), L.T("Клубки скучают"), L.T("Свяжем ещё одну картинку?")));
             return plan;
         }
 
@@ -98,7 +98,7 @@ namespace KnittedPicture.Game
             if (!_channel)
             {
                 AndroidNotificationCenter.RegisterNotificationChannel(
-                    new AndroidNotificationChannel(Channel, "Напоминания", "Подарки, узор дня и сундук", Importance.Default));
+                    new AndroidNotificationChannel(Channel, L.T("Напоминания"), L.T("Подарки, узор дня и сундук"), Importance.Default));
                 _channel = true;
             }
 

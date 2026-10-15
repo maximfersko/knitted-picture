@@ -34,12 +34,12 @@ namespace KnittedPicture.Game
             {
                 var chip = Ui.Card(Card, "Active", CardWidth / 2f + 26f, Cursor + ball - 6f, 92, 24, 12, Palette.Primary, Palette.PrimaryShadow, 2f);
                 Ui.IconImage(chip, Icon.Check, Color.white, 14, 12, 12);
-                Ui.Label(chip, "в работе", 12, Color.white, 24, 0, 64, 24, true, TextAnchor.MiddleLeft);
+                Ui.Label(chip, L.T("в работе"), 12, Color.white, 24, 0, 64, 24, true, TextAnchor.MiddleLeft);
             }
 
             Space(ball + 30f);
-            Ui.Fit(AddTitle(owned ? yarn.Name : "Ещё не найдена", 22), 15);
-            var sub = AddText($"Набор «{set.Name}» · {YarnCatalog.RarityName(yarn.Rarity)}", 13, 1);
+            Ui.Fit(AddTitle(owned ? yarn.Name : L.T("Ещё не найдена"), 22), 15);
+            var sub = AddText(L.F("Набор «{0}» · {1}", set.Name, YarnCatalog.RarityName(yarn.Rarity)), 13, 1);
             sub.color = rarityColor;
             if (owned)
             {
@@ -49,15 +49,15 @@ namespace KnittedPicture.Game
             // Раздел «Бонус»: что делает моток — одним понятным предложением — и работает ли он сейчас.
             var open = progress.PerksOpen;
             var power = YarnCatalog.Power(yarnId, owned ? level : 1);
-            var (status, statusBack, statusInk) = !owned ? ("не найден", Palette.Track, Palette.Ink3)
-                : !open ? ($"с ур. {YarnCatalog.PerksFromLevel}", Palette.Track, Palette.Ink3)
-                : active ? ("работает", Palette.Primary, Color.white)
-                : ("не в работе", Palette.Track, Palette.Ink2);
+            var (status, statusBack, statusInk) = !owned ? (L.T("не найден"), Palette.Track, Palette.Ink3)
+                : !open ? (L.F("с ур. {0}", YarnCatalog.PerksFromLevel), Palette.Track, Palette.Ink3)
+                : active ? (L.T("работает"), Palette.Primary, Color.white)
+                : (L.T("не в работе"), Palette.Track, Palette.Ink2);
             // Пояснение только там, где без него не понять: где взять ненайденный моток.
             // Остальное и так видно по статусу и кнопке «Взять в работу».
-            var hint = !owned ? "Выпадает за новые картинки, в сундуке и в подарке дня" : null;
+            var hint = !owned ? L.T("Выпадает за новые картинки, в сундуке и в подарке дня") : null;
             var working = owned && open && active;
-            BeginSection("Бонус", active && open);
+            BeginSection(L.T("Бонус"), active && open);
             var iconBack = Ui.Image(_box!, "IconBack", Art.Circle, PerkSoft(perk));
             Ui.PlaceCenter(iconBack.rectTransform, 30, _boxY + 14f, 32, 32);
             PerkIcon(_box!, perk, 30, _boxY + 14f, 18);
@@ -77,7 +77,7 @@ namespace KnittedPicture.Game
             if (owned)
             {
                 BeginSection("", false);
-                Ui.Label(_box!, $"Уровень {level} из {YarnCatalog.MaxLevel}", 14, Palette.Ink, 14, _boxY, 140, 22, true, TextAnchor.MiddleLeft);
+                Ui.Label(_box!, L.F("Уровень {0} из {1}", level, YarnCatalog.MaxLevel), 14, Palette.Ink, 14, _boxY, 140, 22, true, TextAnchor.MiddleLeft);
                 const float segW = 34f;
                 for (var i = 0; i < YarnCatalog.MaxLevel; i++)
                 {
@@ -87,22 +87,22 @@ namespace KnittedPicture.Game
 
                 _boxY += 28f;
                 var next = level < YarnCatalog.MaxLevel
-                    ? $"Ещё такой моток: {YarnCatalog.PerkShort(perk, YarnCatalog.Power(yarnId, level + 1))}"
-                    : $"Повтор: +{YarnCatalog.DuplicateCoins(yarn.Rarity)} монет";
+                    ? L.F("Ещё такой моток: {0}", YarnCatalog.PerkShort(perk, YarnCatalog.Power(yarnId, level + 1)))
+                    : L.F("Повтор: +{0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity));
                 SectionText(next, 12, Palette.Ink2, false);
                 EndSection();
             }
 
             if (owned && !active && progress.PerksOpen)
             {
-                AddPrimary("Взять в работу", 54).OnClick(() =>
+                AddPrimary(L.T("Взять в работу"), 54).OnClick(() =>
                 {
                     progress.SetActiveYarn(yarnId);
                     app.Save();
                     Sfx.Play(Sound.Unlock, 0.7f);
                     Closed = changed;
                     Close();
-                    app.Toast($"«{yarn.Name}» в работе: {YarnCatalog.PerkText(perk, power)}");
+                    app.Toast(L.F("«{0}» в работе: {1}", yarn.Name, YarnCatalog.PerkText(perk, power)));
                 });
             }
 
@@ -190,17 +190,17 @@ namespace KnittedPicture.Game
                 AddIcon(Icon.Gift, Palette.CoinShadow, Palette.CoinSoft, 72);
             }
 
-            AddTitle("Бонусы пряжи", 24);
-            AddText("Моток «в работе» теперь помогает в каждом уровне. Повторы поднимают его уровень, и бонус растёт.", 14, 2);
+            AddTitle(L.T("Бонусы пряжи"), 24);
+            AddText(L.T("Моток «в работе» теперь помогает в каждом уровне. Повторы поднимают его уровень, и бонус растёт."), 14, 2);
             if (active >= 0)
             {
                 var perk = YarnCatalog.PerkOf(active);
-                var text = AddText($"«{YarnCatalog.All[active].Name}»: {YarnCatalog.PerkText(perk, YarnCatalog.Power(active, progress.YarnLevel(active)))}", 15, 1);
+                var text = AddText(L.F("«{0}»: {1}", YarnCatalog.All[active].Name, YarnCatalog.PerkText(perk, YarnCatalog.Power(active, progress.YarnLevel(active)))), 15, 1);
                 text.color = Palette.Primary;
             }
 
-            AddText("Сменить моток можно во вкладке «Пряжа»", 12, 1);
-            AddPrimary("Понятно").OnClick(Close);
+            AddText(L.T("Сменить моток можно во вкладке «Пряжа»"), 12, 1);
+            AddPrimary(L.T("Понятно")).OnClick(Close);
             Finish(8);
         }
     }

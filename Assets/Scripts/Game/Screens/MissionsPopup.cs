@@ -18,7 +18,7 @@ namespace KnittedPicture.Game
             var progress = app.Progress;
             var today = app.Today;
             AddIcon(Icon.Check, Palette.Primary, Palette.PrimarySoft, 64);
-            AddTitle("Задания дня", 24);
+            AddTitle(L.T("Задания дня"), 24);
 
             var missions = progress.Missions(today);
             for (var i = 0; i < missions.Count; i++)
@@ -50,7 +50,7 @@ namespace KnittedPicture.Game
             var box = Ui.Box(Card, "Reward", 16, Palette.CoinSoft).rectTransform;
             Ui.Place(box, 24, Cursor + 2f, Inner, 44);
             Ui.Outline(box, 16, Palette.Coin, 1.5f);
-            Ui.Label(box, "За все три:", 14, Palette.Ink2, 14, 0, 110, 44, true, TextAnchor.MiddleLeft);
+            Ui.Label(box, L.T("За все три:"), 14, Palette.Ink2, 14, 0, 110, 44, true, TextAnchor.MiddleLeft);
             var coinsLabel = Ui.Label(box, "+" + reward.Coins, 16, Palette.Ink, 124, 0, 60, 44, true, TextAnchor.MiddleLeft);
             coinsLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             Ui.Coin(box, 124 + coinsLabel.preferredWidth + 14f, 22, 20);
@@ -66,7 +66,7 @@ namespace KnittedPicture.Game
 
             if (progress.CanClaimMissions(today))
             {
-                AddPrimary("Забрать").OnClick(() =>
+                AddPrimary(L.T("Забрать")).OnClick(() =>
                 {
                     var granted = progress.ClaimMissions(today, app.Random);
                     Analytics.Event("missions_claim", ("level", progress.CurrentLevel));
@@ -74,18 +74,18 @@ namespace KnittedPicture.Game
                     Close();
                     if (granted != null)
                     {
-                        app.ShowPopup(new RewardPopup(app, "Задания дня", Icon.Check, granted.Value, changed));
+                        app.ShowPopup(new RewardPopup(app, L.T("Задания дня"), Icon.Check, granted.Value, changed));
                     }
                 });
             }
             else if (progress.MissionsClaimed(today))
             {
-                AddText("Награда получена. Новые задания завтра", 14, 1);
-                AddPrimary("Понятно", 54).OnClick(Close);
+                AddText(L.T("Награда получена. Новые задания завтра"), 14, 1);
+                AddPrimary(L.T("Понятно"), 54).OnClick(Close);
             }
             else if (!progress.AllDone)
             {
-                AddPrimary("Играть").OnClick(() =>
+                AddPrimary(L.T("Играть")).OnClick(() =>
                 {
                     Close();
                     app.StartLevel(progress.CurrentLevel);
@@ -93,7 +93,7 @@ namespace KnittedPicture.Game
             }
             else
             {
-                AddPrimary("Понятно", 54).OnClick(Close);
+                AddPrimary(L.T("Понятно"), 54).OnClick(Close);
             }
 
             Finish(8);

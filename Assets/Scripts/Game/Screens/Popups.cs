@@ -12,10 +12,10 @@ namespace KnittedPicture.Game
         {
             switch (type)
             {
-                case BoosterType.Slot: return "+1 место";
-                case BoosterType.Scissors: return "Ножницы";
-                case BoosterType.Undo: return "Отмена";
-                case BoosterType.Time: return "+20 секунд";
+                case BoosterType.Slot: return L.T("+1 место");
+                case BoosterType.Scissors: return L.T("Ножницы");
+                case BoosterType.Undo: return L.T("Отмена");
+                case BoosterType.Time: return L.T("+20 секунд");
                 default: return string.Empty;
             }
         }
@@ -24,10 +24,10 @@ namespace KnittedPicture.Game
         {
             switch (type)
             {
-                case BoosterType.Slot: return "Добавляет на станок ещё одно место до конца уровня";
-                case BoosterType.Scissors: return "Берут любой клубок с поля или срезают лишний со станка";
-                case BoosterType.Undo: return "Возвращает поле и станок к началу последнего хода";
-                case BoosterType.Time: return "Отгоняет моль и даёт ещё 20 секунд";
+                case BoosterType.Slot: return L.T("Добавляет на станок ещё одно место до конца уровня");
+                case BoosterType.Scissors: return L.T("Берут любой клубок с поля или срезают лишний со станка");
+                case BoosterType.Undo: return L.T("Возвращает поле и станок к началу последнего хода");
+                case BoosterType.Time: return L.T("Отгоняет моль и даёт ещё 20 секунд");
                 default: return string.Empty;
             }
         }
@@ -37,10 +37,10 @@ namespace KnittedPicture.Game
         {
             switch (type)
             {
-                case BoosterType.Slot: return "Добавить место на станке";
-                case BoosterType.Scissors: return "Взять или срезать любой клубок";
-                case BoosterType.Undo: return "Вернуть последний ход";
-                case BoosterType.Time: return "Отогнать моль на 20 секунд";
+                case BoosterType.Slot: return L.T("Добавить место на станке");
+                case BoosterType.Scissors: return L.T("Взять или срезать любой клубок");
+                case BoosterType.Undo: return L.T("Вернуть последний ход");
+                case BoosterType.Time: return L.T("Отогнать моль на 20 секунд");
                 default: return string.Empty;
             }
         }
@@ -65,11 +65,11 @@ namespace KnittedPicture.Game
             : base(app)
         {
             AddIcon(BoosterInfo.Icon(type), Palette.Primary, Palette.PrimarySoft, 76);
-            AddTitle("Новый бустер", 24);
+            AddTitle(L.T("Новый бустер"), 24);
             AddText(BoosterInfo.Name(type), 20, 1);
             AddText(BoosterInfo.Description(type), 16, 2.2f);
-            AddText($"+{Economy.FreeOnUnlock} в подарок", 16, 1);
-            AddPrimary("Понятно").OnClick(Close);
+            AddText(L.F("+{0} в подарок", Economy.FreeOnUnlock), 16, 1);
+            AddPrimary(L.T("Понятно")).OnClick(Close);
             Finish(8);
         }
     }
@@ -81,8 +81,8 @@ namespace KnittedPicture.Game
             : base(app)
         {
             AddIcon(KnittedPicture.Game.Icon.Video, Palette.Ink, Palette.Track, 64);
-            AddTitle("Видео-реклама", 22);
-            AddText("Здесь будет ролик из SDK издателя. Сейчас это заглушка.", 15, 2.2f);
+            AddTitle(L.T("Видео-реклама"), 22);
+            AddText(L.T("Здесь будет ролик из SDK издателя. Сейчас это заглушка."), 15, 2.2f);
             var fill = Ui.ProgressBar(Card, 24, Cursor, Inner, 10, 0.02f, Palette.Primary);
             Space(30);
             Finish(4);
@@ -103,14 +103,14 @@ namespace KnittedPicture.Game
         public PausePopup(App app, Action restart, Action home, string? warning = null)
             : base(app)
         {
-            AddTitle("Пауза");
+            AddTitle(L.T("Пауза"));
             if (warning != null)
             {
                 var warn = AddText(warning, 13, 1);
                 warn.color = Palette.CoinInk;
             }
 
-            AddPrimary("Продолжить").OnClick(Close);
+            AddPrimary(L.T("Продолжить")).OnClick(Close);
             var sound = AddSecondary(SoundLabel(app.Progress.SoundOn), app.Progress.SoundOn ? KnittedPicture.Game.Icon.SoundOn : KnittedPicture.Game.Icon.SoundOff);
             sound.OnClick(() =>
             {
@@ -118,7 +118,7 @@ namespace KnittedPicture.Game
                 Close();
                 app.ShowPopup(new PausePopup(app, restart, home, warning));
             });
-            var (again, toHome) = AddPair("Заново", KnittedPicture.Game.Icon.Restart, "Домой", KnittedPicture.Game.Icon.Home);
+            var (again, toHome) = AddPair(L.T("Заново"), KnittedPicture.Game.Icon.Restart, L.T("Домой"), KnittedPicture.Game.Icon.Home);
             again.OnClick(() =>
             {
                 Close();
@@ -127,7 +127,7 @@ namespace KnittedPicture.Game
             toHome.OnClick(home);
 
             // «Меньше движения» и подсказки нужнее всего прямо в уровне: без выхода на главную.
-            AddLink("Удобство").OnClick(() =>
+            AddLink(L.T("Удобство")).OnClick(() =>
             {
                 Close();
                 app.ShowPopup(new ComfortPopup(app, () => app.ShowPopup(new PausePopup(app, restart, home, warning))));
@@ -135,7 +135,7 @@ namespace KnittedPicture.Game
             Finish(12);
         }
 
-        private static string SoundLabel(bool on) => on ? "Звук: включён" : "Звук: выключен";
+        private static string SoundLabel(bool on) => on ? L.T("Звук: включён") : L.T("Звук: выключен");
     }
 
     /// <summary>
@@ -306,17 +306,17 @@ namespace KnittedPicture.Game
         public SettingsPopup(App app)
             : base(app)
         {
-            AddTitle("Настройки", 24);
+            AddTitle(L.T("Настройки"), 24);
 
             var consent = app.Ads.NeedsConsent;
             var group = Group(consent ? 5 : 4);
-            ToggleRow(group, 0, KnittedPicture.Game.Icon.SoundOn, Palette.Link, "Звук",
+            ToggleRow(group, 0, KnittedPicture.Game.Icon.SoundOn, Palette.Link, L.T("Звук"),
                 () => app.Progress.SoundOn, app.SetSound);
-            ToggleRow(group, 1, KnittedPicture.Game.Icon.Star, Palette.Primary, "Музыка",
+            ToggleRow(group, 1, KnittedPicture.Game.Icon.Star, Palette.Primary, L.T("Музыка"),
                 () => app.Progress.Data.musicOn, app.SetMusic);
-            ToggleRow(group, 2, KnittedPicture.Game.Icon.Vibrate, Palette.Danger, "Вибрация",
+            ToggleRow(group, 2, KnittedPicture.Game.Icon.Vibrate, Palette.Danger, L.T("Вибрация"),
                 () => app.Progress.Data.hapticsOn, app.SetHaptics);
-            ToggleRow(group, 3, KnittedPicture.Game.Icon.Bell, Palette.CoinShadow, "Напоминания",
+            ToggleRow(group, 3, KnittedPicture.Game.Icon.Bell, Palette.CoinShadow, L.T("Напоминания"),
                 () => app.Progress.Data.remindersOn, on =>
                 {
                     app.Progress.Data.remindersOn = on;
@@ -329,7 +329,7 @@ namespace KnittedPicture.Game
                 });
             if (consent)
             {
-                ToggleRow(group, 4, KnittedPicture.Game.Icon.Gift, Palette.Primary, "Персональная реклама",
+                ToggleRow(group, 4, KnittedPicture.Game.Icon.Gift, Palette.Primary, L.T("Персональная реклама"),
                     () => app.Progress.Data.adsConsent == 1, app.SetAdsConsent);
             }
 
@@ -337,28 +337,33 @@ namespace KnittedPicture.Game
 
             // «Без рекламы» — только там, где покупки работают (RuStore с SDK), и пропадает после покупки.
             var buyNoAds = app.Purchases.Available && !app.Progress.Data.adsRemoved;
-            var help = Group(3 + (buyNoAds ? 1 : 0));
+            var help = Group(4 + (buyNoAds ? 1 : 0));
             var row = 0;
-            NavRow(help, row++, new Badge("Aa"), Palette.Link, "Удобство", () =>
+
+            // Язык: названия языков на них самих, чтобы свой язык нашёлся, даже если интерфейс непонятен.
+            NavRow(help, row++, new Badge(L.IsRussian ? "Ru" : "En"), Palette.Primary,
+                L.T("Язык") + ": " + (L.IsRussian ? "Русский" : "English"),
+                () => app.SetLanguage(L.IsRussian ? L.English : L.Russian));
+            NavRow(help, row++, new Badge("Aa"), Palette.Link, L.T("Удобство"), () =>
             {
                 Close();
                 app.ShowPopup(new ComfortPopup(app, () => app.ShowPopup(new SettingsPopup(app))));
             });
-            NavRow(help, row++, KnittedPicture.Game.Icon.Info, Palette.Primary, "Как играть", () =>
+            NavRow(help, row++, KnittedPicture.Game.Icon.Info, Palette.Primary, L.T("Как играть"), () =>
             {
                 Close();
                 app.ShowIntro();
             });
             if (buyNoAds)
             {
-                NavRow(help, row++, KnittedPicture.Game.Icon.Star, Palette.CoinShadow, "Убрать рекламу", () =>
+                NavRow(help, row++, KnittedPicture.Game.Icon.Star, Palette.CoinShadow, L.T("Убрать рекламу"), () =>
                 {
                     Close();
                     app.BuyNoAds();
                 });
             }
 
-            NavRow(help, row, KnittedPicture.Game.Icon.Album, Palette.Ink2, "Об игре", () =>
+            NavRow(help, row, KnittedPicture.Game.Icon.Album, Palette.Ink2, L.T("Об игре"), () =>
             {
                 Close();
                 app.ShowPopup(new AboutPopup(app));
@@ -387,21 +392,21 @@ namespace KnittedPicture.Game
                 AddBack(back);
             }
 
-            AddTitle("Удобство", 24);
+            AddTitle(L.T("Удобство"), 24);
             var data = app.Progress.Data;
             var group = Group(4, TallRowH);
-            ToggleRow(group, 0, KnittedPicture.Game.Icon.Pause, Palette.Primary, "Меньше движения",
+            ToggleRow(group, 0, KnittedPicture.Game.Icon.Pause, Palette.Primary, L.T("Меньше движения"),
                 () => data.reduceMotion, on => Set(() => data.reduceMotion = on),
-                "Без покачиваний, всплытий, пружин и тряски", TallRowH);
-            ToggleRow(group, 1, new Badge("Aa"), Palette.CoinShadow, "Крупный текст",
+                L.T("Без покачиваний, всплытий, пружин и тряски"), TallRowH);
+            ToggleRow(group, 1, new Badge("Aa"), Palette.CoinShadow, L.T("Крупный текст"),
                 () => data.largeText, on => Set(() => data.largeText = on),
-                "Мелкие подписи крупнее, где помещаются", TallRowH);
-            ToggleRow(group, 2, KnittedPicture.Game.Icon.Hand, Palette.Danger, "Подсказка при паузе",
+                L.T("Мелкие подписи крупнее, где помещаются"), TallRowH);
+            ToggleRow(group, 2, KnittedPicture.Game.Icon.Hand, Palette.Danger, L.T("Подсказка при паузе"),
                 () => data.idleHints, on => Set(() => data.idleHints = on),
-                "Рука покажет ход, если долго нет хода", TallRowH);
-            ToggleRow(group, 3, KnittedPicture.Game.Icon.Bolt, Palette.Ink2, "Экономия заряда",
+                L.T("Рука покажет ход, если долго нет хода"), TallRowH);
+            ToggleRow(group, 3, KnittedPicture.Game.Icon.Bolt, Palette.Ink2, L.T("Экономия заряда"),
                 () => data.batterySaver, on => Set(() => data.batterySaver = on),
-                "30 кадров в секунду вместо 60: телефон меньше греется", TallRowH);
+                L.T("30 кадров в секунду вместо 60: телефон меньше греется"), TallRowH);
 
             // Крупный текст ложится на новые подписи: экран под шторкой перестраивается, когда она закрыта.
             Closed = () =>
@@ -431,7 +436,7 @@ namespace KnittedPicture.Game
             : base(app)
         {
             AddBack(() => app.ShowPopup(new SettingsPopup(app)));
-            AddTitle("Об игре", 24);
+            AddTitle(L.T("Об игре"), 24);
 
             var rate = StoreLinks.Rate;
             var mail = StoreLinks.Support(app);
@@ -441,20 +446,20 @@ namespace KnittedPicture.Game
             var row = 0;
             if (rate != null)
             {
-                NavRow(group, row++, KnittedPicture.Game.Icon.Star, Palette.CoinShadow, "Оценить игру", () => Application.OpenURL(rate));
+                NavRow(group, row++, KnittedPicture.Game.Icon.Star, Palette.CoinShadow, L.T("Оценить игру"), () => Application.OpenURL(rate));
             }
 
             if (mail != null)
             {
-                NavRow(group, row++, KnittedPicture.Game.Icon.Bell, Palette.Link, "Написать нам", () => Application.OpenURL(mail));
+                NavRow(group, row++, KnittedPicture.Game.Icon.Bell, Palette.Link, L.T("Написать нам"), () => Application.OpenURL(mail));
             }
 
             if (purchases)
             {
-                NavRow(group, row++, KnittedPicture.Game.Icon.Restart, Palette.Link, "Восстановить покупки", () => app.RestorePurchases(true));
+                NavRow(group, row++, KnittedPicture.Game.Icon.Restart, Palette.Link, L.T("Восстановить покупки"), () => app.RestorePurchases(true));
             }
 
-            NavRow(group, row, KnittedPicture.Game.Icon.Info, Palette.Ink2, "Политика конфиденциальности",
+            NavRow(group, row, KnittedPicture.Game.Icon.Info, Palette.Ink2, L.T("Политика конфиденциальности"),
                 () => Application.OpenURL(StoreConfig.PrivacyPolicyUrl));
 
             Space(12f);
@@ -463,7 +468,7 @@ namespace KnittedPicture.Game
             var danger = Group(1);
             var resetRow = Ui.Place(Ui.Node(danger, "Reset"), 0, 0, Inner, RowH);
             Ui.Stretch(Ui.Image(resetRow, "Hit", null, Color.clear, true).rectTransform);
-            var resetLabel = Ui.Label(resetRow, "Сбросить прогресс", 16, Palette.Danger, 0, 0, Inner, RowH);
+            var resetLabel = Ui.Label(resetRow, L.T("Сбросить прогресс"), 16, Palette.Danger, 0, 0, Inner, RowH);
             var armed = false;
             resetRow.gameObject.AddComponent<Tap>().OnClick(() =>
             {
@@ -474,12 +479,12 @@ namespace KnittedPicture.Game
                 }
 
                 armed = true;
-                resetLabel.text = "Точно стереть всё? Тапни ещё раз";
+                resetLabel.text = L.T("Точно стереть всё? Тапни ещё раз");
                 Haptics.Play(Haptic.Medium);
             });
 
             Space(10f);
-            var version = AddText("Версия " + Application.version, 12, 1);
+            var version = AddText(L.T("Версия ") + Application.version, 12, 1);
             version.color = Palette.Ink3;
             Finish(8);
         }
@@ -492,9 +497,9 @@ namespace KnittedPicture.Game
             : base(app)
         {
             AddIcon(BoosterInfo.Icon(type), Palette.Ink, Palette.CoinSoft, 68);
-            AddTitle("Не хватает монет", 24);
-            AddText($"{BoosterInfo.Name(type)} стоит {Economy.Price(type)} монет, у тебя {app.Progress.Coins}", 16, 1.6f);
-            AddPrimary("Получить за видео").OnClick(() =>
+            AddTitle(L.T("Не хватает монет"), 24);
+            AddText(L.F("{0} стоит {1} монет, у тебя {2}", BoosterInfo.Name(type), Economy.Price(type), app.Progress.Coins), 16, 1.6f);
+            AddPrimary(L.T("Получить за видео")).OnClick(() =>
             {
                 Close();
                 app.Ads.ShowRewarded("booster_" + type, ok =>
@@ -509,7 +514,7 @@ namespace KnittedPicture.Game
                     granted();
                 });
             });
-            AddLink("Не сейчас").OnClick(Close);
+            AddLink(L.T("Не сейчас")).OnClick(Close);
             Finish(8);
         }
     }
@@ -532,11 +537,11 @@ namespace KnittedPicture.Game
             : base(app, bottomSheet: true)
         {
             AddIcon(kind == FailKind.Jam ? KnittedPicture.Game.Icon.Knot : KnittedPicture.Game.Icon.Moth, Palette.Danger, Palette.DangerSoft, 64);
-            AddTitle(kind == FailKind.Jam ? "Станок застрял" : "Моль добралась до картинки", 24);
+            AddTitle(kind == FailKind.Jam ? L.T("Станок застрял") : L.T("Моль добралась до картинки"), 24);
             if (percent >= 50)
             {
                 // «Почти!» мотивирует попробовать ещё раз сильнее лёгкой победы.
-                var near = AddText($"Довязано {percent}%, почти!", 18, 1);
+                var near = AddText(L.F("Довязано {0}%, почти!", percent), 18, 1);
                 near.color = Palette.Danger;
             }
 
@@ -554,7 +559,7 @@ namespace KnittedPicture.Game
                 const float ball = 30f;
                 const float gap = 8f;
                 var shown = Math.Min(needed.Length, 5);
-                var label = Ui.Label(Card, "Картинка ждёт:", 14, Palette.Ink2, 24, Cursor, Inner, ball, true, TextAnchor.MiddleLeft);
+                var label = Ui.Label(Card, L.T("Картинка ждёт:"), 14, Palette.Ink2, 24, Cursor, Inner, ball, true, TextAnchor.MiddleLeft);
                 label.horizontalOverflow = HorizontalWrapMode.Overflow;
                 var x = 24f + label.preferredWidth + 12f;
                 var width = shown * ball + (shown - 1) * gap;
@@ -583,17 +588,17 @@ namespace KnittedPicture.Game
             {
                 var type = rescue.Value;
                 var stock = app.Progress.Stock(type);
-                var title = freeRescue ? $"{BoosterInfo.Name(type)} · подарок серии"
+                var title = freeRescue ? L.F("{0} · подарок серии", BoosterInfo.Name(type))
                     : stock > 0
-                    ? $"{BoosterInfo.Name(type)} · есть {stock}"
-                    : $"{BoosterInfo.Name(type)} · {Economy.Price(type)} монет";
+                    ? L.F("{0} · есть {1}", BoosterInfo.Name(type), stock)
+                    : L.F("{0} · {1} монет", BoosterInfo.Name(type), Economy.Price(type));
                 AddPrimary(title).OnClick(() =>
                 {
                     // Ножницы списываются, когда ими режут; слот и время — сразу.
                     var paid = type == BoosterType.Scissors ? freeRescue || app.Progress.CanAfford(type) : app.Progress.Pay(type) != Payment.NotEnough;
                     if (!paid)
                     {
-                        app.Toast("Не хватает монет, можно за видео");
+                        app.Toast(L.T("Не хватает монет, можно за видео"));
                         return;
                     }
 
@@ -604,7 +609,7 @@ namespace KnittedPicture.Game
                 });
                 if (!freeRescue)
                 {
-                AddSecondary(BoosterInfo.Name(type) + " за видео", KnittedPicture.Game.Icon.Video, 46f).OnClick(() =>
+                AddSecondary(BoosterInfo.Name(type) + L.T(" за видео"), KnittedPicture.Game.Icon.Video, 46f).OnClick(() =>
                 {
                     Close();
                     app.Ads.ShowRewarded("rescue_" + type, ok =>
@@ -637,7 +642,7 @@ namespace KnittedPicture.Game
             if (rescue == null)
             {
                 // Спасать нечем — главная кнопка «Заново».
-                AddPrimary("Заново").OnClick(() =>
+                AddPrimary(L.T("Заново")).OnClick(() =>
                 {
                     Close();
                     restart();
@@ -650,16 +655,16 @@ namespace KnittedPicture.Game
             var rowX = 24f + Inner / 2f;
             if (rescue != null)
             {
-                RoundAction(KnittedPicture.Game.Icon.Restart, "Заново", rowX - round / 2f - 48f, round, () =>
+                RoundAction(KnittedPicture.Game.Icon.Restart, L.T("Заново"), rowX - round / 2f - 48f, round, () =>
                 {
                     Close();
                     restart();
                 });
-                RoundAction(KnittedPicture.Game.Icon.Home, "Домой", rowX - round / 2f + 48f, round, home);
+                RoundAction(KnittedPicture.Game.Icon.Home, L.T("Домой"), rowX - round / 2f + 48f, round, home);
             }
             else
             {
-                RoundAction(KnittedPicture.Game.Icon.Home, "Домой", rowX - round / 2f, round, home);
+                RoundAction(KnittedPicture.Game.Icon.Home, L.T("Домой"), rowX - round / 2f, round, home);
             }
 
             Space(round + 24f);

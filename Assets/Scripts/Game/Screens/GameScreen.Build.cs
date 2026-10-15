@@ -25,7 +25,7 @@ namespace KnittedPicture.Game
 
             // Только номер: у сложного плашка красная. Подсказка уровня открывается тапом по плашке.
             var hasTip = !string.IsNullOrEmpty(_level.tip);
-            var text = _run.Pattern ? "Узор дня" : _level.id.ToString();
+            var text = _run.Pattern ? L.T("Узор дня") : _level.id.ToString();
             var width = _run.Pattern ? 120f : 64f;
             var pill = Ui.Card(Root, "Level", W / 2f - width / 2f, 8, width, 44, 22,
                 _level.hard ? Palette.Danger : Palette.Card, Palette.CardShadow, _level.hard ? 0f : 2f, hasTip);
@@ -37,7 +37,7 @@ namespace KnittedPicture.Game
                 {
                     if (!_ended && !_failShown)
                     {
-                        App.ShowPopup(new InfoPopup(App, "Подсказка уровня", _level.tip));
+                        App.ShowPopup(new InfoPopup(App, L.T("Подсказка уровня"), _level.Tip));
                     }
                 });
             }
@@ -84,8 +84,8 @@ namespace KnittedPicture.Game
             var chip = Ui.Card(Root, "GoldGoal", W / 2f - chipW / 2f, GoalsY, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f, true);
 
             // Тап по цели — короткая справка; игра на это время стоит.
-            var info = $"Вяжи петли в золотом кольце, пока горит комбо: +{_goldPerLoop} монет за каждую";
-            chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, "Золотые петли", info)));
+            var info = L.F("Вяжи петли в золотом кольце, пока горит комбо: +{0} монет за каждую", _goldPerLoop);
+            chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, L.T("Золотые петли"), info)));
             Ui.IconImage(chip, Icon.Star, Palette.Coin, 18, 14, 18);
             _goldGoal = Ui.Fit(Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft), 10);
             RefreshGoals();
@@ -95,7 +95,7 @@ namespace KnittedPicture.Game
         {
             if (_goldGoal != null)
             {
-                _goldGoal.text = $"Золото {_goldCaught}/{_level.gold.Length}";
+                _goldGoal.text = L.F("Золото {0}/{1}", _goldCaught, _level.gold.Length);
             }
         }
 
@@ -257,15 +257,15 @@ namespace KnittedPicture.Game
             var bannerY = _top + 40f;
             if (_level.hard)
             {
-                Banner("Сложный уровень", Palette.Danger, bannerY);
+                Banner(L.T("Сложный уровень"), Palette.Danger, bannerY);
             }
             else if (_level.mystery)
             {
-                Banner("Загадка: что получится?", Palette.Link, bannerY);
+                Banner(L.T("Загадка: что получится?"), Palette.Link, bannerY);
             }
             else if (_run.Warm.Any)
             {
-                Banner($"Серия ×{_run.WarmStreak}: {WarmGifts(_run.Warm)}", Palette.CoinShadow, bannerY, 0.3f);
+                Banner(L.F("Серия ×{0}: {1}", _run.WarmStreak, WarmGifts(_run.Warm)), Palette.CoinShadow, bannerY, 0.3f);
             }
         }
 
@@ -275,7 +275,7 @@ namespace KnittedPicture.Game
         /// <summary>Серия есть и уровень новый: перезапуск или уход её обнулят — честно предупредить.</summary>
         private string? StreakWarning() =>
             !_run.Pattern && App.Progress.Streak > 0 && !App.Progress.IsCompleted(_level.id)
-                ? $"«Заново» или «Домой» обнулят тёплую серию ×{App.Progress.Streak}"
+                ? L.F("«Заново» или «Домой» обнулят тёплую серию ×{0}", App.Progress.Streak)
                 : null;
 
         /// <summary>Подарок серии словами: «+1 слот, ножницы и отмена».</summary>
@@ -284,20 +284,20 @@ namespace KnittedPicture.Game
             var parts = new List<string>();
             if (warm.ExtraSlot)
             {
-                parts.Add("+1 место");
+                parts.Add(L.T("+1 место"));
             }
 
             if (warm.FreeScissors)
             {
-                parts.Add("ножницы");
+                parts.Add(L.T("ножницы"));
             }
 
             if (warm.FreeUndo)
             {
-                parts.Add("отмена");
+                parts.Add(L.T("отмена"));
             }
 
-            return parts.Count <= 1 ? string.Concat(parts) : string.Join(", ", parts.Take(parts.Count - 1)) + " и " + parts[parts.Count - 1];
+            return parts.Count <= 1 ? string.Concat(parts) : string.Join(", ", parts.Take(parts.Count - 1)) + L.T(" и ") + parts[parts.Count - 1];
         }
 
         private void Banner(string text, Color color, float y, float delay = 0f)

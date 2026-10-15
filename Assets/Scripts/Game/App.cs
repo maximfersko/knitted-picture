@@ -102,7 +102,7 @@ namespace KnittedPicture.Game
                 {
                     Progress.Data.adsRemoved = true;
                     Save();
-                    Toast("Готово: рекламы между уровнями больше не будет. Спасибо!");
+                    Toast(L.T("Готово: рекламы между уровнями больше не будет. Спасибо!"));
                 }
 
                 done?.Invoke();
@@ -123,7 +123,7 @@ namespace KnittedPicture.Game
 
                 if (tell)
                 {
-                    Toast(noAds ? "Покупка «Без рекламы» восстановлена" : "Покупок не найдено");
+                    Toast(noAds ? L.T("Покупка «Без рекламы» восстановлена") : L.T("Покупок не найдено"));
                 }
             });
         }
@@ -316,6 +316,7 @@ namespace KnittedPicture.Game
             Music.Install(gameObject, Progress.Data.musicOn);
             Haptics.Enabled = Progress.Data.hapticsOn;
             Comfort.Apply(Progress.Data);
+            L.Set(LanguageFor(Progress.Data.language));
             Analytics.Init();
             Analytics.Event("app_open", ("level", Progress.CurrentLevel), ("wins", Progress.Data.totalWins), ("coins", Progress.Coins),
                 ("store", StoreConfig.Flavor.ToString()), ("ads_removed", Progress.Data.adsRemoved), ("first", !Progress.Data.introSeen));
@@ -537,11 +538,11 @@ namespace KnittedPicture.Game
             if (granted != null)
             {
                 var streak = Progress.PatternStreak(Today);
-                ShowPopup(new RewardPopup(this, streak > 1 ? $"Узор дня · {streak} дн. подряд" : "Узор дня", Icon.Star, granted.Value, ShowHome));
+                ShowPopup(new RewardPopup(this, streak > 1 ? L.F("Узор дня · {0} дн. подряд", streak) : L.T("Узор дня"), Icon.Star, granted.Value, ShowHome));
             }
             else
             {
-                Toast("Узор дня уже связан. Новый будет завтра");
+                Toast(L.T("Узор дня уже связан. Новый будет завтра"));
             }
         }
 
@@ -700,6 +701,43 @@ namespace KnittedPicture.Game
             Progress.Data.musicOn = on;
             Music.Enabled = on;
             Save();
+        }
+
+        /// <summary>Сменить язык: весь интерфейс строится заново, настройки открываются снова.</summary>
+        public void SetLanguage(string language)
+        {
+            Progress.Data.language = language;
+            L.Set(LanguageFor(language));
+            Save();
+            CloseAllPopups();
+            ShowHome();
+            ShowPopup(new SettingsPopup(this));
+        }
+
+        /// <summary>
+        /// Выбранный язык, а если не выбран — язык телефона: русский для русского, украинского и белорусского,
+        /// иначе английский. QA-бот ищет кнопки по русским подписям, поэтому в его сборке всегда русский.
+        /// </summary>
+        private static string LanguageFor(string saved)
+        {
+#if KNITTED_QA
+            return L.Russian;
+#else
+            if (saved == L.Russian || saved == L.English)
+            {
+                return saved;
+            }
+
+            switch (Application.systemLanguage)
+            {
+                case SystemLanguage.Russian:
+                case SystemLanguage.Ukrainian:
+                case SystemLanguage.Belarusian:
+                    return L.Russian;
+                default:
+                    return L.English;
+            }
+#endif
         }
 
         public void SetHaptics(bool on)
