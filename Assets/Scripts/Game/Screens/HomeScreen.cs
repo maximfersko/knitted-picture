@@ -467,8 +467,11 @@ namespace KnittedPicture.Game
                 tap.OnClick(() => LevelInfoPopup.OnTile(App, levelId, rt));
                 var name = Ui.Label(card, state == TileState.Locked ? L.F("Ур. {0}", id) : level.Title, 11,
                     state == TileState.Current ? Palette.Primary : state == TileState.Locked ? Palette.Ink3 : Palette.Ink2,
-                    x - 6, 58 + tile + MiniPicture.StarsOverhang + 3f, tile + 12, 26, state == TileState.Current, TextAnchor.UpperCenter);
+                    x - 3, 58 + tile + MiniPicture.StarsOverhang + 3f, tile + 6, 26, state == TileState.Current, TextAnchor.UpperCenter);
                 name.lineSpacing = 0.85f;
+
+                // Длинное слово не наезжает на соседнее: ужимается в свою ширину.
+                Ui.Fit(name, 8);
             }
 
             return card;

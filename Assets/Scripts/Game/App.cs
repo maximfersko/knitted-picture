@@ -308,6 +308,10 @@ namespace KnittedPicture.Game
 
             // Форма клубка (640 px, четыре слоя намотки) рисуется в фоне, пока грузится остальное.
             System.Threading.Tasks.Task.Run(BallRaster.Warm);
+
+            // Значки, медали, монета, подарок — тоже заранее и в фоне: при первом открытии альбома или наград
+            // кадр не тратится на рисование.
+            Art2.Warm();
             Reminders.CancelAll();
             Sfx.Install(gameObject);
             Levels = new LevelRepository();
@@ -373,6 +377,9 @@ namespace KnittedPicture.Game
                 // разом съесть таймер моли или сжечь комбо.
                 _screen?.Tick(Mathf.Min(Time.unscaledDeltaTime, 0.1f));
             }
+
+            _screen?.StepDeferred();
+            Comfort.Governor(Time.unscaledDeltaTime);
         }
 
         private void OnApplicationPause(bool paused)

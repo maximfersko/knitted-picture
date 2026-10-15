@@ -15,6 +15,7 @@ namespace KnittedPicture
         {
             ["Уровень {0}"] = "Level {0}",
             ["Язык"] = "Language",
+            ["У тебя {0} {1}"] = "You have {0} {1}",
             ["Бустеры за видео на сегодня закончились. Монеты дают уровни, задания и подарок дня"] = "No more video boosters today. Levels, missions and the daily gift give coins",
             ["Рамки для картинок"] = "Picture frames",
             ["Выбрать"] = "Choose",

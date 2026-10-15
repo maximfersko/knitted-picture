@@ -118,11 +118,67 @@ namespace KnittedPicture.Game
         /// <summary>Повторяемая текстура (бумага, верёвка) для RawImage и мешей.</summary>
         public static Texture2D Tile(string key, System.Func<Raster> draw) => Texture(key, draw, TextureWrapMode.Repeat);
 
+        /// <summary>Растры, которые рисуются заранее в фоне (Warm): готовый берётся вместо рисования в кадре.</summary>
+        private static readonly Dictionary<string, Task<Raster>> Prefetched = new Dictionary<string, Task<Raster>>();
+
+        private static void Prefetch(string key, System.Func<Raster> draw)
+        {
+            if (!Prefetched.ContainsKey(key) && !HasTexture(key))
+            {
+                Prefetched[key] = Task.Run(draw);
+            }
+        }
+
+        /// <summary>
+        /// Нарисовать заранее (в фоновых потоках) то, что открывается в первые минуты: медали, кубки, камни
+        /// редкости, звёзды, значки вкладок, монету, подарок. В кадре остаётся только загрузить текстуру.
+        /// </summary>
+        public static void Warm()
+        {
+            foreach (BadgeArt art in System.Enum.GetValues(typeof(BadgeArt)))
+            {
+                var a = art;
+                Prefetch("medal" + a + "G", () => IconRaster.Badge(a, true));
+                Prefetch("medal" + a + "S", () => IconRaster.Badge(a, false));
+            }
+
+            Prefetch("trophyGold", () => IconRaster.Trophy(true));
+            Prefetch("trophySilver", () => IconRaster.Trophy(false));
+            for (var tier = 0; tier < 3; tier++)
+            {
+                var t = tier;
+                Prefetch("gem" + t, () => IconRaster.Gem(t));
+            }
+
+            Prefetch("rewardStar", () => IconRaster.RewardStar(true));
+            Prefetch("rewardStarEmpty", () => IconRaster.RewardStar(false));
+            Prefetch("levelStar", IconRaster.LevelStar);
+            Prefetch("basketBack", IconRaster.BasketBack);
+            Prefetch("basketFront", IconRaster.BasketFront);
+            Prefetch("house", IconRaster.House);
+            Prefetch("albumBook", IconRaster.Album);
+            Prefetch("gear", IconRaster.Gear);
+            Prefetch("coin2", MetaRaster.Coin);
+            Prefetch("gift2", MetaRaster.Gift);
+            Prefetch("sparkle", KnitRaster.Sparkle);
+        }
+
         private static Texture2D Texture(string key, System.Func<Raster> draw, TextureWrapMode wrap, bool mips = true)
         {
             if (Textures.TryGetValue(key, out var texture) && texture != null)
             {
                 return texture;
+            }
+
+            // Нарисован заранее в фоне — взять готовый (дождаться, если ещё рисуется: это быстрее, чем начать заново).
+            if (Prefetched.TryGetValue(key, out var pending))
+            {
+                Prefetched.Remove(key);
+                if (pending.Status != TaskStatus.Faulted && pending.Status != TaskStatus.Canceled)
+                {
+                    var ready = pending.Result;
+                    draw = () => ready;
+                }
             }
 
             // Плашки «девять частей» (с border) рисуются один к одному и mip-уровни им не нужны: уменьшенные копии

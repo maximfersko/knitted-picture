@@ -328,7 +328,9 @@ namespace KnittedPicture.Game
                 _adding.Clear();
             }
 
-            var dt = UnityEngine.Time.unscaledDeltaTime;
+            // Шаг не больше 1/30 с: после долгого кадра (экран строился) анимация продолжается с того же места,
+            // а не перескакивает вперёд — переход не теряет начало и не дёргается.
+            var dt = Mathf.Min(UnityEngine.Time.unscaledDeltaTime, 1f / 30f);
             for (var i = _active.Count - 1; i >= 0; i--)
             {
                 var tween = _active[i];

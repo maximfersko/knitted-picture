@@ -25,6 +25,37 @@ namespace KnittedPicture.Game
         {
         }
 
+        private readonly System.Collections.Generic.Queue<System.Action> _deferred = new System.Collections.Generic.Queue<System.Action>();
+
+        /// <summary>
+        /// Построить позже: то, что ниже первого экрана (карточки альбома, строки достижений, плитки пряжи),
+        /// достраивается в следующих кадрах по несколько миллисекунд. Экран открывается сразу, без долгого кадра,
+        /// и анимация перехода не дёргается.
+        /// </summary>
+        protected void Defer(System.Action build) => _deferred.Enqueue(build);
+
+        /// <summary>Раз в кадр (App.Update): достроить отложенное, не дольше ~4 мс за кадр.</summary>
+        public void StepDeferred()
+        {
+            if (_deferred.Count == 0)
+            {
+                return;
+            }
+
+            if (Root == null)
+            {
+                _deferred.Clear();
+                return;
+            }
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            do
+            {
+                _deferred.Dequeue()();
+            }
+            while (_deferred.Count > 0 && watch.ElapsedMilliseconds < 4);
+        }
+
         /// <summary>Кнопка «назад» на Android. false — уйти на главную.</summary>
         public virtual bool OnBack() => false;
 
@@ -32,6 +63,9 @@ namespace KnittedPicture.Game
         {
             Object.Destroy(Root.gameObject);
         }
+
+        /// <summary>Время перелистывания между вкладками.</summary>
+        private const float PageSlide = 0.3f;
 
         /// <summary>Разносить ли блоки экрана волной при входе. Экраны со своей постановкой входа отключают.</summary>
         protected virtual bool CascadeOnEnter => true;
@@ -45,6 +79,31 @@ namespace KnittedPicture.Game
         /// </summary>
         public void Enter(int slide = 0, bool hadBar = false)
         {
+            // Между вкладками — как перелистывание страниц: экран целиком въезжает сбоку, старый уезжает в другую
+            // сторону. Двигается только корень экрана (у него свой Canvas): содержимое не пересобирается каждый кадр,
+            // прозрачность не меняется — плавно даже на слабых телефонах. Панель вкладок общая: она едет навстречу
+            // корню и остаётся на месте.
+            if (slide != 0 && !Tweens.Calm)
+            {
+                var tabs = Root.Find("TabBar") as RectTransform;
+                var distance = Root.rect.width;
+                Tweens.Offset(Root, new Vector2(slide * distance, 0f), Vector2.zero, PageSlide, Ease.OutCubic);
+                if (tabs != null)
+                {
+                    Ui.Layer(tabs, true);
+                    if (hadBar)
+                    {
+                        Tweens.Offset(tabs, new Vector2(-slide * distance, 0f), Vector2.zero, PageSlide, Ease.OutCubic);
+                    }
+                    else
+                    {
+                        Tweens.Offset(tabs, new Vector2(0, -(tabs.sizeDelta.y + 12f)), Vector2.zero, 0.42f, Ease.OutSoftBack);
+                    }
+                }
+
+                return;
+            }
+
             var group = Ui.Group(Root);
             Tweens.Fade(group, 0f, 1f, slide != 0 ? 0.16f : 0.2f);
             var bar = Root.Find("TabBar") as RectTransform;
@@ -117,14 +176,17 @@ namespace KnittedPicture.Game
             Tweens.Kill(group);
             if (slide != 0 && !Tweens.Calm)
             {
-                var bar = Root.Find("TabBar");
-                for (var i = 0; i < Root.childCount; i++)
+                // Перелистывание: уезжает целиком (см. Enter), панель вкладок стоит, потом экран уничтожается.
+                var tabs = Root.Find("TabBar") as RectTransform;
+                var distance = Root.rect.width;
+                Tweens.Offset(Root, Vector2.zero, new Vector2(-slide * distance, 0f), PageSlide, Ease.OutCubic, Dispose);
+                if (tabs != null)
                 {
-                    if (Root.GetChild(i) is RectTransform child && child != bar)
-                    {
-                        Tweens.Offset(child, Vector2.zero, new Vector2(-slide * 40f, 0), 0.16f, Ease.OutCubic);
-                    }
+                    Ui.Layer(tabs, true);
+                    Tweens.Offset(tabs, Vector2.zero, new Vector2(slide * distance, 0f), PageSlide, Ease.OutCubic);
                 }
+
+                return;
             }
 
             Tweens.Run(Root, 0.16f, t =>

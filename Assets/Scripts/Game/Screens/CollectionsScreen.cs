@@ -315,6 +315,7 @@ namespace KnittedPicture.Game
             var y = 6f;
             var cardW = W - 32f;
             const float gap = 8f;
+            var justAdded = App.JustAdded;
 
             // Рамки для картинок: выбранная рамка образцом и кнопка — главный «сток» монет без давления.
             {
@@ -325,8 +326,16 @@ namespace KnittedPicture.Game
                 var mat = Ui.Box(sample, "Mat", 7, Palette.Hex(frame.Mat));
                 Ui.Place(mat.rectTransform, 4f, 4f, 36f, 36f);
                 Ui.Outline(sample, 10, Palette.Hex(frame.Edge), 1.5f).raycastTarget = false;
-                Ui.Label(strip, L.T("Рамки для картинок"), 16, Palette.Ink, 68, 10, cardW - 190, 24, true, TextAnchor.MiddleLeft);
-                Ui.Fit(Ui.Label(strip, frame.Name, 13, Palette.Ink2, 68, 32, cardW - 190, 20, false, TextAnchor.MiddleLeft), 10);
+                // Заголовок в одну строку (ужимается, если не влезает), название рамки — под ним.
+                var title = Ui.Fit(Ui.Label(strip, L.T("Рамки для картинок"), 16, Palette.Ink, 68, 9, cardW - 192, 24, true, TextAnchor.MiddleLeft), 11);
+                title.horizontalOverflow = HorizontalWrapMode.Overflow;
+                title.resizeTextForBestFit = false;
+                if (title.preferredWidth > cardW - 192)
+                {
+                    title.fontSize = Mathf.Max(11, Mathf.FloorToInt(title.fontSize * (cardW - 192) / title.preferredWidth));
+                }
+
+                Ui.Fit(Ui.Label(strip, frame.Name, 13, Palette.Ink2, 68, 34, cardW - 192, 20, false, TextAnchor.MiddleLeft), 10);
                 var open = Ui.Button(strip, L.T("Выбрать"), cardW - 112, 14, 100, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
                 open.OnClick(() => App.ShowPopup(new FramesPopup(App)));
                 strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new FramesPopup(App)));
@@ -348,7 +357,13 @@ namespace KnittedPicture.Game
                 var tilesY = 66f;
                 var stripY = tilesY + tile + MiniPicture.StarsOverhang + 34f;
                 var cardH = stripY + 48f + 14f;
-                var card = Ui.Card(content, collection.Name, 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
+                var cardY = y;
+                var index = c;
+
+                // Карточки ниже первого экрана достраиваются в следующих кадрах (Defer): альбом открывается сразу.
+                void BuildCard()
+                {
+                var card = Ui.Card(content, collection.Name, 16, cardY, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
                 Header(card, cardW, collection.Name, L.F("{0} из {1} картинок", done, collection.Count), done == collection.Count ? L.T("Собрана") : null,
                     $"{stars}/{collection.Count * 3}");
 
@@ -367,18 +382,32 @@ namespace KnittedPicture.Game
                     var levelId = id;
                     var tap = MiniPicture.Tile(card, level, state, x, tilesY, tile, progress.StarsOf(id));
                     var rt = (RectTransform)tap.transform;
-                    if (id == App.JustAdded)
+                    if (id == justAdded)
                     {
                         NewInAlbum(card, rt, x, tilesY, tile);
                     }
                     tap.OnClick(() => LevelInfoPopup.OnTile(App, levelId, rt));
                     var name = Ui.Label(card, state == TileState.Locked ? L.F("Ур. {0}", id) : level.Title, 11,
                         state == TileState.Current ? Palette.Primary : state == TileState.Locked ? Palette.Ink3 : Palette.Ink2,
-                        x - 6, tilesY + tile + MiniPicture.StarsOverhang + 3f, tile + 12, 26, state == TileState.Current, TextAnchor.UpperCenter);
+                        x - 3, tilesY + tile + MiniPicture.StarsOverhang + 3f, tile + 6, 26, state == TileState.Current, TextAnchor.UpperCenter);
                     name.lineSpacing = 0.85f;
+
+                    // Длинное слово («Клубничка», «Подсолнух») не наезжает на соседнее: ужимается в свою ширину.
+                    Ui.Fit(name, 8);
                 }
 
-                CollectionReward.Build(App, card, c, 12, stripY, cardW - 24, () => App.ShowCollections(CollectionsTab.Album));
+                CollectionReward.Build(App, card, index, 12, stripY, cardW - 24, () => App.ShowCollections(CollectionsTab.Album));
+                }
+
+                if (cardY > H)
+                {
+                    Defer(BuildCard);
+                }
+                else
+                {
+                    BuildCard();
+                }
+
                 y += cardH + 16f;
             }
 
@@ -524,27 +553,44 @@ namespace KnittedPicture.Game
                 var cellsY = 66f;
                 var stripY = cellsY + cellH + 14f;
                 var cardH = stripY + 48f + 14f;
-                var card = Ui.Card(content, set.Name, 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
-                Header(card, cardW, set.Name, L.F("{0} из {1} мотков", owned, set.Count), owned == set.Count ? L.T("Собран") : null, "");
+                var cardY = y;
+                var target = set;
+                var firstTile = tileIndex;
+                var order = setIndex;
+                var ownedCount = owned;
 
-                for (var i = 0; i < set.Count; i++)
+                // Наборы ниже первого экрана достраиваются в следующих кадрах (Defer).
+                void BuildSet()
                 {
-                    var yarn = YarnCatalog.All[set.First + i];
-                    var x = 14 + i * (cellW + gap);
-                    var cell = YarnTile(card, yarn, x, cellsY, cellW, cellH, tileIndex);
-                    if (entering)
+                    var card = Ui.Card(content, target.Name, 16, cardY, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
+                    Header(card, cardW, target.Name, L.F("{0} из {1} мотков", ownedCount, target.Count), ownedCount == target.Count ? L.T("Собран") : null, "");
+                    for (var i = 0; i < target.Count; i++)
                     {
-                        Tweens.Scale(cell, 0.82f, 1f, 0.42f, Ease.OutBack, null, 0.08f + setIndex * 0.1f + i * 0.05f);
+                        var yarn = YarnCatalog.All[target.First + i];
+                        var x = 14 + i * (cellW + gap);
+                        var cell = YarnTile(card, yarn, x, cellsY, cellW, cellH, firstTile + i);
+                        if (entering)
+                        {
+                            Tweens.Scale(cell, 0.82f, 1f, 0.42f, Ease.OutBack, null, 0.08f + order * 0.1f + i * 0.05f);
+                        }
                     }
 
-                    tileIndex++;
+                    var booster = BoosterInfo.Name(target.Reward.Booster!.Value).ToLower();
+                    RewardStrip.Build(card, 12, stripY, cardW - 24, L.F("За весь набор: {0} монет и {1} ×{2}", target.Reward.Coins, booster, target.Reward.BoosterCount),
+                        (float)ownedCount / target.Count, progress.CanClaimSet(target), progress.IsSetClaimed(target), L.T("Набор собран!"),
+                        () => Claim(progress.ClaimSet(target, App.Random), L.F("Набор «{0}»", target.Name), Icon.Gift, CollectionsTab.Yarn));
                 }
 
-                var target = set;
-                var booster = BoosterInfo.Name(set.Reward.Booster!.Value).ToLower();
-                RewardStrip.Build(card, 12, stripY, cardW - 24, L.F("За весь набор: {0} монет и {1} ×{2}", set.Reward.Coins, booster, set.Reward.BoosterCount),
-                    (float)owned / set.Count, progress.CanClaimSet(set), progress.IsSetClaimed(set), L.T("Набор собран!"),
-                    () => Claim(progress.ClaimSet(target, App.Random), L.F("Набор «{0}»", target.Name), Icon.Gift, CollectionsTab.Yarn));
+                if (cardY > H)
+                {
+                    Defer(BuildSet);
+                }
+                else
+                {
+                    BuildSet();
+                }
+
+                tileIndex += set.Count;
                 y += cardH + 16f;
                 setIndex++;
             }
@@ -735,7 +781,18 @@ namespace KnittedPicture.Game
                 y += 28f;
                 foreach (var a in items)
                 {
-                    y = AchievementRow(content, a, y);
+                    // Строки ниже первого экрана — в следующих кадрах; высота строки известна заранее.
+                    var rowY = y;
+                    var item = a;
+                    if (rowY > H)
+                    {
+                        Defer(() => AchievementRow(content, item, rowY));
+                        y = rowY + AchievementRowH + 10f;
+                    }
+                    else
+                    {
+                        y = AchievementRow(content, item, rowY);
+                    }
                 }
 
                 y += 10f;
@@ -746,9 +803,11 @@ namespace KnittedPicture.Game
             int Rank(AchievementInfo a) => progress.CanClaimAchievement(a) ? 0 : progress.IsAchievementClaimed(a) ? 2 : 1;
         }
 
+        private const float AchievementRowH = 72f;
+
         private float AchievementRow(RectTransform content, AchievementInfo a, float y)
         {
-            const float rowH = 72f;
+            const float rowH = AchievementRowH;
             const float rightW = 112f;
             var progress = App.Progress;
             var claimed = progress.IsAchievementClaimed(a);

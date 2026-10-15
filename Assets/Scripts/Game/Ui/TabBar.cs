@@ -29,7 +29,8 @@ namespace KnittedPicture.Game
 
         public static void Create(App app, RectTransform root, float w, float h, MainTab active)
         {
-            var bar = Ui.Place(Ui.Node(root, "TabBar"), 0, h - Height, w, Height + app.BottomInset);
+            // Свой Canvas: при перелистывании панель стоит, пока экран под ней едет, — без пересборки экрана.
+            var bar = Ui.Layer(Ui.Place(Ui.Node(root, "TabBar"), 0, h - Height, w, Height + app.BottomInset), true);
             var back = Ui.Image(bar, "Back", null, Palette.Card, true);
             Ui.Stretch(back.rectTransform);
             var line = Ui.Image(bar, "Line", null, Palette.Line);

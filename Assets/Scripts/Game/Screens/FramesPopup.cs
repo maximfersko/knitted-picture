@@ -16,7 +16,8 @@ namespace KnittedPicture.Game
             : base(app, bottomSheet: true)
         {
             AddTitle(L.T("Рамки для альбома"), 24);
-            var balance = AddText(L.F("У тебя {0} монет", app.Progress.Coins), 15, 1);
+            var coins = app.Progress.Coins;
+            var balance = AddText(L.F("У тебя {0} {1}", coins, YarnCatalog.CoinsWord(coins)), 15, 1);
             balance.color = Palette.CoinInk;
             Space(4f);
 
