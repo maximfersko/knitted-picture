@@ -26,7 +26,7 @@ namespace KnittedPicture.Game
 
             // Моток на мягком круге цвета редкости.
             const float ball = 92f;
-            var back = Ui.Image(Card, "Back", Art.Circle, RaritySoft(yarn.Rarity));
+            var back = Ui.Image(Card, "Back", Art.Circle, RarityStyle.Back(yarn.Rarity));
             Ui.PlaceCenter(back.rectTransform, CardWidth / 2f, Cursor + ball / 2f + 4f, ball + 28f, ball + 28f);
             if (owned)
             {
@@ -188,8 +188,6 @@ namespace KnittedPicture.Game
             Ui.Place(_box!, 24, _boxTop, Inner, h);
             Space(h + 16f);
         }
-
-        private static Color RaritySoft(Rarity rarity) => rarity == Rarity.Common ? Palette.Surface : RarityStyle.Soft(rarity);
 
         private static Color PerkSoft(YarnPerk perk) => Palette.CoinSoft;
 

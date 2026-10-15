@@ -464,7 +464,7 @@ namespace KnittedPicture.Game
                 // Рубашка: цвет редкости и «?».
                 var back = Ui.Node(visual, "Back");
                 Ui.Place(back, 0, 0, w, CardH);
-                var (tint, ink) = RarityTint(yarn.Rarity);
+                var (tint, ink) = (RarityStyle.Back(yarn.Rarity), RarityStyle.Label(yarn.Rarity));
                 var backFace = Ui.Box(back, "Face", 20, tint);
                 Ui.Place(backFace.rectTransform, 0, 0, w, CardH);
                 Ui.Outline(back, 20, Palette.WithAlpha(ink, 0.5f), 2f);
@@ -475,7 +475,7 @@ namespace KnittedPicture.Game
                 }
 
                 Ui.Label(back, "?", 34, ink, 0, 62, w, 44);
-                CollectionsScreen.RarityChip(back, yarn.Rarity, w / 2f, 128f);
+                RarityStyle.Chip(back, yarn.Rarity, w / 2f, 128f);
 
                 // Лицо: моток, название, новый или повтор.
                 var front = Ui.Node(visual, "Front");
@@ -538,8 +538,6 @@ namespace KnittedPicture.Game
             });
         }
 
-        private static (Color tint, Color ink) RarityTint(Rarity rarity) =>
-            rarity == Rarity.Common ? (Palette.Surface, Palette.Ink3) : (RarityStyle.Soft(rarity), RarityStyle.Ink(rarity));
 
         private static string SetOf(int yarn)
         {

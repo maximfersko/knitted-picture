@@ -24,6 +24,12 @@ namespace KnittedPicture.Game
             _ => Palette.Hex("#5F6670"),
         };
 
+        /// <summary>Подложка карточки: у обычной — нейтральная, у остальных — мягкий цвет ступени.</summary>
+        public static Color Back(Rarity rarity) => rarity == Rarity.Common ? Palette.Surface : Soft(rarity);
+
+        /// <summary>Подпись на подложке Back: у обычной — приглушённая, у остальных — чернила ступени.</summary>
+        public static Color Label(Rarity rarity) => rarity == Rarity.Common ? Palette.Ink3 : Ink(rarity);
+
         /// <summary>Цвет искр: светлый оттенок своей ступени.</summary>
         public static Color Spark(Rarity rarity) => rarity switch
         {
