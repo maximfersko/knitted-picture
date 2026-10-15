@@ -79,7 +79,7 @@ namespace KnittedPicture.Game
 
         /// <summary>
         /// Три звезды на белой плашке-«ленточке» по центру нижнего края плитки: ровный ряд,
-        /// заработанные — золотые, пустые — лавандовые; плашка не даёт им потеряться на картинке.
+        /// заработанные — золотые, пустые — серые; плашка не даёт им потеряться на картинке.
         /// </summary>
         public static void Stars(RectTransform parent, float cx, float cy, int stars, float size)
         {

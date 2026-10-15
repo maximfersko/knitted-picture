@@ -272,7 +272,7 @@ namespace KnittedPicture.Game
 
             if (level.mystery)
             {
-                chips.Add(("Загадка", Palette.Hex("#EDE4FF"), Palette.Link));
+                chips.Add(("Загадка", Palette.Hex("#E1EAF8"), Palette.Link));
             }
 
             if (level.gold.Length > 0)
@@ -375,7 +375,7 @@ namespace KnittedPicture.Game
         public InfoPopup(App app, string title, string text)
             : base(app)
         {
-            AddIcon(Icon.Info, Palette.Link, Palette.Hex("#EDE4FF"), 52);
+            AddIcon(Icon.Info, Palette.Link, Palette.Hex("#E1EAF8"), 52);
             AddTitle(title, 19);
             AddText(text, 14, 1);
             AddPrimary("Понятно", 50).OnClick(Close);

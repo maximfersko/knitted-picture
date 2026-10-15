@@ -58,7 +58,7 @@ namespace KnittedPicture.Game
             _contents = app.Progress.PeekChest();
             Card.gameObject.SetActive(false);
             var dim = Root.Find("Dim").GetComponent<Image>();
-            dim.color = new Color(0.12f, 0.1f, 0.22f, 0.88f);
+            dim.color = new Color(0.07f, 0.09f, 0.12f, 0.88f);
 
             // Сцена совпадает с колонкой экрана: те же координаты, что и у остальных экранов.
             _stage = Ui.Node(Root, "Stage");
@@ -149,7 +149,7 @@ namespace KnittedPicture.Game
             Tweens.Fade(_hint.gameObject.AddComponent<CanvasGroup>(), 1f, 0f, 0.2f);
             _chest.Open(() =>
             {
-                _chest.Fluff(_stage, new[] { Palette.CoinSoft, Palette.Hex("#F3D9C4"), Palette.Hex("#E2D8FF"), Color.white }, 16);
+                _chest.Fluff(_stage, new[] { Palette.CoinSoft, Palette.Hex("#F3D9C4"), Palette.Hex("#DCE3EC"), Color.white }, 16);
                 var chest = _chest.Root;
                 var from = chest.anchoredPosition;
                 var to = new Vector2(from.x, -ChestTopY);
@@ -530,7 +530,7 @@ namespace KnittedPicture.Game
 
         private static (Color tint, Color ink) RarityTint(Rarity rarity) =>
             rarity == Rarity.Common ? (Palette.Surface, Palette.Ink3)
-            : rarity == Rarity.Rare ? (Palette.Hex("#EDE4FF"), Palette.Link)
+            : rarity == Rarity.Rare ? (Palette.Hex("#E1EAF8"), Palette.Link)
             : (Palette.CoinSoft, Palette.CoinShadow);
 
         private static string SetOf(int yarn)
@@ -688,7 +688,7 @@ namespace KnittedPicture.Game
                 (big ? "бустер ×2" : "бустер", (c, cx) => Ui.IconImage(c, Icon.PlusSlot, Palette.Primary, cx, 22, 24)),
                 (big ? "редкий моток" : "моток", (c, cx) =>
                 {
-                    var ball = Ui.Image(c, "Ball", Art2.YarnBall(big ? Palette.Hex("#A98BFF") : Palette.Hex("#FF6FA5")), Color.white);
+                    var ball = Ui.Image(c, "Ball", Art2.YarnBall(big ? Palette.Hex("#3C78D8") : Palette.Hex("#E2683C")), Color.white);
                     Ui.PlaceCenter(ball.rectTransform, cx, 22, 28, 28);
                 }),
             };

@@ -26,7 +26,7 @@ namespace KnittedPicture.Game
         private static Rgba Shadow(Rgba result, float d, float soft, float alpha)
         {
             var a = Draw.Clamp01(1f - (d + soft * 0.3f) / soft) * alpha;
-            return a > 0f ? Rgba.Over(new Rgba(0.17f, 0.12f, 0.33f, a), result) : result;
+            return a > 0f ? Rgba.Over(new Rgba(0.1f, 0.14f, 0.2f, a), result) : result;
         }
 
         /// <summary>
@@ -118,14 +118,14 @@ namespace KnittedPicture.Game
 
         /// <summary>
         /// Огранённый камень 48×48 для плашки редкости: площадка сверху, грани короны и павильона с разным светом,
-        /// искра-блик. tier: 0 — обычная (дымчатый кварц), 1 — редкая (аметист), 2 — эпическая (янтарь-топаз).
+        /// искра-блик. tier: 0 — обычная (дымчатый кварц), 1 — редкая (сапфир), 2 — эпическая (янтарь-топаз).
         /// </summary>
         public static Raster Gem(int tier)
         {
             var color = tier switch
             {
                 2 => Rgba.Hex("#FFB320"),
-                1 => Rgba.Hex("#9467FF"),
+                1 => Rgba.Hex("#3B7BE0"),
                 _ => Rgba.Hex("#9AA6C2"),
             };
             const float cx = 24f;
@@ -198,11 +198,11 @@ namespace KnittedPicture.Game
 
         // ---------- Звезда уровня ----------
 
-        /// <summary>Выпуклая звезда-розетка 48×48 для уровня мотка: фиолетовая с золотым ободком; цифра — подписью сверху.</summary>
+        /// <summary>Выпуклая звезда-розетка 48×48 для уровня мотка: синяя с золотым ободком; цифра — подписью сверху.</summary>
         public static Raster LevelStar()
         {
             const float c = 24f;
-            var face = Rgba.Hex("#7B4DEB");
+            var face = Rgba.Hex("#2F5FB8");
             var rim = Rgba.Hex("#FFC23C");
             return Raster.Render(48, 48, 3, (x, y) =>
             {

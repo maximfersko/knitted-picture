@@ -131,7 +131,7 @@ namespace KnittedPicture.Game
             var brass = Rgba.Hex("#E2B04A");
             var brassDark = Rgba.Hex("#A8742A");
             var steel = Rgba.Hex("#C9CDE0");
-            var purple = Rgba.Hex("#7A4FE0");
+            var purple = Rgba.Hex("#3C78D8");
             var wood = Rgba.Hex("#E9B977");
             var green = Rgba.Hex("#17945F");
             var teal = Rgba.Hex("#5CC8D8");
@@ -207,9 +207,9 @@ namespace KnittedPicture.Game
                         Layer(Draw.RoundBox(x, y, 64f, 104f, 9f, 6f, 3f), brassDark);
                         Layer(Draw.Circle(x, y, 64f, 60f, 36f), brass.Shade(-0.1f + 0.2f * Draw.Clamp01((y - 30f) / 60f)));
                         Layer(Draw.Circle(x, y, 64f, 60f, 28f), Rgba.Hex("#FFF8EA"));
-                        Layer(Draw.Segment(x, y, 64f, 60f, 64f, 80f) - 2.6f, Rgba.Hex("#2B2350"));
-                        Layer(Draw.Segment(x, y, 64f, 60f, 78f, 54f) - 2.6f, Rgba.Hex("#2B2350"));
-                        Layer(Draw.Circle(x, y, 64f, 60f, 3.5f), Rgba.Hex("#E0306E"));
+                        Layer(Draw.Segment(x, y, 64f, 60f, 64f, 80f) - 2.6f, Rgba.Hex("#1E2732"));
+                        Layer(Draw.Segment(x, y, 64f, 60f, 78f, 54f) - 2.6f, Rgba.Hex("#1E2732"));
+                        Layer(Draw.Circle(x, y, 64f, 60f, 3.5f), Rgba.Hex("#D7383F"));
                         break;
                     }
                 }

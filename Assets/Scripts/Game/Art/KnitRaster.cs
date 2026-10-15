@@ -672,7 +672,7 @@ namespace KnittedPicture.Game
                 var shadow = Draw.Clamp01(1f - (shadowD + 1f) / 3.5f);
                 if (shadow > 0f)
                 {
-                    result = new Rgba(0.17f, 0.14f, 0.31f, 0.16f * shadow);
+                    result = new Rgba(0.1f, 0.14f, 0.2f, 0.16f * shadow);
                 }
 
                 // Нитка из дырочки к клубку: вверх-влево, мягкой дугой.
@@ -680,7 +680,7 @@ namespace KnittedPicture.Game
                 var threadCover = Draw.Cover(thread - 1.1f);
                 if (threadCover > 0f)
                 {
-                    result = Rgba.Over(new Rgba(0.42f, 0.38f, 0.5f, threadCover), result);
+                    result = Rgba.Over(new Rgba(0.4f, 0.43f, 0.48f, threadCover), result);
                 }
 
                 // Ярлычок: скошенный слева, как бирка.
@@ -699,7 +699,7 @@ namespace KnittedPicture.Game
                     if (hole < 1.6f)
                     {
                         var ring = Draw.Clamp01(1f - MathF.Abs(hole - 0.6f) / 1.1f);
-                        paper = Rgba.Lerp(paper, new Rgba(0.72f, 0.7f, 0.78f, cover), ring);
+                        paper = Rgba.Lerp(paper, new Rgba(0.7f, 0.72f, 0.76f, cover), ring);
                         paper = paper.WithAlpha(cover * Draw.Clamp01(hole + 0.5f));
                     }
 
@@ -707,7 +707,7 @@ namespace KnittedPicture.Game
                     if (threadCover > 0f && x < 23f)
                     {
                         // Нитка проходит сквозь дырочку и ложится поверх бумаги у края.
-                        result = Rgba.Over(new Rgba(0.42f, 0.38f, 0.5f, threadCover * 0.9f), result);
+                        result = Rgba.Over(new Rgba(0.4f, 0.43f, 0.48f, threadCover * 0.9f), result);
                     }
                 }
 
@@ -715,12 +715,12 @@ namespace KnittedPicture.Game
             });
         }
 
-        /// <summary>Лунка под значок бустера: мягкая сиреневая чаша, тень внутри сверху, светлая кромка снизу.</summary>
+        /// <summary>Лунка под значок бустера: мягкая светло-серая чаша, тень внутри сверху, светлая кромка снизу.</summary>
         public static Raster IconWell()
         {
             const int s = 132;
-            var inside = Rgba.Hex("#EEE8FF");
-            var shade = Rgba.Hex("#D6CCF5");
+            var inside = Rgba.Hex("#EDF0F4");
+            var shade = Rgba.Hex("#CED5DE");
             return Raster.Render(s / 3, s / 3, 3, (x, y) =>
             {
                 const float c = s / 6f;

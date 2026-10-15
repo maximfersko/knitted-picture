@@ -532,7 +532,7 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Плитка мотка: фон по редкости (обычная — светлая, редкая — лавандовая с сиянием, эпическая — тёплая
+        /// Плитка мотка: фон по редкости (обычная — светлая, редкая — голубоватая с сиянием, эпическая — тёплая
         /// с лучами), клубок на мягкой тени покачивается, звезда уровня, камень редкости. Не найден — бледный
         /// силуэт с «?». «В работе» — зелёная рамка дышит. Тап — карточка мотка.
         /// </summary>
@@ -542,7 +542,7 @@ namespace KnittedPicture.Game
             var has = progress.HasYarn(yarn.Id);
             var back = !has ? Palette.WithAlpha(Palette.Surface, 0.6f)
                 : yarn.Rarity == Rarity.Epic ? Palette.Hex("#FFF4D9")
-                : yarn.Rarity == Rarity.Rare ? Palette.Hex("#F3EDFF")
+                : yarn.Rarity == Rarity.Rare ? Palette.Hex("#EAF0F9")
                 : Palette.Surface;
             var cell = Ui.Box(card, "Yarn", 16, back, true).rectTransform;
             Ui.Place(cell, x, y, cellW, cellH);
@@ -623,7 +623,7 @@ namespace KnittedPicture.Game
         /// <summary>Плашка редкости: огранённый камень (дымчатый, аметист, топаз) и подпись цветом редкости.</summary>
         public static void RarityChip(RectTransform parent, Rarity rarity, float cx, float cy, float maxW = 0f)
         {
-            var back = rarity == Rarity.Common ? Palette.Track : rarity == Rarity.Rare ? Palette.Hex("#EDE4FF") : Palette.CoinSoft;
+            var back = rarity == Rarity.Common ? Palette.Track : rarity == Rarity.Rare ? Palette.Hex("#E1EAF8") : Palette.CoinSoft;
             var text = YarnCatalog.RarityName(rarity);
             var chip = Ui.Box(parent, "Rarity", 10, back).rectTransform;
             var label = Ui.Label(chip, text, 11, YarnView.RarityColor(rarity), true, TextAnchor.MiddleLeft);

@@ -180,7 +180,7 @@ namespace KnittedPicture.Game
                         var left = DistanceToSegment(x, y, 4f, 5f, 12f, 19f);
                         var right = DistanceToSegment(x, y, 20f, 5f, 12f, 19f);
                         var alpha = Mathf.Clamp01(2.2f - Mathf.Min(left, right) + 0.5f) * 0.05f;
-                        pixels[py * size + px] = new Color32(43, 35, 80, (byte)(alpha * 255));
+                        pixels[py * size + px] = new Color32(30, 39, 50, (byte)(alpha * 255));
                     }
                 }
 
@@ -839,8 +839,8 @@ namespace KnittedPicture.Game
 
             var knit = Palette.Hex("#D8A47C");
             var knitLight = Palette.Hex("#EBC39E");
-            var band = big ? Palette.Hex("#E7B64E") : Palette.Hex("#A893DA");
-            var bandLight = big ? Palette.Hex("#F6D88C") : Palette.Hex("#C6B7EE");
+            var band = big ? Palette.Hex("#E7B64E") : Palette.Hex("#6F93B5");
+            var bandLight = big ? Palette.Hex("#F6D88C") : Palette.Hex("#A9C2D8");
             var trim = Palette.Hex("#B57A52");
             var edge = Palette.Hex("#9A6544");
             var topRadius = lid ? 34f : 10f;

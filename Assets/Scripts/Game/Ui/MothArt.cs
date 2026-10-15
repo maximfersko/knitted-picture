@@ -40,7 +40,7 @@ namespace KnittedPicture.Game
         private const float AntennaW = 40f;
         private const float AntennaH = 84f;
 
-        private static readonly Color Outline = Hex(0x6E5560);
+        private static readonly Color Outline = Hex(0x5E5248);
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
         /// <summary>Переднее крыло (правое). Машет чуть раньше заднего: так взмах выглядит живым.</summary>
@@ -77,12 +77,12 @@ namespace KnittedPicture.Game
         {
             const int w = (int)WingW;
             const int h = (int)WingH;
-            var rootColor = fore ? Hex(0x98785F) : Hex(0xB58F98);
-            var tipColor = fore ? Hex(0xE4CAA6) : Hex(0xEFD9DC);
+            var rootColor = fore ? Hex(0x98785F) : Hex(0xA48E7C);
+            var tipColor = fore ? Hex(0xE4CAA6) : Hex(0xE8DCCB);
             var pale = Hex(0xFFF3E0);
-            var spotRing = Hex(0x7A5C6E);
+            var spotRing = Hex(0x6E5C4E);
             var spotFill = Hex(0xF4E8D6);
-            var spotCore = Hex(0xB97A86);
+            var spotCore = Hex(0xA9836A);
             var veins = fore ? new[] { 8f, 20f, 32f, 44f, 56f } : new[] { -14f, -30f, -46f };
             var veinLength = fore ? 130f : 100f;
             var pixels = new Color32[w * h];
@@ -180,8 +180,8 @@ namespace KnittedPicture.Game
             var belly = Hex(0xC2A78C);
             var chest = Hex(0xEADCC8);
             var face = Hex(0xD8C2A6);
-            var eye = Hex(0x33263A);
-            var blush = Hex(0xF2A0A0);
+            var eye = Hex(0x2A2A30);
+            var blush = Hex(0xE2AE92);
             var pixels = new Color32[w * h];
             for (var py = 0; py < h; py++)
             {
@@ -311,7 +311,7 @@ namespace KnittedPicture.Game
         {
             const int size = 96;
             const float c = size / 2f;
-            var deep = Hex(0x2A2136);
+            var deep = Hex(0x26262C);
             var fibre = Hex(0xF6EEE4);
             var threads = new List<(Vector2 From, Vector2 To)>();
             foreach (var (angle, length) in new[] { (0.6f, 13f), (2.4f, 11f), (4.3f, 14f) })

@@ -6,7 +6,7 @@ namespace KnittedPicture.Game
 {
     /// <summary>
     /// Мета 2.0: вязаная миниатюра картинки (петли-«галочки» по клеткам — для пялец, обложек коллекций,
-    /// альбома), вязаная шкатулка-сундук (ягодные косы, лавандовая лента со строчкой, латунный замок),
+    /// альбома), вязаная шкатулка-сундук (косы цвета морской волны, стальная лента со строчкой, латунный замок),
     /// подарок в вязаной коробке с розовым бантом, монета с клубком, деревянные пяльцы с латунным винтом.
     /// </summary>
     public static class MetaRaster
@@ -120,14 +120,14 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Корпус шкатулки w×h пикселей: ягодная вязка «косами», ремень-лента (лавандовая или золотая у звёздного),
+        /// Корпус шкатулки w×h пикселей: вязка «косами» цвета морской волны, ремень-лента (стальная или золотая у звёздного),
         /// латунная окантовка снизу с ножками, латунный замочек с ключевиной. Свет сверху слева.
         /// </summary>
         public static Raster ChestBody(int w, int h, bool golden)
         {
             var r = new Raster(w, h);
-            var berry = Rgba.Hex("#C2417A");
-            var band = golden ? Rgba.Hex("#E7B64E") : Rgba.Hex("#A893DA");
+            var teal = Rgba.Hex("#2F6E73");
+            var band = golden ? Rgba.Hex("#E7B64E") : Rgba.Hex("#6F93B5");
             var brass = Rgba.Hex("#E2B04A");
             var s = h / 118f;
             r.Paint((x, y) =>
@@ -171,7 +171,7 @@ namespace KnittedPicture.Game
                     var strand = MathF.Abs(u - 0.18f * wave);
                     var v = 0.78f + 0.22f * MathF.Sqrt(Draw.Clamp01(1f - strand * 4f));
                     var groove = MathF.Abs(u) > 0.44f ? 0.82f : 1f;
-                    c = berry.Shade((v - 1f) * 0.9f + (groove - 1f));
+                    c = teal.Shade((v - 1f) * 0.9f + (groove - 1f));
                 }
 
                 // Свет сверху слева, тень у краёв.
@@ -198,12 +198,12 @@ namespace KnittedPicture.Game
             return r;
         }
 
-        /// <summary>Крышка шкатулки: купол той же ягодной вязки с глянцем, тёмная кромка снизу.</summary>
+        /// <summary>Крышка шкатулки: купол той же вязки цвета морской волны с глянцем, тёмная кромка снизу.</summary>
         public static Raster ChestLid(int w, int h, bool golden)
         {
             var r = new Raster(w, h);
-            var berry = Rgba.Hex("#C2417A");
-            var edge = golden ? Rgba.Hex("#E7B64E") : Rgba.Hex("#8E2A5A");
+            var teal = Rgba.Hex("#2F6E73");
+            var edge = golden ? Rgba.Hex("#E7B64E") : Rgba.Hex("#1F4D51");
             var s = h / 74f;
             r.Paint((x, y) =>
             {
@@ -217,7 +217,7 @@ namespace KnittedPicture.Game
                 }
 
                 var v = (y / h);
-                var c = berry.Shade(-0.2f + 0.3f * v);
+                var c = teal.Shade(-0.2f + 0.3f * v);
                 if (y < 10f * s)
                 {
                     c = edge.Shade(-0.1f);
@@ -239,8 +239,8 @@ namespace KnittedPicture.Game
         {
             const int s = 192;
             var r = new Raster(s, s);
-            var blue = Rgba.Hex("#7FB6EE");
-            var pink = Rgba.Hex("#F27BC0");
+            var blue = Rgba.Hex("#3D7FC4");
+            var pink = Rgba.Hex("#D9483E");
             r.Paint((x, y) =>
             {
                 var result = Rgba.Clear;

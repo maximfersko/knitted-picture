@@ -46,7 +46,7 @@ namespace KnittedPicture.Game
             _thickRing = Ui.Image(root, "ThickRing", Art.Ring, Color.white);
             Ui.PlaceCenter(_thickRing.rectTransform, size / 2f, size / 2f, size + 8, size + 8);
 
-            // Мягкая лавандовая тень под клубком: он лежит на поле, а не висит.
+            // Мягкая графитовая тень под клубком: он лежит на поле, а не висит.
             var shadow = Ui.Image(root, "Shadow", Art2.BallShadow, Color.white);
             Ui.PlaceCenter(shadow.rectTransform, size * 0.54f, size * 0.98f, size * 0.95f, size * 0.3f);
 

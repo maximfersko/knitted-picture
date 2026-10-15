@@ -345,7 +345,7 @@ namespace KnittedPicture.Game
             var c = label.color;
             var light = c.r * 0.3f + c.g * 0.59f + c.b * 0.11f > 0.6f;
             var shadow = label.gameObject.AddComponent<Shadow>();
-            shadow.effectColor = light ? new Color(0.12f, 0.08f, 0.25f, 0.28f) : new Color(1f, 1f, 1f, 0.7f);
+            shadow.effectColor = light ? new Color(0.06f, 0.09f, 0.13f, 0.28f) : new Color(1f, 1f, 1f, 0.7f);
             shadow.effectDistance = new Vector2(0f, light ? -1.5f : -1f);
         }
 
@@ -442,7 +442,7 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Круглая белая кнопка с иконкой (пауза, настройки, назад).</summary>
-        /// <param name="onCard">Кнопка лежит на белой карточке или окне: тогда она залита светло-сиреневым
+        /// <param name="onCard">Кнопка лежит на белой карточке или окне: тогда она залита светло-серым
         /// и без тени, иначе белый круг сливается с белым фоном.</param>
         public static Tap RoundButton(RectTransform parent, Icon icon, float x, float y, float size = 44f, bool onCard = false)
         {

@@ -122,7 +122,7 @@ namespace KnittedPicture.ArtPreview
         {
             const float k = 2f;
             var img = new Raster((int)(390 * k), (int)(470 * k));
-            Png.Fill(img, Rgba.Hex("#EDE7FF"));
+            Png.Fill(img, Rgba.Hex("#E9ECF0"));
             const int density = 3;
             void Relief(Func<int, Raster> make, float x, float top, float w, float h, float radius, Rgba tint)
             {
@@ -158,13 +158,13 @@ namespace KnittedPicture.ArtPreview
                 Card(x, 200, 110, 60, 18, Rgba.White);
                 Png.Put(img, well, (x + 14) * k, img.Height - (200 + 30 + 22) * k, 44 * k, 44 * k);
                 Png.Put(img, LoomRaster.Booster(arts[i]), (x + 18) * k, img.Height - (200 + 30 + 18) * k, 36 * k, 36 * k);
-                Png.Put(img, tag, (x + 110 - 40) * k, img.Height - (200 - 6 + 24) * k, 43 * k, 24 * k, i == 0 ? Rgba.Hex("#2B2350") : Rgba.Hex("#FFC23C"));
+                Png.Put(img, tag, (x + 110 - 40) * k, img.Height - (200 - 6 + 24) * k, 43 * k, 24 * k, i == 0 ? Rgba.Hex("#1E2732") : Rgba.Hex("#FFC23C"));
             }
 
             Card(20, 280, 350, 44, 22, Rgba.Hex("#17945F"));
 
             // Объём: вдавленная дорожка с глянцевой заливкой, круглые кнопки, выпуклые клетки.
-            Relief(KnitRaster.Inset, 20, 340, 220, 22, 11, Rgba.Hex("#E4DDF7"));
+            Relief(KnitRaster.Inset, 20, 340, 220, 22, 11, Rgba.Hex("#E2E6EB"));
             Relief(KnitRaster.Gloss, 22, 342, 140, 18, 9, Rgba.Hex("#FFB43C"));
             Relief(KnitRaster.GlossOverlay, 22, 342, 140, 18, 9, Rgba.White);
             var disc = KnitRaster.SoftDisc();
@@ -173,7 +173,7 @@ namespace KnittedPicture.ArtPreview
             var tile = KnitRaster.SoftTile();
             for (var i = 0; i < 6; i++)
             {
-                Png.Put(img, tile, (20 + i * 58) * k, img.Height - (395 + 52) * k, 52 * k, 52 * k, i % 2 == 0 ? Rgba.White : Rgba.Hex("#D9CCFF"));
+                Png.Put(img, tile, (20 + i * 58) * k, img.Height - (395 + 52) * k, 52 * k, 52 * k, i % 2 == 0 ? Rgba.White : Rgba.Hex("#E5E9EF"));
             }
 
             Png.Save(img, Path.Combine(dir, "panels.png"));
@@ -183,7 +183,7 @@ namespace KnittedPicture.ArtPreview
         private static void Icons(string dir)
         {
             var img = new Raster(1200, 300);
-            Png.Fill(img, Rgba.Hex("#F5F2FF"));
+            Png.Fill(img, Rgba.Hex("#F3F5F8"));
             Png.Put(img, IconRaster.Trophy(true), 20, 150, 128, 128);
             Png.Put(img, IconRaster.Trophy(false), 160, 150, 128, 128);
             for (var i = 0; i < 3; i++)
@@ -193,7 +193,7 @@ namespace KnittedPicture.ArtPreview
 
             Png.Put(img, IconRaster.LevelStar(), 580, 160, 100, 100);
             Png.Put(img, IconRaster.BasketBack(), 700, 40, 240, 192);
-            string[] balls = { "#F2303F", "#5FD7A5", "#8B5CF6" };
+            string[] balls = { "#F2303F", "#5FD7A5", "#2F6FDE" };
             for (var i = 0; i < 3; i++)
             {
                 var size = 64f;
@@ -213,7 +213,7 @@ namespace KnittedPicture.ArtPreview
             const float cellW = 81f;
             const float cellH = 140f;
             var img = new Raster((int)(4 * (cellW + 8) * k + 20 * k), (int)((cellH + 20) * k));
-            Png.Fill(img, Rgba.Hex("#FBFAFF"));
+            Png.Fill(img, Rgba.Hex("#F3F5F8"));
             var glow = new Raster(128, 128);
             glow.Paint((x, y) =>
             {
@@ -221,7 +221,7 @@ namespace KnittedPicture.ArtPreview
                 return Rgba.White.WithAlpha(t * t);
             });
             string[] backs = { "#F3F1FA", "#F3EDFF", "#FFF4D9", "#F3F1FA" };
-            string[] glows = { "", "#8B5CF6", "#FFC23C", "" };
+            string[] glows = { "", "#2F6FDE", "#FFC23C", "" };
             var tag = 0;
             for (var i = 0; i < 4; i++)
             {
@@ -242,7 +242,7 @@ namespace KnittedPicture.ArtPreview
                 Raster ballArt = i switch
                 {
                     1 => IconRaster.Melange(Rgba.Hex("#F49AC1"), Rgba.Hex("#FFFFFF"), 40, 48, 592),
-                    2 => BallRaster.Ball(Rgba.Hex("#8B5CF6")),
+                    2 => BallRaster.Ball(Rgba.Hex("#2F6FDE")),
                     3 => BallRaster.Ball(Rgba.Hex("#E6E2F0")),
                     _ => BallRaster.Ball(Rgba.Hex("#F4E4C1")),
                 };
@@ -295,7 +295,7 @@ namespace KnittedPicture.ArtPreview
         private static void Meta(string dir)
         {
             var img = new Raster(1100, 420);
-            Png.Fill(img, Rgba.Hex("#F5F2FF"));
+            Png.Fill(img, Rgba.Hex("#F3F5F8"));
             var body = MetaRaster.ChestBody(330, 177, false);
             var lid = MetaRaster.ChestLid(348, 111, false);
             Png.Put(img, body, 40, 60, 330, 177);
@@ -444,7 +444,7 @@ namespace KnittedPicture.ArtPreview
                 Png.Put(ball, red, 0, 0, BallRaster.Size, BallRaster.Size);
                 if (overlays[i] != null)
                 {
-                    Png.Put(ball, overlays[i]!, 0, 0, BallRaster.Size, BallRaster.Size, i == 1 ? Rgba.Hex("#8B5CF6") : (Rgba?)null);
+                    Png.Put(ball, overlays[i]!, 0, 0, BallRaster.Size, BallRaster.Size, i == 1 ? Rgba.Hex("#2F6FDE") : (Rgba?)null);
                 }
 
                 Png.Put(ball, BallRaster.Badge(), 104, 4, 52, 52);

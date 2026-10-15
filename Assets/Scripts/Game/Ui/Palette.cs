@@ -5,13 +5,14 @@ using UnityEngine;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Цвета интерфейса: лавандовый фон, белые карточки с контуром и плотной тенью,
-    /// вложенные плитки — на светло-лавандовой подложке. Яркое — только пряжа и главные кнопки.
+    /// Цвета интерфейса: нейтральный светло-серый фон с холодным оттенком, белые карточки с контуром и тенью,
+    /// вложенные плитки — на светло-серой подложке, текст графитовый. Акцент — спокойный синий, опасное — красный,
+    /// главное действие — зелёное. Яркое — только пряжа и главные кнопки: интерфейс не уводит в пастель.
     /// Три уровня поверхностей: Ground (экран) → Card (карточка) → Surface (плитка внутри карточки).
     /// </summary>
     public static class Palette
     {
-        public static readonly Color Ground = Hex("#EDE7FF");
+        public static readonly Color Ground = Hex("#E9ECF0");
 
         /// <summary>
         /// Фон по коллекциям: узор тот же, меняется только оттенок — у каждой коллекции своё настроение.
@@ -19,16 +20,16 @@ namespace KnittedPicture.Game
         /// </summary>
         private static readonly Color[] Grounds =
         {
-            Hex("#EDE7FF"), // Уютные мелочи — лаванда
-            Hex("#E2F3E8"), // Сад — мята
-            Hex("#FCEBDD"), // Зверята — персик
-            Hex("#FCE6EE"), // Вкусняшки — розовый
-            Hex("#DFF0F7"), // Море — морская волна
-            Hex("#E3EAFB"), // Небо — небесный
-            Hex("#E6EEDB"), // Лес — шалфей
-            Hex("#FBF1D6"), // Праздник — сливочный
-            Hex("#F5E8E2"), // Уют — какао с молоком
-            Hex("#E8E6FB"), // Друзья — сирень
+            Hex("#E9ECF0"), // Уютные мелочи — светлый графит
+            Hex("#E2EBE4"), // Сад — шалфей
+            Hex("#EDE7DF"), // Зверята — песок
+            Hex("#EEE5E0"), // Вкусняшки — глина
+            Hex("#DFEAEF"), // Море — морская волна
+            Hex("#E2E8F1"), // Небо — холодный голубой
+            Hex("#E3E9DD"), // Лес — мох
+            Hex("#EEEADC"), // Праздник — лён
+            Hex("#E9E4DE"), // Уют — какао с молоком
+            Hex("#E4E7EC"), // Друзья — сталь
         };
 
         /// <summary>Фон уровня: по его коллекции.</summary>
@@ -37,22 +38,22 @@ namespace KnittedPicture.Game
 
         public static Color GroundOf(int collection) => Grounds[(collection % Grounds.Length + Grounds.Length) % Grounds.Length];
         public static readonly Color Card = Color.white;
-        public static readonly Color CardShadow = Hex("#D3C8F3");
-        /// <summary>Мягкая размытая тень белых карточек: сиреневая и прозрачная, не серая.</summary>
-        public static readonly Color SoftShadow = new Color(0.36f, 0.27f, 0.68f, 0.18f);
+        public static readonly Color CardShadow = Hex("#CDD3DB");
+        /// <summary>Мягкая размытая тень белых карточек: холодная графитовая и прозрачная.</summary>
+        public static readonly Color SoftShadow = new Color(0.16f, 0.22f, 0.3f, 0.18f);
 
         /// <summary>Тонкий контур белых карточек: не теряются ни на фоне, ни на белом окне.</summary>
-        public static readonly Color Line = Hex("#DDD5F7");
+        public static readonly Color Line = Hex("#D8DDE4");
 
         /// <summary>Плитка внутри белой карточки или окна.</summary>
-        public static readonly Color Surface = Hex("#F5F2FF");
-        public static readonly Color Ink = Hex("#2B2350");
-        public static readonly Color Ink2 = Hex("#544C7A");
+        public static readonly Color Surface = Hex("#F3F5F8");
+        public static readonly Color Ink = Hex("#1E2732");
+        public static readonly Color Ink2 = Hex("#4A5563");
         // Вторичный текст: контраст с белым 4.7:1 (WCAG AA для мелкого текста — от 4.5:1).
-        public static readonly Color Ink3 = Hex("#756CA6");
-        public static readonly Color LoomBg = Hex("#E4DCFF");
-        public static readonly Color SlotEmpty = Hex("#CFC5F3");
-        public static readonly Color Track = Hex("#E7E1F8");
+        public static readonly Color Ink3 = Hex("#677382");
+        public static readonly Color LoomBg = Hex("#E0E5EB");
+        public static readonly Color SlotEmpty = Hex("#C5CDD7");
+        public static readonly Color Track = Hex("#E2E6EB");
         public static readonly Color Primary = Hex("#17945F");
         public static readonly Color PrimaryShadow = Hex("#0F6E46");
         public static readonly Color PrimarySoft = Hex("#DCF3E7");
@@ -62,22 +63,22 @@ namespace KnittedPicture.Game
         /// <summary>Золотой текст: читается и на белом, и на CoinSoft (CoinShadow для текста слишком светлый).</summary>
         public static readonly Color CoinInk = Hex("#965C00");
         /// <summary>Неактивные отметки (пустые звёзды, точки листания, пустые деления): заметны на белом и на фоне.</summary>
-        public static readonly Color Inactive = Hex("#9488C8");
+        public static readonly Color Inactive = Hex("#8E99A6");
         /// <summary>Заливка круглых кнопок на белой карточке: белая кнопка с тенью на белом окне пропадает.</summary>
-        public static readonly Color ButtonFill = Hex("#EAE4FF");
-        public static readonly Color Danger = Hex("#E0306E");
-        public static readonly Color DangerSoft = Hex("#FFDDE9");
-        public static readonly Color Link = Hex("#8B5CF6");
+        public static readonly Color ButtonFill = Hex("#E5E9EF");
+        public static readonly Color Danger = Hex("#D7383F");
+        public static readonly Color DangerSoft = Hex("#FBE0DF");
+        public static readonly Color Link = Hex("#2F6FDE");
 
         /// <summary>Цвета пар связанных клубков: у каждой пары свой, чтобы было видно, кто с кем связан.</summary>
-        private static readonly Color[] LinkPairs = { Hex("#8B5CF6"), Hex("#0EA5A4"), Hex("#F97316"), Hex("#2563EB") };
+        private static readonly Color[] LinkPairs = { Hex("#2F6FDE"), Hex("#0EA5A4"), Hex("#F97316"), Hex("#64748B") };
 
         /// <summary>Цвет пары связанных клубков по номеру связки (1, 2, 3…).</summary>
         public static Color LinkPair(int link) => LinkPairs[(System.Math.Max(1, link) - 1) % LinkPairs.Length];
-        public static readonly Color Hidden = Hex("#CFC8EA");
+        public static readonly Color Hidden = Hex("#C8CFD8");
         public static readonly Color Wood = Hex("#F2C48D");
         public static readonly Color WoodDark = Hex("#D9955A");
-        public static readonly Color Dim = new Color(0.17f, 0.14f, 0.31f, 0.62f);
+        public static readonly Color Dim = new Color(0.08f, 0.11f, 0.15f, 0.62f);
 
         public static Color Hex(string hex)
         {

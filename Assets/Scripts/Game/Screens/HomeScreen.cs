@@ -82,7 +82,7 @@ namespace KnittedPicture.Game
         private void BuildLogo(float logoY, float ball)
         {
             var info = App.Progress.ActiveYarn >= 0 ? YarnCatalog.All[App.Progress.ActiveYarn] : null;
-            var main = info != null ? Palette.Hex(info.Hex) : Palette.Hex("#FF6FA5");
+            var main = info != null ? Palette.Hex(info.Hex) : Palette.Hex("#E2683C");
             var cy = logoY + ball / 2f;
 
             // Тень на полу — отдельно: клубок подпрыгивает, а она остаётся и сжимается.

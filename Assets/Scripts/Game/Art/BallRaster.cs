@@ -937,13 +937,13 @@ namespace KnittedPicture.Game
             return r;
         }
 
-        /// <summary>Мягкая лавандовая тень под клубком (овал).</summary>
+        /// <summary>Мягкая графитовая тень под клубком (овал).</summary>
         public static Raster Shadow()
         {
             const int w = 96;
             const int h = 32;
             var r = new Raster(w, h);
-            var shade = Rgba.Hex("#5B45AE");
+            var shade = Rgba.Hex("#334255");
             r.Paint((x, y) =>
             {
                 var d = Draw.Ellipse(x, y, w / 2f, h / 2f, w / 2f - 2f, h / 2f - 2f);

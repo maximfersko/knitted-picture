@@ -152,7 +152,7 @@ namespace KnittedPicture.Game
         /// <summary>Кубок достижения: золотой (можно забрать, получено) или серебряный (в процессе).</summary>
         public static Sprite Trophy(bool gold) => Get(gold ? "trophyGold" : "trophySilver", () => IconRaster.Trophy(gold));
 
-        /// <summary>Камень редкости пряжи: дымчатый, аметист, топаз.</summary>
+        /// <summary>Камень редкости пряжи: дымчатый, сапфир, топаз.</summary>
         public static Sprite Gem(Rarity rarity)
         {
             var tier = rarity == Rarity.Epic ? 2 : rarity == Rarity.Rare ? 1 : 0;
@@ -246,7 +246,7 @@ namespace KnittedPicture.Game
         /// <summary>Клубок цвета пряжи. deep — задний ряд поля: пастельный, сливается с фоном.</summary>
         public static Sprite Ball(Color c, bool deep = false, bool thick = false)
         {
-            var color = deep ? Color.Lerp(c, new Color(0.91f, 0.89f, 0.92f), 0.5f) : c;
+            var color = deep ? Color.Lerp(c, new Color(0.9f, 0.91f, 0.92f), 0.5f) : c;
             return BallSprite(color, thick ? BallRaster.Kind.Thick : BallRaster.Kind.Plain, false);
         }
 

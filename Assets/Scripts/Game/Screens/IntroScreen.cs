@@ -293,7 +293,7 @@ namespace KnittedPicture.Game
             });
         }
 
-        /// <summary>Шкала из сегментов: пройденные — зелёные, текущий заполняется, впереди — лавандовые.</summary>
+        /// <summary>Шкала из сегментов: пройденные — зелёные, текущий заполняется, впереди — серые.</summary>
         private void BuildSegments(float y)
         {
             const float gap = 6f;
@@ -488,7 +488,7 @@ namespace KnittedPicture.Game
             var loomY = 22f + picture.Height + 26f;
             var frames = Loom(scene, 3, loomY);
             var fieldY = loomY + 74f + 52f;
-            var wrong = new[] { Sun, Leaf, Palette.Hex("#8B5CF6") };
+            var wrong = new[] { Sun, Leaf, Palette.Hex("#3C78D8") };
             var flown = new List<RectTransform>();
             for (var i = 0; i < wrong.Length; i++)
             {
@@ -706,7 +706,7 @@ namespace KnittedPicture.Game
                 ("Замок", "Откроется, когда на станок встанет клубок с ключом", new Spool(0, 0, 7, locked: true), Leaf),
                 ("Связка", "Связанные клубки едут на станок только вместе, нужно 2 свободных места", new Spool(0, 0, 4, link: 1), Sun),
                 ("Радужный", "Вяжет любой цвет: клетки в рамке, самые нижние. Выручает, когда нужного цвета нет", new Spool(0, 0, 5, rainbow: true), Color.white),
-                ("Толстый", "Занимает 2 места на станке, зато вяжет вдвое быстрее", new Spool(0, 0, 24, thick: true), Palette.Hex("#8B5CF6")),
+                ("Толстый", "Занимает 2 места на станке, зато вяжет вдвое быстрее", new Spool(0, 0, 24, thick: true), Palette.Hex("#3C78D8")),
                 ("Ледяной", "Оттает, когда станок свяжет столько петель его цвета, сколько на льду", new Spool(0, 0, 6, ice: 4), Sky),
             };
 
