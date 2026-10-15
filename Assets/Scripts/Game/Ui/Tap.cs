@@ -36,6 +36,12 @@ namespace KnittedPicture.Game
         /// <summary>Каким звуком щёлкать: обычный мягкий тап или «спицы» у главных кнопок.</summary>
         public Sound Sound { get; set; } = Sound.Click;
 
+        /// <summary>
+        /// Что сказать, если нажали, пока кнопка недоступна (null — молча). Тогда кнопка коротко мотает
+        /// «головой», глухо отзывается звуком и толчком, а подсказка всплывает плашкой: тап не проходит в пустоту.
+        /// </summary>
+        public string? DeniedHint { get; set; }
+
         /// <summary>Проседать ли под пальцем. Фоновым областям (затемнение) — нет.</summary>
         public bool PressFeedback { get; set; } = true;
 
@@ -167,12 +173,19 @@ namespace KnittedPicture.Game
         {
             if (!Interactable)
             {
+                if (DeniedHint != null)
+                {
+                    Denied();
+                }
+
                 return;
             }
 
             if (ClickSound)
             {
+                // Кнопки интерфейса «щёлкают» и в руке: лёгкий тактильный тик вместе со звуком.
                 Sfx.Play(Sound);
+                Haptics.Play(Haptic.Tap);
             }
 
             Clicked?.Invoke();
@@ -181,6 +194,21 @@ namespace KnittedPicture.Game
         private void Release()
         {
             _pressed = false;
+        }
+
+        private void Denied()
+        {
+            if (transform is RectTransform rt)
+            {
+                Tweens.Shake(rt, 5f, 0.28f);
+            }
+
+            Sfx.Play(Sound.Deny, 0.5f);
+            Haptics.Play(Haptic.Soft);
+            if (DeniedHint!.Length > 0)
+            {
+                App.Instance?.Toast(DeniedHint);
+            }
         }
     }
 }

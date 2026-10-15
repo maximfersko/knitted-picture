@@ -334,6 +334,10 @@ namespace KnittedPicture.Game
                     var levelId = id;
                     var tap = MiniPicture.Tile(card, level, state, x, tilesY, tile, progress.StarsOf(id));
                     var rt = (RectTransform)tap.transform;
+                    if (id == App.JustAdded)
+                    {
+                        NewInAlbum(card, rt, x, tilesY, tile);
+                    }
                     tap.OnClick(() => LevelInfoPopup.OnTile(App, levelId, rt));
                     var name = Ui.Label(card, state == TileState.Locked ? $"Ур. {id}" : level.name, 11,
                         state == TileState.Current ? Palette.Primary : state == TileState.Locked ? Palette.Ink3 : Palette.Ink2,
@@ -345,7 +349,33 @@ namespace KnittedPicture.Game
                 y += cardH + 16f;
             }
 
+            // Подсветка новой картинки — один раз.
+            App.JustAdded = 0;
             return y;
+        }
+
+        /// <summary>
+        /// Картинка, только что попавшая в альбом: рамка трижды вспыхивает золотом и гаснет, над ней ярлык «Новая»,
+        /// из рамки искры. Один раз — при первом заходе в альбом после победы.
+        /// </summary>
+        private void NewInAlbum(RectTransform card, RectTransform tile, float x, float y, float size)
+        {
+            var ring = Ui.Image(card, "NewRing", Art.RoundRectOutline(10, 3), Palette.Coin);
+            ring.type = UnityEngine.UI.Image.Type.Sliced;
+            ring.pixelsPerUnitMultiplier = Art.Density;
+            Ui.Place(ring.rectTransform, x - 4f, y - 4f, size + 8f, size + 8f);
+            ring.raycastTarget = false;
+            Tweens.Run(ring, 2.4f, t =>
+            {
+                var pulse = Mathf.Abs(Mathf.Sin(t * Mathf.PI * 3f)) * (t < 0.83f ? 1f : (1f - t) / 0.17f);
+                ring.color = Palette.WithAlpha(Palette.Coin, 0.15f + 0.85f * pulse);
+            }, null, () => ring.color = Palette.WithAlpha(Palette.Coin, 0.4f), 0.35f);
+
+            var label = Ui.Box(card, "NewLabel", 9, Palette.Danger).rectTransform;
+            Ui.Place(label, x + size / 2f - 26f, y - 12f, 52f, 18f);
+            Ui.Label(label, "Новая", 11, Color.white, 0, 0, 52, 18);
+            Tweens.Scale(label, 0f, 1f, 0.4f, Ease.OutBack, null, 0.35f);
+            Tweens.Delay(tile, 0.5f, () => Fx.Sparkle(Root, Ui.WorldCenter(tile), Palette.Coin, 10, size * 0.7f));
         }
 
         /// <summary>Полоска «В работе»: моток, его бонус; тап — карточка мотка. Её же видно на экране сундука.</summary>
@@ -423,8 +453,13 @@ namespace KnittedPicture.Game
             BuildBasket(banner, progress);
             const float textX = 118f;
             Ui.Fit(Ui.Label(banner, "Корзинка пряжи", 18, Palette.Ink, textX, 14, cardW - textX - 48, 26, true, TextAnchor.MiddleLeft), 13);
-            Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, textX, 40, cardW - textX - 48, 18, false,
+            var kinds = Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, textX, 40, cardW - textX - 48, 18, false,
                 TextAnchor.MiddleLeft);
+            if (entering)
+            {
+                kinds.text = $"0 из {YarnCatalog.Count} мотков";
+                Ui.RollTo(kinds, progress.YarnKinds, 0.8f, "{0} из " + YarnCatalog.Count + " мотков", 0.15f);
+            }
             var fill = Ui.ProgressBar(banner, textX, 66, cardW - textX - 18, 10, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Link);
             if (entering && !Tweens.Calm)
             {
@@ -759,8 +794,9 @@ namespace KnittedPicture.Game
             if (can)
             {
                 var target = a;
-                Ui.Button(row, "Забрать", w - claimW - 14f, 17, claimW, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15)
-                    .OnClick(() => Claim(progress.ClaimAchievement(target, App.Random), target.Title, Icon.Trophy, CollectionsTab.Achievements));
+                var claimButton = Ui.Button(row, "Забрать", w - claimW - 14f, 17, claimW, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
+                claimButton.OnClick(() => Claim(progress.ClaimAchievement(target, App.Random), target.Title, Icon.Trophy, CollectionsTab.Achievements));
+                Ui.Sheen((RectTransform)claimButton.transform, claimW, 36f, 3.2f, 0.6f + y * 0.002f);
             }
             else if (claimed)
             {
@@ -853,7 +889,9 @@ namespace KnittedPicture.Game
             if (canClaim)
             {
                 Ui.Fit(Ui.Label(bar, readyText, 14, Palette.Ink, 50, 12, w - 160, 24, true, TextAnchor.MiddleLeft), 10);
-                Ui.Button(bar, "Забрать", w - 100, 6, 92, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15).OnClick(claim);
+                var claimButton = Ui.Button(bar, "Забрать", w - 100, 6, 92, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
+                claimButton.OnClick(claim);
+                Ui.Sheen((RectTransform)claimButton.transform, 92f, 36f, 3.2f, 0.6f);
             }
             else if (claimed)
             {

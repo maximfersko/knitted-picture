@@ -16,7 +16,17 @@ namespace KnittedPicture.Game
             : base(app, "Home")
         {
             var progress = app.Progress;
-            Ui.RoundButton(Root, Icon.Settings, 16, 8).OnClick(() => app.ShowPopup(new SettingsPopup(app)));
+            var settings = Ui.RoundButton(Root, Icon.Settings, 16, 8);
+            if (settings.transform.Find("Icon" + Icon.Settings) is RectTransform gearRt && gearRt.GetComponent<UnityEngine.UI.Image>() is { } gear)
+            {
+                // Стальная объёмная шестерёнка; по нажатию проворачивается на зубец.
+                gear.sprite = Art2.Gear;
+                gear.color = Color.white;
+                gearRt.sizeDelta = new Vector2(30f, 30f);
+                settings.OnClick(() => Tweens.Run(gearRt, 0.35f, t => gearRt.localRotation = Quaternion.Euler(0f, 0f, -45f * t), Ease.OutBack));
+            }
+
+            settings.OnClick(() => app.ShowPopup(new SettingsPopup(app)));
             Ui.CoinPill(Root, progress.Coins, W - 16, 8);
 
             // Главная под одну руку: всё, что нажимают каждый день, — в нижних двух третях экрана, куда
@@ -601,11 +611,22 @@ namespace KnittedPicture.Game
             }
 
             Ui.Fit(Ui.Label(face, "Играть", 28, Color.white, 76, 12, playW - 88, 36), 18);
+            Ui.Sheen(face, playW, 84f, 4f, 1.2f);
             var hard = App.Levels.Has(level) && App.Levels.Get(level).hard;
             // Тёплая серия — в подписи кнопки, а не отдельной плашкой: «Уровень 12 · серия ×3».
             var streak = App.Progress.WarmStartFor(level).Any ? $" · серия ×{App.Progress.Streak}" : string.Empty;
             Ui.Fit(Ui.Label(face, (hard ? $"Уровень {level} · сложный" : $"Уровень {level}") + streak, 15, Color.white, 76, 46, playW - 88, 22, false), 10);
-            play.OnClick(() => App.StartLevel(level));
+            play.OnClick(() =>
+            {
+                // Эскиз с кнопки перелетит и станет картинкой уровня: переход читается как одно движение.
+                var preview = face.Find("Preview") as RectTransform;
+                if (preview != null && App.Levels.Has(level))
+                {
+                    App.HeroFrom(preview, App.Levels.Get(level));
+                }
+
+                App.StartLevel(level);
+            });
             Tweens.Run(play, 1.6f, t => play.transform.localScale = Vector3.one * (1f + 0.025f * Ease.Bump(t)), null, null, 0.6f, true);
         }
     }

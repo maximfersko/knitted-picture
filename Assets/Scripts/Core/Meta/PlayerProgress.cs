@@ -88,6 +88,9 @@ namespace KnittedPicture.Core
 
         public bool soundOn = true;
 
+        /// <summary>Фоновая музыка (отдельно от звуков).</summary>
+        public bool musicOn = true;
+
         /// <summary>Вибрация (тактильный отклик) включена.</summary>
         public bool hapticsOn = true;
 

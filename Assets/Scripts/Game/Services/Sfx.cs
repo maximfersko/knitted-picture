@@ -57,6 +57,18 @@ namespace KnittedPicture.Game
             _instance.PlayInternal(sound, volume);
         }
 
+        /// <summary>Звук с высотой тона: звёзды и монеты подряд звучат всё выше.</summary>
+        public static void Play(Sound sound, float volume, float pitch)
+        {
+            if (_instance == null || !Enabled || _instance._source == null || !_instance._clips.TryGetValue(sound, out var clip))
+            {
+                return;
+            }
+
+            _instance._source.pitch = pitch;
+            _instance._source.PlayOneShot(clip, volume);
+        }
+
         private void Awake()
         {
             _source = gameObject.AddComponent<AudioSource>();

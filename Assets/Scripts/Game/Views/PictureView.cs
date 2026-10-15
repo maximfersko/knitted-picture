@@ -388,7 +388,52 @@ namespace KnittedPicture.Game
                 rt.localRotation = Quaternion.identity;
                 image.color = color;
             });
+
+            // Столбик довязан до верха и ни одна его нитка не в пути: снизу вверх пробегает блик, как застёжка.
+            if (_game.FrontY(x) < 0 && _game.Status != GameStatus.Won && !ColumnPending(x))
+            {
+                Zip(x);
+            }
+
             return true;
+        }
+
+        private bool ColumnPending(int x)
+        {
+            for (var y = 0; y < _game.Height; y++)
+            {
+                if (_pending.Contains(Key(x, y)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Блик по готовому столбику снизу вверх: петли по очереди светлеют и чуть подрастают.</summary>
+        private void Zip(int x)
+        {
+            for (var y = _game.Height - 1; y >= 0; y--)
+            {
+                var image = _cells[y * _game.Width + x];
+                var rt = image.rectTransform;
+
+                // После «впрыгивания» последней петли (0,26 с), чтобы не спорить с ней за цвет и размер.
+                var delay = 0.3f + (_game.Height - 1 - y) * 0.022f;
+                var stitch = _colors[_game.ColorAt(x, y)];
+                var baseColor = _game.IsFabric(x, y) ? Palette.Fabric(stitch) : stitch;
+                Tweens.Run(rt, 0.2f, t =>
+                {
+                    var bump = Ease.Bump(t);
+                    image.color = Color.Lerp(baseColor, Color.white, 0.5f * bump);
+                    rt.localScale = Vector3.one * (1f + 0.08f * bump);
+                }, null, () =>
+                {
+                    image.color = baseColor;
+                    rt.localScale = Vector3.one;
+                }, delay);
+            }
         }
 
         /// <summary>Ряд y закрыт: петли по очереди слева направо вспыхивают и чуть подпрыгивают.</summary>

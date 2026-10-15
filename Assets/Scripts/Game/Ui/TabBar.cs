@@ -68,14 +68,20 @@ namespace KnittedPicture.Game
                 }
             }
 
-            if (tab == MainTab.Yarn)
+            // Объёмные значки: книга-альбом, домик, клубок. Неактивные приглушены серым, активный — в полном цвете
+            // и, если на вкладку перешли, коротко подпрыгивает.
+            var art = tab == MainTab.Yarn ? Art2.YarnBall(Palette.Link) : tab == MainTab.Album ? Art2.AlbumBook : Art2.House;
+            var icon = Ui.Image(rt, "Icon", art, on ? Color.white : new Color(0.78f, 0.81f, 0.86f, 0.85f));
+            var iconRt = icon.rectTransform;
+            Ui.PlaceCenter(iconRt, cellW / 2f, 22, 28, 28);
+            if (on && app.PendingSlide != 0 && !Tweens.Calm)
             {
-                var ball = Ui.Image(rt, "Icon", Art2.YarnBall(color), Color.white);
-                Ui.PlaceCenter(ball.rectTransform, cellW / 2f, 22, 24, 24);
-            }
-            else
-            {
-                Ui.IconImage(rt, tab == MainTab.Album ? Icon.Album : Icon.Home, color, cellW / 2f, 22, 22);
+                Tweens.Run(iconRt, 0.45f, t =>
+                {
+                    var j = Ease.Jolt(t);
+                    iconRt.localScale = new Vector3(1f + 0.18f * j, 1f + 0.26f * j, 1f);
+                    iconRt.anchoredPosition = new Vector2(iconRt.anchoredPosition.x, -22f + 6f * Mathf.Max(0f, j));
+                }, null, null, 0.08f);
             }
 
             Ui.Fit(Ui.Label(rt, title, 12, color, 2, 40, cellW - 4, 18, on), 10);

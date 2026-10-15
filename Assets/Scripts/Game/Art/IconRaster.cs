@@ -223,6 +223,205 @@ namespace KnittedPicture.Game
             });
         }
 
+        /// <summary>
+        /// Звезда награды 64×64: earned — выпуклое золото с бликом и тёмно-золотым ободком; иначе — вдавленное
+        /// пустое гнездо (серая звезда с тенью внутри сверху), чтобы было видно, сколько звёзд можно было взять.
+        /// </summary>
+        public static Raster RewardStar(bool earned)
+        {
+            const float c = 32f;
+            return Raster.Render(64, 64, 3, (x, y) =>
+            {
+                var result = Rgba.Clear;
+                float Outer(float px, float py) => Star5(px - c, py - c + 2f, 28f, 0.55f) - 3f;
+                if (!earned)
+                {
+                    var d = Outer(x, y);
+                    if (d < 1f)
+                    {
+                        // Гнездо: светлее к низу, тень по верхней кромке внутри.
+                        var tone = Rgba.Hex("#D9DEE5").Shade(-0.1f * Draw.Clamp01((y - 20f) / 30f));
+                        var inner = 1f - Draw.SmoothStep(0f, 4f, -Outer(x, y + 1.5f));
+                        tone = tone.Shade(-0.22f * inner * Draw.Clamp01((y - c) / 20f + 0.6f));
+                        result = Layer(result, d, tone);
+                    }
+
+                    return result;
+                }
+
+                float Inner(float px, float py) => Star5(px - c, py - c + 2f, 24f, 0.55f) - 2.4f;
+                result = Shadow(result, Star5(x - c, y - c + 5f, 28f, 0.55f) - 3f, 5f, 0.35f);
+                result = Layer(result, Outer(x, y), Pillow(Outer, x, y, Rgba.Hex("#D98E0A"), 3f, 0.5f));
+                var face = Inner(x, y);
+                if (face < 1f)
+                {
+                    var tone = Pillow(Inner, x, y, Rgba.Hex("#FFC23C"), 7f, 0.5f);
+                    tone = Rgba.Lerp(tone, Rgba.Hex("#FFE48A"), Draw.Clamp01((y - c) / 22f) * 0.6f);
+                    result = Layer(result, face, tone);
+
+                    // Узкий блик на левом верхнем луче.
+                    var gloss = Draw.Ellipse(x, y, c - 7f, c + 9f, 7f, 3f, 35f);
+                    result = Layer(result, MathF.Max(gloss, face), Rgba.White.WithAlpha(0.55f));
+                }
+
+                return result;
+            });
+        }
+
+        // ---------- Значки панели и настроек ----------
+
+        /// <summary>
+        /// Домик 64×64 для вкладки «Главная»: черепичная крыша с тенью от ската, светлые стены, окно с переплётом,
+        /// деревянная дверь, труба. Объём — свет слева сверху.
+        /// </summary>
+        public static Raster House()
+        {
+            var roof = Rgba.Hex("#C8553D");
+            var wall = Rgba.Hex("#F1E3C8");
+            var wood = Rgba.Hex("#9A6544");
+            var glass = Rgba.Hex("#7FB4E0");
+            return Raster.Render(64, 64, 3, (x, y) =>
+            {
+                var result = Rgba.Clear;
+                result = Shadow(result, Draw.Ellipse(x, y, 32f, 7f, 22f, 3f), 4f, 0.3f);
+
+                // Труба за крышей.
+                result = Layer(result, Draw.RoundBox(x, y, 43f, 47f, 4f, 8f, 1f), Rgba.Hex("#8E5A44").Shade(x < 42f ? 0.1f : -0.1f));
+
+                // Стены.
+                float Walls(float px, float py) => Draw.RoundBox(px, py, 32f, 22f, 18f, 13f, 2.5f);
+                var walls = Walls(x, y);
+                if (walls < 1f)
+                {
+                    var tone = Pillow(Walls, x, y, wall, 3f, 0.35f).Shade(-0.12f * Draw.Clamp01((x - 32f) / 18f));
+                    result = Layer(result, walls, tone);
+                }
+
+                // Дверь и окно.
+                float Door(float px, float py) => Draw.RoundBox(px, py, 25f, 17f, 5f, 8.5f, 2f);
+                result = Layer(result, Door(x, y), Pillow(Door, x, y, wood, 2f, 0.4f));
+                result = Layer(result, Draw.Circle(x, y, 28f, 16f, 0.9f), Rgba.Hex("#FFD36B"));
+                var window = Draw.RoundBox(x, y, 40f, 23f, 5.5f, 5f, 1.2f);
+                result = Layer(result, window + 1.2f, wood.Shade(-0.2f));
+                result = Layer(result, window, glass.Shade(0.35f * Draw.Clamp01((y - 20f) / 8f) - 0.05f));
+                result = Layer(result, MathF.Max(window, MathF.Min(MathF.Abs(x - 40f), MathF.Abs(y - 23f)) - 0.6f), wood.Shade(-0.1f));
+
+                // Крыша: треугольник с козырьком, черепица рядами, правый скат в тени.
+                float Roof(float px, float py) => Draw.Triangle(px, py, 32f, 56f, 8f, 33f, 56f, 33f) - 2.6f;
+                var roofD = Roof(x, y);
+                if (roofD < 1f)
+                {
+                    var tone = Pillow(Roof, x, y, roof, 3f, 0.35f);
+                    var row = ((56f - y) / 4.5f) % 1f;
+                    tone = tone.Shade(-0.14f * Draw.SmoothStep(0.7f, 1f, row));
+                    tone = tone.Shade(x > 32f ? -0.12f : 0.04f);
+                    result = Layer(result, roofD, tone);
+                }
+
+                return result;
+            });
+        }
+
+        /// <summary>
+        /// Альбом 64×64 для вкладки «Альбом»: книга в синей обложке с золотыми уголками, сбоку обрез страниц,
+        /// на обложке рамка с маленькой вязаной картинкой из четырёх цветных клеток.
+        /// </summary>
+        public static Raster Album()
+        {
+            var cover = Rgba.Hex("#2F5FB8");
+            var gold = Rgba.Hex("#FFC23C");
+            return Raster.Render(64, 64, 3, (x, y) =>
+            {
+                var result = Rgba.Clear;
+                result = Shadow(result, Draw.Ellipse(x, y, 33f, 7f, 21f, 3f), 4f, 0.3f);
+
+                // Страницы: светлый обрез справа и снизу, тонкие линии листов.
+                var pages = Draw.RoundBox(x, y, 35f, 31f, 18f, 21f, 3f);
+                if (pages < 1f)
+                {
+                    var line = 0.5f + 0.5f * MathF.Sin(y * 2.2f);
+                    result = Layer(result, pages, Rgba.Hex("#F6EFE0").Shade(-0.08f * line));
+                }
+
+                // Обложка.
+                float Cover(float px, float py) => Draw.RoundBox(px, py, 31f, 34f, 18f, 21f, 3.5f);
+                var coverD = Cover(x, y);
+                if (coverD < 1f)
+                {
+                    var tone = Pillow(Cover, x, y, cover, 3.5f, 0.4f);
+
+                    // Корешок слева темнее, с двумя тиснёными полосками.
+                    if (x < 18f)
+                    {
+                        tone = tone.Shade(-0.22f);
+                        if (MathF.Abs(y - 44f) < 1f || MathF.Abs(y - 24f) < 1f)
+                        {
+                            tone = gold.Shade(-0.1f);
+                        }
+                    }
+
+                    result = Layer(result, coverD, tone);
+                }
+
+                // Золотые уголки справа.
+                foreach (var cy in new[] { 51f, 17f })
+                {
+                    var dir = cy > 30f ? -1f : 1f;
+                    var corner = MathF.Max(Draw.Triangle(x, y, 49f, cy, 49f, cy + dir * 9f, 40f, cy), Cover(x, y));
+                    result = Layer(result, corner, gold.Shade(0.15f * (cy > 30f ? 1f : -0.5f)));
+                }
+
+                // Рамка с картинкой на обложке: четыре клетки «вязки».
+                var frame = Draw.RoundBox(x, y, 34f, 36f, 9f, 9f, 1.5f);
+                result = Layer(result, frame, gold.Shade(-0.05f));
+                var inner = Draw.RoundBox(x, y, 34f, 36f, 7f, 7f, 1f);
+                if (inner < 1f)
+                {
+                    var cell = (x < 34f ? 0 : 1) + (y < 36f ? 0 : 2);
+                    var colors = new[] { "#5FBF8F", "#F2A541", "#E8574A", "#6FA8DC" };
+                    var c = Rgba.Hex(colors[cell]).Shade(0.15f * MathF.Sin((x + y) * 1.4f));
+                    result = Layer(result, inner, c);
+                }
+
+                return result;
+            });
+        }
+
+        /// <summary>Шестерёнка 64×64 для настроек: стальная, с зубцами, фаской и отверстием в центре.</summary>
+        public static Raster Gear()
+        {
+            var steel = Rgba.Hex("#8C9AAB");
+            return Raster.Render(64, 64, 3, (x, y) =>
+            {
+                var result = Rgba.Clear;
+                static float Shape(float px, float py)
+                {
+                    var dx = px - 32f;
+                    var dy = py - 33f;
+                    var r = MathF.Sqrt(dx * dx + dy * dy);
+                    var a = MathF.Atan2(dy, dx);
+
+                    // Восемь зубцов со скруглёнными гранями.
+                    var tooth = Draw.SmoothStep(0.25f, 0.6f, MathF.Cos(a * 8f) * 0.5f + 0.5f);
+                    var outer = r - (19f + 6f * tooth);
+                    var hole = 7.5f - r;
+                    return MathF.Max(outer, hole);
+                }
+
+                result = Shadow(result, Shape(x, y + 2.5f), 4f, 0.35f);
+                var d = Shape(x, y);
+                if (d < 1f)
+                {
+                    var tone = Pillow(Shape, x, y, steel, 3f, 0.5f);
+                    var rr = MathF.Sqrt((x - 32f) * (x - 32f) + (y - 33f) * (y - 33f));
+                    tone = Rgba.Lerp(tone, tone.Shade(0.35f), MathF.Exp(-MathF.Pow((rr - 14f) / 3f, 2f)) * 0.5f);
+                    result = Layer(result, d, tone);
+                }
+
+                return result;
+            });
+        }
+
         // ---------- Корзинка ----------
 
         /// <summary>Задняя часть корзинки 120×96: ручка дугой и тёмное нутро — клубки кладутся между задней и передней.</summary>

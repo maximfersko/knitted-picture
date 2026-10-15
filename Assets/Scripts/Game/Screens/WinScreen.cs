@@ -48,8 +48,9 @@ namespace KnittedPicture.Game
     /// <summary>Что нового открылось этой победой: достижение ждёт в коллекциях, сундук готов.</summary>
     public sealed class WinNews
     {
-        public WinNews(bool achievement, bool chest, bool mission = false, bool allMissions = false)
+        public WinNews(bool achievement, bool chest, bool mission = false, bool allMissions = false, bool record = false)
         {
+            Record = record;
             Achievement = achievement;
             Chest = chest;
             Mission = mission;
@@ -57,6 +58,9 @@ namespace KnittedPicture.Game
         }
 
         public bool Achievement { get; }
+
+        /// <summary>Перепрохождение со звёздами больше прежних: штамп «Рекорд!».</summary>
+        public bool Record { get; }
 
         /// <summary>Этой победой выполнено задание дня; все три — награда ждёт.</summary>
         public bool Mission { get; }
@@ -76,6 +80,9 @@ namespace KnittedPicture.Game
         private readonly Text _coins;
         private readonly List<(RectTransform from, int amount)> _flights = new List<(RectTransform, int)>();
         private int _shownCoins;
+
+        /// <summary>Сколько монет уже долетело: каждая следующая звенит чуть выше.</summary>
+        private int _coinChain;
 
         /// <summary>Крупная сумма награды: монеты летят в счётчик одним потоком отсюда.</summary>
         private RectTransform? _sumFrom;
@@ -146,7 +153,7 @@ namespace KnittedPicture.Game
             });
 
             var y = hoopY + hoop + 10f;
-            BuildStars(y, reward.Stars);
+            BuildStars(y, reward.Stars, news.Record);
             y += 48f;
 
             Ui.Label(Root, reward.NewRecord ? "Новый рекорд!" : "Готово!", compact ? 32 : 36, Palette.Ink, 16, y, W - 32, 42);
@@ -193,7 +200,19 @@ namespace KnittedPicture.Game
             var nextY = H - 24f - 44f - 6f - 70f;
             var next = Ui.Button(Root, "", 20, nextY, W - 40, 70, Palette.Primary, Palette.PrimaryShadow, Color.white, 22);
             var face = (RectTransform)next.transform;
-            next.OnClick(() => app.ContinueAfterWin(level.id));
+            RectTransform? heroFrame = null;
+            LevelData? heroData = null;
+            next.OnClick(() =>
+            {
+                // Эскиз следующей картинки перелетит с кнопки на станок, как с «Играть» на главной.
+                if (heroFrame != null && heroData != null)
+                {
+                    app.HeroFrom(heroFrame, heroData);
+                }
+
+                app.ContinueAfterWin(level.id);
+            });
+            Ui.Sheen(face, W - 40, 70f, 4f, 2.4f);
             var nextId = app.Progress.CurrentLevel;
             if (!app.Progress.AllDone && app.Levels.Has(nextId))
             {
@@ -204,6 +223,8 @@ namespace KnittedPicture.Game
                 var frame = Ui.Box(face, "Preview", 12, Palette.Card);
                 Ui.Place(frame.rectTransform, 10, 9, 52, 52);
                 MiniPicture.Create(frame.rectTransform, data, 26, 26, 44, faded: true);
+                heroFrame = frame.rectTransform;
+                heroData = data;
                 if (data.mystery)
                 {
                     Ui.Label(frame.rectTransform, "?", 26, Palette.Ink2, 0, 0, 52, 52);
@@ -219,6 +240,7 @@ namespace KnittedPicture.Game
 
             var doubleTap = Ui.TextButton(Root, "Удвоить награду за видео", 20, H - 24f - 44f, W - 40, 44, Palette.Ink2, 15, Icon.Video);
             var total = _flights.Count > 0 ? TotalFlights() : 0;
+            doubleTap.DeniedHint = "Видео уже загружается";
             doubleTap.OnClick(() =>
             {
                 doubleTap.Interactable = false;
@@ -261,29 +283,90 @@ namespace KnittedPicture.Game
             return stats.Helped ? "Третья звезда: пройти без бустеров и спасений" : $"«{level.name}» теперь в альбоме";
         }
 
-        private void BuildStars(float y, int stars)
+        /// <summary>
+        /// Звёзды: пустые гнёзда видны сразу, заработанные золотые падают в них сверху по очереди с поворотом
+        /// и отскоком, каждая звенит выше предыдущей и коротко толкает в руку. Рекорд — штамп после звёзд.
+        /// </summary>
+        private void BuildStars(float y, int stars, bool record)
         {
-            const float size = 38f;
+            const float size = 42f;
+            RectTransform? middle = null;
             for (var i = 0; i < 3; i++)
             {
-                var x = W / 2f + (i - 1) * (size + 14f);
-                var earned = i < stars;
-                var star = Ui.Image(Root, "Star", Art.Icon(Icon.Star), earned ? Palette.Coin : Palette.Track);
-                Ui.PlaceCenter(star.rectTransform, x, y + size / 2f + (i == 1 ? -6f : 0f), size * (i == 1 ? 1.2f : 1f), size * (i == 1 ? 1.2f : 1f));
-                if (!earned)
+                var x = W / 2f + (i - 1) * (size + 12f);
+                var big = i == 1 ? 1.2f : 1f;
+                var cy = y + size / 2f + (i == 1 ? -6f : 0f);
+                var slot = Ui.Image(Root, "StarSlot", Art2.RewardStar(false), Color.white);
+                Ui.PlaceCenter(slot.rectTransform, x, cy, size * big, size * big);
+                if (i == 1)
+                {
+                    middle = slot.rectTransform;
+                }
+
+                if (i >= stars)
                 {
                     continue;
                 }
 
-                star.rectTransform.localScale = Vector3.zero;
+                var star = Ui.Image(Root, "Star", Art2.RewardStar(true), Color.white);
                 var rt = star.rectTransform;
-                Tweens.Delay(rt, 0.35f + i * 0.22f, () =>
+                Ui.PlaceCenter(rt, x, cy, size * big, size * big);
+                rt.localScale = Vector3.zero;
+                var index = i;
+                Tweens.Delay(rt, 0.35f + i * 0.28f, () =>
                 {
-                    Sfx.Play(Sound.Star, 0.8f);
-                    Tweens.Scale(rt, 0.2f, 1f, 0.32f);
-                    Fx.Sparkle(Root, Ui.WorldCenter(rt), Palette.Coin, 8, 34f);
+                    Sfx.Play(Sound.Star, 0.8f, 1f + index * 0.12f);
+                    Haptics.Play(Haptic.Soft);
+                    var rest = rt.anchoredPosition;
+                    var drop = Tweens.Calm ? 0f : 46f;
+                    var turn = index == 1 ? 0f : index == 0 ? -1f : 1f;
+                    Tweens.Run(rt, 0.5f, t =>
+                    {
+                        // Падает в гнездо, отскакивает и встаёт, на лету довернувшись.
+                        var fall = t < 0.55f ? 1f - Ease.InCubic(t / 0.55f) : 0f;
+                        var bounce = t >= 0.55f ? Ease.Jolt((t - 0.55f) / 0.45f) : 0f;
+                        rt.anchoredPosition = rest + new Vector2(0f, drop * fall + 8f * Mathf.Max(0f, bounce));
+                        rt.localScale = Vector3.one * Mathf.Min(1f, 0.4f + t * 2.2f) * (1f + 0.12f * Mathf.Abs(bounce));
+                        rt.localRotation = Quaternion.Euler(0f, 0f, 90f * turn * fall);
+                    }, null, () =>
+                    {
+                        rt.anchoredPosition = rest;
+                        rt.localScale = Vector3.one;
+                        rt.localRotation = Quaternion.identity;
+                        Fx.Sparkle(Root, Ui.WorldCenter(rt), Palette.Coin, 8, 34f);
+                    });
                 });
             }
+
+            if (record && middle != null)
+            {
+                Stamp(middle, 0.45f + stars * 0.28f + 0.35f);
+            }
+        }
+
+        /// <summary>Штамп «Рекорд!» рядом со звёздами: падает с размаху под наклоном, экран чуть вздрагивает.</summary>
+        private void Stamp(RectTransform near, float delay)
+        {
+            const float w = 108f;
+            const float h = 34f;
+            var stamp = Ui.Node(Root, "Record");
+            Ui.PlaceCenter(stamp, near.anchoredPosition.x + 92f, -near.anchoredPosition.y - 22f, w, h);
+            var face = Ui.Box(stamp, "Face", 10, Palette.Danger);
+            Ui.Stretch(face.rectTransform);
+            Ui.Outline(stamp, 10, Color.white, 2f);
+            Ui.Label(stamp, "Рекорд!", 17, Color.white, 0, 0, w, h);
+            stamp.localRotation = Quaternion.Euler(0f, 0f, -12f);
+            stamp.localScale = Vector3.zero;
+            Tweens.Delay(stamp, delay, () =>
+            {
+                Sfx.Play(Sound.Needles, 0.9f);
+                Haptics.Play(Haptic.Medium);
+                Tweens.Run(stamp, 0.32f, t => stamp.localScale = Vector3.one * Mathf.LerpUnclamped(2.2f, 1f, Ease.OutBack(t)));
+                if (!Tweens.Calm)
+                {
+                    Tweens.Shake(Root, 4f, 0.25f);
+                }
+            });
         }
 
         /// <summary>
@@ -302,6 +385,9 @@ namespace KnittedPicture.Game
             var card = Ui.Card(Root, "Reward", 16, y, cardW, 100, 20, Palette.Card, Palette.CardShadow);
             Ui.Label(card, "НАГРАДА", 12, Palette.Ink3, 18, 12, 120, 26, true, TextAnchor.MiddleLeft);
             var sum = Ui.Label(card, "+" + total, 26, Palette.Ink, cardW - 16 - 120, 6, 120, 38, true, TextAnchor.MiddleRight);
+            // Сумма набегает с нуля, пока монеты не полетели: видно, из чего она складывается.
+            sum.text = "+0";
+            Ui.RollTo(sum, total, 0.6f, "+{0}", 0.25f);
             sum.horizontalOverflow = HorizontalWrapMode.Overflow;
             _sumFrom = Ui.Coin(card, cardW - 16 - sum.preferredWidth - 18f, 25, 26);
 
@@ -489,9 +575,9 @@ namespace KnittedPicture.Game
                 {
                     Object.Destroy(coin.gameObject);
                     _shownCoins += portion;
-                    _coins.text = _shownCoins.ToString();
+                    Ui.RollTo(_coins, _shownCoins, 0.2f);
                     Tweens.Punch(_coins.transform.parent, 0.12f, 0.15f);
-                    Sfx.Play(Sound.Coin, 0.4f);
+                    Sfx.Play(Sound.Coin, 0.4f, 1f + Mathf.Min(0.5f, _coinChain++ * 0.04f));
                 });
             }
         }

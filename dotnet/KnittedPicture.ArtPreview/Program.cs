@@ -192,6 +192,11 @@ namespace KnittedPicture.ArtPreview
             }
 
             Png.Put(img, IconRaster.LevelStar(), 580, 160, 100, 100);
+            Png.Put(img, IconRaster.House(), 20, 10, 110, 110);
+            Png.Put(img, IconRaster.Album(), 140, 10, 110, 110);
+            Png.Put(img, IconRaster.Gear(), 260, 10, 110, 110);
+            Png.Put(img, IconRaster.RewardStar(true), 390, 10, 110, 110);
+            Png.Put(img, IconRaster.RewardStar(false), 510, 10, 110, 110);
             Png.Put(img, IconRaster.BasketBack(), 700, 40, 240, 192);
             string[] balls = { "#F2303F", "#5FD7A5", "#2F6FDE" };
             for (var i = 0; i < 3; i++)

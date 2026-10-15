@@ -129,6 +129,12 @@ namespace KnittedPicture.Game
         /// <summary>Монеты в полёте: уже начислены, но счётчик покажет их по прилёту.</summary>
         public int CoinsInFlight { get; private set; }
 
+        /// <summary>Сколько монет уже прозвенело в текущем перелёте: тон растёт.</summary>
+        private int _coinChain;
+
+        /// <summary>Картинка, только что впервые попавшая в альбом: альбом один раз подсветит её рамку (0 — нет).</summary>
+        public int JustAdded { get; set; }
+
         /// <summary>Тип предыдущего экрана: главная «выпрыгивает» только при входе, а не при каждом обновлении.</summary>
         public System.Type? PreviousScreen { get; private set; }
 
@@ -138,6 +144,7 @@ namespace KnittedPicture.Game
         /// </summary>
         public void FlyCoins(Vector3 fromWorld, int amount)
         {
+            _coinChain = 0;
             if (amount <= 0 || CoinCounter == null)
             {
                 return;
@@ -165,17 +172,72 @@ namespace KnittedPicture.Game
                     CoinsInFlight -= portion;
                     if (CoinCounter != null)
                     {
-                        CoinCounter.text = (Progress.Coins - CoinsInFlight).ToString();
+                        Ui.RollTo(CoinCounter, Progress.Coins - CoinsInFlight, 0.22f);
                         Tweens.Punch(CoinCounter.transform.parent, 0.12f, 0.15f);
                     }
 
-                    Sfx.Play(Sound.Coin, 0.4f);
+                    // Монеты подряд звенят всё выше.
+                    Sfx.Play(Sound.Coin, 0.4f, 1f + Mathf.Min(0.5f, _coinChain++ * 0.05f));
                 });
             }
         }
 
         /// <summary>Сторона, с которой въедет следующий экран (переход по вкладкам), 0 — обычный вход.</summary>
         private int _slide;
+
+        /// <summary>Откуда полетит эскиз картинки в следующий уровень (мировые углы) и сам уровень.</summary>
+        private (Vector3 Min, Vector3 Max, LevelData Level)? _hero;
+
+        /// <summary>Следующий экран — уровень, открытый кнопкой с эскизом: эскиз перелетит на место картинки.</summary>
+        public void HeroFrom(RectTransform preview, LevelData level)
+        {
+            var corners = new Vector3[4];
+            preview.GetWorldCorners(corners);
+            _hero = (corners[0], corners[2], level);
+        }
+
+        /// <summary>
+        /// Общий элемент перехода: эскиз картинки вылетает с кнопки «Играть», растёт и ложится на место картинки
+        /// уровня, а сама картинка проявляется под ним. Так в топовых головоломках вход в уровень выглядит
+        /// одним движением, а не сменой экранов.
+        /// </summary>
+        private void FlyHero(GameScreen game, (Vector3 Min, Vector3 Max, LevelData Level) hero)
+        {
+            var layer = PopupLayer;
+            var unit = Mathf.Max(0.0001f, layer.lossyScale.x);
+            var corners = new Vector3[4];
+            game.PictureRoot.GetWorldCorners(corners);
+            var toCenter = (corners[0] + corners[2]) / 2f;
+            var toSize = (Vector2)(corners[2] - corners[0]) / unit;
+            var fromCenter = (hero.Min + hero.Max) / 2f;
+            var fromSize = (Vector2)(hero.Max - hero.Min) / unit;
+            if (toSize.x <= 1f || toSize.y <= 1f)
+            {
+                return;
+            }
+
+            // Эскиз той же пропорции, что картинка: вписан в кнопочный квадрат и растёт до размера картинки.
+            var aspect = toSize.x / toSize.y;
+            var start = aspect >= 1f ? new Vector2(fromSize.x, fromSize.x / aspect) : new Vector2(fromSize.y * aspect, fromSize.y);
+            var image = MiniPicture.Create(layer, hero.Level, 0f, 0f, Mathf.Max(start.x, start.y), true);
+            var rt = image.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = start;
+            rt.position = fromCenter;
+            image.raycastTarget = false;
+            var lift = Mathf.Max(60f, toSize.y * 0.25f) * unit;
+            Tweens.Run(rt, 0.5f, t =>
+            {
+                var e = Ease.InOutCubic(t);
+                var mid = (fromCenter + toCenter) / 2f + new Vector3(0f, lift, 0f);
+                var u = 1f - e;
+                rt.position = u * u * fromCenter + 2f * u * e * mid + e * e * toCenter;
+                rt.sizeDelta = Vector2.LerpUnclamped(start, toSize, Ease.OutCubic(t));
+                rt.localRotation = Quaternion.Euler(0f, 0f, 6f * Mathf.Sin(t * Mathf.PI));
+                image.color = new Color(1f, 1f, 1f, t < 0.75f ? 1f : 1f - (t - 0.75f) / 0.25f);
+            }, null, () => Destroy(rt.gameObject));
+        }
 
         /// <summary>Строящийся сейчас экран открыт вкладкой (±1) или обычно (0): панель вкладок решает, переезжать ли метке.</summary>
         public int PendingSlide => _slide;
@@ -238,6 +300,7 @@ namespace KnittedPicture.Game
             Levels = new LevelRepository();
             Progress = new ProgressService(SaveStore.Load(), Levels.Count);
             Sfx.Enabled = Progress.SoundOn;
+            Music.Install(gameObject, Progress.Data.musicOn);
             Haptics.Enabled = Progress.Data.hapticsOn;
             Comfort.Apply(Progress.Data);
             Analytics.Init();
@@ -265,6 +328,10 @@ namespace KnittedPicture.Game
             {
                 ShowIntro();
             }
+
+            // Заставка поверх всего: нитка сматывается в клубок, пока в фоне рисуются клубки.
+            Splash.Show(_canvas!, Palette.Ground);
+            Unsettle(2.2f);
         }
 
         private void Update()
@@ -475,13 +542,16 @@ namespace KnittedPicture.Game
 
             var pendingBefore = Progress.PendingClaims;
             var chestBefore = Progress.CanOpenChest;
+            var wasDone = Progress.IsCompleted(level.id);
+            var oldStars = Progress.StarsOf(level.id);
+            JustAdded = wasDone ? JustAdded : level.id;
             Progress.RecordLevel(stats.Stitches, stats.Rushes, stats.GoldCaught, stats.BestCombo);
             Progress.RecordResult(level.id, stats.Taps, !stats.Helped);
             var missionsDone = Progress.RecordMissions(Today, stars, !stats.Helped, stats.GoldCaught, stats.Rushes, stats.BestCombo, stats.Stitches);
             var reward = Progress.CompleteLevel(level.id, level.hard, stars, stats.RushCoins + stats.GoldCoins);
             Save();
             var news = new WinNews(Progress.PendingClaims > pendingBefore, Progress.CanOpenChest && !chestBefore, missionsDone > 0,
-                Progress.CanClaimMissions(Today));
+                Progress.CanClaimMissions(Today), wasDone && stars > oldStars);
             Show(() => new WinScreen(this, level, reward, stats, news));
         }
 
@@ -610,6 +680,13 @@ namespace KnittedPicture.Game
             }
         }
 
+        public void SetMusic(bool on)
+        {
+            Progress.Data.musicOn = on;
+            Music.Enabled = on;
+            Save();
+        }
+
         public void SetHaptics(bool on)
         {
             Progress.Data.hapticsOn = on;
@@ -691,6 +768,13 @@ namespace KnittedPicture.Game
                 var hadBar = old != null && old.Root.Find("TabBar") != null;
                 old?.Leave(slide);
                 _screen.Enter(slide, hadBar);
+            }
+
+            var hero = _hero;
+            _hero = null;
+            if (hero != null && _screen is GameScreen level && !Tweens.Calm)
+            {
+                FlyHero(level, hero.Value);
             }
 
             // На уровне экран не гаснет, пока игрок думает над ходом; вне уровня — как в системе.

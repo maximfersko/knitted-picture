@@ -194,6 +194,35 @@ namespace KnittedPicture.Game
             }, null, arrived, delay);
         }
 
+        /// <summary>
+        /// Пух при посадке клубка: несколько мягких комочков цвета пряжи разлетаются в стороны по полу,
+        /// чуть подпрыгивая, и тают.
+        /// </summary>
+        public static void Dust(RectTransform layer, Vector3 at, Color color)
+        {
+            if (Tweens.Calm)
+            {
+                return;
+            }
+
+            var unit = Unit(layer);
+            var tint = Color.Lerp(color, Color.white, 0.55f);
+            for (var i = 0; i < 6; i++)
+            {
+                var side = i % 2 == 0 ? -1f : 1f;
+                var reach = (14f + UnityEngine.Random.value * 16f) * unit * side;
+                var hop = (5f + UnityEngine.Random.value * 7f) * unit;
+                var dot = Dot(layer, Palette.WithAlpha(tint, 0.8f), 5f + UnityEngine.Random.value * 4f);
+                dot.rectTransform.position = at;
+                Tweens.Run(dot, 0.38f, t =>
+                {
+                    dot.rectTransform.position = at + new Vector3(reach * Ease.OutCubic(t), hop * Ease.Bump(t), 0f);
+                    dot.rectTransform.localScale = Vector3.one * (1f - 0.6f * t);
+                    dot.color = Palette.WithAlpha(tint, 0.8f * (1f - t));
+                }, null, () => Release(dot));
+            }
+        }
+
         /// <summary>Всплывающая надпись: подпрыгивает и уплывает вверх.</summary>
         public static void FloatText(RectTransform layer, Vector3 at, string text, Color color, float size = 22f)
         {

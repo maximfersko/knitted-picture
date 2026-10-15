@@ -159,6 +159,16 @@ namespace KnittedPicture.Game
             return Get("gem" + tier, () => IconRaster.Gem(tier));
         }
 
+        /// <summary>Объёмные значки нижней панели и настроек.</summary>
+        public static Sprite House => Get("house", IconRaster.House);
+
+        public static Sprite AlbumBook => Get("albumBook", IconRaster.Album);
+
+        public static Sprite Gear => Get("gear", IconRaster.Gear);
+
+        /// <summary>Звезда награды: золотая выпуклая или пустое гнездо.</summary>
+        public static Sprite RewardStar(bool earned) => Get(earned ? "rewardStar" : "rewardStarEmpty", () => IconRaster.RewardStar(earned));
+
         /// <summary>Звезда-розетка уровня мотка (цифра — подписью поверх).</summary>
         public static Sprite LevelStar => Get("levelStar", IconRaster.LevelStar);
 

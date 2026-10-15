@@ -309,12 +309,14 @@ namespace KnittedPicture.Game
             AddTitle("Настройки", 24);
 
             var consent = app.Ads.NeedsConsent;
-            var group = Group(consent ? 4 : 3);
+            var group = Group(consent ? 5 : 4);
             ToggleRow(group, 0, KnittedPicture.Game.Icon.SoundOn, Palette.Link, "Звук",
                 () => app.Progress.SoundOn, app.SetSound);
-            ToggleRow(group, 1, KnittedPicture.Game.Icon.Vibrate, Palette.Danger, "Вибрация",
+            ToggleRow(group, 1, KnittedPicture.Game.Icon.Star, Palette.Primary, "Музыка",
+                () => app.Progress.Data.musicOn, app.SetMusic);
+            ToggleRow(group, 2, KnittedPicture.Game.Icon.Vibrate, Palette.Danger, "Вибрация",
                 () => app.Progress.Data.hapticsOn, app.SetHaptics);
-            ToggleRow(group, 2, KnittedPicture.Game.Icon.Bell, Palette.CoinShadow, "Напоминания",
+            ToggleRow(group, 3, KnittedPicture.Game.Icon.Bell, Palette.CoinShadow, "Напоминания",
                 () => app.Progress.Data.remindersOn, on =>
                 {
                     app.Progress.Data.remindersOn = on;
@@ -327,7 +329,7 @@ namespace KnittedPicture.Game
                 });
             if (consent)
             {
-                ToggleRow(group, 3, KnittedPicture.Game.Icon.Gift, Palette.Primary, "Персональная реклама",
+                ToggleRow(group, 4, KnittedPicture.Game.Icon.Gift, Palette.Primary, "Персональная реклама",
                     () => app.Progress.Data.adsConsent == 1, app.SetAdsConsent);
             }
 

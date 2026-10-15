@@ -391,6 +391,9 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>Картинка уровня: сюда прилетает эскиз с кнопки «Играть».</summary>
+        public RectTransform PictureRoot => _picture.Root;
+
         public override bool OnBack()
         {
             if (_scissors)
@@ -1342,6 +1345,12 @@ namespace KnittedPicture.Game
             var changed = _changed;
             changed.Clear();
             var rush = _tempo.Rush;
+            // В «Разгоне» петли идут потоком: лёгкий тик вибрации в такт (Haptics сам не чаще раза в 50 мс).
+            if (rush && step.Stitches.Count > 0)
+            {
+                Haptics.Play(Haptic.Tap);
+            }
+
             foreach (var stitch in step.Stitches)
             {
                 changed.Add(stitch.X);
@@ -1491,6 +1500,7 @@ namespace KnittedPicture.Game
 
                 Fx.FloatText(_fx, at.Value, "Цвет готов!", Color.Lerp(_colors[color], Palette.Ink, 0.45f), 22f);
                 Fx.Sparkle(_fx, at.Value, _colors[color], 10, 50f);
+                Fx.Poof(_fx, at.Value, Color.Lerp(_colors[color], Color.white, 0.3f), 110f);
                 Sfx.Play(Sound.Star, 0.55f);
                 Haptics.Play(Haptic.Medium);
             });
@@ -1747,11 +1757,24 @@ namespace KnittedPicture.Game
                 flyer.Bind(spool, _colors[spool.Color], true);
                 var target = SlotTarget(placed.Slot);
                 var scale = SpoolSizeAt(placed.Slot) / _spoolSize;
-                Tweens.Run(flyer.Root, flight, t =>
+
+                // Клубок взлетает дугой: в начале вытягивается вдоль рывка (его «взяли»), в полёте чуть
+                // поворачивается, у станка сжимается к размеру слота. Приземление — сплющивание с отскоком и пух.
+                var lift = (40f + Mathf.Abs(target.x - from.x) / Mathf.Max(0.0001f, _fx.lossyScale.x) * 0.12f) * _fx.lossyScale.x;
+                var control = (from + target) / 2f + new Vector3(0f, lift, 0f);
+                var spin = (target.x > from.x ? -1f : 1f) * 14f;
+                var rt = flyer.Root;
+                rt.position = from;
+                Tweens.Run(rt, flight, t =>
                 {
-                    flyer.Root.localScale = Vector3.one * Mathf.Lerp(1f, scale, t) * (1f + 0.15f * Ease.Bump(t));
-                }, null, null);
-                Tweens.Move(flyer.Root, from, target, flight, Ease.OutCubic, () =>
+                    var e = Ease.OutCubic(t);
+                    var u = 1f - e;
+                    rt.position = u * u * from + 2f * u * e * control + e * e * target;
+                    var size = Mathf.Lerp(1f, scale, t) * (1f + 0.12f * Ease.Bump(t));
+                    var stretch = t < 0.22f ? 0.18f * Ease.Bump(t / 0.22f) : 0f;
+                    rt.localScale = new Vector3(size * (1f - stretch * 0.6f), size * (1f + stretch), 1f);
+                    rt.localRotation = Quaternion.Euler(0f, 0f, spin * Ease.Bump(t));
+                }, null, () =>
                 {
                     Object.Destroy(flyer.Root.gameObject);
                     _arriving.Remove(spool.Id);
@@ -1759,7 +1782,14 @@ namespace KnittedPicture.Game
                     var slot = _slotViews[placed.Slot];
                     if (slot != null && slot.SpoolId == spool.Id)
                     {
-                        Tweens.Scale(slot.View.Root, 1.25f, 1f, 0.18f);
+                        var landed = slot.View.Root;
+                        Tweens.Run(landed, 0.34f, t =>
+                        {
+                            var j = Ease.Jolt(t);
+                            landed.localScale = new Vector3(1f + 0.22f * j, 1f - 0.18f * j, 1f);
+                        }, null, () => landed.localScale = Vector3.one);
+                        Fx.Dust(_fx, target + new Vector3(0f, -SpoolSizeAt(placed.Slot) * 0.42f * _fx.lossyScale.x, 0f), _colors[spool.Color]);
+                        Haptics.Play(Haptic.Tap);
                     }
                 });
             }

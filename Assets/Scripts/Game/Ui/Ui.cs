@@ -423,6 +423,42 @@ namespace KnittedPicture.Game
             return tap;
         }
 
+        /// <summary>
+        /// Блик по кнопке: раз в period секунд по ней наискось проходит мягкая световая полоса — подсказывает,
+        /// куда нажать, не мигая. Полоса в своей обрезке (RectMask2D на отдельном слое), подошва кнопки не режется.
+        /// </summary>
+        public static void Sheen(RectTransform button, float w, float h, float period = 3.6f, float delay = 1f)
+        {
+            if (Tweens.Calm)
+            {
+                return;
+            }
+
+            var clip = Stretch(Node(button, "Sheen"));
+            clip.gameObject.AddComponent<RectMask2D>();
+
+            // Под подписью: блик скользит по кнопке, а не по буквам.
+            var text = button.GetComponentInChildren<Text>();
+            if (text != null && text.transform.parent == button)
+            {
+                clip.SetSiblingIndex(text.transform.GetSiblingIndex());
+            }
+
+            var band = Image(clip, "Band", Art.Glow, new Color(1f, 1f, 1f, 0.42f));
+            var rt = band.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(h * 0.7f, h * 2.4f);
+            rt.localRotation = Quaternion.Euler(0f, 0f, -22f);
+            rt.anchoredPosition = new Vector2(-h, 0f);
+            Tweens.Run(rt, period, t =>
+            {
+                // Пробег занимает первые 0,7 с, остальное время полоса ждёт за левым краем.
+                var run = Mathf.Clamp01(t * period / 0.7f);
+                rt.anchoredPosition = new Vector2(Mathf.Lerp(-h, w + h, Ease.InOutCubic(run)), 0f);
+            }, null, null, delay, true);
+        }
+
         /// <summary>Кнопка без фона: вторичное действие, не навязывается.</summary>
         public static Tap TextButton(RectTransform parent, string text, float x, float y, float w, float h,
             Color textColor, float fontSize = 15f, Icon? icon = null)
@@ -526,6 +562,35 @@ namespace KnittedPicture.Game
             Tweens.Scale(root, 0f, 1f, 0.4f, Ease.OutBack, () =>
                 Tweens.Run(root, 2.2f, t => root.localScale = Vector3.one * (1f + 0.16f * Ease.Heartbeat(t)), null, null, 0f, true), 0.25f);
             return root;
+        }
+
+        /// <summary>
+        /// Число в подписи «набегает» от показанного сейчас до to (монеты, счётчики). Формат — с {0}.
+        /// Новое значение отменяет недобежавшее старое. «Меньше движения» — сразу итог.
+        /// </summary>
+        public static void RollTo(Text label, int to, float duration = 0.35f, string format = "{0}", float delay = 0f)
+        {
+            Tweens.Kill(label);
+            var digits = new System.Text.StringBuilder();
+            foreach (var ch in label.text)
+            {
+                if (char.IsDigit(ch))
+                {
+                    digits.Append(ch);
+                }
+                else if (digits.Length > 0)
+                {
+                    break;
+                }
+            }
+
+            if (Tweens.Calm || !int.TryParse(digits.ToString(), out var from) || from == to)
+            {
+                label.text = string.Format(format, to);
+                return;
+            }
+
+            Tweens.Count(label, from, to, duration, delay, format);
         }
 
         /// <summary>
