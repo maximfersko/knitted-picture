@@ -507,6 +507,9 @@ namespace KnittedPicture.Game
             var border = r + 1;
             var half = size / 2f;
             var raster = new Raster(size, size);
+
+            // Ширины в пикселях текстуры (3 px = 1 точка макета): кромка — чуть меньше точки, чтобы край был резким.
+            const float rim = 2.2f;
             raster.Paint((x, y) =>
             {
                 var d = Draw.RoundBox(x, y, half, half, half, half, r);
@@ -516,13 +519,22 @@ namespace KnittedPicture.Game
                     return Rgba.Clear;
                 }
 
+                // Тело: сверху светлее, к низу темнее — объём заметнее, чем был (0,985 → 0,945).
                 var t = y >= size - border ? 1f : y < border ? 0f : (y - border) / (size - 2f * border);
-                var v = Draw.Lerp(0.945f, 0.985f, t);
+                var v = Draw.Lerp(0.93f, 1f, t);
                 var inside = -d;
                 var up = Draw.Clamp01((y - half) / half * 2f);
                 var down = Draw.Clamp01((half - y) / half * 2f);
-                v = Draw.Lerp(v, 1f, up * Draw.Clamp01(1f - MathF.Abs(inside - 2.5f) / 1.5f));
-                v *= 1f - 0.07f * down * (1f - Draw.SmoothStep(0f, 8f, inside));
+
+                // Блик по верхнему краю — тонкая светлая полоса сразу под кромкой.
+                v = Draw.Lerp(v, 1f, up * Draw.Clamp01(1f - MathF.Abs(inside - (rim + 1.6f)) / 1.3f));
+
+                // Тень у нижнего края внутри: дно плашки «уходит» вниз.
+                v *= 1f - 0.08f * down * (1f - Draw.SmoothStep(0f, 7f, inside));
+
+                // Кромка: резкая тёмная линия по всему контуру — плашка не расплывается на светлом фоне.
+                var edge = 1f - Draw.SmoothStep(rim - 0.8f, rim + 0.4f, inside);
+                v *= 1f - 0.16f * edge;
                 return new Rgba(v, v, v, cover);
             });
             return raster;
@@ -552,8 +564,11 @@ namespace KnittedPicture.Game
                 var inside = -d;
                 var up = Draw.Clamp01((y - half) / half * 2f);
                 var down = Draw.Clamp01((half - y) / half * 2f);
-                v *= 1f - 0.14f * up * (1f - Draw.SmoothStep(0f, MathF.Min(7f, r * 0.9f + 1f), inside));
-                v = Draw.Lerp(v, 1f, down * Draw.Clamp01(1f - MathF.Abs(inside - 1.6f) / 1.2f));
+
+                // Тень от верхнего края внутрь — глубже, чем была; по контуру резкая тёмная кромка.
+                v *= 1f - 0.22f * up * (1f - Draw.SmoothStep(0f, MathF.Min(7f, r * 0.9f + 1f), inside));
+                v *= 1f - 0.12f * (1f - Draw.SmoothStep(1.2f, 2.4f, inside));
+                v = Draw.Lerp(v, 1f, down * Draw.Clamp01(1f - MathF.Abs(inside - 2.6f) / 1.2f));
                 return new Rgba(v, v, v, cover);
             });
             return raster;
@@ -599,14 +614,15 @@ namespace KnittedPicture.Game
                 var hh = MathF.Max(1f, half * 0.42f);
                 var cy = size - 1.4f - hh;
                 var d = Draw.RoundBox(x, y, half, cy, half - 2.2f, hh, MathF.Max(1f, r * 0.7f));
-                var cover = Draw.Cover(d * 1.3f);
+                var cover = Draw.Cover(d);
                 if (cover <= 0f)
                 {
                     return Rgba.Clear;
                 }
 
+                // Блик плотнее к верху и с чётким нижним краем: глянец читается, а не «туманит» плашку.
                 var fade = Draw.Clamp01((y - (cy - hh)) / (2f * hh));
-                return Rgba.White.WithAlpha(cover * (0.12f + 0.3f * fade));
+                return Rgba.White.WithAlpha(cover * (0.16f + 0.34f * fade));
             });
             return raster;
         }
@@ -627,9 +643,12 @@ namespace KnittedPicture.Game
 
                 var ny = (y - c) / c;
                 var inside = -d;
-                var v = Draw.Lerp(0.91f, 0.985f, 0.5f + 0.5f * ny);
-                v = Draw.Lerp(v, 1f, Draw.Clamp01(ny * 2f) * Draw.Clamp01(1f - MathF.Abs(inside - 2.2f) / 1.4f));
-                v *= 1f - 0.08f * Draw.Clamp01(-ny * 2f) * (1f - Draw.SmoothStep(0f, 6f, inside));
+                var v = Draw.Lerp(0.88f, 1f, 0.5f + 0.5f * ny);
+                v = Draw.Lerp(v, 1f, Draw.Clamp01(ny * 2f) * Draw.Clamp01(1f - MathF.Abs(inside - 2.4f) / 1.2f));
+                v *= 1f - 0.1f * Draw.Clamp01(-ny * 2f) * (1f - Draw.SmoothStep(0f, 6f, inside));
+
+                // Резкий обод: пуговица не сливается с белым фоном.
+                v *= 1f - 0.18f * (1f - Draw.SmoothStep(0.6f, 1.6f, inside));
                 return new Rgba(v, v, v, cover);
             });
         }

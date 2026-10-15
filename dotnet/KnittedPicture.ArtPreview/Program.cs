@@ -161,7 +161,10 @@ namespace KnittedPicture.ArtPreview
                 Png.Put(img, tag, (x + 110 - 40) * k, img.Height - (200 - 6 + 24) * k, 43 * k, 24 * k, i == 0 ? Rgba.Hex("#1E2732") : Rgba.Hex("#FFC23C"));
             }
 
+            // Главная кнопка как в игре: «подошва» темнее, лицо, глянцевый блик (Ui.Button + Ui.Shine).
+            Relief(KnitRaster.SoftCard, 20, 285, 350, 44, 22, Rgba.Hex("#0F6E46"));
             Card(20, 280, 350, 44, 22, Rgba.Hex("#17945F"));
+            Relief(KnitRaster.GlossOverlay, 20, 280, 350, 44, 22, Rgba.White);
 
             // Объём: вдавленная дорожка с глянцевой заливкой, круглые кнопки, выпуклые клетки.
             Relief(KnitRaster.Inset, 20, 340, 220, 22, 11, Rgba.Hex("#E2E6EB"));

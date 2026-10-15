@@ -110,17 +110,19 @@ namespace KnittedPicture.Game
         /// (сверху слева), светлее, противоположная темнее; под фигурой мягкая тень вниз. Тень и фаска — оттенки
         /// того же цвета, поэтому иконка любого цвета выглядит выпуклой, а не наклейкой.
         /// </summary>
-        public Sprite ToSprite(int size = 96)
+        public Sprite ToSprite(int size = 144)
         {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            // 144 px на сетку 24: значок до ~48 точек остаётся чётким на экранах ×3, мельче — берёт mip-уровень.
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
             {
                 wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
             };
             var scale = size / Grid;
             var pixel = 1f / scale;
             var bevel = 1.1f;
-            var drop = 0.75f;
+            var drop = 0.6f;
             var pixels = new Color32[size * size];
             for (var py = 0; py < size; py++)
             {
@@ -144,8 +146,8 @@ namespace KnittedPicture.Game
                         value = Mathf.Clamp01(0.93f + 0.1f * facing * edge - 0.03f * edge);
                     }
 
-                    // Тень: та же фигура, сдвинутая вниз, мягкая.
-                    var shadow = Mathf.Clamp01(0.5f - (Distance(x, y - drop) - 0.15f) * scale * 0.55f) * 0.32f;
+                    // Тень: та же фигура, сдвинутая вниз; узкая и светлая, чтобы значок не расплывался.
+                    var shadow = Mathf.Clamp01(0.5f - (Distance(x, y - drop) - 0.05f) * scale * 0.9f) * 0.22f;
                     var a = alpha + shadow * (1f - alpha);
                     var v = a > 0f ? (value * alpha + 0.42f * shadow * (1f - alpha)) / a : 0f;
                     var c = (byte)(Mathf.Clamp01(v) * 255);
@@ -154,7 +156,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 

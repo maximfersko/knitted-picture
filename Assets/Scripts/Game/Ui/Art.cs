@@ -357,7 +357,12 @@ namespace KnittedPicture.Game
 
         private static Sprite Round(int size, System.Func<float, float, float> alphaAt)
         {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
+            };
             var pixels = new Color32[size * size];
             var c = size / 2f;
             var radius = c - 1f;
@@ -371,7 +376,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -388,7 +393,12 @@ namespace KnittedPicture.Game
             const float radius = c - 8f;
             const float strand = 0.24f;
             const float band = 0.55f;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
+            };
             var pixels = new Color32[size * size];
             var under = new Vector3(0.3f, 0.9f, 0.3f).normalized;
             var over = new Vector3(-0.9f, 0.3f, 0.3f).normalized;
@@ -457,7 +467,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -481,7 +491,12 @@ namespace KnittedPicture.Game
 
             // Шар чуть выше середины: снизу место для нити, которая ложится на пол.
             const float cy = c + 12f;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
+            };
             var pixels = new Color32[size * size];
             // Слои снизу вверх: ось витков, полуширина пояса (по синусу широты), толщина нитки.
             var axes = new[]
@@ -613,7 +628,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -630,7 +645,12 @@ namespace KnittedPicture.Game
             const float cx = width / 2f;
             const float knobY = knob + 2f;
             const float tipLength = 46f;
-            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
+            };
             var pixels = new Color32[width * height];
             var rodColor = new Color(0.9f, 0.7f, 0.47f);
             var knobColor = new Color(1f, 0.44f, 0.65f);
@@ -671,7 +691,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -801,7 +821,12 @@ namespace KnittedPicture.Game
 
         private static Sprite BuildRays(int size, int count)
         {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
+            };
             var pixels = new Color32[size * size];
             var c = size / 2f;
             for (var y = 0; y < size; y++)
@@ -819,7 +844,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -834,7 +859,12 @@ namespace KnittedPicture.Game
             var size = lid ? ChestLidSize : ChestBodySize;
             var tw = Mathf.CeilToInt(size.x * scale);
             var th = Mathf.CeilToInt(size.y * scale);
-            var texture = new Texture2D(tw, th, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var texture = new Texture2D(tw, th, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
+            };
             var pixels = new Color32[tw * th];
 
             var knit = Palette.Hex("#D8A47C");
@@ -901,7 +931,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, tw, th), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -909,7 +939,12 @@ namespace KnittedPicture.Game
         {
             const int size = 48;
             const float radius = 11f;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
+            };
             var pixels = new Color32[size * size];
             for (var py = 0; py < size; py++)
             {
@@ -942,7 +977,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
@@ -957,7 +992,12 @@ namespace KnittedPicture.Game
             const int size = 96;
             const float radius = 22f;
             const float pitch = 16f;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
+            };
             var pixels = new Color32[size * size];
             for (var py = 0; py < size; py++)
             {
@@ -1011,7 +1051,7 @@ namespace KnittedPicture.Game
             }
 
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(true, true);
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 

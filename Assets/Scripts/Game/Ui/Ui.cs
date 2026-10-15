@@ -265,12 +265,16 @@ namespace KnittedPicture.Game
             return root;
         }
 
-        /// <summary>Блик сверху: свет падает сверху, и плоская кнопка становится выпуклой.</summary>
+        /// <summary>
+        /// Блик сверху: глянцевая полоса с чётким нижним краем по верхней половине кнопки — свет падает сверху,
+        /// кнопка выпуклая, а край блика делает её форму резкой (прежний полупрозрачный прямоугольник её размывал).
+        /// </summary>
         public static Image Shine(RectTransform parent, float w, float h, float radius)
         {
-            var shineH = Mathf.Round(h * 0.44f);
-            var shine = Box(parent, "Shine", Mathf.Min(Mathf.Max(2f, radius - 3f), shineH / 2f), new Color(1f, 1f, 1f, 0.16f));
-            Place(shine.rectTransform, 4f, 3f, w - 8f, shineH);
+            var shine = Image(parent, "Shine", Art.GlossOverlay(radius), Color.white);
+            shine.type = UnityEngine.UI.Image.Type.Sliced;
+            shine.pixelsPerUnitMultiplier = Art.Density;
+            Place(shine.rectTransform, 0f, 0f, w, h);
             return shine;
         }
 
@@ -335,18 +339,23 @@ namespace KnittedPicture.Game
         /// Тиснение крупного текста (заголовки, кнопки): тёмный — со светлой кромкой снизу, будто вдавлен;
         /// светлый — с мягкой тенью, будто выпуклый. Мелкий текст не трогаем: тень удваивает вершины.
         /// </summary>
+        /// <summary>
+        /// Светлый текст (на цветных кнопках, бейджах, плашках) — с тонкой тёмной тенью вниз: буквы отделяются
+        /// от фона и выглядят чётче. Тёмному тексту тень не нужна: белая подложка под ним (как было раньше)
+        /// давала двоящийся, размытый край.
+        /// </summary>
         private static void Emboss(Text label)
         {
-            if (label.fontSize < 20)
+            var c = label.color;
+            var light = c.r * 0.3f + c.g * 0.59f + c.b * 0.11f > 0.6f;
+            if (!light)
             {
                 return;
             }
 
-            var c = label.color;
-            var light = c.r * 0.3f + c.g * 0.59f + c.b * 0.11f > 0.6f;
             var shadow = label.gameObject.AddComponent<Shadow>();
-            shadow.effectColor = light ? new Color(0.06f, 0.09f, 0.13f, 0.28f) : new Color(1f, 1f, 1f, 0.7f);
-            shadow.effectDistance = new Vector2(0f, light ? -1.5f : -1f);
+            shadow.effectColor = new Color(0.06f, 0.09f, 0.13f, label.fontSize >= 20 ? 0.3f : 0.24f);
+            shadow.effectDistance = new Vector2(0f, label.fontSize >= 20 ? -1.5f : -1f);
         }
 
         /// <summary>

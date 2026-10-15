@@ -46,7 +46,7 @@ namespace KnittedPicture.Game
         public static readonly Color SoftShadow = new Color(0.16f, 0.22f, 0.3f, 0.18f);
 
         /// <summary>Тонкий контур белых карточек: не теряются ни на фоне, ни на белом окне.</summary>
-        public static readonly Color Line = Hex("#D8DDE4");
+        public static readonly Color Line = Hex("#C9D0D9");
 
         /// <summary>Плитка внутри белой карточки или окна.</summary>
         public static readonly Color Surface = Hex("#F3F5F8");

@@ -23,7 +23,13 @@ namespace KnittedPicture.Game
         private const int KeepBalls = 12;
 
         public static Sprite Get(string key, System.Func<Raster> draw, Vector2? pivot = null, Vector4? border = null) =>
-            Sub(key, key, () => Texture(key, draw, TextureWrapMode.Clamp), null, pivot, border);
+            Sub(key, key, () => Texture(key, draw, TextureWrapMode.Clamp, border == null), null, pivot, border);
+
+        /// <summary>
+        /// Сдвиг выбора mip-уровня к более детальному: при уменьшении спрайт берёт чёткий уровень, а не размытый
+        /// соседний (трилинейная фильтрация без сдвига смешивает с вдвое меньшим уровнем и «мылит» мелкие детали).
+        /// </summary>
+        public const float SharpBias = -0.5f;
 
         /// <summary>
         /// Спрайт из части текстуры textureKey (rect — в пикселях; null — вся). Несколько спрайтов делят одну
@@ -112,21 +118,24 @@ namespace KnittedPicture.Game
         /// <summary>Повторяемая текстура (бумага, верёвка) для RawImage и мешей.</summary>
         public static Texture2D Tile(string key, System.Func<Raster> draw) => Texture(key, draw, TextureWrapMode.Repeat);
 
-        private static Texture2D Texture(string key, System.Func<Raster> draw, TextureWrapMode wrap)
+        private static Texture2D Texture(string key, System.Func<Raster> draw, TextureWrapMode wrap, bool mips = true)
         {
             if (Textures.TryGetValue(key, out var texture) && texture != null)
             {
                 return texture;
             }
 
+            // Плашки «девять частей» (с border) рисуются один к одному и mip-уровни им не нужны: уменьшенные копии
+            // смешивают угол с серединой и размывают кромку. Остальным — mip-уровни со сдвигом к чёткому.
             var raster = draw();
-            texture = new Texture2D(raster.Width, raster.Height, TextureFormat.RGBA32, true)
+            texture = new Texture2D(raster.Width, raster.Height, TextureFormat.RGBA32, mips)
             {
                 wrapMode = wrap,
-                filterMode = FilterMode.Trilinear,
+                filterMode = mips ? FilterMode.Trilinear : FilterMode.Bilinear,
+                mipMapBias = mips ? SharpBias : 0f,
             };
             texture.SetPixelData(raster.ToBytes(), 0);
-            texture.Apply(true, true);
+            texture.Apply(mips, true);
             Textures[key] = texture;
             return texture;
         }
@@ -138,6 +147,7 @@ namespace KnittedPicture.Game
             {
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Trilinear,
+                mipMapBias = SharpBias,
             };
             texture.SetPixelData(raster.ToBytes(), 0);
             texture.Apply(true, true);
@@ -425,6 +435,7 @@ namespace KnittedPicture.Game
             {
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Trilinear,
+                mipMapBias = SharpBias,
             };
             texture.SetPixelData(bytes, 0);
             texture.Apply(true, true);
