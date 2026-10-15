@@ -1,0 +1,67 @@
+{
+  "id": 58,
+  "name": "Маяк",
+  "tip": "Закрытые клубки открываются ключом с поля",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#BFD9EA"
+    },
+    {
+      "key": "w",
+      "hex": "#F7F3EA"
+    },
+    {
+      "key": "r",
+      "hex": "#D9483E"
+    },
+    {
+      "key": "y",
+      "hex": "#F2C14E"
+    },
+    {
+      "key": "d",
+      "hex": "#4A5563"
+    }
+  ],
+  "picture": [
+    "......d......",
+    ".....ddd.....",
+    "....yyyyy....",
+    ".....ddd.....",
+    ".....rrr.....",
+    ".....www.....",
+    "....rrrrr....",
+    "....wwwww....",
+    "....rrrrr....",
+    "...wwwwwww...",
+    "...rrrrrrr...",
+    "..ddddddddd.."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 15,
+  "swaps": 7,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 3,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 581
+}

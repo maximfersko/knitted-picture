@@ -1,0 +1,198 @@
+{
+  "id": 60,
+  "name": "Самолёт",
+  "tip": "Сложный уровень: моль летит быстрее",
+  "hard": true,
+  "timeLimit": 85,
+  "width": 14,
+  "height": 12,
+  "colors": [
+    "#8FB8DA",
+    "#F2F4F7",
+    "#2F5FB8",
+    "#D9483E",
+    "#4A5563"
+  ],
+  "picture": [
+    "00000011000000",
+    "00000011000000",
+    "00000122100000",
+    "33300111100333",
+    "11111111111111",
+    "11111111111111",
+    "00000122100000",
+    "00000111100000",
+    "00000111100000",
+    "00004111140000",
+    "00044111144000",
+    "00000033000000"
+  ],
+  "canvas": [
+    "11111100111111",
+    "11111100111111",
+    "11111000011111",
+    "00011000011000",
+    "00000000000000",
+    "00000000000000",
+    "11111000011111",
+    "11111000011111",
+    "11111000011111",
+    "11110000001111",
+    "11100000000111",
+    "11111100111111"
+  ],
+  "gold": [
+    21,
+    50,
+    92,
+    160
+  ],
+  "band": 3,
+  "slots": 5,
+  "spools": [
+    {
+      "color": 1,
+      "loops": 3
+    },
+    {
+      "color": 1,
+      "loops": 3
+    },
+    {
+      "loops": 2,
+      "rainbow": true
+    },
+    {
+      "color": 4,
+      "loops": 3
+    },
+    {
+      "color": 1,
+      "loops": 3,
+      "link": 1
+    },
+    {
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 1,
+      "loops": 4
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 3
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 3
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 3
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 2
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 6
+    },
+    {
+      "column": 1,
+      "color": 1,
+      "loops": 2
+    },
+    {
+      "column": 2,
+      "color": 4,
+      "loops": 3,
+      "knots": 1
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 3,
+      "hidden": true
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 5
+    },
+    {
+      "column": 2,
+      "color": 2,
+      "loops": 1
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 3,
+      "color": 4,
+      "loops": 3
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 3
+    },
+    {
+      "column": 3,
+      "color": 1,
+      "loops": 4
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 3
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 2,
+      "knots": 1
+    },
+    {
+      "column": 4,
+      "color": 1,
+      "loops": 4,
+      "hidden": true
+    },
+    {
+      "column": 4,
+      "color": 3,
+      "loops": 2,
+      "link": 1
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 1
+    }
+  ]
+}

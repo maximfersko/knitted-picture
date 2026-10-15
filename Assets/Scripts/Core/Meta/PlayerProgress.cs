@@ -68,6 +68,11 @@ namespace KnittedPicture.Core
 
         public int chestsOpened;
 
+        /// <summary>Вязальный марафон: неделя (-1 — ещё не было), петли за неделю, сколько ступеней забрано.</summary>
+        public int weekId = -1;
+        public int weekStitches;
+        public int weekClaimed;
+
         /// <summary>Новых картинок подряд без мотка: с каждой шанс растёт, на четвёртой моток гарантирован.</summary>
         public int yarnDry;
 

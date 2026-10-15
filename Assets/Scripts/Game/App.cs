@@ -517,6 +517,7 @@ namespace KnittedPicture.Game
         {
             Progress.RecordMissions(Today, stars, !stats.Helped, stats.GoldCaught, stats.Rushes, stats.BestCombo, stats.Stitches);
             Progress.RecordLevel(stats.Stitches, stats.Rushes, stats.GoldCaught, stats.BestCombo);
+            Progress.RecordMarathon(Today, stats.Stitches);
             var granted = Progress.CompletePattern(Today, Random);
             Save();
             ShowHome();
@@ -546,6 +547,7 @@ namespace KnittedPicture.Game
             var oldStars = Progress.StarsOf(level.id);
             JustAdded = wasDone ? JustAdded : level.id;
             Progress.RecordLevel(stats.Stitches, stats.Rushes, stats.GoldCaught, stats.BestCombo);
+            Progress.RecordMarathon(Today, stats.Stitches);
             Progress.RecordResult(level.id, stats.Taps, !stats.Helped);
             var missionsDone = Progress.RecordMissions(Today, stars, !stats.Helped, stats.GoldCaught, stats.Rushes, stats.BestCombo, stats.Stitches);
             var reward = Progress.CompleteLevel(level.id, level.hard, stars, stats.RushCoins + stats.GoldCoins);

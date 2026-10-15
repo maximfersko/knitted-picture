@@ -383,6 +383,45 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Marathon_counts_stitches_per_week_pays_each_tier_once_and_resets_on_monday()
+        {
+            var progress = Fresh();
+            const int monday = 20003; // день 20003 с 1970 года — понедельник
+            var week = WeeklyMarathon.WeekOf(monday);
+            Assert.Equal(week, WeeklyMarathon.WeekOf(monday + 6));
+            Assert.Equal(week + 1, WeeklyMarathon.WeekOf(monday + 7));
+            Assert.Equal(week - 1, WeeklyMarathon.WeekOf(monday - 1));
+            Assert.Equal(7, WeeklyMarathon.DaysLeft(monday));
+            Assert.Equal(1, WeeklyMarathon.DaysLeft(monday + 6));
+
+            // До уровня открытия петли не копятся.
+            progress.RecordMarathon(monday, 500);
+            Assert.Equal(0, progress.MarathonStitches(monday));
+
+            progress.Data.nextLevel = WeeklyMarathon.FromLevel;
+            progress.RecordMarathon(monday, WeeklyMarathon.Targets[0] - 1);
+            Assert.False(progress.CanClaimMarathon(monday));
+            progress.RecordMarathon(monday + 2, 1);
+            Assert.True(progress.CanClaimMarathon(monday + 2));
+            var coins = progress.Coins;
+            Assert.NotNull(progress.ClaimMarathon(monday + 2, new Random(1)));
+            Assert.Equal(coins + WeeklyMarathon.Rewards[0].Coins, progress.Coins);
+            Assert.Null(progress.ClaimMarathon(monday + 2, new Random(1)));
+            Assert.Equal(1, progress.MarathonClaimed(monday + 3));
+
+            // Часы назад, на прошлую неделю: марафон замер, наград нет.
+            progress.RecordMarathon(monday - 3, 5000);
+            Assert.False(progress.CanClaimMarathon(monday - 3));
+            Assert.Equal(WeeklyMarathon.Targets[0], progress.MarathonStitches(monday));
+
+            // Новая неделя: счёт с нуля, ступени снова доступны.
+            Assert.Equal(0, progress.MarathonStitches(monday + 7));
+            progress.RecordMarathon(monday + 7, WeeklyMarathon.Targets[0]);
+            Assert.Equal(0, progress.MarathonClaimed(monday + 7));
+            Assert.True(progress.CanClaimMarathon(monday + 7));
+        }
+
+        [Fact]
         public void Daily_gift_once_a_day_and_a_missed_day_only_pauses_the_week()
         {
             var progress = Fresh();

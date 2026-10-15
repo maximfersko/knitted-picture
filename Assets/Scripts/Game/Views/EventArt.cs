@@ -10,6 +10,7 @@ namespace KnittedPicture.Game
         Missions,
         Chest,
         Pattern,
+        Marathon,
     }
 
     /// <summary>
@@ -33,6 +34,10 @@ namespace KnittedPicture.Game
                     break;
                 case EventKind.Chest:
                     ChestView.Create(root, size / 2f, size * 0.54f, size * 0.86f, false);
+                    break;
+                case EventKind.Marathon:
+                    var cup = Ui.Image(root, "Trophy", Art2.Trophy(true), Color.white);
+                    Ui.PlaceCenter(cup.rectTransform, size / 2f, size / 2f, size * 0.95f, size * 0.95f);
                     break;
                 default:
                     Pattern(root, size);

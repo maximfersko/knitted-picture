@@ -1,0 +1,62 @@
+{
+  "id": 63,
+  "name": "Луна",
+  "tip": "Картинка-загадка: видно только то, что вяжется сейчас",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#3A4466"
+    },
+    {
+      "key": "m",
+      "hex": "#E8E2CC"
+    },
+    {
+      "key": "c",
+      "hex": "#8F866F"
+    },
+    {
+      "key": "y",
+      "hex": "#F2C14E"
+    }
+  ],
+  "picture": [
+    "y.....mmmm....",
+    "....mmmmmmmm..",
+    "...mmcmmmmmm..",
+    "..mmcccmmmcmm.",
+    "..mmmcmmmmmmm.",
+    "..mmmmmmcmmmm.",
+    "..mmmmmcccmmm.",
+    "..mmcmmmcmmmm.",
+    "...mmmmmmmmm..",
+    "....mmmmmmmm..",
+    "......mmmm...y"
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": true,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 15,
+  "swaps": 7,
+  "hidden": 2,
+  "knots": 0,
+  "links": 0,
+  "locks": 2,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 631
+}

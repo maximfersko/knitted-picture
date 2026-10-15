@@ -493,6 +493,12 @@ namespace KnittedPicture.Game
             }
 
             items.Add((EventKind.Chest, Palette.CoinShadow, "Сундук", progress.CanOpenChest, App.ShowChest));
+            if (progress.MarathonOpen)
+            {
+                items.Add((EventKind.Marathon, Palette.CoinInk, "Марафон", progress.CanClaimMarathon(App.Today),
+                    () => App.ShowPopup(new MarathonPopup(App, App.ShowHome))));
+            }
+
             if (progress.PatternOpen)
             {
                 items.Add((EventKind.Pattern, Palette.Link, "Узор дня", !progress.PatternDone(App.Today), () =>

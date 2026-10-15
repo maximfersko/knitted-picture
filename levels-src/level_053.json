@@ -1,0 +1,63 @@
+{
+  "id": 53,
+  "name": "Напёрсток",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#D8CCBD"
+    },
+    {
+      "key": "s",
+      "hex": "#9AA6B6"
+    },
+    {
+      "key": "d",
+      "hex": "#667385"
+    },
+    {
+      "key": "g",
+      "hex": "#E2B04A"
+    }
+  ],
+  "picture": [
+    "............",
+    "....ssss....",
+    "...sdsdss...",
+    "..ssdsdsds..",
+    "..sdsdsdss..",
+    "..ssdsdsds..",
+    "..sdsdsdss..",
+    "..ssdsdsds..",
+    ".ssssssssss.",
+    ".gggggggggg.",
+    ".gggggggggg.",
+    "............"
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 3,
+  "columns": 5,
+  "spools": 16,
+  "swaps": 7,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 2,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 531
+}

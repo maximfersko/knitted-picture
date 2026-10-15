@@ -37,6 +37,9 @@ namespace KnittedPicture.Core
             new CollectionInfo("Праздник", 36, 40),
             new CollectionInfo("Уют", 41, 45),
             new CollectionInfo("Друзья", 46, 50),
+            new CollectionInfo("Мастерская", 51, 55),
+            new CollectionInfo("Путешествия", 56, 60),
+            new CollectionInfo("Космос", 61, 65),
         };
 
         public static CollectionInfo Of(int levelId)

@@ -1,0 +1,68 @@
+{
+  "id": 57,
+  "name": "Воздушный шар",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#BFD9EA"
+    },
+    {
+      "key": "r",
+      "hex": "#E2683C"
+    },
+    {
+      "key": "y",
+      "hex": "#F2C14E"
+    },
+    {
+      "key": "n",
+      "hex": "#8A5A34"
+    },
+    {
+      "key": "d",
+      "hex": "#5E4632"
+    }
+  ],
+  "picture": [
+    "....rrrrr....",
+    "..rryyyyyrr..",
+    ".rryyrrryyrr.",
+    ".ryyrrrrryyr.",
+    "rryyrrrrryyrr",
+    "rryyrrrrryyrr",
+    ".ryyrrrrryyr.",
+    "..ryyrrryyr..",
+    "...rryyyrr...",
+    "....d...d....",
+    "....d...d....",
+    "....nnnnn....",
+    "....nnnnn...."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 16,
+  "swaps": 7,
+  "hidden": 1,
+  "knots": 1,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 571
+}

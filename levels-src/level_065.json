@@ -1,0 +1,71 @@
+{
+  "id": 65,
+  "name": "Космонавт",
+  "tip": "Финал: здесь всё, что ты уже знаешь. Удачи!",
+  "hard": true,
+  "timeLimit": 110,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#3A4466"
+    },
+    {
+      "key": "w",
+      "hex": "#F2F4F7"
+    },
+    {
+      "key": "s",
+      "hex": "#B8C2CE"
+    },
+    {
+      "key": "b",
+      "hex": "#2F5FB8"
+    },
+    {
+      "key": "y",
+      "hex": "#F2C14E"
+    },
+    {
+      "key": "r",
+      "hex": "#D9483E"
+    }
+  ],
+  "picture": [
+    "....wwwwww....",
+    "...wssssssw...",
+    "..wsbbbbbbsw..",
+    "..wsbybbbbsw..",
+    "..wsbbbbbbsw..",
+    "..wssssssssw..",
+    "...wwwwwwww...",
+    ".wwwwwrrwwwww.",
+    ".wwwwwwwwwwww.",
+    ".ww.wwwwww.ww.",
+    "....ww..ww....",
+    "...sss..sss..."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 21,
+  "swaps": 7,
+  "hidden": 1,
+  "knots": 1,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 1,
+  "thick": 0,
+  "ice": 1,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.15,
+  "maxWin": 0.45,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 651
+}

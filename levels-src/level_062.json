@@ -1,0 +1,60 @@
+{
+  "id": 62,
+  "name": "Планета",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#3A4466"
+    },
+    {
+      "key": "p",
+      "hex": "#E2A13C"
+    },
+    {
+      "key": "d",
+      "hex": "#B8742A"
+    },
+    {
+      "key": "r",
+      "hex": "#D8C7A6"
+    }
+  ],
+  "picture": [
+    ".....pppp.....",
+    "...pppppppp...",
+    "..ppddddddpp..",
+    "rrrrrrrrrrrrrr",
+    "rppppppppppppr",
+    "..pddddddddp..",
+    "...pppppppp...",
+    "..rrrrrrrrrr..",
+    ".....pppp....."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 15,
+  "swaps": 7,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 2,
+  "thick": 0,
+  "ice": 2,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 621
+}

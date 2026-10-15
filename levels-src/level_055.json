@@ -1,0 +1,67 @@
+{
+  "id": 55,
+  "name": "Утюг",
+  "tip": "Сложный уровень: моль уже в пути",
+  "hard": true,
+  "timeLimit": 90,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#D8CCBD"
+    },
+    {
+      "key": "r",
+      "hex": "#C8553D"
+    },
+    {
+      "key": "s",
+      "hex": "#8E9BAB"
+    },
+    {
+      "key": "d",
+      "hex": "#2A323C"
+    },
+    {
+      "key": "w",
+      "hex": "#9FD3EA"
+    }
+  ],
+  "picture": [
+    "..............",
+    ".....dddddd...",
+    "....d......d..",
+    "....dddddddd..",
+    "...rrrrrrrrr..",
+    "..rrrrrrrrrrr.",
+    ".rrrwwrrrrrrr.",
+    ".rrwwrrrrrrrr.",
+    "rrrrrrrrrrrrrr",
+    "ssssssssssssss",
+    ".sdsdsdsdsdsd.",
+    ".............."
+  ],
+  "fabric": ".",
+  "band": 3,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 21,
+  "swaps": 7,
+  "hidden": 0,
+  "knots": 2,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 1,
+  "ice": 2,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.15,
+  "maxWin": 0.45,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 551
+}

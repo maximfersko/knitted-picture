@@ -1,0 +1,66 @@
+{
+  "id": 56,
+  "name": "Кораблик",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#BFD9EA"
+    },
+    {
+      "key": "w",
+      "hex": "#F7F3EA"
+    },
+    {
+      "key": "r",
+      "hex": "#D9483E"
+    },
+    {
+      "key": "b",
+      "hex": "#2F5FB8"
+    },
+    {
+      "key": "n",
+      "hex": "#7A5230"
+    }
+  ],
+  "picture": [
+    "......n.......",
+    "......nw......",
+    ".....rnww.....",
+    "....rrnwww....",
+    "...rrrnwwww...",
+    "..rrrrnwwwww..",
+    "......n.......",
+    "nnnnnnnnnnnnnn",
+    ".nbbbbbbbbbbn.",
+    "..nbbbbbbbbn..",
+    "...nnnnnnnn..."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 16,
+  "swaps": 7,
+  "hidden": 0,
+  "knots": 0,
+  "links": 0,
+  "locks": 0,
+  "rainbow": 1,
+  "thick": 0,
+  "ice": 0,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 561
+}

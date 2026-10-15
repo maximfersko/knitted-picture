@@ -82,6 +82,14 @@ namespace KnittedPicture.Playtest
 
             Expect(p.ClaimChest(0, 0) == null, "открылся неготовый сундук", ctx, repro);
 
+            while (p.CanClaimMarathon(today))
+            {
+                var claimed = p.MarathonClaimed(today);
+                Expect(p.ClaimMarathon(today, rng) != null && p.MarathonClaimed(today) == claimed + 1, "ступень марафона не выдалась", ctx, repro);
+            }
+
+            Expect(p.ClaimMarathon(today, rng) == null, "марафон выдал неготовую ступень", ctx, repro);
+
             if (p.CanClaimMissions(today))
             {
                 Expect(p.ClaimMissions(today, rng) != null, "награда за задания не выдалась", ctx, repro);
@@ -159,6 +167,7 @@ namespace KnittedPicture.Playtest
             p.RecordResult(id, rng.Next(10, 60), stars == 3);
             p.RecordLevel(rng.Next(40, 200), rng.Next(0, 3), rng.Next(0, 4), rng.Next(0, 12));
             p.RecordMissions(today, stars, stars == 3, rng.Next(0, 4), rng.Next(0, 3), rng.Next(0, 12), rng.Next(40, 200));
+            p.RecordMarathon(today, rng.Next(40, 200));
             p.TakeInterstitialSlot(id);
             _f.Count("побед в мета-симуляции");
         }

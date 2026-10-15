@@ -167,6 +167,11 @@ namespace KnittedPicture.Playtest
                 }
 
                 Earn(stats, p, () => p.CanClaimMissions(today) ? p.ClaimMissions(today, rng) : null, "задания");
+                while (p.CanClaimMarathon(today))
+                {
+                    Earn(stats, p, () => p.ClaimMarathon(today, rng), "марафон");
+                }
+
                 foreach (var a in Achievements.All.Where(p.CanClaimAchievement).ToList())
                 {
                     Earn(stats, p, () => p.ClaimAchievement(a, rng), "достижения");
@@ -282,6 +287,7 @@ namespace KnittedPicture.Playtest
             p.RecordResult(id, rng.Next(10, 60), stars == 3);
             p.RecordLevel(rng.Next(40, 200), rng.Next(0, 3), rng.Next(0, 4), rng.Next(0, 12));
             p.RecordMissions(today, stars, boosters == 0 && rescued == 0, rng.Next(0, 4), rng.Next(0, 3), rng.Next(0, 12), rng.Next(40, 200));
+            p.RecordMarathon(today, rng.Next(40, 200));
             if (rng.NextDouble() < type.WatchAds)
             {
                 // «Удвоить награду за видео».

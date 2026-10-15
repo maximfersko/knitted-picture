@@ -1,0 +1,64 @@
+{
+  "id": 54,
+  "name": "Ножницы",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#D8CCBD"
+    },
+    {
+      "key": "s",
+      "hex": "#A9B4C2"
+    },
+    {
+      "key": "d",
+      "hex": "#5E6B7C"
+    },
+    {
+      "key": "o",
+      "hex": "#E2683C"
+    }
+  ],
+  "picture": [
+    ".ss.......ss.",
+    ".sss.....sss.",
+    "..sss...sss..",
+    "...sss.sss...",
+    "....sssss....",
+    ".....sds.....",
+    "....ooooo....",
+    "...oo...oo...",
+    "..oo.....oo..",
+    ".oo.......oo.",
+    ".oo.......oo.",
+    "..oo.....oo..",
+    "...ooo.ooo..."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 15,
+  "swaps": 7,
+  "hidden": 2,
+  "knots": 0,
+  "links": 0,
+  "locks": 2,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 0,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 541
+}

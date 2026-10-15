@@ -1,0 +1,65 @@
+{
+  "id": 64,
+  "name": "НЛО",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#3A4466"
+    },
+    {
+      "key": "g",
+      "hex": "#7BC67E"
+    },
+    {
+      "key": "s",
+      "hex": "#A9B4C2"
+    },
+    {
+      "key": "d",
+      "hex": "#5E6B7C"
+    },
+    {
+      "key": "y",
+      "hex": "#F2C14E"
+    }
+  ],
+  "picture": [
+    ".....gggg.....",
+    "....gggggg....",
+    "....gggggg....",
+    "..ssssssssss..",
+    ".ssssssssssss.",
+    "dddddddddddddd",
+    ".dydydydydydy.",
+    "..dddddddddd..",
+    "...y..y..y....",
+    "..y...y...y..."
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 5,
+  "columns": 5,
+  "spools": 16,
+  "swaps": 7,
+  "hidden": 0,
+  "knots": 1,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 1,
+  "ice": 1,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 641
+}

@@ -1,0 +1,66 @@
+{
+  "id": 59,
+  "name": "Палатка",
+  "tip": "",
+  "hard": false,
+  "timeLimit": 0,
+  "palette": [
+    {
+      "key": ".",
+      "hex": "#BFD9EA"
+    },
+    {
+      "key": "g",
+      "hex": "#3F8F5A"
+    },
+    {
+      "key": "o",
+      "hex": "#E2683C"
+    },
+    {
+      "key": "d",
+      "hex": "#8C3A24"
+    },
+    {
+      "key": "n",
+      "hex": "#6B4A2E"
+    }
+  ],
+  "picture": [
+    "......n......",
+    ".....ooo.....",
+    "....ooooo....",
+    "...ooodooo...",
+    "..oooddoooo..",
+    "..ooddddooo..",
+    ".oooddddoooo.",
+    ".ooddddddooo.",
+    "oooddddddoooo",
+    "ggggggggggggg",
+    "ggggggggggggg"
+  ],
+  "fabric": ".",
+  "band": 2,
+  "mystery": false,
+  "gold": 4,
+  "slots": 4,
+  "columns": 5,
+  "spools": 16,
+  "swaps": 7,
+  "hidden": 0,
+  "knots": 0,
+  "links": 1,
+  "locks": 0,
+  "rainbow": 0,
+  "thick": 0,
+  "ice": 2,
+  "extra": 3,
+  "junk": 1,
+  "minWin": 0.4,
+  "maxWin": 0.78,
+  "maxRandom": 0.3,
+  "maxForced": 0.55,
+  "minDanger": 0.02,
+  "maxDanger": 0.35,
+  "seed": 591
+}

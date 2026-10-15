@@ -59,6 +59,8 @@ namespace KnittedPicture.Core
             d.undoBoosters = System.Math.Max(0, d.undoBoosters);
             d.timeBoosters = System.Math.Max(0, d.timeBoosters);
             d.chestsOpened = System.Math.Max(0, d.chestsOpened);
+            d.weekStitches = System.Math.Max(0, d.weekStitches);
+            d.weekClaimed = System.Math.Max(0, System.Math.Min(WeeklyMarathon.Targets.Length, d.weekClaimed));
             for (var i = 0; i < d.stars.Count; i++)
             {
                 d.stars[i] = System.Math.Max(0, System.Math.Min(3, d.stars[i]));
@@ -634,6 +636,63 @@ namespace KnittedPicture.Core
             _data.patternsDone++;
             var yarn = _data.patternStreak % DailyPattern.YarnEvery == 0 ? DailyGift.RandomYarn : -1;
             return Grant(new Reward(DailyPattern.RewardCoins, null, 0, yarn), rng);
+        }
+
+        // ---------- Вязальный марафон ----------
+
+        public bool MarathonOpen => _data.nextLevel >= WeeklyMarathon.FromLevel;
+
+        /// <summary>
+        /// Сохранённая неделя — сегодняшняя. Если часы перевели назад (сегодня раньше сохранённой недели),
+        /// марафон замирает: петли не копятся и награды не выдаются, пока не наступит та неделя.
+        /// </summary>
+        private bool MarathonWeek(int today) => _data.weekId == WeeklyMarathon.WeekOf(today);
+
+        /// <summary>Петли за эту неделю (новая неделя — 0, даже если её ещё не начали).</summary>
+        public int MarathonStitches(int today) =>
+            MarathonWeek(today) ? _data.weekStitches : WeeklyMarathon.WeekOf(today) > _data.weekId ? 0 : _data.weekStitches;
+
+        /// <summary>Сколько ступеней уже забрано на этой неделе.</summary>
+        public int MarathonClaimed(int today) =>
+            MarathonWeek(today) ? _data.weekClaimed : WeeklyMarathon.WeekOf(today) > _data.weekId ? 0 : _data.weekClaimed;
+
+        /// <summary>Петли связаны (победа или узор дня): прибавить к марафону этой недели.</summary>
+        public void RecordMarathon(int today, int stitches)
+        {
+            if (!MarathonOpen || stitches <= 0)
+            {
+                return;
+            }
+
+            var week = WeeklyMarathon.WeekOf(today);
+            if (week > _data.weekId)
+            {
+                _data.weekId = week;
+                _data.weekStitches = 0;
+                _data.weekClaimed = 0;
+            }
+
+            if (week == _data.weekId)
+            {
+                _data.weekStitches = (int)System.Math.Min(int.MaxValue, (long)_data.weekStitches + stitches);
+            }
+        }
+
+        public bool CanClaimMarathon(int today) =>
+            MarathonOpen && MarathonWeek(today) && _data.weekClaimed < WeeklyMarathon.Targets.Length &&
+            _data.weekStitches >= WeeklyMarathon.Targets[_data.weekClaimed];
+
+        /// <summary>Забрать следующую ступень. null — не готова или неделя не та.</summary>
+        public Granted? ClaimMarathon(int today, System.Random rng)
+        {
+            if (!CanClaimMarathon(today))
+            {
+                return null;
+            }
+
+            var reward = WeeklyMarathon.Rewards[_data.weekClaimed];
+            _data.weekClaimed++;
+            return Grant(reward, rng);
         }
 
         // ---------- Задания дня ----------
