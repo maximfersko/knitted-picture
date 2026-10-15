@@ -591,12 +591,11 @@ namespace KnittedPicture.Game
             Save();
         }
 
-        /// <summary>Применить настройки удобства, сохранить и обновить открытый экран (значки цветов — сразу).</summary>
+        /// <summary>Применить настройки удобства и сохранить.</summary>
         public void ApplyComfort()
         {
             Comfort.Apply(Progress.Data);
             Save();
-            _screen?.ComfortChanged();
         }
 
         /// <summary>

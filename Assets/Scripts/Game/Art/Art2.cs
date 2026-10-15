@@ -149,13 +149,6 @@ namespace KnittedPicture.Game
         /// <summary>Бирка на ниточке для числа (петли клубка, цена и запас бустера). Белая — красится; 72×40, тело — правые 58.</summary>
         public static Sprite Tag => Get("tag", KnitRaster.Tag);
 
-        /// <summary>Значок цвета номер color (по кругу, если цветов больше, чем фигур).</summary>
-        public static Sprite ColorMark(int color)
-        {
-            var kind = ((color % KnitRaster.ColorMarkCount) + KnitRaster.ColorMarkCount) % KnitRaster.ColorMarkCount;
-            return Get("colorMark" + kind, () => KnitRaster.ColorMark(kind));
-        }
-
         /// <summary>Лунка под значок бустера.</summary>
         public static Sprite IconWell => Get("iconWell", KnitRaster.IconWell);
 

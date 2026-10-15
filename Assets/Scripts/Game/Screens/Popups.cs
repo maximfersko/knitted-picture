@@ -126,7 +126,7 @@ namespace KnittedPicture.Game
             });
             toHome.OnClick(home);
 
-            // Значки цветов и «меньше движения» нужнее всего прямо в уровне — без выхода на главную.
+            // «Меньше движения» и подсказки нужнее всего прямо в уровне: без выхода на главную.
             AddLink("Удобство").OnClick(() =>
             {
                 Close();
@@ -337,7 +337,7 @@ namespace KnittedPicture.Game
             var buyNoAds = app.Purchases.Available && !app.Progress.Data.adsRemoved;
             var help = Group(3 + (buyNoAds ? 1 : 0));
             var row = 0;
-            NavRow(help, row++, new Badge(Art2.ColorMark(3)), Palette.Link, "Удобство", () =>
+            NavRow(help, row++, new Badge("Aa"), Palette.Link, "Удобство", () =>
             {
                 Close();
                 app.ShowPopup(new ComfortPopup(app, () => app.ShowPopup(new SettingsPopup(app))));
@@ -367,11 +367,10 @@ namespace KnittedPicture.Game
     }
 
     /// <summary>
-    /// Удобство: игра, где всё решает цвет, должна читаться и без различения цветов, без лишнего движения,
-    /// с текстом покрупнее и не сажать батарею. По Game Accessibility Guidelines и Xbox Accessibility Guidelines:
-    /// не передавать информацию одним цветом, давать остановить повторяющееся движение, крупный текст.
-    /// Открывается из настроек и из паузы; изменения видны сразу (значки — на поле и картинке, движение —
-    /// со следующей анимации), крупный текст — на перестроенном экране.
+    /// Удобство: без лишнего движения, с текстом покрупнее, без подсказок-напоминаний и с экономией заряда.
+    /// По Game Accessibility Guidelines и Xbox Accessibility Guidelines: давать остановить повторяющееся движение,
+    /// крупный текст. Открывается из настроек и из паузы; движение меняется со следующей анимации,
+    /// крупный текст — на перестроенном экране.
     /// </summary>
     public sealed class ComfortPopup : ListSheet
     {
@@ -388,20 +387,17 @@ namespace KnittedPicture.Game
 
             AddTitle("Удобство", 24);
             var data = app.Progress.Data;
-            var group = Group(5, TallRowH);
-            ToggleRow(group, 0, new Badge(Art2.ColorMark(3)), Palette.Link, "Значки цветов",
-                () => data.colorMarks, on => Set(() => data.colorMarks = on),
-                "Фигура на клубке и на петле, которая вяжется следующей: не путать похожие цвета", TallRowH);
-            ToggleRow(group, 1, KnittedPicture.Game.Icon.Pause, Palette.Primary, "Меньше движения",
+            var group = Group(4, TallRowH);
+            ToggleRow(group, 0, KnittedPicture.Game.Icon.Pause, Palette.Primary, "Меньше движения",
                 () => data.reduceMotion, on => Set(() => data.reduceMotion = on),
                 "Без покачиваний, всплытий, пружин и тряски", TallRowH);
-            ToggleRow(group, 2, new Badge("Aa"), Palette.CoinShadow, "Крупный текст",
+            ToggleRow(group, 1, new Badge("Aa"), Palette.CoinShadow, "Крупный текст",
                 () => data.largeText, on => Set(() => data.largeText = on),
                 "Мелкие подписи крупнее, где помещаются", TallRowH);
-            ToggleRow(group, 3, KnittedPicture.Game.Icon.Hand, Palette.Danger, "Подсказка при паузе",
+            ToggleRow(group, 2, KnittedPicture.Game.Icon.Hand, Palette.Danger, "Подсказка при паузе",
                 () => data.idleHints, on => Set(() => data.idleHints = on),
                 "Рука покажет ход, если долго нет хода", TallRowH);
-            ToggleRow(group, 4, KnittedPicture.Game.Icon.Bolt, Palette.Ink2, "Экономия заряда",
+            ToggleRow(group, 3, KnittedPicture.Game.Icon.Bolt, Palette.Ink2, "Экономия заряда",
                 () => data.batterySaver, on => Set(() => data.batterySaver = on),
                 "30 кадров в секунду вместо 60: телефон меньше греется", TallRowH);
 

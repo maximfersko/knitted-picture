@@ -91,9 +91,6 @@ namespace KnittedPicture.Core
         /// <summary>Вибрация (тактильный отклик) включена.</summary>
         public bool hapticsOn = true;
 
-        /// <summary>Удобство: значки-фигуры у цветов (различать клубки не только по цвету).</summary>
-        public bool colorMarks;
-
         /// <summary>Удобство: меньше движения — без покачиваний, всплытий, пружин и тряски.</summary>
         public bool reduceMotion;
 

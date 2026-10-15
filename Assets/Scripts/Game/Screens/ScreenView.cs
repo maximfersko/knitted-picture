@@ -25,11 +25,6 @@ namespace KnittedPicture.Game
         {
         }
 
-        /// <summary>Поменялись настройки удобства, пока экран открыт: обновить то, что их читает (значки цветов).</summary>
-        public virtual void ComfortChanged()
-        {
-        }
-
         /// <summary>Кнопка «назад» на Android. false — уйти на главную.</summary>
         public virtual bool OnBack() => false;
 

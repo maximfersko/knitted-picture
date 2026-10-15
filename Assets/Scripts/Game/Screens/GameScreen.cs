@@ -391,17 +391,6 @@ namespace KnittedPicture.Game
             }
         }
 
-        /// <summary>Значки цветов включили или выключили из паузы: поле, станок и картинка обновляются сразу.</summary>
-        public override void ComfortChanged()
-        {
-            RefreshField();
-            _picture.RefreshColumns();
-            foreach (var slot in _slotViews)
-            {
-                slot?.View.RefreshMark();
-            }
-        }
-
         public override bool OnBack()
         {
             if (_scissors)
