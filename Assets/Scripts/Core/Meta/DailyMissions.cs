@@ -100,13 +100,14 @@ namespace KnittedPicture.Core
                 }
             }
 
-            // Бустер — через день: задания каждый день, и иначе бесплатных бустеров больше, чем нужно (см. --economy).
-            if (open.Count == 0 || ((day % 2) + 2) % 2 == 1)
+            // Бустер — раз в три дня: задания каждый день, и иначе бесплатных бустеров больше, чем нужно,
+            // запас растёт без конца и проигрыш перестаёт что-то стоить (см. docs/ECONOMY.md).
+            if (open.Count == 0 || ((day % 3) + 3) % 3 != 0)
             {
                 return Reward.CoinsOnly(70);
             }
 
-            return new Reward(40, open[(((day / 2) % open.Count) + open.Count) % open.Count], 1);
+            return new Reward(40, open[(((day / 3) % open.Count) + open.Count) % open.Count], 1);
         }
 
         public static string Text(MissionKind kind, int n)

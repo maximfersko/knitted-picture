@@ -148,5 +148,17 @@ namespace KnittedPicture.Core
 
         /// <summary>Сколько раз начинали каждый уровень (индекс — номер уровня − 1): для аналитики «с какой попытки проходят».</summary>
         public List<int> attempts = new List<int>();
+
+        /// <summary>Купленные рамки альбома (деревянная есть всегда) и выбранная.</summary>
+        public List<int> frames = new List<int>();
+        public int frame;
+
+        /// <summary>«Удвоить за видео»: день последнего удвоения и сколько раз в этот день.</summary>
+        public int doubleDay = -1;
+        public int doubleCount;
+
+        /// <summary>Бустер за видео (окно «Не хватает монет»): день и сколько раз в этот день.</summary>
+        public int videoBoosterDay = -1;
+        public int videoBoosterCount;
     }
 }

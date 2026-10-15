@@ -20,8 +20,9 @@ namespace KnittedPicture.Playtest
         public sealed class Archetype
         {
             public Archetype(string name, int minLevels, int maxLevels, double skipDay, double rescueOnFail, double preBuy, double watchAds,
-                double skill)
+                double skill, double decor)
             {
+                Decor = decor;
                 Name = name;
                 MinLevels = minLevels;
                 MaxLevels = maxLevels;
@@ -52,15 +53,18 @@ namespace KnittedPicture.Playtest
 
             /// <summary>Множитель шанса проиграть: меньше — сильнее игрок.</summary>
             public double Skill { get; }
+
+            /// <summary>Покупает рамки альбома, когда монет хватает с запасом на спасение (шанс в день).</summary>
+            public double Decor { get; }
         }
 
         public static readonly Archetype[] Types =
         {
-            new Archetype("Случайный", 1, 2, 0.35, 0.3, 0.0, 0.1, 1.2),
-            new Archetype("Обычный", 2, 4, 0.15, 0.6, 0.05, 0.3, 1.0),
-            new Archetype("Увлечённый", 4, 8, 0.05, 0.8, 0.1, 0.5, 0.8),
-            new Archetype("Транжира", 3, 5, 0.1, 1.0, 0.35, 0.2, 1.0),
-            new Archetype("Копилка", 3, 5, 0.1, 0.0, 0.0, 0.0, 1.0),
+            new Archetype("Случайный", 1, 2, 0.35, 0.3, 0.0, 0.1, 1.2, 0.3),
+            new Archetype("Обычный", 2, 4, 0.15, 0.6, 0.05, 0.3, 1.0, 0.5),
+            new Archetype("Увлечённый", 4, 8, 0.05, 0.8, 0.1, 0.5, 0.8, 0.6),
+            new Archetype("Транжира", 3, 5, 0.1, 1.0, 0.35, 0.2, 1.0, 0.9),
+            new Archetype("Копилка", 3, 5, 0.1, 0.0, 0.0, 0.0, 1.0, 0.15),
         };
 
         private static readonly int[] Checkpoints = { 1, 3, 7, 14, 30, 60 };
@@ -85,6 +89,8 @@ namespace KnittedPicture.Playtest
             public int FailsAffordable;
             public int FailsRescued;
             public int BoostersUsed;
+            public long DecorSpent;
+            public readonly Dictionary<int, List<int>> Frames = new Dictionary<int, List<int>>();
             public readonly List<int> AllDoneDay = new List<int>();
             public int Players;
         }
@@ -94,14 +100,14 @@ namespace KnittedPicture.Playtest
             var sb = new StringBuilder();
             sb.AppendLine($"Экономика: {players} игроков каждого типа × {days} дней");
             sb.AppendLine();
-            sb.AppendLine("| Тип | День | Монеты (медиана) | Запас бустеров | Уровень |");
-            sb.AppendLine("|---|---|---|---|---|");
+            sb.AppendLine("| Тип | День | Монеты (медиана) | Запас бустеров | Уровень | Рамок куплено |");
+            sb.AppendLine("|---|---|---|---|---|---|");
             var summary = new StringBuilder();
             var sources = new StringBuilder();
             sources.AppendLine("| Тип | Откуда монеты | Откуда бустеры (штук на игрока) |");
             sources.AppendLine("|---|---|---|");
-            summary.AppendLine("| Тип | Заработано в день | Потрачено в день | Бустеров за уровень | Проигрышей со спасением по карману | Спасся | Все уровни к дню |");
-            summary.AppendLine("|---|---|---|---|---|---|---|");
+            summary.AppendLine("| Тип | Заработано в день | Потрачено в день | Из них на рамки | Бустеров за уровень | Проигрышей со спасением по карману | Спасся | Все уровни к дню |");
+            summary.AppendLine("|---|---|---|---|---|---|---|---|");
             foreach (var type in Types)
             {
                 var stats = new Stats();
@@ -112,7 +118,7 @@ namespace KnittedPicture.Playtest
 
                 foreach (var day in Checkpoints.Where(d => d <= days))
                 {
-                    sb.AppendLine($"| {type.Name} | {day} | {Median(stats.Coins[day])} | {Median(stats.Stock[day])} | {Median(stats.Level[day])} |");
+                    sb.AppendLine($"| {type.Name} | {day} | {Median(stats.Coins[day])} | {Median(stats.Stock[day])} | {Median(stats.Level[day])} | {Median(stats.Frames[day])} |");
                 }
 
                 var playedDays = (double)players * days;
@@ -122,7 +128,7 @@ namespace KnittedPicture.Playtest
                     .Select(kv => $"{kv.Key} {kv.Value * 100 / Math.Max(1, stats.Earned)}%")) + " | " +
                     string.Join(", ", stats.StockSources.Where(kv => kv.Value > 0).OrderByDescending(kv => kv.Value)
                         .Select(kv => $"{kv.Key} {kv.Value / (double)players:0.0}")) + " |");
-                summary.AppendLine($"| {type.Name} | {stats.Earned / playedDays:0} | {stats.Spent / playedDays:0} | {(double)stats.BoostersUsed / levelsPlayed:0.00} | " +
+                summary.AppendLine($"| {type.Name} | {stats.Earned / playedDays:0} | {stats.Spent / playedDays:0} | {stats.DecorSpent / playedDays:0} | {(double)stats.BoostersUsed / levelsPlayed:0.00} | " +
                     $"{Percent(stats.FailsAffordable, stats.Fails)} | {Percent(stats.FailsRescued, stats.Fails)} | {allDone} |");
             }
 
@@ -191,6 +197,21 @@ namespace KnittedPicture.Playtest
                     }
                 }
 
+                // Рамки альбома: самая дешёвая некупленная, если после покупки останется на спасение.
+                if (rng.NextDouble() < type.Decor)
+                {
+                    var next = AlbumFrames.All.FirstOrDefault(f => !p.FrameOwned(f.Id));
+                    if (next != null && p.Coins >= next.Price + DecorReserve)
+                    {
+                        var before = p.Coins;
+                        if (p.BuyFrame(next.Id))
+                        {
+                            stats.Spent += before - p.Coins;
+                            stats.DecorSpent += before - p.Coins;
+                        }
+                    }
+                }
+
                 if (!allDoneRecorded && p.AllDone)
                 {
                     allDoneRecorded = true;
@@ -236,6 +257,7 @@ namespace KnittedPicture.Playtest
             }
 
             var rescued = 0;
+            var videoRescues = 0;
             while (rng.NextDouble() < fail)
             {
                 stats.Fails++;
@@ -246,12 +268,12 @@ namespace KnittedPicture.Playtest
                 }
 
                 var unlocked = p.IsUnlocked(rescue, id);
-                if (unlocked && p.CanAfford(rescue))
+                if (unlocked && p.CanAffordRescue(rescue, rescued))
                 {
                     stats.FailsAffordable++;
                 }
 
-                if (unlocked && rng.NextDouble() < type.RescueOnFail && TryBuy(p, rescue, stats))
+                if (unlocked && rng.NextDouble() < type.RescueOnFail && TryRescue(p, rescue, rescued, stats))
                 {
                     stats.FailsRescued++;
                     rescued++;
@@ -259,9 +281,10 @@ namespace KnittedPicture.Playtest
                     continue;
                 }
 
-                if (unlocked && rng.NextDouble() < type.WatchAds)
+                if (unlocked && videoRescues < Economy.VideoRescuesPerLevel && rng.NextDouble() < type.WatchAds)
                 {
-                    // Спасение за видео: бесплатно.
+                    // Спасение за видео: бесплатно, одно на попытку.
+                    videoRescues++;
                     stats.FailsRescued++;
                     rescued++;
                     fail *= 0.35;
@@ -288,10 +311,11 @@ namespace KnittedPicture.Playtest
             p.RecordLevel(rng.Next(40, 200), rng.Next(0, 3), rng.Next(0, 4), rng.Next(0, 12));
             p.RecordMissions(today, stars, boosters == 0 && rescued == 0, rng.Next(0, 4), rng.Next(0, 3), rng.Next(0, 12), rng.Next(40, 200));
             p.RecordMarathon(today, rng.Next(40, 200));
-            if (rng.NextDouble() < type.WatchAds)
+            if (p.DoublesLeft(today) > 0 && rng.NextDouble() < type.WatchAds)
             {
-                // «Удвоить награду за видео».
+                // «Удвоить награду за видео» — до Economy.DoublesPerDay раз в день.
                 p.AddCoins(reward.Total);
+                p.RecordDouble(today);
             }
 
             Note(stats, "видео ×2", p.Coins - coinsBefore, 0);
@@ -299,6 +323,22 @@ namespace KnittedPicture.Playtest
 
         private static BoosterType PreBuyType(ProgressService p, int id) =>
             p.IsUnlocked(BoosterType.Scissors, id) ? BoosterType.Scissors : BoosterType.Slot;
+
+        /// <summary>Сколько монет игрок держит про запас на спасение, прежде чем тратить на рамку.</summary>
+        private const int DecorReserve = 900;
+
+        private static bool TryRescue(ProgressService p, BoosterType type, int rescuesBefore, Stats stats)
+        {
+            var coins = p.Coins;
+            if (p.PayRescue(type, rescuesBefore) == Payment.NotEnough)
+            {
+                return false;
+            }
+
+            stats.Spent += coins - p.Coins;
+            stats.BoostersUsed++;
+            return true;
+        }
 
         private static bool TryBuy(ProgressService p, BoosterType type, Stats stats)
         {
@@ -324,6 +364,7 @@ namespace KnittedPicture.Playtest
             Add(stats.Coins, day, p.Coins);
             Add(stats.Stock, day, Enum.GetValues(typeof(BoosterType)).Cast<BoosterType>().Sum(p.Stock));
             Add(stats.Level, day, p.Data.completed.Count);
+            Add(stats.Frames, day, AlbumFrames.All.Count(f => f.Id > 0 && p.FrameOwned(f.Id)));
         }
 
         private static void Add(Dictionary<int, List<int>> map, int day, int value)

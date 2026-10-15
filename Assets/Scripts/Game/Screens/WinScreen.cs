@@ -238,6 +238,12 @@ namespace KnittedPicture.Game
                 Ui.Label(face, L.T("На главную"), 22, Color.white, 0, 0, W - 40, 70);
             }
 
+            // Удвоение за видео — до Economy.DoublesPerDay раз в день: видео помогает, но не печатает монеты.
+            if (app.Progress.DoublesLeft(app.Today) <= 0)
+            {
+                return;
+            }
+
             var doubleTap = Ui.TextButton(Root, L.T("Удвоить награду за видео"), 20, H - 24f - 44f, W - 40, 44, Palette.Ink2, 15, Icon.Video);
             var total = _flights.Count > 0 ? TotalFlights() : 0;
             doubleTap.DeniedHint = L.T("Видео уже загружается");
@@ -253,6 +259,7 @@ namespace KnittedPicture.Game
                     }
 
                     app.Progress.AddCoins(total);
+                    app.Progress.RecordDouble(app.Today);
                     app.Save();
                     Sfx.Play(Sound.Coin);
                     Fly((RectTransform)doubleTap.transform, total, 0f);

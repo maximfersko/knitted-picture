@@ -65,7 +65,8 @@ namespace KnittedPicture.Core.Tests
             var names = Collections.All.Select(c => c.Name)
                 .Concat(YarnCatalog.All.SelectMany(y => new[] { y.Name, y.Description }))
                 .Concat(YarnCatalog.Sets.Select(s => s.Name))
-                .Concat(Achievements.All.SelectMany(a => new[] { a.Title, a.Description }));
+                .Concat(Achievements.All.SelectMany(a => new[] { a.Title, a.Description }))
+                .Concat(AlbumFrames.All.Select(f => f.Name));
             var untranslated = names.Where(n => L.Translate(En.Table, n) == n).ToList();
             Assert.True(untranslated.Count == 0, "Нет перевода:\n" + string.Join("\n", untranslated));
         }

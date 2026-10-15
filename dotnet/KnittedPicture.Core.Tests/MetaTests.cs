@@ -10,6 +10,86 @@ namespace KnittedPicture.Core.Tests
         private static ProgressService Fresh() => new ProgressService(new PlayerProgress(), levelCount: 15);
 
         [Fact]
+        public void Rescue_price_grows_within_a_level_and_stock_is_used_first()
+        {
+            Assert.Equal(Economy.Price(BoosterType.Slot), Economy.RescuePrice(BoosterType.Slot, 0));
+            Assert.Equal(2 * Economy.Price(BoosterType.Slot), Economy.RescuePrice(BoosterType.Slot, 1));
+            Assert.Equal(3 * Economy.Price(BoosterType.Slot), Economy.RescuePrice(BoosterType.Slot, 2));
+            Assert.Equal(3 * Economy.Price(BoosterType.Slot), Economy.RescuePrice(BoosterType.Slot, 7));
+
+            var p = new ProgressService(new PlayerProgress { coins = 1000 }, levelCount: 15);
+            p.AddStock(BoosterType.Slot, 1);
+            Assert.Equal(Payment.FromStock, p.PayRescue(BoosterType.Slot, 2));
+            Assert.Equal(1000, p.Coins);
+
+            Assert.Equal(Payment.WithCoins, p.PayRescue(BoosterType.Slot, 1));
+            Assert.Equal(1000 - 2 * Economy.Price(BoosterType.Slot), p.Coins);
+            Assert.False(p.CanAffordRescue(BoosterType.Slot, 2));
+            Assert.Equal(Payment.NotEnough, p.PayRescue(BoosterType.Slot, 2));
+        }
+
+        [Fact]
+        public void Video_doubles_and_video_boosters_have_a_daily_cap_that_resets_next_day()
+        {
+            var p = Fresh();
+            for (var i = 0; i < Economy.DoublesPerDay; i++)
+            {
+                Assert.True(p.DoublesLeft(100) > 0);
+                p.RecordDouble(100);
+            }
+
+            Assert.Equal(0, p.DoublesLeft(100));
+            Assert.Equal(Economy.DoublesPerDay, p.DoublesLeft(101));
+
+            for (var i = 0; i < Economy.VideoBoostersPerDay; i++)
+            {
+                p.RecordVideoBooster(100);
+            }
+
+            Assert.Equal(0, p.VideoBoostersLeft(100));
+            Assert.Equal(Economy.VideoBoostersPerDay, p.VideoBoostersLeft(101));
+        }
+
+        [Fact]
+        public void Album_frames_are_bought_once_with_coins_and_only_owned_ones_can_be_selected()
+        {
+            var white = AlbumFrames.All[1];
+            var p = new ProgressService(new PlayerProgress { coins = white.Price - 1 }, levelCount: 15);
+            Assert.True(p.FrameOwned(0));
+            Assert.Equal(0, p.SelectedFrame.Id);
+            Assert.False(p.BuyFrame(white.Id));
+            Assert.False(p.SelectFrame(white.Id));
+
+            p.AddCoins(1 + 500);
+            Assert.True(p.BuyFrame(white.Id));
+            Assert.Equal(500, p.Coins);
+            Assert.Equal(white.Id, p.SelectedFrame.Id);
+            Assert.False(p.BuyFrame(white.Id));
+            Assert.True(p.SelectFrame(0));
+            Assert.True(p.SelectFrame(white.Id));
+
+            // Сохранение с чужой рамкой (нет в списке купленных или нет в каталоге) чинится: деревянная по умолчанию.
+            var broken = new PlayerProgress { frame = 5 };
+            broken.frames.Add(99);
+            var repaired = new ProgressService(broken, levelCount: 15);
+            Assert.Equal(0, repaired.SelectedFrame.Id);
+            Assert.Empty(repaired.Data.frames);
+        }
+
+        [Fact]
+        public void Frame_prices_climb_and_names_are_unique()
+        {
+            for (var i = 1; i < AlbumFrames.All.Length; i++)
+            {
+                Assert.True(AlbumFrames.All[i].Price > AlbumFrames.All[i - 1].Price);
+                Assert.Equal(i, AlbumFrames.All[i].Id);
+            }
+
+            Assert.Equal(0, AlbumFrames.All[0].Price);
+            Assert.Equal(AlbumFrames.All.Length, AlbumFrames.All.Select(f => f.Name).Distinct().Count());
+        }
+
+        [Fact]
         public void First_win_drops_a_new_yarn_and_replay_does_not()
         {
             var progress = Fresh();
@@ -241,7 +321,7 @@ namespace KnittedPicture.Core.Tests
                 Assert.Equal(Chest.Choices, new System.Collections.Generic.HashSet<int>(contents.Yarns).Count);
                 if (contents.Big)
                 {
-                    Assert.Equal(2, contents.BoosterCount);
+                    Assert.Equal(1, contents.BoosterCount);
                     Assert.Contains(contents.Yarns, y => YarnCatalog.All[y].Rarity != Rarity.Common);
                 }
             }

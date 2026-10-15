@@ -300,6 +300,24 @@ namespace KnittedPicture.Game
             var y = 6f;
             var cardW = W - 32f;
             const float gap = 8f;
+
+            // Рамки для картинок: выбранная рамка образцом и кнопка — главный «сток» монет без давления.
+            {
+                const float stripH = 64f;
+                var strip = Ui.Card(content, "FramesStrip", 16, y, cardW, stripH, 20, Palette.Card, Palette.CardShadow, 3f, true);
+                var frame = progress.SelectedFrame;
+                var sample = Ui.Card(strip, "Sample", 12, 10, 44, 44, 10, Palette.Hex(frame.Face), Palette.CardShadow, 0f);
+                var mat = Ui.Box(sample, "Mat", 7, Palette.Hex(frame.Mat));
+                Ui.Place(mat.rectTransform, 4f, 4f, 36f, 36f);
+                Ui.Outline(sample, 10, Palette.Hex(frame.Edge), 1.5f).raycastTarget = false;
+                Ui.Label(strip, L.T("Рамки для картинок"), 16, Palette.Ink, 68, 10, cardW - 190, 24, true, TextAnchor.MiddleLeft);
+                Ui.Fit(Ui.Label(strip, frame.Name, 13, Palette.Ink2, 68, 32, cardW - 190, 20, false, TextAnchor.MiddleLeft), 10);
+                var open = Ui.Button(strip, L.T("Выбрать"), cardW - 112, 14, 100, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
+                open.OnClick(() => App.ShowPopup(new FramesPopup(App)));
+                strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new FramesPopup(App)));
+                y += stripH + 16f;
+            }
+
             for (var c = 0; c < Collections.All.Length; c++)
             {
                 var collection = Collections.All[c];

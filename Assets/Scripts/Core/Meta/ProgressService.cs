@@ -35,6 +35,16 @@ namespace KnittedPicture.Core
         /// </summary>
         private static void Repair(PlayerProgress d)
         {
+            d.frames ??= new System.Collections.Generic.List<int>();
+            d.frames.RemoveAll(f => f <= 0 || f >= AlbumFrames.All.Length);
+            if (d.frame != 0 && !d.frames.Contains(d.frame))
+            {
+                d.frame = 0;
+            }
+
+            d.doubleCount = System.Math.Max(0, d.doubleCount);
+            d.videoBoosterCount = System.Math.Max(0, d.videoBoosterCount);
+
             if (d.language != L.Russian && d.language != L.English)
             {
                 d.language = string.Empty;
@@ -129,6 +139,90 @@ namespace KnittedPicture.Core
 
         /// <summary>Хватит ли на бустер: из запаса или за монеты.</summary>
         public bool CanAfford(BoosterType type) => Stock(type) > 0 || _data.coins >= Economy.Price(type);
+
+        /// <summary>Хватит ли на спасение: бустер в запасе или монеты по цене с ростом (Economy.RescuePrice).</summary>
+        public bool CanAffordRescue(BoosterType type, int rescuesBefore) =>
+            Stock(type) > 0 || _data.coins >= Economy.RescuePrice(type, rescuesBefore);
+
+        /// <summary>Оплатить спасение: сначала бустер из запаса, иначе монеты по растущей цене.</summary>
+        public Payment PayRescue(BoosterType type, int rescuesBefore)
+        {
+            if (Stock(type) > 0)
+            {
+                AddStock(type, -1);
+                return Payment.FromStock;
+            }
+
+            var price = Economy.RescuePrice(type, rescuesBefore);
+            if (_data.coins < price)
+            {
+                return Payment.NotEnough;
+            }
+
+            _data.coins -= price;
+            return Payment.WithCoins;
+        }
+
+        /// <summary>Сколько ещё раз сегодня можно удвоить награду за видео.</summary>
+        public int DoublesLeft(int today) =>
+            _data.doubleDay == today ? System.Math.Max(0, Economy.DoublesPerDay - _data.doubleCount) : Economy.DoublesPerDay;
+
+        /// <summary>Удвоение за видео случилось: засчитать в дневной лимит (новый день — счёт с нуля).</summary>
+        public void RecordDouble(int today)
+        {
+            if (_data.doubleDay != today)
+            {
+                _data.doubleDay = today;
+                _data.doubleCount = 0;
+            }
+
+            _data.doubleCount++;
+        }
+
+        /// <summary>Сколько ещё бустеров за видео можно взять сегодня.</summary>
+        public int VideoBoostersLeft(int today) =>
+            _data.videoBoosterDay == today ? System.Math.Max(0, Economy.VideoBoostersPerDay - _data.videoBoosterCount) : Economy.VideoBoostersPerDay;
+
+        public void RecordVideoBooster(int today)
+        {
+            if (_data.videoBoosterDay != today)
+            {
+                _data.videoBoosterDay = today;
+                _data.videoBoosterCount = 0;
+            }
+
+            _data.videoBoosterCount++;
+        }
+
+        public bool FrameOwned(int id) => id == 0 || _data.frames.Contains(id);
+
+        public FrameInfo SelectedFrame => AlbumFrames.Get(_data.frame);
+
+        /// <summary>Купить рамку за монеты (и сразу выбрать). false — уже есть или не хватает монет.</summary>
+        public bool BuyFrame(int id)
+        {
+            var info = AlbumFrames.Get(id);
+            if (info.Id != id || FrameOwned(id) || _data.coins < info.Price)
+            {
+                return false;
+            }
+
+            _data.coins -= info.Price;
+            _data.frames.Add(id);
+            _data.frame = id;
+            return true;
+        }
+
+        public bool SelectFrame(int id)
+        {
+            if (!FrameOwned(id))
+            {
+                return false;
+            }
+
+            _data.frame = id;
+            return true;
+        }
 
         /// <summary>Списать бустер: сначала из запаса, потом монетами.</summary>
         public Payment Pay(BoosterType type)

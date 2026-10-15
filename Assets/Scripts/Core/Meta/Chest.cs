@@ -118,7 +118,7 @@ namespace KnittedPicture.Core
             }
 
             Shuffle(yarns, rng);
-            return new ChestContents(big, coins, boosters.ToArray(), big ? 2 : 1, yarns.ToArray());
+            return new ChestContents(big, coins, boosters.ToArray(), 1, yarns.ToArray());
         }
 
         private static void Shuffle<T>(List<T> list, System.Random rng)

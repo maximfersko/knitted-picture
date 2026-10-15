@@ -489,7 +489,8 @@ namespace KnittedPicture.Game
                 ("rescue_offered", rescue?.ToString() ?? "none"),
                 ("jam_advice", kind == FailKind.Jam ? _game.Advice().ToString() : "")));
             App.ShowPopup(new FailPopup(App, kind, rescue, reason, percent, Rescue, Restart, LeaveHome,
-                rescue == BoosterType.Scissors && _run.FreeScissors > 0, StreakWarning(), needed, advice));
+                rescue == BoosterType.Scissors && _run.FreeScissors > 0, StreakWarning(), needed, advice,
+                _rescues, _run.VideoRescues < Economy.VideoRescuesPerLevel, () => _run.VideoRescues++));
         }
 
         private static string AdviceText(JamAdvice advice)

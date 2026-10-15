@@ -100,15 +100,17 @@ namespace KnittedPicture.Game
         {
             // Готовая картинка — в деревянной рамке с белым паспарту, как на стене; текущая — бледный эскиз
             // в зелёной рамке; закрытая — силуэт, чтобы было любопытно, что там.
-            var face = state == TileState.Done ? Palette.Wood : state == TileState.Locked ? Palette.Track : Palette.Surface;
+            // Багет готовой картинки — выбранная рамка альбома (AlbumFrames, покупается за монеты).
+            var frame = App.Instance != null ? App.Instance.Progress.SelectedFrame : AlbumFrames.Get(0);
+            var face = state == TileState.Done ? Palette.Hex(frame.Face) : state == TileState.Locked ? Palette.Track : Palette.Surface;
             var root = Ui.Card(parent, "Tile" + level.id, x, y, size, size, 14, face, Palette.CardShadow, state == TileState.Locked ? 0f : 2f, true);
             var inner = size - 14f;
             switch (state)
             {
                 case TileState.Done:
-                    var mat = Ui.Box(root, "Mat", 10, Palette.Card);
+                    var mat = Ui.Box(root, "Mat", 10, Palette.Hex(frame.Mat));
                     Ui.Place(mat.rectTransform, 4f, 4f, size - 8f, size - 8f);
-                    var bevel = Ui.Outline(root, 14, Palette.WoodDark, 1.5f);
+                    var bevel = Ui.Outline(root, 14, Palette.Hex(frame.Edge), 1.5f);
                     bevel.raycastTarget = false;
                     Create(root, level, size / 2f, size / 2f, inner);
                     break;

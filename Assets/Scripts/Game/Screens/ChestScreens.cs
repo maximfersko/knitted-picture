@@ -400,7 +400,7 @@ namespace KnittedPicture.Game
             _step = Step.Boosters;
             _stepTitle.text = L.T("Выбери бустер");
             var count = _contents.BoosterCount;
-            _description.text = count > 1 ? L.T("Большой сундук: возьмёшь сразу 2 штуки") : L.T("Выбери 1 из 3. Тапни, чтобы узнать, что он делает");
+            _description.text = L.T("Выбери 1 из 3. Тапни, чтобы узнать, что он делает");
             var options = _contents.Boosters;
             Tweens.Delay(_stage, 0.12f * (options.Length - 1) + 0.75f, () => _selectable = true);
             for (var i = 0; i < options.Length; i++)
@@ -685,7 +685,7 @@ namespace KnittedPicture.Game
             var items = new (string text, System.Action<RectTransform, float> icon)[]
             {
                 ($"{Chest.CoinRange(big).Min}–{Chest.CoinRange(big).Max}", (c, cx) => Ui.Coin(c, cx, 22, 26)),
-                (big ? L.T("бустер ×2") : L.T("бустер"), (c, cx) => Ui.IconImage(c, Icon.PlusSlot, Palette.Primary, cx, 22, 24)),
+                (L.T("бустер"), (c, cx) => Ui.IconImage(c, Icon.PlusSlot, Palette.Primary, cx, 22, 24)),
                 (big ? L.T("редкий моток") : L.T("моток"), (c, cx) =>
                 {
                     var ball = Ui.Image(c, "Ball", Art2.YarnBall(big ? Palette.Hex("#3C78D8") : Palette.Hex("#E2683C")), Color.white);

@@ -540,6 +540,9 @@ namespace KnittedPicture.Game
 
         public int Rescues { get; set; }
 
+        /// <summary>Спасений за видео в этой попытке (не больше Economy.VideoRescuesPerLevel).</summary>
+        public int VideoRescues { get; set; }
+
         public int GoldCaught { get; set; }
 
         public int GoldCoins { get; set; }

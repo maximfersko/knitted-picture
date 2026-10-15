@@ -507,21 +507,32 @@ namespace KnittedPicture.Game
             AddIcon(BoosterInfo.Icon(type), Palette.Ink, Palette.CoinSoft, 68);
             AddTitle(L.T("Не хватает монет"), 24);
             AddText(L.F("{0} стоит {1} монет, у тебя {2}", BoosterInfo.Name(type), Economy.Price(type), app.Progress.Coins), 16, 1.6f);
-            AddPrimary(L.T("Получить за видео")).OnClick(() =>
-            {
-                Close();
-                app.Ads.ShowRewarded("booster_" + type, ok =>
-                {
-                    if (!ok)
-                    {
-                        return;
-                    }
 
-                    app.Progress.AddStock(type, 1);
-                    app.Save();
-                    granted();
+            // Бустер за видео — не больше Economy.VideoBoostersPerDay в день: иначе монеты и бустеры теряют цену.
+            if (app.Progress.VideoBoostersLeft(app.Today) > 0)
+            {
+                AddPrimary(L.T("Получить за видео")).OnClick(() =>
+                {
+                    Close();
+                    app.Ads.ShowRewarded("booster_" + type, ok =>
+                    {
+                        if (!ok)
+                        {
+                            return;
+                        }
+
+                        app.Progress.AddStock(type, 1);
+                        app.Progress.RecordVideoBooster(app.Today);
+                        app.Save();
+                        granted();
+                    });
                 });
-            });
+            }
+            else
+            {
+                AddText(L.T("Бустеры за видео на сегодня закончились. Монеты дают уровни, задания и подарок дня"), 14, 2f);
+            }
+
             AddLink(L.T("Не сейчас")).OnClick(Close);
             Finish(8);
         }
@@ -541,7 +552,7 @@ namespace KnittedPicture.Game
     {
         public FailPopup(App app, FailKind kind, BoosterType? rescue, string reason, int percent, Action<BoosterType> rescued,
             Action restart, Action home, bool freeRescue = false, string? streakWarning = null, Color[]? needed = null,
-            string? advice = null)
+            string? advice = null, int rescuesBefore = 0, bool videoAllowed = true, Action? videoUsed = null)
             : base(app, bottomSheet: true)
         {
             AddIcon(kind == FailKind.Jam ? KnittedPicture.Game.Icon.Knot : KnittedPicture.Game.Icon.Moth, Palette.Danger, Palette.DangerSoft, 64);
@@ -599,14 +610,17 @@ namespace KnittedPicture.Game
                 var title = freeRescue ? L.F("{0} · подарок серии", BoosterInfo.Name(type))
                     : stock > 0
                     ? L.F("{0} · есть {1}", BoosterInfo.Name(type), stock)
-                    : L.F("{0} · {1} монет", BoosterInfo.Name(type), Economy.Price(type));
+                    : L.F("{0} · {1} монет", BoosterInfo.Name(type), Economy.RescuePrice(type, rescuesBefore));
                 AddPrimary(title).OnClick(() =>
                 {
                     // Ножницы списываются, когда ими режут; слот и время — сразу.
-                    var paid = type == BoosterType.Scissors ? freeRescue || app.Progress.CanAfford(type) : app.Progress.Pay(type) != Payment.NotEnough;
+                    // Цена растёт с каждым спасением в этой попытке (Economy.RescuePrice).
+                    var paid = type == BoosterType.Scissors
+                        ? freeRescue || app.Progress.CanAffordRescue(type, rescuesBefore)
+                        : app.Progress.PayRescue(type, rescuesBefore) != Payment.NotEnough;
                     if (!paid)
                     {
-                        app.Toast(L.T("Не хватает монет, можно за видео"));
+                        app.Toast(videoAllowed ? L.T("Не хватает монет, можно за видео") : L.T("Не хватает монет"));
                         return;
                     }
 
@@ -615,7 +629,8 @@ namespace KnittedPicture.Game
                     Close();
                     rescued(type);
                 });
-                if (!freeRescue)
+                // Спасение за видео — одно на попытку: дальше только запас или монеты.
+                if (!freeRescue && videoAllowed)
                 {
                 AddSecondary(BoosterInfo.Name(type) + L.T(" за видео"), KnittedPicture.Game.Icon.Video, 46f).OnClick(() =>
                 {
@@ -624,9 +639,12 @@ namespace KnittedPicture.Game
                     {
                         if (!ok)
                         {
-                            app.ShowPopup(new FailPopup(app, kind, rescue, reason, percent, rescued, restart, home, freeRescue, streakWarning, needed, advice));
+                            app.ShowPopup(new FailPopup(app, kind, rescue, reason, percent, rescued, restart, home, freeRescue, streakWarning, needed, advice,
+                                rescuesBefore, videoAllowed, videoUsed));
                             return;
                         }
+
+                        videoUsed?.Invoke();
 
                         if (type == BoosterType.Scissors)
                         {

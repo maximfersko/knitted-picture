@@ -62,7 +62,7 @@ namespace KnittedPicture.Core
         public static readonly Reward[] Days =
         {
             Reward.CoinsOnly(25),
-            new Reward(0, BoosterType.Undo, 1),
+            Reward.CoinsOnly(30),
             Reward.CoinsOnly(40),
             new Reward(0, BoosterType.Scissors, 1),
             Reward.CoinsOnly(60),

@@ -144,7 +144,10 @@ namespace KnittedPicture.Game
         /// <summary>Ножницы сработали: сначала тратятся бесплатные от серии (без потери звезды), потом запас или монеты.</summary>
         private void PayScissors()
         {
-            // Ножницы из окна затора — это спасение, как «+1 слот»: одна звезда, а не две.
+            // Ножницы из окна затора — это спасение, как «+1 слот»: одна звезда, а не две, и цена спасения
+            // растёт с каждым следующим в этой попытке.
+            var rescue = _scissorsRescue;
+            var rescuesBefore = _rescues;
             if (_scissorsRescue)
             {
                 _scissorsRescue = false;
@@ -158,7 +161,15 @@ namespace KnittedPicture.Game
             }
             else
             {
-                App.Progress.Pay(BoosterType.Scissors);
+                if (rescue)
+                {
+                    App.Progress.PayRescue(BoosterType.Scissors, rescuesBefore);
+                }
+                else
+                {
+                    App.Progress.Pay(BoosterType.Scissors);
+                }
+
                 _boostersUsed++;
             }
 

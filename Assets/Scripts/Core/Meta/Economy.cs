@@ -63,6 +63,25 @@ namespace KnittedPicture.Core
 
         public static int Reward(bool hard) => hard ? HardWinReward : WinReward;
 
+        /// <summary>
+        /// Спасение после затора или моли дорожает внутри одного уровня, как продолжение в Royal Match и King:
+        /// первое — по цене бустера, второе — вдвое, третье и дальше — втрое. Проигрыш снова чего-то стоит,
+        /// а одно спасение на трудном месте остаётся по карману. Бустер из запаса — без доплаты.
+        /// </summary>
+        public static int RescuePrice(BoosterType type, int rescuesBefore) =>
+            Price(type) * System.Math.Min(1 + System.Math.Max(0, rescuesBefore), MaxRescueMultiplier);
+
+        public const int MaxRescueMultiplier = 3;
+
+        /// <summary>Спасение за видео — одно на уровень: видео помогает, но не заменяет игру.</summary>
+        public const int VideoRescuesPerLevel = 1;
+
+        /// <summary>«Удвоить награду за видео» — не больше стольких раз в день: иначе видео печатают монеты.</summary>
+        public const int DoublesPerDay = 5;
+
+        /// <summary>Бустер за видео в окне «Не хватает монет» — не больше стольких раз в день.</summary>
+        public const int VideoBoostersPerDay = 3;
+
         /// <summary>Золотая петля, связанная во время комбо.</summary>
         public const int GoldCoins = 3;
 
