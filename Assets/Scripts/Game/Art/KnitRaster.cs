@@ -502,6 +502,25 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
+        /// Положение по высоте для плашки «девять частей» 0..1: нижние углы 0..0,5, середина ровно 0,5, верхние
+        /// углы 0,5..1. Плавно по всей высоте — без ступеньки посередине (у растянутой середины ровный тон).
+        /// </summary>
+        private static float SliceT(float y, int size, int border)
+        {
+            if (y < border)
+            {
+                return 0.5f * y / border;
+            }
+
+            if (y >= size - border)
+            {
+                return 0.5f + 0.5f * (y - (size - border)) / border;
+            }
+
+            return 0.5f;
+        }
+
+        /// <summary>
         /// Карточка-«подушка» для Image.Type.Sliced (белая, красится цветом карточки): сверху светлее, к низу
         /// чуть темнее, по верхнему краю тонкий блик, по нижнему мягкая тень внутрь. Перелив целиком в
         /// растягиваемой середине, поэтому он идёт на всю высоту карточки любого размера. r — радиус в пикселях.
@@ -525,7 +544,7 @@ namespace KnittedPicture.Game
                 }
 
                 // Тело: сверху светлее, к низу темнее — объём заметнее, чем был (0,985 → 0,945).
-                var t = y >= size - border ? 1f : y < border ? 0f : (y - border) / (size - 2f * border);
+                var t = SliceT(y, size, border);
                 var v = Draw.Lerp(0.93f, 1f, t);
                 var inside = -d;
                 var up = Draw.Clamp01((y - half) / half * 2f);
@@ -564,7 +583,7 @@ namespace KnittedPicture.Game
                     return Rgba.Clear;
                 }
 
-                var t = y >= size - border ? 1f : y < border ? 0f : (y - border) / (size - 2f * border);
+                var t = SliceT(y, size, border);
                 var v = Draw.Lerp(0.975f, 0.9f, t);
                 var inside = -d;
                 var up = Draw.Clamp01((y - half) / half * 2f);
@@ -598,7 +617,7 @@ namespace KnittedPicture.Game
                     return Rgba.Clear;
                 }
 
-                var t = y >= size - border ? 1f : y < border ? 0f : (y - border) / (size - 2f * border);
+                var t = SliceT(y, size, border);
                 var v = Draw.Lerp(0.8f, 1f, Draw.SmoothStep(0f, 1f, (y - 0.5f) / (size - 1f)) * 0.5f + t * 0.5f);
                 var inside = -d;
                 var down = Draw.Clamp01((half - y) / half * 2f);

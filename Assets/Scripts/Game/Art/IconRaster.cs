@@ -9,7 +9,7 @@ namespace KnittedPicture.Game
     /// мягкая тень снизу. Кубок достижений, камни редкости пряжи, звезда уровня мотка, плетёная корзинка,
     /// меланжевый клубок. Координаты в шейдерах — y вверх.
     /// </summary>
-    public static class IconRaster
+    public static partial class IconRaster
     {
         /// <summary>Свет сверху слева (y вверх).</summary>
         private const float LightX = -0.6f;

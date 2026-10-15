@@ -116,10 +116,9 @@ namespace KnittedPicture.Game
                 }
 
                 content.sizeDelta = new Vector2(W, Mathf.Max(height + 24f, h));
-                if (_pages.Length > 1)
-                {
-                    AttachPager(page, i);
-                }
+
+                // Пейджер и на единственной странице («Пряжа»): горизонтальный жест за край ведёт в соседний раздел.
+                AttachPager(page, i);
             }
         }
 
@@ -165,6 +164,22 @@ namespace KnittedPicture.Game
                 }
 
                 _dragging = false;
+
+                // Протянули за край ленты (или бросили к краю, стоя на крайней вкладке) — соседний раздел нижней
+                // панели: за «Достижениями» и за «Пряжей» — главная. Лента сначала пружинит, потом экран уезжает.
+                var beyond = _pos > last + 0.08f || (_pos >= last - 0.02f && velocity < -500f) ? 1
+                    : _pos < -0.08f || (_pos <= 0.02f && velocity > 500f) ? -1 : 0;
+                if (beyond != 0)
+                {
+                    var from = _tab == CollectionsTab.Yarn ? MainTab.Yarn : MainTab.Album;
+                    var to = (int)from + beyond;
+                    if (to >= (int)MainTab.Album && to <= (int)MainTab.Yarn)
+                    {
+                        _speed = 0f;
+                        TabBar.Go(App, from, beyond);
+                        return;
+                    }
+                }
 
                 // Скорость пальца (точки в секунду) — в скорость ленты (страницы в секунду), с запасом против перелёта на две.
                 _speed = Mathf.Clamp(-velocity / W, -4f, 4f);
@@ -607,23 +622,10 @@ namespace KnittedPicture.Game
 
             const float ballY = 46f;
             const float ballSize = 58f;
-            if (has && yarn.Rarity == Rarity.Epic)
+            if (has)
             {
-                // Тёплые лучи медленно вращаются за мотком.
-                var rays = Ui.Image(cell, "Rays", Art.Rays, Palette.WithAlpha(Palette.Coin, 0.32f));
-                var raysRt = rays.rectTransform;
-                Ui.PlaceCenter(raysRt, cellW / 2f, ballY, cellW * 0.95f, cellW * 0.95f);
-                Tweens.Run(raysRt, 26f, t => raysRt.localRotation = Quaternion.Euler(0f, 0f, -360f * t), null, null, 0f, true);
-            }
-
-            if (has && yarn.Rarity != Rarity.Common)
-            {
-                // Сияние за мотком: мягко дышит.
-                var glowColor = yarn.Rarity == Rarity.Epic ? Palette.Coin : Palette.Link;
-                var glow = Ui.Image(cell, "Glow", Art.Glow, Palette.WithAlpha(glowColor, 0.28f));
-                var glowRt = glow.rectTransform;
-                Ui.PlaceCenter(glowRt, cellW / 2f, ballY, ballSize * 1.7f, ballSize * 1.7f);
-                Tweens.Run(glowRt, 2.6f, t => glowRt.localScale = Vector3.one * (0.94f + 0.1f * Ease.Bump(t)), null, null, index * 0.21f, true);
+                // Свечение редкости: голубое у редкой, тёплое с лучами у эпической (YarnView.Aura).
+                YarnView.Aura(cell, yarn.Rarity, cellW / 2f, ballY, ballSize, index * 0.21f);
             }
 
             var shadow = Ui.Image(cell, "Shadow", Art2.BallShadow, Palette.WithAlpha(Color.white, has ? 1f : 0.5f));
@@ -758,10 +760,8 @@ namespace KnittedPicture.Game
                 Ui.Outline(row, 18, Palette.Coin, 2f);
             }
 
-            // Кубок: золотой, когда можно забрать (на мягком сиянии, с искрами) и когда получен (с зелёной галочкой),
-            // серебряный и чуть бледнее — пока в процессе.
-            var circle = Ui.Image(row, "Icon", Art.Circle, can ? Palette.WithAlpha(Palette.Coin, 0.35f) : claimed ? Palette.PrimarySoft : Palette.Surface);
-            Ui.PlaceCenter(circle.rectTransform, 36, rowH / 2f, 48, 48);
+            // Медаль со своим рисунком: золотая, когда можно забрать (на мягком сиянии, с искрами) и когда получена
+            // (с зелёной галочкой), серебряная и чуть бледнее — пока в процессе.
             if (can)
             {
                 var glow = Ui.Image(row, "Glow", Art.Glow, Palette.WithAlpha(Palette.Coin, 0.5f));
@@ -770,9 +770,9 @@ namespace KnittedPicture.Game
                 Tweens.Run(glowRt, 2.2f, t => glowRt.localScale = Vector3.one * (0.9f + 0.14f * Ease.Bump(t)), null, null, 0f, true);
             }
 
-            var cup = Ui.Image(row, "Trophy", Art2.Trophy(can || claimed), Palette.WithAlpha(Color.white, can || claimed ? 1f : 0.85f));
+            var cup = Ui.Image(row, "Trophy", Art2.Medal(Art2.BadgeOf(a), can || claimed), Palette.WithAlpha(Color.white, can || claimed ? 1f : 0.85f));
             var cupRt = cup.rectTransform;
-            Ui.PlaceCenter(cupRt, 36, rowH / 2f, 44, 44);
+            Ui.PlaceCenter(cupRt, 36, rowH / 2f, 56, 56);
             if (can)
             {
                 // Кубок, который ждёт, раз в пару секунд подмигивает искрой и чуть подпрыгивает.
@@ -813,7 +813,8 @@ namespace KnittedPicture.Game
             {
                 var target = a;
                 var claimButton = Ui.Button(row, L.T("Забрать"), w - claimW - 14f, 17, claimW, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
-                claimButton.OnClick(() => Claim(progress.ClaimAchievement(target, App.Random), target.Title, Icon.Trophy, CollectionsTab.Achievements));
+                claimButton.OnClick(() => Claim(progress.ClaimAchievement(target, App.Random), target.Title, Icon.Trophy, CollectionsTab.Achievements,
+                    Art2.Medal(Art2.BadgeOf(target), true)));
                 Ui.Sheen((RectTransform)claimButton.transform, claimW, 36f, 3.2f, 0.6f + y * 0.002f);
             }
             else if (claimed)
@@ -858,7 +859,7 @@ namespace KnittedPicture.Game
 
         // ---------- Общее ----------
 
-        private void Claim(Granted? granted, string title, Icon icon, CollectionsTab tab)
+        private void Claim(Granted? granted, string title, Icon icon, CollectionsTab tab, Sprite? art = null)
         {
             if (granted == null)
             {
@@ -866,7 +867,7 @@ namespace KnittedPicture.Game
             }
 
             App.Save();
-            App.ShowPopup(new RewardPopup(App, title, icon, granted.Value, () => App.ShowCollections(tab)));
+            App.ShowPopup(new RewardPopup(App, title, icon, granted.Value, () => App.ShowCollections(tab), art));
         }
     }
 
@@ -947,7 +948,7 @@ namespace KnittedPicture.Game
             app.Save();
             if (granted != null)
             {
-                app.ShowPopup(new RewardPopup(app, Collections.All[index].Name, Icon.Album, granted.Value, refresh));
+                app.ShowPopup(new RewardPopup(app, Collections.All[index].Name, Icon.Album, granted.Value, refresh, Art2.Medal(BadgeArt.Shelf, true)));
             }
         }
     }

@@ -707,11 +707,25 @@ namespace KnittedPicture.Game
         public void SetLanguage(string language)
         {
             Progress.Data.language = language;
-            L.Set(LanguageFor(language));
             Save();
-            CloseAllPopups();
-            ShowHome();
-            ShowPopup(new SettingsPopup(this));
+
+            // Весь интерфейс строится заново. Чтобы не было рывков (шторка уезжает, главная пересобирается,
+            // шторка выезжает снова), экран на мгновение закрывается заливкой цвета фона: под ней всё
+            // перестраивается без видимых анимаций, и заливка мягко уходит.
+            var cover = Ui.Image(_canvas!, "LanguageCover", null, _background != null ? _background.color : Palette.Ground, true);
+            Ui.Stretch(cover.rectTransform);
+            cover.transform.SetAsLastSibling();
+            var group = cover.gameObject.AddComponent<CanvasGroup>();
+            group.alpha = 0f;
+            Tweens.Fade(group, 0f, 1f, 0.16f, () =>
+            {
+                L.Set(LanguageFor(language));
+                CloseAllPopups();
+                ShowHome();
+                ShowPopup(new SettingsPopup(this));
+                cover.transform.SetAsLastSibling();
+                Tweens.Fade(group, 1f, 0f, 0.28f, () => Destroy(cover.gameObject), 0.35f);
+            });
         }
 
         /// <summary>

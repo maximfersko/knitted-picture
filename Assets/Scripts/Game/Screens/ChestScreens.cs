@@ -474,6 +474,7 @@ namespace KnittedPicture.Game
                 // Лицо: моток, название, новый или повтор.
                 var front = Ui.Node(visual, "Front");
                 Ui.Place(front, 0, 0, w, CardH);
+                YarnView.Aura(front, yarn.Rarity, w / 2f, 46, 62, i * 0.3f);
                 YarnView.Create(front, yarn, w / 2f, 46, 62, true);
                 var name = Ui.Label(front, yarn.Name, 13, Palette.Ink, 6, 80, w - 12, 34);
                 name.lineSpacing = 0.85f;

@@ -19,6 +19,7 @@ namespace KnittedPicture.ArtPreview
             Loom(dir);
             Export(Path.Combine(dir, "sprites"));
             Meta(dir);
+            Badges(dir);
         }
 
         /// <summary>Старый дизайн, детальнее: картинка из вязаных клеток, ткань, искры.</summary>
@@ -298,6 +299,22 @@ namespace KnittedPicture.ArtPreview
         }
 
         private const float Art2BallFill = BallRaster.Radius * 2f / BallRaster.Size;
+
+        /// <summary>Медали достижений: верхний ряд золотые, нижний серебряные, 2 точки на пиксель макета.</summary>
+        private static void Badges(string dir)
+        {
+            var arts = (BadgeArt[])Enum.GetValues(typeof(BadgeArt));
+            const int cell = 150;
+            var img = new Raster(arts.Length * cell + 20, 2 * cell + 20);
+            Png.Fill(img, Rgba.Hex("#F3F5F8"));
+            for (var i = 0; i < arts.Length; i++)
+            {
+                Png.Put(img, IconRaster.Badge(arts[i], true), 10 + i * cell, cell + 10, 128, 128);
+                Png.Put(img, IconRaster.Badge(arts[i], false), 10 + i * cell, 10, 128, 128);
+            }
+
+            Png.Save(img, Path.Combine(dir, "badges.png"));
+        }
 
         /// <summary>Мета: шкатулка (закрытая), подарок, монета, пяльцы с вязаным сердечком.</summary>
         private static void Meta(string dir)

@@ -256,11 +256,8 @@ namespace KnittedPicture.Game
             face.pixelsPerUnitMultiplier = Art.Density;
             Place(face.rectTransform, 0, 0, w, h);
 
-            // Белым карточкам — тонкий контур: на белом окне и на светлом фоне они не теряются.
-            if (color == Palette.Card || color == Palette.Surface)
-            {
-                Outline(root, radius, Palette.Line, 1.5f);
-            }
+            // Отдельный контур белым карточкам больше не нужен: у самой плашки (SoftCard) резкая кромка,
+            // а второй контур поверх давал двойной край.
 
             return root;
         }
@@ -494,8 +491,12 @@ namespace KnittedPicture.Game
             var root = Place(Node(parent, "Round" + icon), x, y, size, size);
             if (!onCard)
             {
-                var shadow = Image(root, "Shadow", Art.Circle, Palette.CardShadow);
-                Place(shadow.rectTransform, 0, 2, size, size);
+                // Мягкая тень, как у карточек: жёсткий серый круг со сдвигом вниз выглядел второй кнопкой.
+                var blur = Mathf.Clamp(size * 0.18f, 4f, 9f);
+                var shadow = Image(root, "Shadow", Art.SoftShadow(size / 2f, blur), Palette.SoftShadow);
+                shadow.type = UnityEngine.UI.Image.Type.Sliced;
+                shadow.pixelsPerUnitMultiplier = Art.Density;
+                Place(shadow.rectTransform, -blur, 2f - blur * 0.6f, size + 2f * blur, size + 2f * blur);
             }
 
             var face = Image(root, "Face", Art.SoftDisc, onCard ? Palette.ButtonFill : Palette.Card, true);

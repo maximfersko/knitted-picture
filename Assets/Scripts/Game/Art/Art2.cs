@@ -162,6 +162,29 @@ namespace KnittedPicture.Game
         /// <summary>Кубок достижения: золотой (можно забрать, получено) или серебряный (в процессе).</summary>
         public static Sprite Trophy(bool gold) => Get(gold ? "trophyGold" : "trophySilver", () => IconRaster.Trophy(gold));
 
+        /// <summary>Медаль достижения со своим рисунком: золотая (можно забрать, получено) или серебряная.</summary>
+        public static Sprite Medal(BadgeArt art, bool gold) => Get("medal" + art + (gold ? "G" : "S"), () => IconRaster.Badge(art, gold));
+
+        /// <summary>Рисунок медали для достижения: у каждого свой, по смыслу.</summary>
+        public static BadgeArt BadgeOf(KnittedPicture.Core.AchievementInfo a)
+        {
+            switch (a.Id)
+            {
+                case 0: return BadgeArt.Stitch;
+                case 1: return BadgeArt.Picture;
+                case 5: return BadgeArt.Stars;
+                case 8: return BadgeArt.Balls;
+                case 9: return BadgeArt.Album;
+                case 10: return BadgeArt.Calendar;
+                case 11: return BadgeArt.Crown;
+                case 12: return BadgeArt.OpenBook;
+                case 13: return BadgeArt.StarBook;
+                case 14: return BadgeArt.Books;
+                case 15: return BadgeArt.Basket;
+                default: return BadgeArt.Stars;
+            }
+        }
+
         /// <summary>Камень редкости пряжи: дымчатый, сапфир, топаз.</summary>
         public static Sprite Gem(Rarity rarity)
         {

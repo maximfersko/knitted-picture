@@ -28,6 +28,11 @@ namespace KnittedPicture.Game
             const float ball = 92f;
             var back = Ui.Image(Card, "Back", Art.Circle, RaritySoft(yarn.Rarity));
             Ui.PlaceCenter(back.rectTransform, CardWidth / 2f, Cursor + ball / 2f + 4f, ball + 28f, ball + 28f);
+            if (owned)
+            {
+                YarnView.Aura(Card, yarn.Rarity, CardWidth / 2f, Cursor + ball / 2f + 4f, ball);
+            }
+
             var skein = YarnView.Create(Card, yarn, CardWidth / 2f, Cursor + ball / 2f + 4f, ball, owned);
             Tweens.Scale(skein, 0.6f, 1f, 0.35f, Ease.OutBack);
             if (active)

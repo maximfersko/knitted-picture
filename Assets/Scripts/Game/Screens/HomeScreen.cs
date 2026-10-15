@@ -16,6 +16,14 @@ namespace KnittedPicture.Game
             : base(app, "Home")
         {
             var progress = app.Progress;
+
+            // Свайп между разделами: влево — «Пряжа», вправо — «Альбом». Жест ловит сам экран: прозрачная подложка
+            // под всем и пейджер на корне, куда всплывает перетаскивание с кнопок. Лента коллекций листается своим
+            // пейджером и сюда жест не отдаёт.
+            var swipeArea = Ui.Image(Root, "SwipeArea", null, Color.clear, true);
+            Ui.Stretch(swipeArea.rectTransform);
+            swipeArea.transform.SetAsFirstSibling();
+            Root.gameObject.AddComponent<Pager>().Swiped += direction => TabBar.Go(app, MainTab.Home, -direction);
             var settings = Ui.RoundButton(Root, Icon.Settings, 16, 8);
             if (settings.transform.Find("Icon" + Icon.Settings) is RectTransform gearRt && gearRt.GetComponent<UnityEngine.UI.Image>() is { } gear)
             {

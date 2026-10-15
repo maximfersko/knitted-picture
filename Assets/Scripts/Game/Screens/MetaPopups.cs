@@ -10,7 +10,8 @@ namespace KnittedPicture.Game
     /// <summary>Что получил игрок: монеты, бустер, моток — каждое в своей плитке, по очереди.</summary>
     public sealed class RewardPopup : Popup
     {
-        public RewardPopup(App app, string title, Icon icon, Granted granted, Action? closed = null)
+        /// <param name="art">Объёмная картинка вместо значка (медаль достижения, полочка коллекции, кубок).</param>
+        public RewardPopup(App app, string title, Icon icon, Granted granted, Action? closed = null, Sprite? art = null)
             : base(app)
         {
             Closed = closed;
@@ -31,7 +32,18 @@ namespace KnittedPicture.Game
             var glowRt = glow.rectTransform;
             Tweens.Run(glowRt, 2.4f, t => glowRt.localScale = Vector3.one * (1f + 0.08f * Ease.Bump(t)), null, null, 0.5f, true);
 
-            var badge = AddIcon(icon, Palette.CoinShadow, Palette.CoinSoft, badgeSize);
+            RectTransform badge;
+            if (art != null)
+            {
+                badge = Ui.PlaceCenter(Ui.Node(Card, "IconBadge"), CardWidth / 2f, Cursor + badgeSize / 2f, badgeSize, badgeSize);
+                Ui.Stretch(Ui.Image(badge, "Art", art, Color.white).rectTransform);
+                Space(badgeSize + 14f);
+            }
+            else
+            {
+                badge = AddIcon(icon, Palette.CoinShadow, Palette.CoinSoft, badgeSize);
+            }
+
             Tweens.Scale(badge, 0.2f, 1f, 0.45f, Ease.OutBack);
             Tweens.Run(badge, 0.6f, t => badge.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 5f) * 10f * (1f - t)), null, null, 0.35f);
             Tweens.Delay(badge, 0.2f, () => Fx.Sparkle(Card, Ui.WorldCenter(badge), Palette.Coin, 14, 70f));
@@ -121,7 +133,11 @@ namespace KnittedPicture.Game
                 var caption = granted.NewYarn ? L.F("{0}\nновый моток!", yarn.Name)
                     : granted.YarnLevelUp ? L.F("{0}\nуровень {1}!", yarn.Name, app.Progress.YarnLevel(yarn.Id))
                     : L.F("{0}\nповтор: +{1}", yarn.Name, granted.DuplicateCoins);
-                items.Add((cell => YarnView.Create(cell, yarn, 46, 30, 56, true), caption, granted.NewYarn ? YarnView.RarityColor(yarn.Rarity) : Palette.Ink2));
+                items.Add((cell =>
+                {
+                    YarnView.Aura(cell, yarn.Rarity, 46, 30, 56);
+                    YarnView.Create(cell, yarn, 46, 30, 56, true);
+                }, caption, granted.NewYarn ? YarnView.RarityColor(yarn.Rarity) : Palette.Ink2));
             }
 
             return items;

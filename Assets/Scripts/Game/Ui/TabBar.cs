@@ -45,6 +45,33 @@ namespace KnittedPicture.Game
             _last = active;
         }
 
+        /// <summary>
+        /// Свайп между разделами: соседняя вкладка слева (direction = -1) или справа (+1) от текущей,
+        /// с тем же въездом, что и по тапу на вкладку. За краем (левее альбома, правее пряжи) — ничего.
+        /// </summary>
+        public static void Go(App app, MainTab from, int direction)
+        {
+            var to = (int)from + direction;
+            if (direction == 0 || to < (int)MainTab.Album || to > (int)MainTab.Yarn || app.HasPopups)
+            {
+                return;
+            }
+
+            app.SlideNext(direction);
+            switch ((MainTab)to)
+            {
+                case MainTab.Album:
+                    app.ShowCollections(CollectionsTab.Album);
+                    break;
+                case MainTab.Yarn:
+                    app.ShowCollections(CollectionsTab.Yarn);
+                    break;
+                default:
+                    app.ShowHome();
+                    break;
+            }
+        }
+
         private static void Item(App app, RectTransform bar, int index, float cellW, MainTab tab, MainTab active, string title, int badge, System.Action open)
         {
             var on = tab == active;

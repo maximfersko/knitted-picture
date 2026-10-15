@@ -474,11 +474,23 @@ namespace KnittedPicture.Game
             {
                 var yarn = YarnCatalog.All[reward.Yarn];
                 var tile = Ui.Card(Root, "YarnTile", x, y, tileW, TileH, 18, Palette.Card, Palette.CardShadow, 3f);
+                // Редкий и эпический моток — со свечением редкости, оно появляется вместе с мотком.
+                var aura = YarnView.Aura(tile, yarn.Rarity, 30, TileH / 2f, 34);
+                if (aura != null)
+                {
+                    aura.localScale = Vector3.zero;
+                }
+
                 var ball = YarnView.Create(tile, yarn, 30, TileH / 2f, 34, true);
                 ball.localScale = Vector3.zero;
                 Tweens.Delay(ball, 1.0f, () =>
                 {
                     Tweens.Scale(ball, 0.2f, 1f, 0.35f, Ease.OutBack);
+                    if (aura != null)
+                    {
+                        Tweens.Scale(aura, 0.2f, 1f, 0.45f, Ease.OutBack);
+                    }
+
                     Fx.Sparkle(Root, Ui.WorldCenter(ball), Palette.Hex(yarn.Hex), 10, 30f);
                     Sfx.Play(Sound.Star, 0.6f);
                 });

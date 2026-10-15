@@ -99,7 +99,7 @@ namespace KnittedPicture.Game
                     Close();
                     if (granted != null)
                     {
-                        app.ShowPopup(new RewardPopup(app, L.T("Вязальный марафон"), Icon.Trophy, granted.Value, changed));
+                        app.ShowPopup(new RewardPopup(app, L.T("Вязальный марафон"), Icon.Trophy, granted.Value, changed, Art2.Trophy(true)));
                     }
                 });
             }
