@@ -50,7 +50,33 @@ namespace KnittedPicture.Game
             Ui.ProgressBar(Card, 24, Cursor, Inner, 10, (float)inStep / Season.StepPoints, Palette.Coin);
             Space(18f);
             Ui.Fit(Ui.Label(Card, L.T("Очки: звёзды за картинки, узор дня, задания, выставка"), 12, Palette.Ink3, 24, Cursor, Inner, 18, false), 9);
-            Space(26f);
+            Space(24f);
+
+            // Недельные вехи (бывший марафон): петли за неделю, каждая веха — целая ступень сезона.
+            if (progress.MarathonOpen)
+            {
+                var targets = WeeklyMarathon.Targets;
+                var last = targets[targets.Length - 1];
+                var stitches = Mathf.Min(progress.MarathonStitches(today), last);
+                var weekDays = WeeklyMarathon.DaysLeft(today);
+                Ui.Fit(Ui.Label(Card, L.F("Неделя: {0} из {1} петель, каждая веха +1 ступень", stitches, last), 12, Palette.Ink2, 24, Cursor, Inner, 18,
+                    true, TextAnchor.MiddleLeft), 9);
+                Space(20f);
+                Ui.ProgressBar(Card, 24, Cursor, Inner, 8, (float)stitches / last, Palette.Link);
+                for (var i = 0; i < targets.Length; i++)
+                {
+                    var x = 24 + Inner * targets[i] / last;
+                    var mark = Ui.Image(Card, "Milestone", Art.Circle, i < progress.MarathonClaimed(today) ? Palette.Link : Palette.Track);
+                    Ui.PlaceCenter(mark.rectTransform, Mathf.Min(x, 24 + Inner - 6f), Cursor + 4f, 14, 14);
+                }
+
+                Space(14f);
+                Ui.Fit(Ui.Label(Card, L.F("Новая неделя через {0} {1}", weekDays, L.Plural(weekDays, "день", "дня", "дней")), 11, Palette.Ink3, 24, Cursor, Inner, 16,
+                    false, TextAnchor.MiddleLeft), 9);
+                Space(20f);
+            }
+
+            Space(4f);
 
             // Дорожка: прокручивается, открывается на текущей ступени.
             var viewH = Mathf.Min(RowH * 5.5f, app.Height * 0.38f);

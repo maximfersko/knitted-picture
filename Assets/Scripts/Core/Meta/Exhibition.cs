@@ -51,7 +51,7 @@ namespace KnittedPicture.Core
     /// «Выставка недели»: у недели своя тема («Море», «Осень»…), игрок выставляет три готовые картинки альбома,
     /// каждую в своей рамке, и получает оценку жюри. Очки за картинку: цвета в тему (до 60), звёзды (по 10)
     /// и рамка (редкость по 6, рамка коллекции этой картинки ещё +6). Три картинки — до 360 очков; медаль:
-    /// бронза от 150, серебро от 210, золото от 270. Раз в неделю; оценку видно до того, как выставить.
+    /// бронза от 150 (20 монет), серебро от 210 (40), золото от 270 (60 и моток). Раз в неделю; оценку видно до того, как выставить.
     /// Рамки и пряжа начинают работать в игре, а не только лежать в коллекции.
     /// </summary>
     public static class Exhibition
@@ -83,9 +83,9 @@ namespace KnittedPicture.Core
         /// <summary>Награды за бронзу, серебро и золото.</summary>
         public static readonly Reward[] Rewards =
         {
-            Reward.CoinsOnly(30),
-            Reward.CoinsOnly(60),
-            new Reward(90, null, 0, DailyGift.RandomYarn),
+            Reward.CoinsOnly(20),
+            Reward.CoinsOnly(40),
+            new Reward(60, null, 0, DailyGift.RandomYarn),
         };
 
         public static ExhibitionTheme ThemeOf(int week) => Themes[((week % Themes.Length) + Themes.Length) % Themes.Length];

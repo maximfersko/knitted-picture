@@ -174,11 +174,6 @@ namespace KnittedPicture.Playtest
                 }
 
                 Earn(stats, p, () => p.CanClaimMissions(today) ? p.ClaimMissions(today, rng) : null, "задания");
-                while (p.CanClaimMarathon(today))
-                {
-                    Earn(stats, p, () => p.ClaimMarathon(today, rng), "марафон");
-                }
-
                 // Выставка недели: три самые подходящие к теме картинки в лучшей своей рамке.
                 if (p.ExhibitionOpen && !p.ExhibitionDone(today))
                 {

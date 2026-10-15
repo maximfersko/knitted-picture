@@ -214,6 +214,10 @@ namespace KnittedPicture.Core.Tests
             // Часы назад: посылки нет, последний день не сдвигается назад.
             Assert.False(p.Visit(90));
             Assert.Equal(105, p.Data.lastDay);
+
+            // Снова перерыв, но раньше двух недель с прошлой посылки — без посылки; позже — снова есть.
+            Assert.False(p.Visit(110));
+            Assert.True(p.Visit(105 + ProgressService.ComebackCooldown + 3));
         }
     }
 }

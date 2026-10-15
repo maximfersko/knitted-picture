@@ -514,7 +514,7 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Marathon_counts_stitches_per_week_pays_each_tier_once_and_resets_on_monday()
+        public void Weekly_milestones_count_stitches_and_each_adds_a_season_step_once()
         {
             var progress = Fresh();
             const int monday = 20003; // день 20003 с 1970 года — понедельник
@@ -531,25 +531,22 @@ namespace KnittedPicture.Core.Tests
 
             progress.Data.nextLevel = WeeklyMarathon.FromLevel;
             progress.RecordMarathon(monday, WeeklyMarathon.Targets[0] - 1);
-            Assert.False(progress.CanClaimMarathon(monday));
+            Assert.Equal(0, progress.MarathonClaimed(monday));
+            var points = progress.SeasonPoints(monday);
             progress.RecordMarathon(monday + 2, 1);
-            Assert.True(progress.CanClaimMarathon(monday + 2));
-            var coins = progress.Coins;
-            Assert.NotNull(progress.ClaimMarathon(monday + 2, new Random(1)));
-            Assert.Equal(coins + WeeklyMarathon.Rewards[0].Coins, progress.Coins);
-            Assert.Null(progress.ClaimMarathon(monday + 2, new Random(1)));
-            Assert.Equal(1, progress.MarathonClaimed(monday + 3));
+            Assert.Equal(1, progress.MarathonClaimed(monday + 2));
+            Assert.Equal(points + WeeklyMarathon.TierPoints, progress.SeasonPoints(monday + 2));
+            progress.RecordMarathon(monday + 2, 1);
+            Assert.Equal(points + WeeklyMarathon.TierPoints, progress.SeasonPoints(monday + 2));
 
-            // Часы назад, на прошлую неделю: марафон замер, наград нет.
+            // Часы назад, на прошлую неделю: вехи замерли.
             progress.RecordMarathon(monday - 3, 5000);
-            Assert.False(progress.CanClaimMarathon(monday - 3));
-            Assert.Equal(WeeklyMarathon.Targets[0], progress.MarathonStitches(monday));
+            Assert.Equal(1, progress.MarathonClaimed(monday));
 
-            // Новая неделя: счёт с нуля, ступени снова доступны.
+            // Новая неделя: счёт с нуля, вехи снова доступны.
             Assert.Equal(0, progress.MarathonStitches(monday + 7));
-            progress.RecordMarathon(monday + 7, WeeklyMarathon.Targets[0]);
-            Assert.Equal(0, progress.MarathonClaimed(monday + 7));
-            Assert.True(progress.CanClaimMarathon(monday + 7));
+            progress.RecordMarathon(monday + 7, WeeklyMarathon.Targets[1]);
+            Assert.Equal(2, progress.MarathonClaimed(monday + 7));
         }
 
         [Fact]

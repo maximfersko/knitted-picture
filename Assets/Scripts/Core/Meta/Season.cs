@@ -50,9 +50,9 @@ namespace KnittedPicture.Core
     /// но без платной ветки. Очки сезона: звёзды за новые картинки и улучшение результата, 1 за повтор,
     /// 3 за узор дня, 5 за задания дня и 5 за выставку недели. Каждые StepPoints очков — ступень. Награды идут
     /// по лестнице редкости: обычные (монеты) и необычные (монеты, на 8-й, 16-й и 24-й — бустер) чередуются,
-    /// каждая пятая — редкая (моток), 10-я и 20-я — эпические (80 монет и бустер), 29-я — сезонный легендарный
-    /// моток, 30-я — сезонная рамка. За полный сезон около 725 монет, 5 бустеров и 4 мотка; вместе с выставкой
-    /// доход выше на 15–25%, излишек уходит в рамки альбома (симуляция в docs/ECONOMY.md). Сезон
+    /// каждая пятая — редкая (моток), 10-я и 20-я — эпические (60 монет и бустер), 29-я — сезонный легендарный
+    /// моток, 30-я — сезонная рамка. За полный сезон около 520 монет, 5 бустеров и 4 мотка; вместе с выставкой
+    /// доход на 3–8% выше, чем до сезона, у редко играющих до 18% (цели и симуляция — docs/ECONOMY.md). Сезон
     /// закончился — незабранное сгорает, начинается новый.
     /// </summary>
     public static class Season
@@ -130,7 +130,7 @@ namespace KnittedPicture.Core
             if (number % 10 == 0)
             {
                 var booster = number == 10 ? BoosterType.Scissors : BoosterType.Slot;
-                return new SeasonStep(number, Rarity.Epic, SeasonPrize.Big, new Reward(80, booster, 1));
+                return new SeasonStep(number, Rarity.Epic, SeasonPrize.Big, new Reward(60, booster, 1));
             }
 
             if (number % 5 == 0)
@@ -152,10 +152,10 @@ namespace KnittedPicture.Core
                     return new SeasonStep(number, Rarity.Uncommon, SeasonPrize.Booster, new Reward(0, booster, 1));
                 }
 
-                return new SeasonStep(number, Rarity.Uncommon, SeasonPrize.Coins, Reward.CoinsOnly(30));
+                return new SeasonStep(number, Rarity.Uncommon, SeasonPrize.Coins, Reward.CoinsOnly(20));
             }
 
-            return new SeasonStep(number, Rarity.Common, SeasonPrize.Coins, Reward.CoinsOnly(15 + number / 2));
+            return new SeasonStep(number, Rarity.Common, SeasonPrize.Coins, Reward.CoinsOnly(10 + number / 3));
         }
     }
 }

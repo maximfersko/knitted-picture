@@ -82,13 +82,13 @@ namespace KnittedPicture.Playtest
 
             Expect(p.ClaimChest(0, 0) == null, "открылся неготовый сундук", ctx, repro);
 
-            while (p.CanClaimMarathon(today))
+            while (p.CanClaimSeason(today))
             {
-                var claimed = p.MarathonClaimed(today);
-                Expect(p.ClaimMarathon(today, rng) != null && p.MarathonClaimed(today) == claimed + 1, "ступень марафона не выдалась", ctx, repro);
+                var claimed = p.SeasonClaimed(today);
+                Expect(p.ClaimSeason(today, rng) != null && p.SeasonClaimed(today) == claimed + 1, "ступень сезона не выдалась", ctx, repro);
             }
 
-            Expect(p.ClaimMarathon(today, rng) == null, "марафон выдал неготовую ступень", ctx, repro);
+            Expect(p.ClaimSeason(today, rng) == null, "сезон выдал неготовую ступень", ctx, repro);
 
             if (p.CanClaimMissions(today))
             {

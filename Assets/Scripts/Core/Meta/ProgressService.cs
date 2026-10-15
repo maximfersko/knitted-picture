@@ -839,6 +839,33 @@ namespace KnittedPicture.Core
             return Grant(new Reward(DailyPattern.RewardCoins, null, 0, yarn), rng);
         }
 
+        // ---------- Знакомство с механиками ----------
+
+        /// <summary>
+        /// Какая механика только что открылась и ещё не показывалась: по одной за раз, в порядке открытия.
+        /// Помечает показанной. null — знакомить не с чем. Так игрок узнаёт про них постепенно, а не все сразу.
+        /// </summary>
+        public Feature? TakeFeatureIntro()
+        {
+            foreach (var (feature, open) in new[]
+                     {
+                         (Feature.Missions, MissionsOpen),
+                         (Feature.Season, SeasonOpen),
+                         (Feature.Pattern, PatternOpen),
+                         (Feature.Exhibition, ExhibitionOpen),
+                     })
+            {
+                var id = 200 + (int)feature;
+                if (open && !_data.introsShown.Contains(id))
+                {
+                    _data.introsShown.Add(id);
+                    return feature;
+                }
+            }
+
+            return null;
+        }
+
         // ---------- Вязальный сезон ----------
 
         public bool SeasonOpen => _data.nextLevel >= Season.FromLevel;
@@ -977,15 +1004,20 @@ namespace KnittedPicture.Core
         /// <summary>Сколько дней без игры нужно для посылки от бабушки.</summary>
         public const int ComebackDays = 3;
 
+        /// <summary>Посылка не чаще, чем раз в столько дней: редко играющим она не становится вторым подарком дня.</summary>
+        public const int ComebackCooldown = 14;
+
         /// <summary>
         /// Игрок зашёл в игру: если его не было ComebackDays дней и больше, ждёт посылка. Запоминает день.
         /// Часы назад посылку не дают и последний день не сдвигают назад.
         /// </summary>
         public bool Visit(int today)
         {
-            if (_data.lastDay >= 0 && today - _data.lastDay >= ComebackDays && _data.completed.Count > 0 && !_data.comebackPending)
+            if (_data.lastDay >= 0 && today - _data.lastDay >= ComebackDays && _data.completed.Count > 0 && !_data.comebackPending &&
+                today - _data.comebackLastDay >= ComebackCooldown)
             {
                 _data.comebackPending = true;
+                _data.comebackLastDay = today;
                 _data.comebackDays = today - _data.lastDay;
             }
 
@@ -1028,7 +1060,7 @@ namespace KnittedPicture.Core
             return Grant(new Reward((range.Min + range.Max) / 2, booster, Chest.BoosterCountOf(rarity), yarn), rng);
         }
 
-        // ---------- Вязальный марафон ----------
+        // ---------- Недельные вехи (бывший марафон) ----------
 
         public bool MarathonOpen => _data.nextLevel >= WeeklyMarathon.FromLevel;
 
@@ -1042,7 +1074,7 @@ namespace KnittedPicture.Core
         public int MarathonStitches(int today) =>
             MarathonWeek(today) ? _data.weekStitches : WeeklyMarathon.WeekOf(today) > _data.weekId ? 0 : _data.weekStitches;
 
-        /// <summary>Сколько ступеней уже забрано на этой неделе.</summary>
+        /// <summary>Сколько недельных вех уже пройдено (каждая — ступень сезона).</summary>
         public int MarathonClaimed(int today) =>
             MarathonWeek(today) ? _data.weekClaimed : WeeklyMarathon.WeekOf(today) > _data.weekId ? 0 : _data.weekClaimed;
 
@@ -1065,24 +1097,14 @@ namespace KnittedPicture.Core
             if (week == _data.weekId)
             {
                 _data.weekStitches = (int)System.Math.Min(int.MaxValue, (long)_data.weekStitches + stitches);
+
+                // Веха недели — сразу ступень сезона, забирать отдельно не нужно.
+                while (_data.weekClaimed < WeeklyMarathon.Targets.Length && _data.weekStitches >= WeeklyMarathon.Targets[_data.weekClaimed])
+                {
+                    _data.weekClaimed++;
+                    RecordSeason(today, WeeklyMarathon.TierPoints);
+                }
             }
-        }
-
-        public bool CanClaimMarathon(int today) =>
-            MarathonOpen && MarathonWeek(today) && _data.weekClaimed < WeeklyMarathon.Targets.Length &&
-            _data.weekStitches >= WeeklyMarathon.Targets[_data.weekClaimed];
-
-        /// <summary>Забрать следующую ступень. null — не готова или неделя не та.</summary>
-        public Granted? ClaimMarathon(int today, System.Random rng)
-        {
-            if (!CanClaimMarathon(today))
-            {
-                return null;
-            }
-
-            var reward = WeeklyMarathon.Rewards[_data.weekClaimed];
-            _data.weekClaimed++;
-            return Grant(reward, rng);
         }
 
         // ---------- Задания дня ----------
@@ -1334,6 +1356,15 @@ namespace KnittedPicture.Core
             _data.winsSinceInterstitial = 0;
             return true;
         }
+    }
+
+    /// <summary>Механики, с которыми знакомим по одной, когда они открываются.</summary>
+    public enum Feature
+    {
+        Season,
+        Missions,
+        Pattern,
+        Exhibition,
     }
 
     /// <summary>Забранная ступень сезона: сама ступень, что выдано и рамка (-1 — без рамки).</summary>

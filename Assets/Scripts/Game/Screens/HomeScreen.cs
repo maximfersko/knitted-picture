@@ -79,6 +79,25 @@ namespace KnittedPicture.Game
                 });
             }
 
+            // Новая механика открылась — коротко рассказать о ней, по одной за заход на главную.
+            Tweens.Delay(Root, 0.7f, () =>
+            {
+                if (app.HasPopups || !(app.CurrentScreen is HomeScreen))
+                {
+                    return;
+                }
+
+                var feature = app.Progress.TakeFeatureIntro();
+                if (feature == null)
+                {
+                    return;
+                }
+
+                app.Save();
+                var (title, text) = FeatureText(feature.Value);
+                app.ShowPopup(new InfoPopup(app, title, text));
+            });
+
             // Вход на главную: значки событий по очереди «выпрыгивают», кнопка «Играть» мягко подрастает.
             // Только при входе с другого экрана — после получения награды главная не прыгает заново.
             if (app.PreviousScreen != typeof(HomeScreen))
@@ -91,6 +110,18 @@ namespace KnittedPicture.Game
         }
 
         private const float SeasonH = 52f;
+
+        private static (string title, string text) FeatureText(Feature feature) => feature switch
+        {
+            Feature.Season => (L.T("Вязальный сезон"),
+                L.T("Звёзды за картинки двигают тебя по дорожке из 30 ступеней. В конце сезона особая рамка и легендарный моток. Полоска сезона наверху главной.")),
+            Feature.Missions => (L.T("Задания дня"),
+                L.T("Каждый день три небольших задания. Выполни все и забери награду: значок «Задания» над кнопкой «Играть».")),
+            Feature.Pattern => (L.T("Узор дня"),
+                L.F("Каждый день новый узор, один для всех. Вяжи дни подряд: каждый {0}-й день моток в подарок.", DailyPattern.YarnEvery)),
+            _ => (L.T("Выставка недели"),
+                L.T("Каждую неделю новая тема. Выставь три картинки из альбома в рамках и получи медаль. Ищи во вкладке «Альбом»."))
+        };
 
         /// <summary>
         /// Полоска «Вязального сезона» под монетами: время года, ступень, очки до следующей и камень редкости
@@ -120,7 +151,6 @@ namespace KnittedPicture.Game
                 var claim = Ui.Button(strip, L.T("Забрать"), w - 106f, 9, 94, 34, Palette.Coin, Palette.CoinShadow, Palette.CoinInk, 14);
                 claim.OnClick(() => App.ShowPopup(new SeasonPopup(App, App.ShowHome)));
                 Ui.Sheen((RectTransform)claim.transform, 94f, 34f, 3.2f, 0.8f);
-                Ui.Badge(strip, w - 12f, 6f, waiting);
             }
             else
             {
@@ -551,12 +581,6 @@ namespace KnittedPicture.Game
             }
 
             items.Add((EventKind.Chest, Palette.CoinShadow, L.T("Сундук"), progress.CanOpenChest, App.ShowChest));
-            if (progress.MarathonOpen)
-            {
-                items.Add((EventKind.Marathon, Palette.CoinInk, L.T("Марафон"), progress.CanClaimMarathon(App.Today),
-                    () => App.ShowPopup(new MarathonPopup(App, App.ShowHome))));
-            }
-
             if (progress.PatternOpen)
             {
                 items.Add((EventKind.Pattern, Palette.Link, L.T("Узор дня"), !progress.PatternDone(App.Today), () =>
@@ -605,8 +629,8 @@ namespace KnittedPicture.Game
             {
                 // Ждёт — мягкий цветной ореол «дышит» за значком, сама иллюстрация покачивается.
                 var halo = tintCircle.rectTransform;
+                // Без красной точки: ореол и покачивание и так говорят «здесь ждёт», точки остаются только на вкладках.
                 Tweens.Run(halo, 1.8f, t => halo.localScale = Vector3.one * (1f + 0.14f * Ease.Bump(t)), null, null, 0f, true);
-                Ui.Badge(root, 62f, 4f, 0);
                 var rt = art;
                 Tweens.Run(rt, 1.6f, t => rt.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 4f) * 10f * Ease.Bump(t)), null, null, 0.4f, true);
             }

@@ -364,7 +364,6 @@ namespace KnittedPicture.Game
                     var go = Ui.Button(strip, L.T("Выставить"), cardW - 112, 14, 100, 36, Palette.Coin, Palette.CoinShadow, Palette.CoinInk, 14);
                     go.OnClick(() => App.ShowPopup(new ExhibitionPopup(App, App.RefreshScreen)));
                     Ui.Sheen((RectTransform)go.transform, 100f, 36f, 3.2f, 0.7f);
-                    Ui.Badge(strip, cardW - 8f, 6f, 0);
                 }
 
                 strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new ExhibitionPopup(App, App.RefreshScreen)));

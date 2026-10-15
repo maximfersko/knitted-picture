@@ -181,5 +181,8 @@ namespace KnittedPicture.Core
         public bool comebackPending;
         public int comebackDays;
         public bool comebackWarm;
+
+        /// <summary>День последней посылки: не чаще раза в две недели.</summary>
+        public int comebackLastDay = -100;
     }
 }

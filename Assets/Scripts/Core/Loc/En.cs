@@ -699,6 +699,13 @@ namespace KnittedPicture
             ["Зима"] = "Winter",
             ["Солнце"] = "Sun",
             ["Только за финал «Вязального сезона» своего времени года"] = "Only for the Knitting Season finale of its time of year",
+            ["Неделя: {0} из {1} петель, каждая веха +1 ступень"] = "Week: {0} of {1} stitches, each milestone gives +1 step",
+            ["Новая неделя через {0} {1}"] = "New week in {0} {1}",
+            ["Вязальный сезон"] = "Knitting Season",
+            ["Звёзды за картинки двигают тебя по дорожке из 30 ступеней. В конце сезона особая рамка и легендарный моток. Полоска сезона наверху главной."] = "Stars for pictures move you along a track of 30 steps. At the end of the season there is a special frame and a legendary yarn. The season bar is at the top of the home screen.",
+            ["Каждый день три небольших задания. Выполни все и забери награду: значок «Задания» над кнопкой «Играть»."] = "Three small missions every day. Complete them all and claim the reward: the Missions icon is above the Play button.",
+            ["Каждый день новый узор, один для всех. Вяжи дни подряд: каждый {0}-й день моток в подарок."] = "A new pattern every day, the same for everyone. Knit on consecutive days: every {0}th day brings a yarn.",
+            ["Каждую неделю новая тема. Выставь три картинки из альбома в рамках и получи медаль. Ищи во вкладке «Альбом»."] = "A new theme every week. Exhibit three album pictures in frames and earn a medal. Find it in the Album tab.",
         };
     }
 }
