@@ -322,10 +322,8 @@ namespace KnittedPicture.Game
                 const float stripH = 64f;
                 var strip = Ui.Card(content, "FramesStrip", 16, y, cardW, stripH, 20, Palette.Card, Palette.CardShadow, 3f, true);
                 var frame = progress.SelectedFrame;
-                var sample = Ui.Card(strip, "Sample", 12, 10, 44, 44, 10, Palette.Hex(frame.Face), Palette.CardShadow, 0f);
-                var mat = Ui.Box(sample, "Mat", 7, Palette.Hex(frame.Mat));
-                Ui.Place(mat.rectTransform, 4f, 4f, 36f, 36f);
-                Ui.Outline(sample, 10, Palette.Hex(frame.Edge), 1.5f).raycastTarget = false;
+                var sample = Ui.Place(Ui.Node(strip, "Sample"), 10, 8, 48, 48);
+                MiniPicture.Framed(sample, frame.Id, 48, App.Levels.Get(1));
                 // Заголовок в одну строку (ужимается, если не влезает), название рамки — под ним.
                 var title = Ui.Fit(Ui.Label(strip, L.T("Рамки для картинок"), 16, Palette.Ink, 68, 9, cardW - 192, 24, true, TextAnchor.MiddleLeft), 11);
                 title.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -335,7 +333,7 @@ namespace KnittedPicture.Game
                     title.fontSize = Mathf.Max(11, Mathf.FloorToInt(title.fontSize * (cardW - 192) / title.preferredWidth));
                 }
 
-                Ui.Fit(Ui.Label(strip, frame.Name, 13, Palette.Ink2, 68, 34, cardW - 192, 20, false, TextAnchor.MiddleLeft), 10);
+                Ui.Fit(Ui.Label(strip, frame.Name, 13, RarityStyle.Ink(frame.Rarity), 68, 34, cardW - 192, 20, false, TextAnchor.MiddleLeft), 10);
                 var open = Ui.Button(strip, L.T("Выбрать"), cardW - 112, 14, 100, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
                 open.OnClick(() => App.ShowPopup(new FramesPopup(App)));
                 strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new FramesPopup(App)));
@@ -660,8 +658,8 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Плитка мотка: фон по редкости (обычная — светлая, редкая — голубоватая с сиянием, эпическая — тёплая
-        /// с лучами), клубок на мягкой тени покачивается, звезда уровня, камень редкости. Не найден — бледный
+        /// Плитка мотка: фон по редкости (обычная — светлая, дальше — оттенок своей ступени: зелёный, синий,
+        /// фиолетовый, золото; от редкой — сияние, от эпической — лучи), клубок на мягкой тени покачивается, звезда уровня, камень редкости. Не найден — бледный
         /// силуэт с «?». «В работе» — зелёная рамка дышит. Тап — карточка мотка.
         /// </summary>
         private RectTransform YarnTile(RectTransform card, YarnInfo yarn, float x, float y, float cellW, float cellH, int index)
@@ -669,15 +667,13 @@ namespace KnittedPicture.Game
             var progress = App.Progress;
             var has = progress.HasYarn(yarn.Id);
             var back = !has ? Palette.WithAlpha(Palette.Surface, 0.6f)
-                : yarn.Rarity == Rarity.Epic ? Palette.Hex("#FFF4D9")
-                : yarn.Rarity == Rarity.Rare ? Palette.Hex("#EAF0F9")
-                : Palette.Surface;
+                : yarn.Rarity == Rarity.Common ? Palette.Surface
+                : Color.Lerp(RarityStyle.Soft(yarn.Rarity), Color.white, 0.35f);
             var cell = Ui.Box(card, "Yarn", 16, back, true).rectTransform;
             Ui.Place(cell, x, y, cellW, cellH);
             var border = !has ? Palette.WithAlpha(Palette.Line, 0.7f)
-                : yarn.Rarity == Rarity.Epic ? Palette.WithAlpha(Palette.Coin, 0.7f)
-                : yarn.Rarity == Rarity.Rare ? Palette.WithAlpha(Palette.Link, 0.35f)
-                : Palette.Line;
+                : yarn.Rarity == Rarity.Common ? Palette.Line
+                : Palette.WithAlpha(RarityStyle.Color(yarn.Rarity), yarn.Rarity >= Rarity.Epic ? 0.7f : 0.4f);
             Ui.Outline(cell, 16, border, 1.5f);
 
             const float ballY = 46f;
@@ -735,29 +731,9 @@ namespace KnittedPicture.Game
             return cell;
         }
 
-        /// <summary>Плашка редкости: огранённый камень (дымчатый, аметист, топаз) и подпись цветом редкости.</summary>
-        public static void RarityChip(RectTransform parent, Rarity rarity, float cx, float cy, float maxW = 0f)
-        {
-            var back = rarity == Rarity.Common ? Palette.Track : rarity == Rarity.Rare ? Palette.Hex("#E1EAF8") : Palette.CoinSoft;
-            var text = YarnCatalog.RarityName(rarity);
-            var chip = Ui.Box(parent, "Rarity", 10, back).rectTransform;
-            var label = Ui.Label(chip, text, 11, YarnView.RarityColor(rarity), true, TextAnchor.MiddleLeft);
-            label.horizontalOverflow = HorizontalWrapMode.Overflow;
-            const float gem = 16f;
-            var w = Mathf.Max(text.Length * 6.6f, label.preferredWidth) + gem + 16f;
-            if (maxW > 0f && w > maxW)
-            {
-                // «эпическая» не вылезает за узкую плитку: плашка по ширине плитки, текст ужимается.
-                w = maxW;
-                label.horizontalOverflow = HorizontalWrapMode.Wrap;
-                Ui.Fit(label, 8);
-            }
-
-            Ui.PlaceCenter(chip, cx, cy, w, 20);
-            var icon = Ui.Image(chip, "Gem", Art2.Gem(rarity), Color.white);
-            Ui.PlaceCenter(icon.rectTransform, 5f + gem / 2f, 9.5f, gem, gem);
-            Ui.Place(label.rectTransform, 6f + gem, 0f, w - gem - 10f, 20f);
-        }
+        /// <summary>Плашка редкости пряжи (см. RarityStyle.Chip).</summary>
+        public static void RarityChip(RectTransform parent, Rarity rarity, float cx, float cy, float maxW = 0f) =>
+            RarityStyle.Chip(parent, rarity, cx, cy, maxW);
 
         // ---------- Достижения ----------
 
@@ -843,9 +819,18 @@ namespace KnittedPicture.Game
                 Tweens.Run(glowRt, 2.2f, t => glowRt.localScale = Vector3.one * (0.9f + 0.14f * Ease.Bump(t)), null, null, 0f, true);
             }
 
+            // Кольцо цвета редкости за медалью и камень редкости у её края: видно, насколько веха ценная.
+            if (a.Rarity != Rarity.Common)
+            {
+                var halo = Ui.Image(row, "RarityRing", Art.Ring, Palette.WithAlpha(RarityStyle.Color(a.Rarity), claimed || can ? 0.6f : 0.35f));
+                Ui.PlaceCenter(halo.rectTransform, 36, rowH / 2f, 62, 62);
+            }
+
             var cup = Ui.Image(row, "Trophy", Art2.Medal(Art2.BadgeOf(a), can || claimed), Palette.WithAlpha(Color.white, can || claimed ? 1f : 0.85f));
             var cupRt = cup.rectTransform;
             Ui.PlaceCenter(cupRt, 36, rowH / 2f, 56, 56);
+            var gem = Ui.Image(row, "RarityGem", Art2.Gem(a.Rarity), Color.white);
+            Ui.PlaceCenter(gem.rectTransform, 16, rowH / 2f + 20f, 18, 18);
             if (can)
             {
                 // Кубок, который ждёт, раз в пару секунд подмигивает искрой и чуть подпрыгивает.

@@ -20,6 +20,7 @@ namespace KnittedPicture.ArtPreview
             Export(Path.Combine(dir, "sprites"));
             Meta(dir);
             Badges(dir);
+            Frames(dir);
         }
 
         /// <summary>Старый дизайн, детальнее: картинка из вязаных клеток, ткань, искры.</summary>
@@ -314,6 +315,23 @@ namespace KnittedPicture.ArtPreview
             }
 
             Png.Save(img, Path.Combine(dir, "badges.png"));
+        }
+
+        /// <summary>Рамки альбома: все стили в ряд, крупно и в размере плитки.</summary>
+        private static void Frames(string dir)
+        {
+            const int cell = 230;
+            var img = new Raster(5 * cell + 20, 2 * cell + 20 + 90);
+            Png.Fill(img, Rgba.Hex("#F3F5F8"));
+            for (var i = 0; i < FrameRaster.Styles; i++)
+            {
+                var frame = FrameRaster.Frame(i);
+                Png.Put(img, frame, 10 + (i % 5) * cell, 100 + (1 - i / 5) * cell, 216, 216);
+                // В размере плитки альбома (около 64 точек, ×1.2 для плотности экрана).
+                Png.Put(img, frame, 10 + i * 115, 10, 78, 78);
+            }
+
+            Png.Save(img, Path.Combine(dir, "frames.png"));
         }
 
         /// <summary>Мета: шкатулка (закрытая), подарок, монета, пяльцы с вязаным сердечком.</summary>

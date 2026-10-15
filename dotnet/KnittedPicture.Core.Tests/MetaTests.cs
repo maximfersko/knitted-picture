@@ -10,6 +10,33 @@ namespace KnittedPicture.Core.Tests
         private static ProgressService Fresh() => new ProgressService(new PlayerProgress(), levelCount: 15);
 
         [Fact]
+        public void Rarity_ladder_covers_every_tier_and_grows_rarer()
+        {
+            var total = 0f;
+            var previous = 101f;
+            foreach (var tier in Rarities.All)
+            {
+                Assert.Contains(YarnCatalog.All, y => y.Rarity == tier);
+                var percent = YarnCatalog.TierPercent(tier);
+                Assert.True(percent > 0f && percent < previous, tier + ": " + percent);
+                previous = percent;
+                total += percent;
+            }
+
+            Assert.InRange(total, 99.9f, 100.1f);
+
+            // Рамки: дороже — не дешевле по редкости; есть и обычные, и легендарная.
+            for (var i = 1; i < AlbumFrames.All.Length; i++)
+            {
+                Assert.True(AlbumFrames.All[i].Rarity >= AlbumFrames.All[i - 1].Rarity);
+                Assert.True(AlbumFrames.All[i].Price > AlbumFrames.All[i - 1].Price);
+            }
+
+            Assert.Equal(Rarity.Legendary, AlbumFrames.All[AlbumFrames.All.Length - 1].Rarity);
+            Assert.All(Achievements.All, a => Assert.True(System.Enum.IsDefined(typeof(Rarity), a.Rarity)));
+        }
+
+        [Fact]
         public void Rescue_price_grows_within_a_level_and_stock_is_used_first()
         {
             Assert.Equal(Economy.Price(BoosterType.Slot), Economy.RescuePrice(BoosterType.Slot, 0));
@@ -148,7 +175,7 @@ namespace KnittedPicture.Core.Tests
             var progress = Fresh();
             progress.Data.yarnsSinceEpic = YarnCatalog.EpicPity;
             var yarn = progress.RollYarn(new Random(3));
-            Assert.Equal(Rarity.Epic, YarnCatalog.All[yarn].Rarity);
+            Assert.True(YarnCatalog.All[yarn].Rarity >= Rarity.Epic);
             Assert.Equal(0, progress.Data.yarnsSinceEpic);
         }
 
@@ -322,7 +349,7 @@ namespace KnittedPicture.Core.Tests
                 if (contents.Big)
                 {
                     Assert.Equal(1, contents.BoosterCount);
-                    Assert.Contains(contents.Yarns, y => YarnCatalog.All[y].Rarity != Rarity.Common);
+                    Assert.Contains(contents.Yarns, y => YarnCatalog.All[y].Rarity >= Rarity.Rare);
                 }
             }
 

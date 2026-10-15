@@ -408,9 +408,12 @@ namespace KnittedPicture.Game
                 var type = options[i];
                 var (_, visual, _, _) = AddCard(i, options.Length, i * 0.12f);
                 var w = CardW;
-                var circle = Ui.Image(visual, "Back", Art.Circle, Palette.PrimarySoft);
+                var rarity = Economy.RarityOf(type);
+                var circle = Ui.Image(visual, "Back", Art.Circle, RarityStyle.Soft(rarity));
                 Ui.PlaceCenter(circle.rectTransform, w / 2f, 46, 60, 60);
-                Ui.IconImage(visual, BoosterInfo.Icon(type), Palette.Primary, w / 2f, 46, 32);
+                Ui.IconImage(visual, BoosterInfo.Icon(type), RarityStyle.Ink(rarity), w / 2f, 46, 32);
+                var gem = Ui.Image(visual, "Gem", Art2.Gem(rarity), Color.white);
+                Ui.PlaceCenter(gem.rectTransform, w / 2f + 24f, 68, 18, 18);
                 Ui.Fit(Ui.Label(visual, BoosterInfo.Name(type), 15, Palette.Ink, 6, 82, w - 12, 22), 11);
                 var chip = Ui.Box(visual, "Count", 11, Palette.Surface).rectTransform;
                 Ui.PlaceCenter(chip, w / 2f, 116, 44, 22);
@@ -530,9 +533,7 @@ namespace KnittedPicture.Game
         }
 
         private static (Color tint, Color ink) RarityTint(Rarity rarity) =>
-            rarity == Rarity.Common ? (Palette.Surface, Palette.Ink3)
-            : rarity == Rarity.Rare ? (Palette.Hex("#E1EAF8"), Palette.Link)
-            : (Palette.CoinSoft, Palette.CoinShadow);
+            rarity == Rarity.Common ? (Palette.Surface, Palette.Ink3) : (RarityStyle.Soft(rarity), RarityStyle.Ink(rarity));
 
         private static string SetOf(int yarn)
         {
@@ -605,7 +606,7 @@ namespace KnittedPicture.Game
             var content = Ui.Scroll(Root, 0, 64, W, h);
             var y = 6f;
             y = BuildChest(content, y) + 28f;
-            y = BuildStock(content, y) + 16f;
+            y = BuildPrizes(content, y) + 16f;
             content.sizeDelta = new Vector2(W, Mathf.Max(y + 24f, h));
         }
 
@@ -743,45 +744,105 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Запасы — плитками в ряд: значок, сколько есть и название. Закрытые — замок и уровень.
-        /// Что делает бустер — по тапу на плитку, а не строкой мелкого текста под каждым.
+        /// Возможный выигрыш этого сундука — честно, как требуют магазины для случайных наград: сколько монет,
+        /// из каких бустеров будет выбор (закрытые — с уровнем) и шанс каждой редкости мотка. У большого
+        /// сундука — гарантия: хотя бы один моток редкий или лучше. Тап по бустеру — что он делает.
         /// </summary>
-        private float BuildStock(RectTransform content, float y)
+        private float BuildPrizes(RectTransform content, float y)
         {
             var progress = App.Progress;
+            var big = progress.NextChestBig;
+            var cardW = W - 32f;
+            Ui.Label(content, L.T("Возможный выигрыш"), 18, Palette.Ink, 20, y, cardW, 26, true, TextAnchor.MiddleLeft);
+            y += 32f;
+
             var types = (BoosterType[])Enum.GetValues(typeof(BoosterType));
-            Ui.Label(content, L.T("Запасы"), 18, Palette.Ink, 20, y, W - 40, 26, true, TextAnchor.MiddleLeft);
-            y += 34f;
-            const float gap = 10f;
-            const float tileH = 104f;
-            var tileW = (W - 32f - gap * (types.Length - 1)) / types.Length;
+            const float tileH = 92f;
+            const float rowH = 30f;
+            var tiers = Rarities.All;
+            var cardH = 16f + 44f + 18f + 30f + tileH + 18f + 30f + tiers.Length * rowH + (big ? 30f : 0f) + 12f;
+            var card = Ui.Card(content, "Prizes", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
+            var cy = 16f;
+
+            // Монеты: сразу, без выбора.
+            Ui.Coin(card, 38, cy + 22, 30);
+            Ui.Label(card, L.T("Монеты"), 16, Palette.Ink, 64, cy, cardW - 180, 44, true, TextAnchor.MiddleLeft);
+            var range = Chest.CoinRange(big);
+            Ui.Label(card, $"{range.Min}–{range.Max}", 18, Palette.CoinInk, cardW - 136, cy, 120, 44, true, TextAnchor.MiddleRight);
+            cy += 44f + 8f;
+            Divider(card, cardW, cy);
+            cy += 10f;
+
+            // Бустеры: один на выбор из трёх открытых.
+            Ui.Label(card, L.T("Бустер на выбор"), 15, Palette.Ink, 20, cy, cardW - 40, 24, true, TextAnchor.MiddleLeft);
+            cy += 30f;
+            const float gap = 8f;
+            var tileW = (cardW - 32f - gap * (types.Length - 1)) / types.Length;
             for (var i = 0; i < types.Length; i++)
             {
                 var type = types[i];
                 var unlocked = progress.IsUnlocked(type, progress.CurrentLevel);
-                var stock = progress.Stock(type);
-                var tile = Ui.Card(content, type.ToString(), 16 + i * (tileW + gap), y, tileW, tileH, 20, Palette.Card, Palette.CardShadow, 3f, true);
-                var circle = Ui.Image(tile, "Back", Art.Circle, unlocked ? Palette.PrimarySoft : Palette.Track);
-                Ui.PlaceCenter(circle.rectTransform, tileW / 2f, 36, 48, 48);
-                Ui.IconImage(tile, unlocked ? BoosterInfo.Icon(type) : Icon.Lock, unlocked ? Palette.Primary : Palette.Ink3, tileW / 2f, 36, 24);
+                var rarity = Economy.RarityOf(type);
+                var tile = Ui.Box(card, type.ToString(), 16, unlocked ? RarityStyle.Soft(rarity) : Palette.Surface, true).rectTransform;
+                Ui.Place(tile, 16 + i * (tileW + gap), cy, tileW, tileH);
+                var circle = Ui.Image(tile, "Back", Art.Circle, unlocked ? Palette.Card : Palette.Track);
+                Ui.PlaceCenter(circle.rectTransform, tileW / 2f, 32, 44, 44);
+                Ui.IconImage(tile, unlocked ? BoosterInfo.Icon(type) : Icon.Lock, unlocked ? RarityStyle.Ink(rarity) : Palette.Ink3, tileW / 2f, 32, 22);
                 if (unlocked)
                 {
-                    var chip = Ui.Box(tile, "Count", 11, stock > 0 ? Palette.Ink : Palette.Inactive).rectTransform;
-                    Ui.PlaceCenter(chip, tileW / 2f + 22f, 16, 34, 22);
-                    Ui.Label(chip, "×" + stock, 12, Color.white, 0, 0, 34, 22);
+                    var gem = Ui.Image(tile, "Gem", Art2.Gem(rarity), Color.white);
+                    Ui.PlaceCenter(gem.rectTransform, tileW / 2f + 19f, 48, 16, 16);
                 }
 
-                Ui.Fit(Ui.Label(tile, unlocked ? BoosterInfo.Name(type) : L.F("ур. {0}", Economy.UnlockLevel(type)), 13,
-                    unlocked ? Palette.Ink : Palette.Ink3, 4, 68, tileW - 8, 28, unlocked), 9).lineSpacing = 0.85f;
+                Ui.Fit(Ui.Label(tile, unlocked ? BoosterInfo.Name(type) : L.F("ур. {0}", Economy.UnlockLevel(type)), 12,
+                    unlocked ? Palette.Ink : Palette.Ink3, 4, 58, tileW - 8, 28, unlocked), 9).lineSpacing = 0.85f;
 
                 var target = type;
                 tile.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, BoosterInfo.Name(target),
                     App.Progress.IsUnlocked(target, App.Progress.CurrentLevel)
-                        ? BoosterInfo.Description(target)
+                        ? L.F("{0}. Редкость: {1}", BoosterInfo.Description(target), Rarities.Name(Economy.RarityOf(target), Gender.Masculine))
                         : L.F("{0}. Откроется на уровне {1}", BoosterInfo.Description(target), Economy.UnlockLevel(target)))));
             }
 
-            return y + tileH;
+            cy += tileH + 10f;
+            Divider(card, cardW, cy);
+            cy += 10f;
+
+            // Мотки: один на выбор из трёх; шанс каждой редкости — у каждого из трёх мотков.
+            Ui.Label(card, L.T("Моток на выбор"), 15, Palette.Ink, 20, cy, cardW - 150, 24, true, TextAnchor.MiddleLeft);
+            Ui.Fit(Ui.Label(card, L.T("шанс у каждого"), 12, Palette.Ink3, cardW - 150, cy, 130, 24, false, TextAnchor.MiddleRight), 9);
+            cy += 30f;
+            const float nameW = 112f;
+            const float pctW = 46f;
+            var barX = 20f + 22f + nameW;
+            var barW = cardW - barX - pctW - 24f;
+            foreach (var tier in tiers)
+            {
+                var percent = YarnCatalog.TierPercent(tier);
+                var gem = Ui.Image(card, "Gem", Art2.Gem(tier), Color.white);
+                Ui.PlaceCenter(gem.rectTransform, 30, cy + rowH / 2f, 18, 18);
+                var name = Rarities.Name(tier);
+                Ui.Fit(Ui.Label(card, char.ToUpper(name[0]) + name.Substring(1), 13, RarityStyle.Ink(tier), 44, cy, nameW, rowH, true, TextAnchor.MiddleLeft), 9);
+                Ui.ProgressBar(card, barX, cy + rowH / 2f - 4f, barW, 8, Mathf.Max(0.03f, percent / 50f), RarityStyle.Color(tier));
+                var text = percent < 1f ? "<1%" : Mathf.RoundToInt(percent) + "%";
+                Ui.Label(card, text, 13, Palette.Ink2, cardW - pctW - 20f, cy, pctW, rowH, true, TextAnchor.MiddleRight);
+                cy += rowH;
+            }
+
+            if (big)
+            {
+                var note = Ui.Label(card, L.T("Большой сундук: хотя бы один моток редкий или лучше"), 12, Palette.CoinInk, 20, cy + 4f, cardW - 40, 22,
+                    true, TextAnchor.MiddleLeft);
+                Ui.Fit(note, 9);
+            }
+
+            return y + cardH;
+        }
+
+        private static void Divider(RectTransform card, float cardW, float y)
+        {
+            var line = Ui.Box(card, "Divider", 1, Palette.Line);
+            Ui.Place(line.rectTransform, 20, y, cardW - 40, 1.5f);
         }
     }
 }

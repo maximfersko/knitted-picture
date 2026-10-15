@@ -6,8 +6,8 @@ using UnityEngine;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Рамки для картинок альбома: сетка 3 × 4 с образцом (сердечко из первого уровня в этой рамке), названием
-    /// и кнопкой — «Выбрана», «Выбрать» или цена. Купленная рамка сразу выбирается. Монеты уходят навсегда,
+    /// Рамки для картинок альбома: сетка 3 × 4 с образцом (сердечко из первого уровня в этой рамке — у каждой
+    /// свой узор и форма), названием, плашкой редкости и кнопкой — «Выбрана», «Выбрать» или цена. Купленная рамка сразу выбирается. Монеты уходят навсегда,
     /// на сложность рамка не влияет: это «сток» монет без давления (см. docs/ECONOMY.md).
     /// </summary>
     public sealed class FramesPopup : Popup
@@ -24,8 +24,8 @@ namespace KnittedPicture.Game
             const int columns = 3;
             const float gap = 10f;
             var cellW = Mathf.Floor((Inner - gap * (columns - 1)) / columns);
-            var preview = Mathf.Min(72f, cellW - 16f);
-            var cellH = preview + 74f;
+            var preview = Mathf.Min(84f, cellW - 12f);
+            var cellH = preview + 100f;
             var sample = app.Levels.Get(1);
             var frames = AlbumFrames.All;
             var top = Cursor;
@@ -50,22 +50,22 @@ namespace KnittedPicture.Game
             var owned = progress.FrameOwned(frame.Id);
             var selected = progress.SelectedFrame.Id == frame.Id;
 
-            // Образец: багет, паспарту, кромка и картинка — так же, как плитка альбома.
+            // Образец: рамка со своим узором, в проёме — картинка; выбранная — в зелёном кольце.
             var px = x + (w - preview) / 2f;
-            var tile = Ui.Card(Card, "Frame" + frame.Id, px, y, preview, preview, 14, Palette.Hex(frame.Face), Palette.CardShadow, 2f);
-            var mat = Ui.Box(tile, "Mat", 10, Palette.Hex(frame.Mat));
-            Ui.Place(mat.rectTransform, 4f, 4f, preview - 8f, preview - 8f);
-            Ui.Outline(tile, 14, Palette.Hex(frame.Edge), 1.5f).raycastTarget = false;
-            MiniPicture.Create(tile, sample, preview / 2f, preview / 2f, preview - 14f);
             if (selected)
             {
-                var ring = Ui.Outline(tile, 14, Palette.Primary, 3f);
-                ring.raycastTarget = false;
+                var ring = Ui.Image(Card, "Selected", Art.RoundRectOutline(16, 3), Palette.Primary);
+                ring.type = UnityEngine.UI.Image.Type.Sliced;
+                ring.pixelsPerUnitMultiplier = Art.Density;
+                Ui.Place(ring.rectTransform, px - 5f, y - 5f, preview + 10f, preview + 10f);
             }
 
-            Ui.Fit(Ui.Label(Card, frame.Name, 13, Palette.Ink, x, y + preview + 6f, w, 18), 10);
+            var tile = Ui.Place(Ui.Node(Card, "Frame" + frame.Id), px, y, preview, preview);
+            MiniPicture.Framed(tile, frame.Id, preview, sample);
+            Ui.Fit(Ui.Label(Card, frame.Name, 13, Palette.Ink, x, y + preview + 8f, w, 18), 10);
+            RarityStyle.Chip(Card, frame.Rarity, x + w / 2f, y + preview + 38f, w - 4f);
 
-            var by = y + preview + 28f;
+            var by = y + preview + 56f;
             const float bh = 34f;
             if (selected)
             {

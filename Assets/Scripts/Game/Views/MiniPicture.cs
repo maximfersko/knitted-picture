@@ -94,6 +94,17 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>Картинка в рамке альбома frameId: рамка на весь size, картинка в проёме. Ловит тапы.</summary>
+        public static void Framed(RectTransform root, int frameId, float size, LevelData? level)
+        {
+            var image = Ui.Image(root, "Frame", Art2.Frame(frameId), Color.white, true);
+            Ui.Place(image.rectTransform, 0, 0, size, size);
+            if (level != null)
+            {
+                Create(root, level, size / 2f, size / 2f, size * FrameRaster.Opening);
+            }
+        }
+
         /// <summary>Плитка альбома: готовая картинка, текущая (бледная, в рамке) или замок.</summary>
 
         public static Tap Tile(RectTransform parent, LevelData level, TileState state, float x, float y, float size, int stars = 0)
@@ -102,17 +113,17 @@ namespace KnittedPicture.Game
             // в зелёной рамке; закрытая — силуэт, чтобы было любопытно, что там.
             // Багет готовой картинки — выбранная рамка альбома (AlbumFrames, покупается за монеты).
             var frame = App.Instance != null ? App.Instance.Progress.SelectedFrame : AlbumFrames.Get(0);
-            var face = state == TileState.Done ? Palette.Hex(frame.Face) : state == TileState.Locked ? Palette.Track : Palette.Surface;
-            var root = Ui.Card(parent, "Tile" + level.id, x, y, size, size, 14, face, Palette.CardShadow, state == TileState.Locked ? 0f : 2f, true);
+            var done = state == TileState.Done;
+            var face = state == TileState.Locked ? Palette.Track : Palette.Surface;
+            var root = done
+                ? Ui.Place(Ui.Node(parent, "Tile" + level.id), x, y, size, size)
+                : Ui.Card(parent, "Tile" + level.id, x, y, size, size, 14, face, Palette.CardShadow, state == TileState.Locked ? 0f : 2f, true);
             var inner = size - 14f;
             switch (state)
             {
                 case TileState.Done:
-                    var mat = Ui.Box(root, "Mat", 10, Palette.Hex(frame.Mat));
-                    Ui.Place(mat.rectTransform, 4f, 4f, size - 8f, size - 8f);
-                    var bevel = Ui.Outline(root, 14, Palette.Hex(frame.Edge), 1.5f);
-                    bevel.raycastTarget = false;
-                    Create(root, level, size / 2f, size / 2f, inner);
+                    // Рамка рисуется растром целиком (узор, форма, паспарту), картинка — в её проёме.
+                    Framed(root, frame.Id, size, level);
                     break;
                 case TileState.Current:
                     Create(root, level, size / 2f, size / 2f, inner, faded: true);

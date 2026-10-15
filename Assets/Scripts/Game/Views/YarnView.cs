@@ -28,13 +28,13 @@ namespace KnittedPicture.Game
 
             // Блёстки, редкая и эпическая пряжа: искры-звёздочки по очереди вспыхивают, поворачиваясь, и гаснут.
             // У редкой их две, голубоватые; у эпической и блестящей — четыре, тёплые или цвета блёсток.
-            if (yarn.Look == YarnLook.Sparkle || yarn.Rarity != Rarity.Common)
+            if (yarn.Look == YarnLook.Sparkle || yarn.Rarity >= Rarity.Rare)
             {
                 var all = new[] { (0.2f, 0.22f, 0.3f), (0.84f, 0.3f, 0.24f), (0.68f, 0.86f, 0.26f), (0.3f, 0.74f, 0.18f) };
                 var few = yarn.Look != YarnLook.Sparkle && yarn.Rarity == Rarity.Rare;
                 var spots = few ? new[] { all[0], all[2] } : all;
                 var tint = yarn.Look == YarnLook.Sparkle ? Color.Lerp(second, Color.white, 0.35f)
-                    : yarn.Rarity == Rarity.Rare ? Palette.Hex("#D6ECFF") : Palette.Hex("#FFE27A");
+                    : RarityStyle.Spark(yarn.Rarity);
                 for (var i = 0; i < spots.Length; i++)
                 {
                     var (x, y, s) = spots[i];
@@ -57,9 +57,9 @@ namespace KnittedPicture.Game
 
         /// <summary>
         /// Свечение редкости за мотком (ставится до мотка, чтобы лечь под него). По практике игр с редкостью эффект
-        /// нарастает с ценностью, цвет дублируется камнем и подписью: обычная — без эффекта; редкая — голубое
-        /// дышащее сияние, волна света раз в несколько секунд и две искры на орбите; эпическая — тёплое сияние,
-        /// медленные лучи, волна и три искры. Без вспышек на весь экран; «Меньше движения» всё останавливает.
+        /// нарастает с ценностью, цвет дублируется камнем и подписью: обычная — без эффекта; необычная — тихое
+        /// зелёное сияние; редкая — синее дышащее сияние, волна света раз в несколько секунд и две искры на орбите;
+        /// эпическая — фиолетовое сияние, медленные лучи, волна и три искры; легендарная — золото и четыре искры. Без вспышек на весь экран; «Меньше движения» всё останавливает.
         /// </summary>
         public static RectTransform? Aura(RectTransform parent, Rarity rarity, float cx, float cy, float size, float delay = 0f)
         {
@@ -68,8 +68,11 @@ namespace KnittedPicture.Game
                 return null;
             }
 
-            var epic = rarity == Rarity.Epic;
-            var color = epic ? Palette.Coin : Palette.Hex("#4CA6F0");
+            // Необычная — только тихое сияние; редкая — ещё волна и искры; эпическая и легендарная — и лучи.
+            var epic = rarity >= Rarity.Epic;
+            var legendary = rarity == Rarity.Legendary;
+            var quiet = rarity == Rarity.Uncommon;
+            var color = RarityStyle.Color(rarity);
             var root = Ui.PlaceCenter(Ui.Node(parent, "Aura"), cx, cy, size, size);
 
             if (epic)
@@ -81,10 +84,10 @@ namespace KnittedPicture.Game
             }
 
             // Сияние дышит: чуть растёт и ярчает.
-            var glow = Ui.Image(root, "Glow", Art.Glow, Palette.WithAlpha(color, epic ? 0.42f : 0.34f));
+            var baseAlpha = legendary ? 0.5f : epic ? 0.42f : quiet ? 0.24f : 0.34f;
+            var glow = Ui.Image(root, "Glow", Art.Glow, Palette.WithAlpha(color, baseAlpha));
             var glowRt = glow.rectTransform;
             Ui.PlaceCenter(glowRt, size / 2f, size / 2f, size * 1.75f, size * 1.75f);
-            var baseAlpha = epic ? 0.42f : 0.34f;
             Tweens.Run(glowRt, 2.6f, t =>
             {
                 var b = Ease.Bump(t);
@@ -93,6 +96,11 @@ namespace KnittedPicture.Game
             }, null, null, delay, true);
 
             // Волна: светлое кольцо расходится от мотка и гаснет («Меньше движения» — без волны: стоячее кольцо лишнее).
+            if (quiet)
+            {
+                return root;
+            }
+
             var wave = Ui.Image(root, "Wave", Art.Ring, Palette.WithAlpha(color, 0f));
             wave.enabled = !Tweens.Calm;
             var waveRt = wave.rectTransform;
@@ -106,8 +114,8 @@ namespace KnittedPicture.Game
 
             // Искры на орбите: медленно обходят моток и по очереди вспыхивают.
             var orbit = Ui.PlaceCenter(Ui.Node(root, "Orbit"), size / 2f, size / 2f, size, size);
-            var count = epic ? 3 : 2;
-            var sparkColor = epic ? Palette.Hex("#FFF1A8") : Palette.Hex("#D6ECFF");
+            var count = legendary ? 4 : epic ? 3 : 2;
+            var sparkColor = RarityStyle.Spark(rarity);
             for (var i = 0; i < count; i++)
             {
                 var angle = i * Mathf.PI * 2f / count + 0.6f;
@@ -128,7 +136,6 @@ namespace KnittedPicture.Game
             return root;
         }
 
-        public static Color RarityColor(Rarity rarity) =>
-            rarity == Rarity.Common ? Palette.Ink2 : rarity == Rarity.Rare ? Palette.Link : Palette.CoinShadow;
+        public static Color RarityColor(Rarity rarity) => rarity == Rarity.Common ? Palette.Ink2 : RarityStyle.Ink(rarity);
     }
 }

@@ -542,12 +542,12 @@ namespace KnittedPicture.Core
             for (var i = 0; i < weights.Length; i++)
             {
                 var rarity = YarnCatalog.All[i].Rarity;
-                weights[i] = epicOnly && rarity != Rarity.Epic ? 0 : YarnCatalog.RollWeight(rarity, HasYarn(i));
+                weights[i] = epicOnly && rarity < Rarity.Epic ? 0 : YarnCatalog.RollWeight(rarity, HasYarn(i));
                 total += weights[i];
             }
 
             var pick = PickWeighted(weights, total, rng);
-            _data.yarnsSinceEpic = YarnCatalog.All[pick].Rarity == Rarity.Epic ? 0 : _data.yarnsSinceEpic + 1;
+            _data.yarnsSinceEpic = YarnCatalog.All[pick].Rarity >= Rarity.Epic ? 0 : _data.yarnsSinceEpic + 1;
             return pick;
         }
 

@@ -30,13 +30,6 @@ namespace KnittedPicture.Core
         Gold,
     }
 
-    public enum Rarity
-    {
-        Common,
-        Rare,
-        Epic,
-    }
-
     public sealed class YarnInfo
     {
         public YarnInfo(int id, string name, string description, string hex, string hex2, YarnLook look, Rarity rarity)
@@ -105,21 +98,21 @@ namespace KnittedPicture.Core
         public static readonly YarnInfo[] All =
         {
             new YarnInfo(0, "Меринос", "Мягкая шерсть тонкорунных овец", "#F6E7D2", "#F6E7D2", YarnLook.Plain, Rarity.Common),
-            new YarnInfo(1, "Альпака", "Тёплая и пушистая, из Анд", "#C9A27E", "#E2C6A6", YarnLook.Melange, Rarity.Common),
-            new YarnInfo(2, "Мохер", "Воздушная, с длинным ворсом", "#E7B6D9", "#F6DDF0", YarnLook.Melange, Rarity.Rare),
+            new YarnInfo(1, "Альпака", "Тёплая и пушистая, из Анд", "#C9A27E", "#E2C6A6", YarnLook.Melange, Rarity.Uncommon),
+            new YarnInfo(2, "Мохер", "Воздушная, с длинным ворсом", "#E7B6D9", "#F6DDF0", YarnLook.Melange, Rarity.Uncommon),
             new YarnInfo(3, "Кашемир", "Самая нежная шерсть", "#B9A7E8", "#B9A7E8", YarnLook.Plain, Rarity.Epic),
             new YarnInfo(4, "Хлопок", "Лёгкий и прохладный", "#9FD8F5", "#9FD8F5", YarnLook.Plain, Rarity.Common),
             new YarnInfo(5, "Лён", "Прочный, с благородной фактурой", "#D8CBA4", "#BFAF84", YarnLook.Melange, Rarity.Common),
             new YarnInfo(6, "Бамбук", "Гладкий и блестящий", "#9BE0B4", "#D8F5E3", YarnLook.Sparkle, Rarity.Rare),
             new YarnInfo(7, "Шёлк", "Струится и переливается", "#FFB3B3", "#FFE1E1", YarnLook.Sparkle, Rarity.Epic),
-            new YarnInfo(8, "Букле", "С кудрявыми петельками", "#FFC23C", "#FFE08A", YarnLook.Melange, Rarity.Common),
+            new YarnInfo(8, "Букле", "С кудрявыми петельками", "#FFC23C", "#FFE08A", YarnLook.Melange, Rarity.Uncommon),
             new YarnInfo(9, "Меланж", "Три оттенка в одной нитке", "#6CB8FF", "#FF6FA5", YarnLook.Melange, Rarity.Rare),
             new YarnInfo(10, "Люрекс", "Нитка с блёстками", "#8B5CF6", "#FFD86B", YarnLook.Sparkle, Rarity.Rare),
             new YarnInfo(11, "Радужная", "Секционное крашение, вся радуга", "#FF6FA5", "#6CB8FF", YarnLook.Rainbow, Rarity.Epic),
             new YarnInfo(12, "Твид", "Тёплая шерсть с цветными крапинками", "#8A6E5A", "#E8A65A", YarnLook.Melange, Rarity.Common),
             new YarnInfo(13, "Ангора", "Пушистая, как облачко", "#FFE3EC", "#FFFFFF", YarnLook.Sparkle, Rarity.Rare),
-            new YarnInfo(14, "Пряжа-травка", "С длинными мягкими ворсинками", "#9BE0B4", "#2EBD7E", YarnLook.Melange, Rarity.Rare),
-            new YarnInfo(15, "Золотая нить", "Блестит, как ёлочная гирлянда", "#FFC23C", "#FFF1A8", YarnLook.Sparkle, Rarity.Epic),
+            new YarnInfo(14, "Пряжа-травка", "С длинными мягкими ворсинками", "#9BE0B4", "#2EBD7E", YarnLook.Melange, Rarity.Uncommon),
+            new YarnInfo(15, "Золотая нить", "Блестит, как ёлочная гирлянда", "#FFC23C", "#FFF1A8", YarnLook.Sparkle, Rarity.Legendary),
         };
 
         public static readonly YarnSet[] Sets =
@@ -145,9 +138,32 @@ namespace KnittedPicture.Core
             return Sets[0];
         }
 
-        /// <summary>Вес выпадения: обычная — часто, эпическая — редко.</summary>
-        /// <summary>Вес при розыгрыше: обычная 10, редкая 4, эпическая 1 (эпическая — около 5% розыгрышей).</summary>
-        public static int Weight(Rarity rarity) => rarity == Rarity.Common ? 10 : rarity == Rarity.Rare ? 4 : 1;
+        /// <summary>
+        /// Вес мотка при розыгрыше по редкости. Мотков: 4 обычных, 4 необычных, 4 редких, 3 эпических, 1 легендарный;
+        /// доли ступеней — около 49% / 30% / 16% / 4% / 1%, как в типичных играх с лестницей редкости.
+        /// </summary>
+        public static int Weight(Rarity rarity) => rarity switch
+        {
+            Rarity.Common => 25,
+            Rarity.Uncommon => 15,
+            Rarity.Rare => 8,
+            Rarity.Epic => 3,
+            _ => 2,
+        };
+
+        /// <summary>Доля ступени среди всех мотков при розыгрыше, в процентах (без поправки на найденные): для экрана сундука.</summary>
+        public static float TierPercent(Rarity rarity)
+        {
+            var total = 0;
+            var tier = 0;
+            foreach (var yarn in All)
+            {
+                total += Weight(yarn.Rarity);
+                tier += yarn.Rarity == rarity ? Weight(yarn.Rarity) : 0;
+            }
+
+            return total == 0 ? 0f : 100f * tier / total;
+        }
 
         /// <summary>
         /// Вес мотка с учётом того, есть ли он уже: ненайденные в полтора раза чаще (×3 против ×2).
@@ -167,7 +183,7 @@ namespace KnittedPicture.Core
 
         public const int DropPity = 4;
 
-        /// <summary>Двенадцать случайных мотков без эпического — следующий эпический.</summary>
+        /// <summary>Двенадцать случайных мотков без эпического или легендарного — следующий из них.</summary>
         public const int EpicPity = 12;
 
         /// <summary>Шанс мотка за новую картинку, в процентах. Сложный уровень и первые картинки — всегда.</summary>
@@ -181,10 +197,17 @@ namespace KnittedPicture.Core
             return System.Math.Min(100, DropBasePercent + DropStepPercent * dry);
         }
 
-        public static string RarityName(Rarity rarity) => rarity == Rarity.Common ? L.T("обычная") : rarity == Rarity.Rare ? L.T("редкая") : L.T("эпическая");
+        public static string RarityName(Rarity rarity) => Rarities.Name(rarity);
 
         /// <summary>Монеты за повторный моток, когда он уже максимального уровня.</summary>
-        public static int DuplicateCoins(Rarity rarity) => rarity == Rarity.Common ? 10 : rarity == Rarity.Rare ? 20 : 40;
+        public static int DuplicateCoins(Rarity rarity) => rarity switch
+        {
+            Rarity.Common => 10,
+            Rarity.Uncommon => 15,
+            Rarity.Rare => 20,
+            Rarity.Epic => 40,
+            _ => 80,
+        };
 
         // ---------- Характеристики ----------
 

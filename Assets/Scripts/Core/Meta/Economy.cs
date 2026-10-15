@@ -49,6 +49,17 @@ namespace KnittedPicture.Core
         }
 
         /// <summary>С какого уровня бустер доступен.</summary>
+        /// <summary>
+        /// Редкость бустера по силе: отмена хода — обычный, +1 место и +20 секунд — необычные, ножницы
+        /// (достать любой клубок) — редкий. Видна на карточках выбора в сундуке и в описании.
+        /// </summary>
+        public static Rarity RarityOf(BoosterType type) => type switch
+        {
+            BoosterType.Undo => Rarity.Common,
+            BoosterType.Scissors => Rarity.Rare,
+            _ => Rarity.Uncommon,
+        };
+
         public static int UnlockLevel(BoosterType type)
         {
             switch (type)

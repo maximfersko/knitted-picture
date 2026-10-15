@@ -132,7 +132,7 @@ namespace KnittedPicture.Game
                 Ui.Stretch(Ui.Image(sway, "Melange", Art.YarnBallLargeMelange, Palette.Hex(info.Hex2)).rectTransform);
             }
 
-            if (info != null && (info.Look == YarnLook.Sparkle || info.Rarity == Rarity.Epic))
+            if (info != null && (info.Look == YarnLook.Sparkle || info.Rarity >= Rarity.Epic))
             {
                 var spark = info.Look == YarnLook.Sparkle ? Palette.Hex(info.Hex2) : Palette.Coin;
                 var spots = new[] { (0.24f, 0.24f, 0.18f), (0.8f, 0.34f, 0.14f), (0.68f, 0.8f, 0.16f) };

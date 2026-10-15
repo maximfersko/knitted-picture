@@ -168,8 +168,7 @@ namespace KnittedPicture.Game
             Space(h + 16f);
         }
 
-        private static Color RaritySoft(Rarity rarity) =>
-            rarity == Rarity.Common ? Palette.Surface : rarity == Rarity.Rare ? Palette.Hex("#E1EAF8") : Palette.CoinSoft;
+        private static Color RaritySoft(Rarity rarity) => rarity == Rarity.Common ? Palette.Surface : RarityStyle.Soft(rarity);
 
         private static Color PerkSoft(YarnPerk perk) => Palette.CoinSoft;
 

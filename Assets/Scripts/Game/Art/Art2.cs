@@ -144,7 +144,7 @@ namespace KnittedPicture.Game
 
             Prefetch("trophyGold", () => IconRaster.Trophy(true));
             Prefetch("trophySilver", () => IconRaster.Trophy(false));
-            for (var tier = 0; tier < 3; tier++)
+            for (var tier = 0; tier < 5; tier++)
             {
                 var t = tier;
                 Prefetch("gem" + t, () => IconRaster.Gem(t));
@@ -161,6 +161,11 @@ namespace KnittedPicture.Game
             Prefetch("coin2", MetaRaster.Coin);
             Prefetch("gift2", MetaRaster.Gift);
             Prefetch("sparkle", KnitRaster.Sparkle);
+            for (var style = 0; style < FrameRaster.Styles; style++)
+            {
+                var st = style;
+                Prefetch("frame" + st, () => FrameRaster.Frame(st));
+            }
         }
 
         private static Texture2D Texture(string key, System.Func<Raster> draw, TextureWrapMode wrap, bool mips = true)
@@ -212,6 +217,9 @@ namespace KnittedPicture.Game
 
         public static Sprite Coin => Get("coin2", MetaRaster.Coin);
 
+        /// <summary>Рамка альбома со своим узором и формой (номер рамки = стиль), квадрат; проём — FrameRaster.Opening.</summary>
+        public static Sprite Frame(int style) => Get("frame" + style, () => FrameRaster.Frame(style));
+
         /// <summary>Бирка на ниточке для числа (петли клубка, цена и запас бустера). Белая — красится; 72×40, тело — правые 58.</summary>
         public static Sprite Tag => Get("tag", KnitRaster.Tag);
 
@@ -241,10 +249,10 @@ namespace KnittedPicture.Game
             }
         }
 
-        /// <summary>Камень редкости пряжи: дымчатый, сапфир, топаз.</summary>
+        /// <summary>Камень редкости: дымчатый кварц, изумруд, сапфир, аметист, топаз.</summary>
         public static Sprite Gem(Rarity rarity)
         {
-            var tier = rarity == Rarity.Epic ? 2 : rarity == Rarity.Rare ? 1 : 0;
+            var tier = (int)rarity;
             return Get("gem" + tier, () => IconRaster.Gem(tier));
         }
 

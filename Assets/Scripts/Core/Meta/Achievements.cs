@@ -32,6 +32,9 @@ namespace KnittedPicture.Core
         public Func<ProgressService, int> Value { get; }
 
         public Reward Reward { get; }
+
+        /// <summary>Редкость по трудности: первые шаги — обычные, весь альбом и вся пряжа — легендарные.</summary>
+        public Rarity Rarity => Achievements.RarityOf(Id);
     }
 
     /// <summary>
@@ -40,6 +43,16 @@ namespace KnittedPicture.Core
     /// </summary>
     public static class Achievements
     {
+        public static Rarity RarityOf(int id) => id switch
+        {
+            0 or 1 => Rarity.Common,
+            5 or 8 or 9 => Rarity.Uncommon,
+            10 or 12 => Rarity.Rare,
+            11 or 14 => Rarity.Epic,
+            13 or 15 => Rarity.Legendary,
+            _ => Rarity.Common,
+        };
+
         public static readonly AchievementInfo[] All =
         {
             new AchievementInfo(0, "Первая петля", "Довяжи первую картинку", 1, p => p.Data.completed.Count, Reward.CoinsOnly(10)),

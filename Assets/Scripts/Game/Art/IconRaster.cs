@@ -118,14 +118,16 @@ namespace KnittedPicture.Game
 
         /// <summary>
         /// Огранённый камень 48×48 для плашки редкости: площадка сверху, грани короны и павильона с разным светом,
-        /// искра-блик. tier: 0 — обычная (дымчатый кварц), 1 — редкая (сапфир), 2 — эпическая (янтарь-топаз).
+        /// искра-блик. tier — ступень редкости: 0 — дымчатый кварц, 1 — изумруд, 2 — сапфир, 3 — аметист, 4 — топаз.
         /// </summary>
         public static Raster Gem(int tier)
         {
             var color = tier switch
             {
-                2 => Rgba.Hex("#FFB320"),
-                1 => Rgba.Hex("#3B7BE0"),
+                4 => Rgba.Hex("#FFB320"),
+                3 => Rgba.Hex("#9B4FE0"),
+                2 => Rgba.Hex("#3B7BE0"),
+                1 => Rgba.Hex("#2FB35A"),
                 _ => Rgba.Hex("#9AA6C2"),
             };
             const float cx = 24f;
