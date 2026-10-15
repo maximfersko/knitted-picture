@@ -136,7 +136,7 @@ namespace KnittedPicture.Game
         {
             AddIcon(Icon.Gift, Palette.Danger, Palette.DangerSoft, 72);
             Ui.InfoButton(Card, CardWidth - 30, 30, "Как работает подарок",
-                "Подарки идут по кругу 7 дней и растут. Пропустишь день — не страшно: неделя продолжится с того же места. " +
+                "Подарки идут по кругу 7 дней и растут. Пропустишь день, не страшно: неделя продолжится с того же места. " +
                 "На 7-й день: 150 монет и моток пряжи.", 26);
             AddTitle("Подарок дня", 24);
 
@@ -305,7 +305,7 @@ namespace KnittedPicture.Game
             Ui.Label(Card, "Как получить звёзды", 14, Palette.Ink, 24, Cursor, Inner - 40, 20, true, TextAnchor.MiddleLeft);
             Ui.InfoButton(Card, 24 + Inner - 13, Cursor + 10, "Повтор уровня",
                 $"Повтор даёт +{KnittedPicture.Core.Economy.ReplayReward} монет. Сохраняется лучший результат по звёздам. " +
-                "Три звезды: пройти без бустеров и без спасения за одно прохождение.", 24);
+                "Три звезды: пройди уровень без бустеров и без спасения.", 24);
             Space(28f);
             const string third = "Без бустеров";
             StarRow(1, "Довязать картинку", stars >= 1);

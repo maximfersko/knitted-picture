@@ -330,7 +330,7 @@ namespace KnittedPicture.Core.Tests
         public void Mission_texts_read_naturally()
         {
             Assert.Equal("Пройди 2 уровня", DailyMissions.Text(MissionKind.Win, 2));
-            Assert.Equal("Пройди уровень на три звезды", DailyMissions.Text(MissionKind.ThreeStars, 1));
+            Assert.Equal("Пройди уровень на 3 звезды", DailyMissions.Text(MissionKind.ThreeStars, 1));
             Assert.Equal("Поймай 5 золотых петель", DailyMissions.Text(MissionKind.Gold, 5));
             Assert.Equal("Включи «Разгон» 3 раза", DailyMissions.Text(MissionKind.Rush, 3));
             Assert.Equal("Свяжи 200 петель", DailyMissions.Text(MissionKind.Stitches, 200));

@@ -12,9 +12,9 @@ namespace KnittedPicture.Game
         {
             switch (type)
             {
-                case BoosterType.Slot: return "+1 слот";
+                case BoosterType.Slot: return "+1 место";
                 case BoosterType.Scissors: return "Ножницы";
-                case BoosterType.Undo: return "Отменить";
+                case BoosterType.Undo: return "Отмена";
                 case BoosterType.Time: return "+20 секунд";
                 default: return string.Empty;
             }
@@ -24,10 +24,10 @@ namespace KnittedPicture.Game
         {
             switch (type)
             {
-                case BoosterType.Slot: return "Ещё одно место на станке, когда клубкам тесно";
-                case BoosterType.Scissors: return "Достают любой клубок с поля, даже из глубины, во льду или под замком, и срезают клубок со станка";
-                case BoosterType.Undo: return "Возвращает последний ход";
-                case BoosterType.Time: return "Отгоняет моль: +20 секунд к таймеру";
+                case BoosterType.Slot: return "Добавляет на станок ещё одно место до конца уровня";
+                case BoosterType.Scissors: return "Берут любой клубок с поля или срезают лишний со станка";
+                case BoosterType.Undo: return "Возвращает поле и станок к началу последнего хода";
+                case BoosterType.Time: return "Отгоняет моль и даёт ещё 20 секунд";
                 default: return string.Empty;
             }
         }
@@ -37,10 +37,10 @@ namespace KnittedPicture.Game
         {
             switch (type)
             {
-                case BoosterType.Slot: return "Ещё одно место на станке";
-                case BoosterType.Scissors: return "Достать любой клубок или срезать со станка";
+                case BoosterType.Slot: return "Добавить место на станке";
+                case BoosterType.Scissors: return "Взять или срезать любой клубок";
                 case BoosterType.Undo: return "Вернуть последний ход";
-                case BoosterType.Time: return "Отогнать моль, когда она близко";
+                case BoosterType.Time: return "Отогнать моль на 20 секунд";
                 default: return string.Empty;
             }
         }
@@ -474,7 +474,7 @@ namespace KnittedPicture.Game
                 }
 
                 armed = true;
-                resetLabel.text = "Точно стереть всё? Нажми ещё раз";
+                resetLabel.text = "Точно стереть всё? Тапни ещё раз";
                 Haptics.Play(Haptic.Medium);
             });
 
@@ -493,7 +493,7 @@ namespace KnittedPicture.Game
         {
             AddIcon(BoosterInfo.Icon(type), Palette.Ink, Palette.CoinSoft, 68);
             AddTitle("Не хватает монет", 24);
-            AddText($"{BoosterInfo.Name(type)} стоит {Economy.Price(type)}, у тебя {app.Progress.Coins}", 16, 1.6f);
+            AddText($"{BoosterInfo.Name(type)} стоит {Economy.Price(type)} монет, у тебя {app.Progress.Coins}", 16, 1.6f);
             AddPrimary("Получить за видео").OnClick(() =>
             {
                 Close();

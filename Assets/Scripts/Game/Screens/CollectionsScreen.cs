@@ -469,9 +469,9 @@ namespace KnittedPicture.Game
             }
 
             Ui.InfoButton(banner, cardW - 30, 26, "Пряжа и её бонусы",
-                "Моток выпадает за каждую новую картинку, из звёздного сундука и на 7-й день подарков. " +
-                $"С уровня {YarnCatalog.PerksFromLevel} один моток «в работе» даёт бонус: монеты за новую картинку или дороже золотые петли. " +
-                "Повтор поднимает уровень мотка (до 3), а на третьем уровне превращается в монеты. За полный набор дают награду.", 26);
+                "Мотки выпадают за новые картинки, в звёздном сундуке и на 7-й день подарков. " +
+                $"С уровня {YarnCatalog.PerksFromLevel} моток «в работе» даёт бонус: монеты за картинку или дороже золотые петли. " +
+                "Повтор поднимает уровень мотка до 3, дальше даёт монеты. Полный набор приносит награду.", 26);
             ActiveYarnStrip(banner, 12, 98, cardW - 24, () => App.ShowCollections(CollectionsTab.Yarn));
             y += bannerH + 16f;
 
@@ -918,7 +918,7 @@ namespace KnittedPicture.Game
                 done += progress.IsCompleted(id) ? 1 : 0;
             }
 
-            RewardStrip.Build(parent, x, y, w, $"Собери все {collection.Count}: монеты, слот и моток", (float)done / collection.Count,
+            RewardStrip.Build(parent, x, y, w, $"Собери все {collection.Count}: монеты, место и моток", (float)done / collection.Count,
                 progress.CanClaimCollection(index), progress.IsCollectionClaimed(index), "Коллекция собрана!", () => Claim(app, index, refresh));
         }
 

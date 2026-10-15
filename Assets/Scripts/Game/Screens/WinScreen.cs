@@ -280,7 +280,7 @@ namespace KnittedPicture.Game
                 return $"«{level.name}» теперь в альбоме";
             }
 
-            return stats.Helped ? "Третья звезда: пройти без бустеров и спасений" : $"«{level.name}» теперь в альбоме";
+            return stats.Helped ? "Третья звезда: пройди без бустеров и спасений" : $"«{level.name}» теперь в альбоме";
         }
 
         /// <summary>

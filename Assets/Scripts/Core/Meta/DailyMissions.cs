@@ -108,7 +108,7 @@ namespace KnittedPicture.Core
             switch (kind)
             {
                 case MissionKind.Win: return $"Пройди {n} {Plural(n, "уровень", "уровня", "уровней")}";
-                case MissionKind.ThreeStars: return n == 1 ? "Пройди уровень на три звезды" : $"Пройди {n} {Plural(n, "уровень", "уровня", "уровней")} на три звезды";
+                case MissionKind.ThreeStars: return n == 1 ? "Пройди уровень на 3 звезды" : $"Пройди {n} {Plural(n, "уровень", "уровня", "уровней")} на 3 звезды";
                 case MissionKind.Gold: return $"Поймай {n} {Plural(n, "золотую петлю", "золотые петли", "золотых петель")}";
                 case MissionKind.Rush: return $"Включи «Разгон» {n} {Plural(n, "раз", "раза", "раз")}";
                 case MissionKind.Combo: return $"Разгони комбо до ×{n}";

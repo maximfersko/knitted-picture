@@ -481,7 +481,7 @@ namespace KnittedPicture.Game
             var chip = Ui.Card(Root, "GoldGoal", W / 2f - chipW / 2f, GoalsY, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f, true);
 
             // Тап по цели — короткая справка; игра на это время стоит.
-            var info = $"Петли в золотом кольце. Свяжи их, пока горит комбо (кольца яркие), и получишь +{_goldPerLoop} монет за каждую.";
+            var info = $"Вяжи петли в золотом кольце, пока горит комбо: +{_goldPerLoop} монет за каждую";
             chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, "Золотые петли", info)));
             Ui.IconImage(chip, Icon.Star, Palette.Coin, 18, 14, 18);
             _goldGoal = Ui.Fit(Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft), 10);
@@ -681,7 +681,7 @@ namespace KnittedPicture.Game
             var parts = new List<string>();
             if (warm.ExtraSlot)
             {
-                parts.Add("+1 слот");
+                parts.Add("+1 место");
             }
 
             if (warm.FreeScissors)
@@ -794,7 +794,7 @@ namespace KnittedPicture.Game
                     if (_game.IsForeign(spool) && !_foreignShown)
                     {
                         _foreignShown = true;
-                        ToastOnce("foreign-loom", "Этой пряжи нет в рисунке: срежь её ножницами");
+                        ToastOnce("foreign-loom", "Эта пряжа картинке не нужна: срежь её ножницами");
                     }
                     view = _slotViews[i];
                 }
@@ -1008,7 +1008,7 @@ namespace KnittedPicture.Game
 
             var partner = _game.Column(partnerColumn)[0];
             var block = partner.Locked ? "под замком" : partner.Knots > 0 ? "с узелком" : partner.Frozen ? "во льду" : "не готова";
-            return $"Связанные едут вдвоём. Пара (кольцо того же цвета) {where} пока {block}";
+            return $"Пара с таким же кольцом {where} пока {block}";
         }
 
         private (int Column, int Depth) FindLinkPartner(int column, int depth)
@@ -1815,7 +1815,7 @@ namespace KnittedPicture.Game
             {
                 if (_game.IsForeign(spool))
                 {
-                    ToastOnce("foreign-loom", "Чужая пряжа: срежь её ножницами");
+                    ToastOnce("foreign-loom", "Эта пряжа картинке не нужна: срежь её ножницами");
                 }
                 else if (spool.Warmup == 0 && !_game.HasWork(spool) && !_game.IsSurplus(spool))
                 {
@@ -1845,7 +1845,7 @@ namespace KnittedPicture.Game
             if (back)
             {
                 // Нужный рисунку клубок не пропадает: он вернулся вперёд своей колонки.
-                App.Toast("Клубок вернулся на поле: его пряжа ещё нужна рисунку");
+                App.Toast("Клубок вернулся на поле: его пряжа ещё нужна картинке");
             }
             Sfx.Play(Sound.Knot);
             Haptics.Play(Haptic.Medium);
@@ -1899,7 +1899,7 @@ namespace KnittedPicture.Game
                 case RejectReason.NoFreeSlot:
                     var spool = depth < _game.Column(column).Count ? _game.Column(column)[depth] : null;
                     ToastOnce("noslot", spool != null && spool.Link != 0 && !_scissors
-                        ? "Связанным клубкам нужно 2 свободных слота"
+                        ? "Связанным клубкам нужно 2 свободных места"
                         : spool != null && spool.Thick
                             ? "Толстому клубку нужно 2 свободных места"
                             : "Нет места: подожди, пока клубок довяжет");
@@ -2351,22 +2351,22 @@ namespace KnittedPicture.Game
                 if (_game.SlotWouldHelp)
                 {
                     rescue = BoosterType.Slot;
-                    reason = "Слоты заняты, а нужного цвета на станке нет";
+                    reason = "Места заняты, а нужного цвета на станке нет";
                 }
                 else if (_game.ScissorsWouldHelp && App.Progress.IsBoosterOpen(BoosterType.Scissors, BoosterLevel))
                 {
                     rescue = BoosterType.Scissors;
                     reason = blocked
-                        ? "Места на станке есть, но передние клубки заблокированы: под замком, во льду или без пары. Ножницы достанут любой клубок с поля"
+                        ? "Передние клубки под замком, во льду или без пары. Ножницы достанут любой клубок с поля"
                         : _picture.TensionHolding
                         ? "Столбики выше пунктира ждут нижний ряд, а его цвета на станке нет. Ножницы срежут лишний клубок со станка или достанут нужный с поля"
-                        : "Станок занят, а картинка ждёт другой цвет. Ножницы срежут лишний клубок со станка или достанут нужный с поля";
+                        : "Станок занят, а картинке нужен другой цвет. Ножницы срежут лишний клубок или достанут нужный";
                 }
                 else
                 {
                     rescue = null;
                     reason = blocked
-                        ? "Места на станке есть, но передние клубки заблокированы. Попробуй ещё раз"
+                        ? "Передние клубки под замком, во льду или без пары. Попробуй ещё раз"
                         : _game.Slots.Count >= LoomGame.MaxSlots
                         ? "Станок заполнен до предела. Попробуй ещё раз"
                         : "Нужной пряжи больше нет. Попробуй ещё раз";
@@ -2394,15 +2394,15 @@ namespace KnittedPicture.Game
             switch (advice)
             {
                 case JamAdvice.Blocked:
-                    return "Совет: не закапывай клубок с ключом, пару связанного и клубки цвета, от которого тает лёд. Без них передние клубки не сдвинуть";
+                    return "Совет: не закапывай ключи, пары связанных и цвет, от которого тает лёд";
                 case JamAdvice.ForeignYarn:
-                    return "Совет: клубки с узором ткани картинке не нужны. Не бери их, они только занимают слот";
+                    return "Совет: не бери клубки в сеточку, они только занимают место";
                 case JamAdvice.Tension:
-                    return "Совет: сначала довязывай нижний ряд. Пока он отстаёт, столбики выше пунктира ждут, а их клубки зря занимают станок";
+                    return "Совет: сначала довязывай нижний ряд, иначе столбики выше пунктира ждут";
                 case JamAdvice.Knots:
-                    return "Совет: развязывай узелки заранее, пока станок вяжет. Тап по узелку не занимает слот";
+                    return "Совет: развязывай узелки заранее, это не занимает место на станке";
                 default:
-                    return "Совет: бери сначала короткие клубки, число на клубке. Они быстрее освобождают станок";
+                    return "Совет: сначала бери короткие клубки, они быстрее освобождают место";
             }
         }
 
@@ -2583,7 +2583,7 @@ namespace KnittedPicture.Game
                 case BoosterType.Slot:
                     if (_game.Slots.Count >= LoomGame.MaxSlots)
                     {
-                        App.Toast($"На станке уже {LoomGame.MaxSlots} слотов");
+                        App.Toast($"На станке уже {LoomGame.MaxSlots} мест, больше нельзя");
                     }
                     else if (App.Progress.Pay(type) == Payment.NotEnough)
                     {
@@ -2808,7 +2808,7 @@ namespace KnittedPicture.Game
             }
 
             App.Save();
-            ShowTip("Выше пунктира ждут, пока довяжут клетки внизу", line, false);
+            ShowTip("Столбики выше пунктира ждут, пока довяжется ряд внизу", line, false);
             _tipKeep = true;
         }
 
@@ -2951,7 +2951,7 @@ namespace KnittedPicture.Game
             {
                 match = s => s.Rainbow;
             }
-            else if (tip.Contains("цвета ткани") || tip.Contains("цвета фона") || tip.Contains("чуж"))
+            else if (tip.Contains("цвета ткани") || tip.Contains("цвета фона") || tip.Contains("чуж") || tip.Contains("сеточк"))
             {
                 match = s => _game.IsForeign(s);
             }
@@ -3070,7 +3070,7 @@ namespace KnittedPicture.Game
                 var root = Ui.Card(parent, "Booster" + type, x, y, w, 60, 18, Palette.Card, Palette.CardShadow, 3f, true);
                 _face = root.Find("Face").GetComponent<Image>();
                 _group = root.gameObject.AddComponent<CanvasGroup>();
-                var label = Ui.Label(root, type == BoosterType.Slot ? "Слот" : BoosterInfo.Name(type), 14, Palette.Ink);
+                var label = Ui.Label(root, type == BoosterType.Slot ? "Место" : BoosterInfo.Name(type), 14, Palette.Ink);
                 var textW = label.preferredWidth;
                 var well = Mathf.Min(44f, w * 0.38f);
                 var total = well + 6f + textW;

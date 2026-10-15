@@ -400,7 +400,7 @@ namespace KnittedPicture.Game
             _step = Step.Boosters;
             _stepTitle.text = "Выбери бустер";
             var count = _contents.BoosterCount;
-            _description.text = count > 1 ? "Большой сундук: возьмёшь сразу 2 штуки" : "Один из трёх. Нажми, чтобы узнать, что он делает";
+            _description.text = count > 1 ? "Большой сундук: возьмёшь сразу 2 штуки" : "Выбери 1 из 3. Тапни, чтобы узнать, что он делает";
             var options = _contents.Boosters;
             Tweens.Delay(_stage, 0.12f * (options.Length - 1) + 0.75f, () => _selectable = true);
             for (var i = 0; i < options.Length; i++)
