@@ -28,14 +28,34 @@ namespace KnittedPicture.Game
     }
 
     /// <summary>
-    /// Короткие мягкие звуки, синтезированные при запуске: без аудиофайлов.
-    /// Позже их легко заменить на настоящие клипы с теми же именами.
+    /// Короткие мягкие звуки. Интерфейсные — настоящие записи из Resources/Sounds (Kenney Interface Sounds, CC0),
+    /// музыкальные (победа, звезда, комбо, тупик) — синтезированы в тон фоновой мелодии. Если файла нет,
+    /// звучит синтезированный вариант: игра никогда не остаётся без звука.
     /// </summary>
     public sealed class Sfx : MonoBehaviour
     {
         private const int Rate = 44100;
         private static Sfx? _instance;
         private readonly Dictionary<Sound, AudioClip> _clips = new Dictionary<Sound, AudioClip>();
+        private readonly Dictionary<Sound, float> _gain = new Dictionary<Sound, float>();
+
+        /// <summary>
+        /// Записи вместо синтеза: файл в Resources/Sounds и громкость относительно синтеза
+        /// (записи нормированы до −6 дБ, синтез тише, поэтому множитель меньше единицы).
+        /// </summary>
+        private static readonly (Sound Sound, string File, float Gain)[] Recorded =
+        {
+            (Sound.Click, "click", 0.55f),
+            (Sound.Needles, "needles", 0.5f),
+            (Sound.Puff, "puff", 0.45f),
+            (Sound.Pick, "pick", 0.55f),
+            (Sound.Stitch, "stitch", 0.35f),
+            (Sound.SpoolDone, "spool_done", 0.6f),
+            (Sound.Deny, "deny", 0.5f),
+            (Sound.Knot, "knot", 0.5f),
+            (Sound.Unlock, "unlock", 0.55f),
+            (Sound.Coin, "coin", 0.45f),
+        };
         private AudioSource? _source;
         private float _lastStitch;
         private int _stitchCombo;
@@ -66,7 +86,7 @@ namespace KnittedPicture.Game
             }
 
             _instance._source.pitch = pitch;
-            _instance._source.PlayOneShot(clip, volume);
+            _instance._source.PlayOneShot(clip, volume * _instance.Gain(sound));
         }
 
         private void Awake()
@@ -88,7 +108,19 @@ namespace KnittedPicture.Game
             _clips[Sound.Coin] = Tone("coin", new[] { 988f, 1319f }, 0.16f, 0.28f);
             _clips[Sound.Combo] = Tone("combo", new[] { 784f, 988f, 1175f, 1568f }, 0.28f, 0.3f);
             _clips[Sound.Star] = Tone("star", new[] { 1319f, 1760f }, 0.22f, 0.32f);
+
+            foreach (var (sound, file, gain) in Recorded)
+            {
+                var clip = Resources.Load<AudioClip>("Sounds/" + file);
+                if (clip != null)
+                {
+                    _clips[sound] = clip;
+                    _gain[sound] = gain;
+                }
+            }
         }
+
+        private float Gain(Sound sound) => _gain.TryGetValue(sound, out var gain) ? gain : 1f;
 
         private void PlayInternal(Sound sound, float volume)
         {
@@ -109,7 +141,7 @@ namespace KnittedPicture.Game
                 _source.pitch = 1f;
             }
 
-            _source.PlayOneShot(clip, volume);
+            _source.PlayOneShot(clip, volume * Gain(sound));
         }
 
         // Все звуки — чистые тоны с плавной атакой и затуханием до нуля. Шум (случайные отсчёты) не используем:
