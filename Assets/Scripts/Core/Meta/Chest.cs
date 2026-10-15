@@ -141,7 +141,7 @@ namespace KnittedPicture.Core
                         continue;
                     }
 
-                    weights[i] = YarnCatalog.RollWeight(yarnRarity, hasYarn(i));
+                    weights[i] = YarnCatalog.RollWeight(i, hasYarn(i));
                     total += weights[i];
                 }
 

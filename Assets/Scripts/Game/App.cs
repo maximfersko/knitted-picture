@@ -336,8 +336,13 @@ namespace KnittedPicture.Game
             {
                 ShowHome();
 
-                // Подарок дня встречает игрока сразу при входе — повод заходить каждый день.
-                if (Progress.CanClaimDaily(Today) && Progress.Data.completed.Count > 0)
+                // После перерыва в 3+ дня — посылка от бабушки, за ней подарок дня. Иначе подарок дня встречает
+                // игрока сразу при входе — повод заходить каждый день.
+                if (Progress.Visit(Today))
+                {
+                    ShowPopup(new ComebackPopup(this, ShowDailyIfWaiting));
+                }
+                else if (Progress.CanClaimDaily(Today) && Progress.Data.completed.Count > 0)
                 {
                     ShowPopup(new DailyGiftPopup(this, ShowHome));
                 }
@@ -350,6 +355,15 @@ namespace KnittedPicture.Game
             // Заставка поверх всего: нитка сматывается в клубок, пока в фоне рисуются клубки.
             Splash.Show(_canvas!, Palette.Ground);
             Unsettle(2.2f);
+        }
+
+        private void ShowDailyIfWaiting()
+        {
+            ShowHome();
+            if (Progress.CanClaimDaily(Today) && Progress.Data.completed.Count > 0)
+            {
+                ShowPopup(new DailyGiftPopup(this, ShowHome));
+            }
         }
 
         private void Update()
@@ -393,6 +407,12 @@ namespace KnittedPicture.Game
             else
             {
                 Reminders.CancelAll();
+
+                // Вернулись после долгого перерыва, не перезапуская игру: посылка на главной.
+                if (Progress != null && Progress.Visit(Today) && _popups.Count == 0 && _screen is HomeScreen)
+                {
+                    ShowPopup(new ComebackPopup(this, ShowDailyIfWaiting));
+                }
             }
         }
 
@@ -571,11 +591,21 @@ namespace KnittedPicture.Game
             Progress.RecordMarathon(Today, stats.Stitches);
             Progress.RecordResult(level.id, stats.Taps, !stats.Helped);
             var missionsDone = Progress.RecordMissions(Today, stars, !stats.Helped, stats.GoldCaught, stats.Rushes, stats.BestCombo, stats.Stitches);
-            var reward = Progress.CompleteLevel(level.id, level.hard, stars, stats.RushCoins + stats.GoldCoins);
+            var framesBefore = Progress.CollectionFramesOwned;
+            var reward = Progress.CompleteLevel(level.id, level.hard, stars, stats.RushCoins + stats.GoldCoins, Today);
             Save();
             var news = new WinNews(Progress.PendingClaims > pendingBefore, Progress.CanOpenChest && !chestBefore, missionsDone > 0,
                 Progress.CanClaimMissions(Today), wasDone && stars > oldStars);
             Show(() => new WinScreen(this, level, reward, stats, news));
+
+            // Все звёзды коллекции — её рамка открыта.
+            if (Progress.CollectionFramesOwned > framesBefore)
+            {
+                var collection = System.Array.IndexOf(Collections.All, Collections.Of(level.id));
+                var frame = AlbumFrames.ForCollection(collection);
+                Toast(L.F("Новая рамка «{0}»: все звёзды коллекции!", frame.Name));
+                Analytics.Event("collection_frame", ("collection", collection));
+            }
         }
 
         /// <summary>«Дальше» после победы: при необходимости реклама, потом следующий уровень.</summary>

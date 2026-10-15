@@ -25,14 +25,15 @@ namespace KnittedPicture.Core.Tests
 
             Assert.InRange(total, 99.9f, 100.1f);
 
-            // Рамки: дороже — не дешевле по редкости; есть и обычные, и легендарная.
-            for (var i = 1; i < AlbumFrames.All.Length; i++)
+            // Рамки магазина: дороже — не дешевле по редкости; есть и обычные, и легендарная.
+            var shop = AlbumFrames.All.Where(f => f.Source == FrameSource.Shop).ToArray();
+            for (var i = 1; i < shop.Length; i++)
             {
-                Assert.True(AlbumFrames.All[i].Rarity >= AlbumFrames.All[i - 1].Rarity);
-                Assert.True(AlbumFrames.All[i].Price > AlbumFrames.All[i - 1].Price);
+                Assert.True(shop[i].Rarity >= shop[i - 1].Rarity);
+                Assert.True(shop[i].Price > shop[i - 1].Price);
             }
 
-            Assert.Equal(Rarity.Legendary, AlbumFrames.All[AlbumFrames.All.Length - 1].Rarity);
+            Assert.Equal(Rarity.Legendary, shop[shop.Length - 1].Rarity);
             Assert.All(Achievements.All, a => Assert.True(System.Enum.IsDefined(typeof(Rarity), a.Rarity)));
         }
 
@@ -108,9 +109,16 @@ namespace KnittedPicture.Core.Tests
         {
             for (var i = 1; i < AlbumFrames.All.Length; i++)
             {
-                Assert.True(AlbumFrames.All[i].Price > AlbumFrames.All[i - 1].Price);
                 Assert.Equal(i, AlbumFrames.All[i].Id);
+                if (AlbumFrames.All[i].Source == FrameSource.Shop)
+                {
+                    Assert.True(AlbumFrames.All[i].Price > AlbumFrames.All[i - 1].Price);
+                }
             }
+
+            // У каждой коллекции и каждого времени года своя рамка.
+            Assert.Equal(Collections.All.Length, AlbumFrames.All.Count(f => f.Source == FrameSource.Collection));
+            Assert.Equal(4, AlbumFrames.All.Count(f => f.Source == FrameSource.Season));
 
             Assert.Equal(0, AlbumFrames.All[0].Price);
             Assert.Equal(AlbumFrames.All.Length, AlbumFrames.All.Select(f => f.Name).Distinct().Count());
@@ -197,7 +205,12 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(YarnCatalog.MaxLevel, progress.YarnLevel(0));
             Assert.Equal(coins, progress.Coins);
 
-            // На максимальном уровне повтор — монеты.
+            // На максимальном уровне повтор копит к золотой версии, у золотого — монеты.
+            for (var i = 0; i < YarnCatalog.GoldenAfter; i++)
+            {
+                Assert.Equal(i + 1, progress.Grant(new Reward(0, null, 0, yarn: 0), new Random(1)).GoldStep);
+            }
+
             var extra = progress.Grant(new Reward(0, null, 0, yarn: 0), new Random(1));
             Assert.False(extra.YarnLevelUp);
             Assert.Equal(YarnCatalog.DuplicateCoins(Rarity.Common), extra.DuplicateCoins);

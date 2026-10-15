@@ -342,7 +342,9 @@ namespace KnittedPicture.Game
                     ? L.F("Набор «{0}». Бонус: {1}", set, YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, 1)))
                     : level < YarnCatalog.MaxLevel
                         ? L.F("Уровень {0}: {1}", level + 1, YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, level + 1)))
-                        : L.F("Уже максимальный уровень: повтор даст {0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity));
+                        : App.Progress.IsGolden(yarn.Id)
+                            ? L.F("Уже золотой: повтор даст {0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity))
+                            : L.F("Шаг к золотой версии: {0} из {1}", App.Progress.GoldProgress(yarn.Id) + 1, YarnCatalog.GoldenAfter);
             }
 
             ShowButton(L.T("Взять"));
@@ -486,7 +488,10 @@ namespace KnittedPicture.Game
                 var isNew = !App.Progress.HasYarn(yarn.Id);
                 var yarnLevel = App.Progress.YarnLevel(yarn.Id);
                 var levelUp = !isNew && yarnLevel < YarnCatalog.MaxLevel;
-                var chipText = isNew ? L.T("новый!") : levelUp ? L.F("ур. {0}!", yarnLevel + 1) : L.F("+{0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity));
+                var golden = App.Progress.IsGolden(yarn.Id);
+                var chipText = isNew ? L.T("новый!") : levelUp ? L.F("ур. {0}!", yarnLevel + 1)
+                    : golden ? L.F("+{0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity))
+                    : L.F("золото {0}/{1}", App.Progress.GoldProgress(yarn.Id) + 1, YarnCatalog.GoldenAfter);
                 var chip = Ui.Box(front, "State", 11, isNew ? Palette.DangerSoft : levelUp ? Palette.PrimarySoft : Palette.CoinSoft).rectTransform;
                 Ui.PlaceCenter(chip, w / 2f, 130, w - 16, 22);
                 Ui.Fit(Ui.Label(chip, chipText, 12, isNew ? Palette.Danger : levelUp ? Palette.Primary : Palette.CoinInk, 0, 0, w - 16, 22), 9);
@@ -562,15 +567,21 @@ namespace KnittedPicture.Game
             HideButton();
             var yarn = YarnCatalog.All[_contents.Yarns[yarnChoice]];
             var levelUp = granted != null && granted.Value.YarnLevelUp;
-            var duplicate = granted != null && !granted.Value.NewYarn && !levelUp;
+            var goldStep = granted?.GoldStep ?? 0;
+            var duplicate = granted != null && !granted.Value.NewYarn && !levelUp && goldStep == 0;
             var level = App.Progress.YarnLevel(yarn.Id);
             var chip = AddTrayChip(c => YarnView.Create(c, yarn, 22, 20, 28, true),
-                duplicate ? "+" + granted!.Value.DuplicateCoins : levelUp ? L.F("ур. {0}", level) : yarn.Name);
+                duplicate ? "+" + granted!.Value.DuplicateCoins : levelUp ? L.F("ур. {0}", level)
+                    : goldStep > 0 ? $"{goldStep}/{YarnCatalog.GoldenAfter}" : yarn.Name);
             ClearCards(yarnChoice, Ui.WorldCenter(chip));
 
             _stepTitle.text = L.T("Всё в корзинке");
-            _description.text = duplicate
-                ? L.F("«{0}» уже на максимуме: повтор стал монетами", yarn.Name)
+            _description.text = goldStep >= YarnCatalog.GoldenAfter
+                ? L.F("Моток «{0}» стал золотым: особый вид и бонус сильнее", yarn.Name)
+                : goldStep > 0
+                ? L.F("Моток «{0}»: шаг к золотой версии, {1} из {2}", yarn.Name, goldStep, YarnCatalog.GoldenAfter)
+                : duplicate
+                ? L.F("Моток «{0}» уже золотой: повтор стал монетами", yarn.Name)
                 : levelUp
                     ? L.F("«{0}» теперь уровня {1}: бонус сильнее", yarn.Name, level)
                     : L.F("Новый моток «{0}» в коллекции", yarn.Name);

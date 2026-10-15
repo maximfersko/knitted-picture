@@ -154,6 +154,7 @@ namespace KnittedPicture.Playtest
                     continue;
                 }
 
+                p.Visit(today);
                 Earn(stats, p, () => p.ClaimDaily(today, rng), "подарок дня");
                 var sessions = rng.Next(type.MinLevels, type.MaxLevels + 1);
                 for (var i = 0; i < sessions; i++)
@@ -176,6 +177,28 @@ namespace KnittedPicture.Playtest
                 while (p.CanClaimMarathon(today))
                 {
                     Earn(stats, p, () => p.ClaimMarathon(today, rng), "марафон");
+                }
+
+                // Выставка недели: три самые подходящие к теме картинки в лучшей своей рамке.
+                if (p.ExhibitionOpen && !p.ExhibitionDone(today))
+                {
+                    var theme = Exhibition.ThemeOf(WeeklyMarathon.WeekOf(today));
+                    var owned = AlbumFrames.All.Where(f => p.FrameOwned(f.Id)).ToList();
+                    var picks = p.Data.completed.Select(n => _levels[n - 1])
+                        .Select(l => (l, f: owned.OrderByDescending(f => Exhibition.Score(l, p.StarsOf(l.id), f, theme)).First()))
+                        .OrderByDescending(x => Exhibition.Score(x.l, p.StarsOf(x.l.id), x.f, theme)).Take(Exhibition.Pictures).ToList();
+                    Earn(stats, p, () => p.SubmitExhibition(today, picks.Select(x => x.l).ToList(), picks.Select(x => x.f.Id).ToList(), rng)?.Granted,
+                        "выставка");
+                }
+
+                while (p.CanClaimSeason(today))
+                {
+                    Earn(stats, p, () => p.ClaimSeason(today, rng)?.Granted, "сезон");
+                }
+
+                if (p.ComebackPending)
+                {
+                    Earn(stats, p, () => p.ClaimComeback(rng), "посылка");
                 }
 
                 foreach (var a in Achievements.All.Where(p.CanClaimAchievement).ToList())
@@ -304,7 +327,7 @@ namespace KnittedPicture.Playtest
             var combo = rng.Next(0, 16);
             var coinsBefore = p.Coins;
             var stockBefore = TotalStock(p);
-            var reward = p.CompleteLevel(id, level.hard, stars, combo);
+            var reward = p.CompleteLevel(id, level.hard, stars, combo, today);
             Note(stats, replay ? "повтор уровней" : "новые уровни", p.Coins - coinsBefore, TotalStock(p) - stockBefore);
             coinsBefore = p.Coins;
             p.RecordResult(id, rng.Next(10, 60), stars == 3);

@@ -28,12 +28,19 @@ namespace KnittedPicture.Core
     /// <summary>Что игрок получил, когда забрал подарок: моток мог оказаться повтором — тогда монеты.</summary>
     public readonly struct Granted
     {
-        public Granted(Reward reward, bool newYarn, int duplicateCoins)
+        public Granted(Reward reward, bool newYarn, int duplicateCoins, int goldStep = 0)
         {
             Reward = reward;
             NewYarn = newYarn;
             DuplicateCoins = duplicateCoins;
+            GoldStep = goldStep;
         }
+
+        /// <summary>Повтор на максимальном уровне: шаг к золотой версии (1..YarnCatalog.GoldenAfter), 0 — не было.</summary>
+        public int GoldStep { get; }
+
+        /// <summary>Этот повтор сделал моток золотым.</summary>
+        public bool BecameGolden => GoldStep >= YarnCatalog.GoldenAfter;
 
         public Reward Reward { get; }
 
@@ -44,6 +51,6 @@ namespace KnittedPicture.Core
         public int TotalCoins => Reward.Coins + DuplicateCoins;
 
         /// <summary>Повтор мотка поднял его уровень (а не превратился в монеты).</summary>
-        public bool YarnLevelUp => Reward.Yarn >= 0 && !NewYarn && DuplicateCoins == 0;
+        public bool YarnLevelUp => Reward.Yarn >= 0 && !NewYarn && DuplicateCoins == 0 && GoldStep == 0;
     }
 }

@@ -45,7 +45,13 @@ namespace KnittedPicture.Game
             // промежуток (24–32 pt), иначе экран читается как одна слипшаяся куча. Нижние группы стоят
             // с фиксированными зазорами в зоне большого пальца; всё остальное место — клубку наверху.
             const float railH = 80f;
-            const float heroTop = 58f;
+            var heroTop = 58f;
+            if (progress.SeasonOpen)
+            {
+                BuildSeason(58f);
+                heroTop += SeasonH + 8f;
+            }
+
             // На низких экранах (iPhone SE и меньше) зазоры ужимаются, чтобы клубку осталось место.
             var roomy = Mathf.Clamp01((H - 620f) / 120f);
             var playGap = Mathf.Lerp(12f, 24f, roomy);
@@ -82,6 +88,47 @@ namespace KnittedPicture.Game
                     Tweens.Scale(_rails[i], 0.4f, 1f, 0.4f, Ease.OutBack, null, 0.08f + i * 0.06f);
                 }
             }
+        }
+
+        private const float SeasonH = 52f;
+
+        /// <summary>
+        /// Полоска «Вязального сезона» под монетами: время года, ступень, очки до следующей и камень редкости
+        /// следующей награды; есть что забрать — «Забрать» и точка. Тап — дорожка сезона.
+        /// </summary>
+        private void BuildSeason(float y)
+        {
+            var progress = App.Progress;
+            var today = App.Today;
+            var season = Season.SeasonOf(today);
+            var theme = Season.ThemeOf(season);
+            var reached = progress.SeasonReached(today);
+            var claimed = progress.SeasonClaimed(today);
+            var waiting = progress.SeasonWaiting(today);
+            var w = W - 32f;
+            var strip = Ui.Card(Root, "Season", 16, y, w, SeasonH, 18, Palette.Card, Palette.CardShadow, 3f, true);
+            var next = Season.Step(Mathf.Min(Season.Steps, claimed + 1), theme);
+            var gem = Ui.Image(strip, "Gem", Art2.Gem(next.Rarity), Color.white);
+            Ui.PlaceCenter(gem.rectTransform, 28, SeasonH / 2f, 30, 30);
+            var textW = w - 56f - 100f;
+            Ui.Fit(Ui.Label(strip, Season.Name(theme), 15, Palette.Ink, 50, 6, textW, 20, true, TextAnchor.MiddleLeft), 11);
+            var points = progress.SeasonPoints(today);
+            var inStep = reached >= Season.Steps ? Season.StepPoints : points - reached * Season.StepPoints;
+            Ui.ProgressBar(strip, 50, 31, textW, 8, (float)inStep / Season.StepPoints, Palette.Coin);
+            if (waiting > 0)
+            {
+                var claim = Ui.Button(strip, L.T("Забрать"), w - 106f, 9, 94, 34, Palette.Coin, Palette.CoinShadow, Palette.CoinInk, 14);
+                claim.OnClick(() => App.ShowPopup(new SeasonPopup(App, App.ShowHome)));
+                Ui.Sheen((RectTransform)claim.transform, 94f, 34f, 3.2f, 0.8f);
+                Ui.Badge(strip, w - 12f, 6f, waiting);
+            }
+            else
+            {
+                Ui.Label(strip, L.F("{0}/{1}", Mathf.Min(reached + 1, Season.Steps), Season.Steps), 15, Palette.Ink2, w - 100f, 0, 86, SeasonH, true,
+                    TextAnchor.MiddleRight);
+            }
+
+            strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new SeasonPopup(App, App.ShowHome)));
         }
 
         /// <summary>Системная «Назад» на главной: на Android игра сворачивается, как обычное приложение.</summary>

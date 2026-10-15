@@ -25,6 +25,10 @@ namespace KnittedPicture.Game
                 : yarn.Look == YarnLook.Melange ? Art2.YarnBallMelange(main, second)
                 : Art2.YarnBall(main);
             Ui.Stretch(Ui.Image(root, "Ball", sprite, Color.white).rectTransform);
+            if (App.Instance != null && App.Instance.Progress.IsGolden(yarn.Id))
+            {
+                Gild(root, size);
+            }
 
             // Блёстки, редкая и эпическая пряжа: искры-звёздочки по очереди вспыхивают, поворачиваясь, и гаснут.
             // У редкой их две, голубоватые; у эпической и блестящей — четыре, тёплые или цвета блёсток.
@@ -134,6 +138,24 @@ namespace KnittedPicture.Game
 
             Tweens.Run(orbit, epic ? 9f : 12f, t => orbit.localRotation = Quaternion.Euler(0f, 0f, 360f * t), null, null, 0f, true);
             return root;
+        }
+
+        /// <summary>
+        /// Золотая версия мотка (5 повторов на максимальном уровне): тёплое золотое сияние позади, золотое кольцо,
+        /// которое мягко пульсирует, и золотая звёздочка-значок сверху справа.
+        /// </summary>
+        public static void Gild(RectTransform root, float size)
+        {
+            var gold = Palette.Hex("#F2B630");
+            var glow = Ui.Image(root, "GoldGlow", Art.Glow, Palette.WithAlpha(Palette.Hex("#FFC531"), 0.55f));
+            Ui.PlaceCenter(glow.rectTransform, size / 2f, size / 2f, size * 1.55f, size * 1.55f);
+            glow.transform.SetAsFirstSibling();
+            var ring = Ui.Image(root, "GoldRing", Art.Ring, gold);
+            var ringRt = ring.rectTransform;
+            Ui.PlaceCenter(ringRt, size / 2f, size / 2f, size * 1.12f, size * 1.12f);
+            Tweens.Run(ringRt, 2.4f, t => ringRt.localScale = Vector3.one * (1f + 0.04f * Ease.Bump(t)), null, null, 0f, true);
+            var star = Ui.Image(root, "GoldStar", Art2.RewardStar(true), Color.white);
+            Ui.PlaceCenter(star.rectTransform, size * 0.86f, size * 0.14f, size * 0.36f, size * 0.36f);
         }
 
         public static Color RarityColor(Rarity rarity) => rarity == Rarity.Common ? Palette.Ink2 : RarityStyle.Ink(rarity);

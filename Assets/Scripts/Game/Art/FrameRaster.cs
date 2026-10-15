@@ -11,14 +11,14 @@ namespace KnittedPicture.Game
     /// звёзды на ночном небе и золотой багет с розетками и камнями. Номер стиля = номер рамки.
     /// Растр квадратный (72 × 72 точки макета), картинка ставится в проём: см. Opening.
     /// </summary>
-    public static class FrameRaster
+    public static partial class FrameRaster
     {
         public const int Size = 72;
 
         /// <summary>Сколько проёма (доля стороны) свободно под картинку: паспарту чуть шире, чем картинка.</summary>
         public const float Opening = 50f / Size;
 
-        public const int Styles = 10;
+        public const int Styles = 27;
 
         private const float C = Size / 2f;
         private const float Outer = 34f;
@@ -59,6 +59,23 @@ namespace KnittedPicture.Game
             new Look("#B8323F", "#6E1520", "#FF9CB0", "#FFF8F4"), // Сердечки
             new Look("#22397A", "#101C44", "#FFD34D", "#FFFFFF"), // Звёздная ночь
             new Look("#E9B744", "#8A5C0C", "#FFF0B0", "#FFFDF3"), // Золото
+            new Look("#A9DDF7", "#3E86B8", "#FFFFFF", "#FFFFFF"), // Снежинки
+            new Look("#A6DB7E", "#4F8F33", "#FF8FC4", "#FFFFFF"), // Первоцветы
+            new Look("#F2B632", "#9A6410", "#FFD84A", "#FFFDF3"), // Подсолнухи
+            new Look("#C8622A", "#7A3214", "#F2A33A", "#FFF8EE"), // Листопад
+            new Look("#E7B7A0", "#9C5C46", "#FFF3E6", "#FFFFFF"), // Уютные мелочи — пуговицы
+            new Look("#6DBB6A", "#2F7A32", "#FFE066", "#FFFFFF"), // Сад — цветы
+            new Look("#C9A27E", "#7A5536", "#5A3A22", "#FFFFFF"), // Зверята — лапки
+            new Look("#F7C6D9", "#C2577F", "#E8333A", "#FFFFFF"), // Вкусняшки — вишенки
+            new Look("#3FA9E0", "#1E5F96", "#FFFFFF", "#FFFFFF"), // Море — волны
+            new Look("#8EC9F2", "#3B7FBF", "#FFFFFF", "#FFFFFF"), // Небо — облака
+            new Look("#4E8C4A", "#24502A", "#8BCB6A", "#FFFFFF"), // Лес — ёлочки
+            new Look("#E8455A", "#8E1E30", "#FFD34D", "#FFFFFF"), // Праздник — звёзды
+            new Look("#D99A5B", "#8A5428", "#FFF0D6", "#FFFDF7"), // Уют — домики
+            new Look("#FF9A6B", "#B8512A", "#FFFFFF", "#FFFFFF"), // Друзья — сердечки
+            new Look("#8A8F99", "#4A4F58", "#E8B64A", "#FFFFFF"), // Мастерская — спицы
+            new Look("#2E8F8A", "#17524F", "#FFD34D", "#FFFFFF"), // Путешествия — компас
+            new Look("#2B2F6B", "#14163A", "#B98CFF", "#FFFFFF"), // Космос — планеты
         };
 
         public static Raster Frame(int style)
@@ -93,7 +110,7 @@ namespace KnittedPicture.Game
                 var band = Pattern(style, look, x, y, s, depth, u);
                 var profile = MathF.Cos(Draw.Clamp(u, -1f, 1f) * MathF.PI / 2f);
                 band = band.Shade(0.14f * (profile - 0.75f) + 0.2f * Draw.Clamp(u, -1f, 1f) * facing);
-                if (style == 0 || style == 4 || style == 9)
+                if (style == 0 || style == 4 || style == 9 || style == 12)
                 {
                     var seam = MathF.Abs(MathF.Abs(dx) - MathF.Abs(dy));
                     band = band.Shade(-0.28f * (1f - Draw.SmoothStep(0.15f, 0.6f, seam)));
@@ -132,6 +149,11 @@ namespace KnittedPicture.Game
 
         private static Rgba Pattern(int style, Look look, float x, float y, float s, float depth, float u)
         {
+            if (style >= 10)
+            {
+                return ThemePattern(style, look, x, y, s, depth, u);
+            }
+
             switch (style)
             {
                 case 0:
@@ -264,6 +286,11 @@ namespace KnittedPicture.Game
         /// <summary>Украшения поверх багета: пуговицы, большие цветы, сердце, звёзды и розетки на углах.</summary>
         private static Rgba Ornaments(int style, Look look, float x, float y, Rgba result)
         {
+            if (style >= 10)
+            {
+                return ThemeOrnaments(style, look, x, y, result);
+            }
+
             var k = Mid;
             switch (style)
             {

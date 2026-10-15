@@ -32,8 +32,9 @@ namespace KnittedPicture.Core
 
     public sealed class YarnInfo
     {
-        public YarnInfo(int id, string name, string description, string hex, string hex2, YarnLook look, Rarity rarity)
+        public YarnInfo(int id, string name, string description, string hex, string hex2, YarnLook look, Rarity rarity, bool seasonal = false)
         {
+            Seasonal = seasonal;
             Id = id;
             _name = name;
             _description = description;
@@ -60,6 +61,9 @@ namespace KnittedPicture.Core
         public YarnLook Look { get; }
 
         public Rarity Rarity { get; }
+
+        /// <summary>Сезонная пряжа: только награда «Вязального сезона», в случайных розыгрышах не бывает.</summary>
+        public bool Seasonal { get; }
     }
 
     public sealed class YarnSet
@@ -113,6 +117,12 @@ namespace KnittedPicture.Core
             new YarnInfo(13, "Ангора", "Пушистая, как облачко", "#FFE3EC", "#FFFFFF", YarnLook.Sparkle, Rarity.Rare),
             new YarnInfo(14, "Пряжа-травка", "С длинными мягкими ворсинками", "#9BE0B4", "#2EBD7E", YarnLook.Melange, Rarity.Uncommon),
             new YarnInfo(15, "Золотая нить", "Блестит, как ёлочная гирлянда", "#FFC23C", "#FFF1A8", YarnLook.Sparkle, Rarity.Legendary),
+
+            // Сезонные: по одной на каждое время года, только за финал «Вязального сезона».
+            new YarnInfo(16, "Иней", "Сверкает, как морозный узор на окне", "#BFE6FF", "#FFFFFF", YarnLook.Sparkle, Rarity.Legendary, true),
+            new YarnInfo(17, "Первоцвет", "Пахнет весной и талой водой", "#9FE07A", "#FF9CCB", YarnLook.Melange, Rarity.Legendary, true),
+            new YarnInfo(18, "Солнечная", "Тёплая, как песок в июле", "#FFD24F", "#FF8A1F", YarnLook.Sparkle, Rarity.Legendary, true),
+            new YarnInfo(19, "Листопад", "Все краски осеннего парка", "#E8792B", "#B5401F", YarnLook.Melange, Rarity.Legendary, true),
         };
 
         public static readonly YarnSet[] Sets =
@@ -121,7 +131,34 @@ namespace KnittedPicture.Core
             new YarnSet(1, "Хлопок и шёлк", 4, 4, new Reward(100, BoosterType.Scissors, 1)),
             new YarnSet(2, "Особая пряжа", 8, 4, new Reward(150, BoosterType.Undo, 2)),
             new YarnSet(3, "Праздничная", 12, 4, new Reward(200, BoosterType.Slot, 2)),
+            new YarnSet(4, "Времена года", 16, 4, new Reward(400, BoosterType.Scissors, 2)),
         };
+
+        /// <summary>Сколько мотков без сезонных: их можно найти в обычной игре (достижение «Корзинка полна»).</summary>
+        public static int BaseCount
+        {
+            get
+            {
+                var n = 0;
+                foreach (var yarn in All)
+                {
+                    n += yarn.Seasonal ? 0 : 1;
+                }
+
+                return n;
+            }
+        }
+
+        /// <summary>Вес мотка номер yarn в случайном розыгрыше: сезонные не разыгрываются.</summary>
+        public static int RollWeight(int yarn, bool owned) => All[yarn].Seasonal ? 0 : RollWeight(All[yarn].Rarity, owned);
+
+        // ---------- Золотая версия ----------
+
+        /// <summary>
+        /// Сколько повторов сверх максимального уровня нужно для золотой версии мотка. Повтор на максимуме сначала
+        /// копит к золотой версии (1/5 … 5/5) и только у золотого мотка становится монетами.
+        /// </summary>
+        public const int GoldenAfter = 5;
 
         public static int Count => All.Length;
 
@@ -158,6 +195,11 @@ namespace KnittedPicture.Core
             var tier = 0;
             foreach (var yarn in All)
             {
+                if (yarn.Seasonal)
+                {
+                    continue;
+                }
+
                 total += Weight(yarn.Rarity);
                 tier += yarn.Rarity == rarity ? Weight(yarn.Rarity) : 0;
             }
@@ -223,11 +265,20 @@ namespace KnittedPicture.Core
         /// <summary>С этого уровня моток «в работе» начинает давать бонус: новичка не грузим лишним.</summary>
         public const int PerksFromLevel = 9;
 
-        /// <summary>Сила бонуса 1..5: редкость (1, 2, 3) плюс уровень сверх первого.</summary>
-        public static int Power(int yarn, int level)
+        /// <summary>
+        /// Сила бонуса: редкость (обычная и необычная 1, редкая 2, эпическая 3, легендарная 4) плюс уровень сверх
+        /// первого; золотая версия — ещё +1.
+        /// </summary>
+        public static int Power(int yarn, int level, bool golden = false)
         {
-            var rarity = All[yarn].Rarity == Rarity.Common ? 1 : All[yarn].Rarity == Rarity.Rare ? 2 : 3;
-            return level <= 0 ? 0 : rarity + System.Math.Min(level, MaxLevel) - 1;
+            var rarity = All[yarn].Rarity switch
+            {
+                Rarity.Rare => 2,
+                Rarity.Epic => 3,
+                Rarity.Legendary => 4,
+                _ => 1,
+            };
+            return level <= 0 ? 0 : rarity + System.Math.Min(level, MaxLevel) - 1 + (golden ? 1 : 0);
         }
 
         /// <summary>+монет за новую картинку.</summary>

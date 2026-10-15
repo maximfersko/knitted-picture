@@ -337,7 +337,42 @@ namespace KnittedPicture.Game
                 var open = Ui.Button(strip, L.T("Выбрать"), cardW - 112, 14, 100, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
                 open.OnClick(() => App.ShowPopup(new FramesPopup(App)));
                 strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new FramesPopup(App)));
+                y += stripH + 12f;
+            }
+
+            // Выставка недели: тема, медаль или приглашение выставить картинки.
+            if (progress.ExhibitionOpen)
+            {
+                const float stripH = 64f;
+                var today = App.Today;
+                var theme = Exhibition.ThemeOf(WeeklyMarathon.WeekOf(today));
+                var done = progress.ExhibitionDone(today);
+                var medal = progress.ExhibitionMedal(today);
+                var strip = Ui.Card(content, "Exhibition", 16, y, cardW, stripH, 20, done ? Palette.Card : Palette.CoinSoft, Palette.CardShadow, 3f, true);
+                var cup = Ui.Image(strip, "Trophy", Art2.Trophy(!done || medal >= 3), Palette.WithAlpha(Color.white, done && medal == 0 ? 0.5f : 1f));
+                Ui.PlaceCenter(cup.rectTransform, 34, stripH / 2f, 44, 44);
+                Ui.Fit(Ui.Label(strip, L.T("Выставка недели"), 16, Palette.Ink, 68, 9, cardW - 192, 24, true, TextAnchor.MiddleLeft), 11);
+                Ui.Fit(Ui.Label(strip, done ? L.F("«{0}»: {1}, {2} очк.", theme.Name, Exhibition.MedalName(medal), progress.ExhibitionScore(today))
+                    : L.F("Тема «{0}»", theme.Name), 13, done ? ExhibitionPopup.MedalColor(medal) : Palette.CoinInk, 68, 34, cardW - 192, 20, false,
+                    TextAnchor.MiddleLeft), 9);
+                if (done)
+                {
+                    Ui.Label(strip, L.T("Смотреть"), 14, Palette.Link, cardW - 112, 14, 100, 36, true, TextAnchor.MiddleRight);
+                }
+                else
+                {
+                    var go = Ui.Button(strip, L.T("Выставить"), cardW - 112, 14, 100, 36, Palette.Coin, Palette.CoinShadow, Palette.CoinInk, 14);
+                    go.OnClick(() => App.ShowPopup(new ExhibitionPopup(App, App.RefreshScreen)));
+                    Ui.Sheen((RectTransform)go.transform, 100f, 36f, 3.2f, 0.7f);
+                    Ui.Badge(strip, cardW - 8f, 6f, 0);
+                }
+
+                strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new ExhibitionPopup(App, App.RefreshScreen)));
                 y += stripH + 16f;
+            }
+            else
+            {
+                y += 4f;
             }
 
             for (var c = 0; c < Collections.All.Length; c++)
@@ -545,9 +580,34 @@ namespace KnittedPicture.Game
             Ui.InfoButton(banner, cardW - 30, 26, L.T("Пряжа и её бонусы"),
                 L.T("Мотки выпадают за новые картинки, в звёздном сундуке и на 7-й день подарков. ") +
                 L.F("С уровня {0} моток «в работе» даёт бонус: монеты за картинку или дороже золотые петли. ", YarnCatalog.PerksFromLevel) +
-                L.T("Повтор поднимает уровень мотка до 3, дальше даёт монеты. Полный набор приносит награду."), 26);
+                L.T("Повтор поднимает уровень мотка до 3, потом 5 повторов делают моток золотым (бонус сильнее), а у золотого повтор даёт монеты. Полный набор приносит награду."), 26);
             ActiveYarnStrip(banner, 12, 98, cardW - 24, () => App.ShowCollections(CollectionsTab.Yarn));
-            y += bannerH + 16f;
+            y += bannerH + 12f;
+
+            // Книга находок: вся пряжа и все рамки по редкости.
+            {
+                const float stripH = 56f;
+                var found = 0;
+                for (var i = 0; i < YarnCatalog.Count; i++)
+                {
+                    found += progress.HasYarn(i) ? 1 : 0;
+                }
+
+                foreach (var f in AlbumFrames.All)
+                {
+                    found += progress.FrameOwned(f.Id) ? 1 : 0;
+                }
+
+                var total = YarnCatalog.Count + AlbumFrames.All.Length;
+                var book = Ui.Card(content, "Finds", 16, y, cardW, stripH, 18, Palette.Card, Palette.CardShadow, 3f, true);
+                var icon = Ui.Image(book, "Book", Art2.AlbumBook, Color.white);
+                Ui.PlaceCenter(icon.rectTransform, 32, stripH / 2f, 38, 38);
+                Ui.Fit(Ui.Label(book, L.T("Книга находок"), 16, Palette.Ink, 62, 0, cardW - 170, stripH, true, TextAnchor.MiddleLeft), 11);
+                Ui.Label(book, L.F("{0} из {1}", found, total), 14, Palette.Ink2, cardW - 120, 0, 84, stripH, true, TextAnchor.MiddleRight);
+                Ui.IconImage(book, Icon.Back, Palette.Ink3, cardW - 22, stripH / 2f, 16).rectTransform.localRotation = Quaternion.Euler(0f, 0f, 180f);
+                book.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new FindsPopup(App)));
+                y += stripH + 16f;
+            }
 
             const float gap = 8f;
             var setIndex = 0;

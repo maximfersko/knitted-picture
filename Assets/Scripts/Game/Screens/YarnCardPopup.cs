@@ -68,7 +68,7 @@ namespace KnittedPicture.Game
                 : (L.T("не в работе"), Palette.Track, Palette.Ink2);
             // Пояснение только там, где без него не понять: где взять ненайденный моток.
             // Остальное и так видно по статусу и кнопке «Взять в работу».
-            var hint = !owned ? L.T("Выпадает за новые картинки, в сундуке и в подарке дня") : null;
+            var hint = !owned ? yarn.Seasonal ? L.T("Только за финал «Вязального сезона» своего времени года") : L.T("Выпадает за новые картинки, в сундуке и в подарке дня") : null;
             var working = owned && open && active;
             BeginSection(L.T("Бонус"), active && open);
             var iconBack = Ui.Image(_box!, "IconBack", Art.Circle, PerkSoft(perk));
@@ -108,9 +108,30 @@ namespace KnittedPicture.Game
                 }
 
                 _boxY += 28f;
+
+                // На максимальном уровне — путь к золотой версии: пять золотых делений.
+                var golden = progress.IsGolden(yarnId);
+                if (level >= YarnCatalog.MaxLevel)
+                {
+                    var gold = progress.GoldProgress(yarnId);
+                    Ui.Label(_box!, golden ? L.T("Золотая версия") : L.F("К золоту {0} из {1}", gold, YarnCatalog.GoldenAfter), 13,
+                        golden ? Palette.CoinInk : Palette.Ink2, 14, _boxY, 160, 20, true, TextAnchor.MiddleLeft);
+                    const float goldW = 18f;
+                    for (var i = 0; i < YarnCatalog.GoldenAfter; i++)
+                    {
+                        var seg = Ui.Box(_box!, "Gold", 4, i < gold ? Palette.Coin : Palette.Inactive).rectTransform;
+                        Ui.Place(seg, Inner - 14 - YarnCatalog.GoldenAfter * (goldW + 4f) + 4f + i * (goldW + 4f), _boxY + 6f, goldW, 8);
+                    }
+
+                    _boxY += 26f;
+                }
+
                 var next = level < YarnCatalog.MaxLevel
                     ? L.F("Ещё такой моток: {0}", YarnCatalog.PerkShort(perk, YarnCatalog.Power(yarnId, level + 1)))
-                    : L.F("Повтор: +{0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity));
+                    : golden
+                        ? L.F("Золотой моток: бонус сильнее на 1. Повтор: +{0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity))
+                        : L.F("Повторы копят к золотой версии: особый вид и бонус сильнее на 1 (ещё {0})",
+                            YarnCatalog.GoldenAfter - progress.GoldProgress(yarnId));
                 SectionText(next, 12, Palette.Ink2, false);
                 EndSection();
             }

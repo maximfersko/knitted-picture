@@ -496,6 +496,8 @@ namespace KnittedPicture.Game
                 });
                 var caption = reward.NewYarn ? L.T("Новый моток")
                     : reward.YarnLevelUp ? L.F("Уровень {0}!", App.Progress.YarnLevel(yarn.Id))
+                    : reward.GoldStep >= YarnCatalog.GoldenAfter ? L.T("Золотой моток!")
+                    : reward.GoldStep > 0 ? L.F("Золото {0}/{1}", reward.GoldStep, YarnCatalog.GoldenAfter)
                     : L.T("Повтор мотка");
                 Ui.Fit(Ui.Label(tile, caption, 12, reward.NewYarn ? YarnView.RarityColor(yarn.Rarity) : reward.YarnLevelUp ? Palette.Primary : Palette.Ink2,
                     54, 10, tileW - 62, 18, true, TextAnchor.MiddleLeft), 9);

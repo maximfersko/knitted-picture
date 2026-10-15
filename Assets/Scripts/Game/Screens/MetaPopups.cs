@@ -132,6 +132,8 @@ namespace KnittedPicture.Game
                 var yarn = YarnCatalog.All[reward.Yarn];
                 var caption = granted.NewYarn ? L.F("{0}\nновый моток!", yarn.Name)
                     : granted.YarnLevelUp ? L.F("{0}\nуровень {1}!", yarn.Name, app.Progress.YarnLevel(yarn.Id))
+                    : granted.BecameGolden ? L.F("{0}\nзолотой!", yarn.Name)
+                    : granted.GoldStep > 0 ? L.F("{0}\nзолото {1}/{2}", yarn.Name, granted.GoldStep, YarnCatalog.GoldenAfter)
                     : L.F("{0}\nповтор: +{1}", yarn.Name, granted.DuplicateCoins);
                 items.Add((cell =>
                 {

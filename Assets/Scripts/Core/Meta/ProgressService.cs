@@ -63,6 +63,11 @@ namespace KnittedPicture.Core
             d.yarnSetsClaimed ??= new System.Collections.Generic.List<int>();
             d.collectionsClaimed ??= new System.Collections.Generic.List<int>();
             d.attempts ??= new System.Collections.Generic.List<int>();
+            d.exhibitLevels ??= new System.Collections.Generic.List<int>();
+            d.exhibitFrames ??= new System.Collections.Generic.List<int>();
+            d.seasonPoints = System.Math.Max(0, d.seasonPoints);
+            d.seasonClaimed = System.Math.Max(0, System.Math.Min(Season.Steps, d.seasonClaimed));
+            d.exhibitMedal = System.Math.Max(0, System.Math.Min(3, d.exhibitMedal));
             if (d.nextLevel < 1)
             {
                 d.nextLevel = 1;
@@ -194,7 +199,55 @@ namespace KnittedPicture.Core
             _data.videoBoosterCount++;
         }
 
-        public bool FrameOwned(int id) => id == 0 || _data.frames.Contains(id);
+        /// <summary>
+        /// Есть ли рамка: деревянная всегда, купленные и сезонные — в сохранении, рамка коллекции — как только
+        /// у всех картинок коллекции по три звезды.
+        /// </summary>
+        public bool FrameOwned(int id)
+        {
+            if (id == 0 || _data.frames.Contains(id))
+            {
+                return true;
+            }
+
+            var info = AlbumFrames.Get(id);
+            return info.Id == id && info.Source == FrameSource.Collection && IsCollectionPerfect(info.Tag);
+        }
+
+        /// <summary>У всех картинок коллекции по три звезды.</summary>
+        public bool IsCollectionPerfect(int index)
+        {
+            if (index < 0 || index >= Collections.All.Length)
+            {
+                return false;
+            }
+
+            var collection = Collections.All[index];
+            for (var id = collection.FirstLevel; id <= collection.LastLevel; id++)
+            {
+                if (StarsOf(id) < 3)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>Сколько рамок коллекций уже открыто: экран победы сравнивает до и после.</summary>
+        public int CollectionFramesOwned
+        {
+            get
+            {
+                var n = 0;
+                for (var i = 0; i < Collections.All.Length; i++)
+                {
+                    n += IsCollectionPerfect(i) ? 1 : 0;
+                }
+
+                return n;
+            }
+        }
 
         public FrameInfo SelectedFrame => AlbumFrames.Get(_data.frame);
 
@@ -202,7 +255,7 @@ namespace KnittedPicture.Core
         public bool BuyFrame(int id)
         {
             var info = AlbumFrames.Get(id);
-            if (info.Id != id || FrameOwned(id) || _data.coins < info.Price)
+            if (info.Id != id || info.Source != FrameSource.Shop || FrameOwned(id) || _data.coins < info.Price)
             {
                 return false;
             }
@@ -218,6 +271,12 @@ namespace KnittedPicture.Core
             if (!FrameOwned(id))
             {
                 return false;
+            }
+
+            // Рамка коллекции записывается в сохранение при выборе: так она переживает загрузку (Repair).
+            if (id != 0 && !_data.frames.Contains(id))
+            {
+                _data.frames.Add(id);
             }
 
             _data.frame = id;
@@ -277,6 +336,13 @@ namespace KnittedPicture.Core
         /// </summary>
         public WarmStart WarmStartFor(int levelId)
         {
+            // После посылки бабушки первая новая картинка — с полным тёплым стартом: мягкий вход обратно.
+            if (_data.comebackWarm && !IsCompleted(levelId))
+            {
+                return new WarmStart(IsBoosterOpen(BoosterType.Slot, levelId), IsBoosterOpen(BoosterType.Scissors, levelId),
+                    IsBoosterOpen(BoosterType.Undo, levelId));
+            }
+
             if (IsCompleted(levelId) || _data.streak <= 0)
             {
                 return default;
@@ -420,12 +486,15 @@ namespace KnittedPicture.Core
                 return new Granted(granted, false, 0);
             }
 
-            // Повтор сначала поднимает уровень мотка, и только на максимальном уровне становится монетами.
+            // Повтор сначала поднимает уровень мотка, на максимальном уровне копит к золотой версии,
+            // и только у золотого мотка становится монетами.
             var maxedBefore = YarnLevel(yarn) >= YarnCatalog.MaxLevel;
+            var goldenBefore = IsGolden(yarn);
             var isNew = AddYarn(yarn);
-            var duplicate = isNew || !maxedBefore ? 0 : YarnCatalog.DuplicateCoins(YarnCatalog.All[yarn].Rarity);
+            var goldStep = !isNew && maxedBefore && !goldenBefore ? GoldProgress(yarn) : 0;
+            var duplicate = isNew || !maxedBefore || !goldenBefore ? 0 : YarnCatalog.DuplicateCoins(YarnCatalog.All[yarn].Rarity);
             _data.coins += duplicate;
-            return new Granted(granted, isNew, duplicate);
+            return new Granted(granted, isNew, duplicate, goldStep);
         }
 
         // ---------- Корзинка пряжи ----------
@@ -436,6 +505,12 @@ namespace KnittedPicture.Core
 
         /// <summary>Уровень мотка 0..3: сколько штук собрано, но не больше максимума.</summary>
         public int YarnLevel(int yarn) => System.Math.Min(YarnCount(yarn), YarnCatalog.MaxLevel);
+
+        /// <summary>Шаги к золотой версии: повторы сверх максимального уровня, 0..YarnCatalog.GoldenAfter.</summary>
+        public int GoldProgress(int yarn) => System.Math.Max(0, System.Math.Min(YarnCount(yarn) - YarnCatalog.MaxLevel, YarnCatalog.GoldenAfter));
+
+        /// <summary>Золотая версия мотка: особый вид и бонус сильнее на 1.</summary>
+        public bool IsGolden(int yarn) => YarnCount(yarn) >= YarnCatalog.MaxLevel + YarnCatalog.GoldenAfter;
 
         /// <summary>Моток «в работе», -1 — нет (или его нет в каталоге этой версии игры).</summary>
         public int ActiveYarn => _data.activeYarn < YarnCatalog.Count && HasYarn(_data.activeYarn) ? _data.activeYarn : -1;
@@ -459,7 +534,7 @@ namespace KnittedPicture.Core
         public int PerkPower(YarnPerk perk)
         {
             var yarn = ActiveYarn;
-            return PerksOpen && yarn >= 0 && YarnCatalog.PerkOf(yarn) == perk ? YarnCatalog.Power(yarn, YarnLevel(yarn)) : 0;
+            return PerksOpen && yarn >= 0 && YarnCatalog.PerkOf(yarn) == perk ? YarnCatalog.Power(yarn, YarnLevel(yarn), IsGolden(yarn)) : 0;
         }
 
         /// <summary>
@@ -507,6 +582,21 @@ namespace KnittedPicture.Core
             }
         }
 
+        /// <summary>Сколько разных мотков без сезонных: для «Корзинка полна».</summary>
+        public int BaseYarnKinds
+        {
+            get
+            {
+                var kinds = 0;
+                for (var i = 0; i < YarnCatalog.Count; i++)
+                {
+                    kinds += HasYarn(i) && !YarnCatalog.All[i].Seasonal ? 1 : 0;
+                }
+
+                return kinds;
+            }
+        }
+
         /// <summary>Положить моток в корзинку. true — такого ещё не было.</summary>
         public bool AddYarn(int yarn)
         {
@@ -534,15 +624,23 @@ namespace KnittedPicture.Core
         /// Случайный моток: редкие выпадают реже, ненайденные в полтора раза чаще. Если двенадцать мотков
         /// подряд не было эпического, следующий — эпический (защита от невезения).
         /// </summary>
-        public int RollYarn(System.Random rng)
+        public int RollYarn(System.Random rng) => RollYarn(rng, Rarity.Common);
+
+        /// <summary>Случайный моток не ниже редкости floor (посылка после перерыва, награды сезона).</summary>
+        public int RollYarn(System.Random rng, Rarity floor)
         {
             var epicOnly = _data.yarnsSinceEpic >= YarnCatalog.EpicPity;
+            if (epicOnly && floor < Rarity.Epic)
+            {
+                floor = Rarity.Epic;
+            }
+
             var total = 0;
             var weights = new int[YarnCatalog.Count];
             for (var i = 0; i < weights.Length; i++)
             {
                 var rarity = YarnCatalog.All[i].Rarity;
-                weights[i] = epicOnly && rarity < Rarity.Epic ? 0 : YarnCatalog.RollWeight(rarity, HasYarn(i));
+                weights[i] = rarity < floor ? 0 : YarnCatalog.RollWeight(i, HasYarn(i));
                 total += weights[i];
             }
 
@@ -737,7 +835,197 @@ namespace KnittedPicture.Core
             _data.patternDay = today;
             _data.patternsDone++;
             var yarn = _data.patternStreak % DailyPattern.YarnEvery == 0 ? DailyGift.RandomYarn : -1;
+            RecordSeason(today, Season.PatternPoints);
             return Grant(new Reward(DailyPattern.RewardCoins, null, 0, yarn), rng);
+        }
+
+        // ---------- Вязальный сезон ----------
+
+        public bool SeasonOpen => _data.nextLevel >= Season.FromLevel;
+
+        /// <summary>Сохранённый сезон — сегодняшний (часы назад — сезон замирает, как марафон).</summary>
+        private bool SeasonCurrent(int today) => _data.seasonId == Season.SeasonOf(today);
+
+        public int SeasonPoints(int today) =>
+            SeasonCurrent(today) ? _data.seasonPoints : Season.SeasonOf(today) > _data.seasonId ? 0 : _data.seasonPoints;
+
+        public int SeasonClaimed(int today) =>
+            SeasonCurrent(today) ? _data.seasonClaimed : Season.SeasonOf(today) > _data.seasonId ? 0 : _data.seasonClaimed;
+
+        /// <summary>Сколько ступеней пройдено по очкам (не больше Season.Steps).</summary>
+        public int SeasonReached(int today) => System.Math.Min(Season.Steps, SeasonPoints(today) / Season.StepPoints);
+
+        /// <summary>Очки сезона: новый сезон — счёт с нуля, незабранное прошлого сгорает.</summary>
+        public void RecordSeason(int today, int points)
+        {
+            if (!SeasonOpen || points <= 0)
+            {
+                return;
+            }
+
+            var season = Season.SeasonOf(today);
+            if (season > _data.seasonId)
+            {
+                _data.seasonId = season;
+                _data.seasonPoints = 0;
+                _data.seasonClaimed = 0;
+            }
+
+            if (season == _data.seasonId)
+            {
+                _data.seasonPoints = (int)System.Math.Min(int.MaxValue, (long)_data.seasonPoints + points);
+            }
+        }
+
+        public bool CanClaimSeason(int today) => SeasonOpen && SeasonCurrent(today) && _data.seasonClaimed < SeasonReached(today);
+
+        /// <summary>Сколько ступеней можно забрать прямо сейчас.</summary>
+        public int SeasonWaiting(int today) => CanClaimSeason(today) ? SeasonReached(today) - _data.seasonClaimed : 0;
+
+        /// <summary>
+        /// Забрать следующую ступень сезона. Рамка финала кладётся в рамки (уже есть — монетами),
+        /// сезонный моток — в корзинку (повтор копит к золотой версии). null — нечего забирать.
+        /// </summary>
+        public SeasonClaim? ClaimSeason(int today, System.Random rng)
+        {
+            if (!CanClaimSeason(today))
+            {
+                return null;
+            }
+
+            var theme = Season.ThemeOf(_data.seasonId);
+            var step = Season.Step(_data.seasonClaimed + 1, theme);
+            _data.seasonClaimed++;
+            if (step.Prize == SeasonPrize.SeasonFrame)
+            {
+                var frame = AlbumFrames.ForSeason(theme);
+                if (FrameOwned(frame.Id))
+                {
+                    return new SeasonClaim(step, Grant(Reward.CoinsOnly(Season.FrameOwnedCoins), rng), -1);
+                }
+
+                _data.frames.Add(frame.Id);
+                return new SeasonClaim(step, new Granted(Reward.CoinsOnly(0), false, 0), frame.Id);
+            }
+
+            return new SeasonClaim(step, Grant(step.Reward, rng), -1);
+        }
+
+        // ---------- Выставка недели ----------
+
+        public bool ExhibitionOpen => _data.nextLevel >= Exhibition.FromLevel && _data.completed.Count >= Exhibition.Pictures;
+
+        public bool ExhibitionDone(int today) => _data.exhibitWeek >= WeeklyMarathon.WeekOf(today);
+
+        public int ExhibitionMedal(int today) => _data.exhibitWeek == WeeklyMarathon.WeekOf(today) ? _data.exhibitMedal : 0;
+
+        public int ExhibitionScore(int today) => _data.exhibitWeek == WeeklyMarathon.WeekOf(today) ? _data.exhibitScore : 0;
+
+        /// <summary>Оценка набора: три картинки в рамках (рамки должны быть у игрока, картинки — готовы и разные).</summary>
+        public int ExhibitionPreview(int today, IReadOnlyList<LevelData> pictures, IReadOnlyList<int> frames)
+        {
+            var theme = Exhibition.ThemeOf(WeeklyMarathon.WeekOf(today));
+            var score = 0;
+            for (var i = 0; i < pictures.Count && i < frames.Count; i++)
+            {
+                score += Exhibition.Score(pictures[i], StarsOf(pictures[i].id), AlbumFrames.Get(frames[i]), theme);
+            }
+
+            return score;
+        }
+
+        /// <summary>
+        /// Выставить картинки: раз в неделю. Медаль даёт награду, выставка — очки сезона. null — уже выставлялись
+        /// на этой неделе или набор неверный (не три разные готовые картинки, чужая рамка).
+        /// </summary>
+        public ExhibitionResult? SubmitExhibition(int today, IReadOnlyList<LevelData> pictures, IReadOnlyList<int> frames, System.Random rng)
+        {
+            if (!ExhibitionOpen || ExhibitionDone(today) || pictures.Count != Exhibition.Pictures || frames.Count != Exhibition.Pictures)
+            {
+                return null;
+            }
+
+            var ids = new HashSet<int>();
+            for (var i = 0; i < Exhibition.Pictures; i++)
+            {
+                if (!IsCompleted(pictures[i].id) || !ids.Add(pictures[i].id) || !FrameOwned(frames[i]))
+                {
+                    return null;
+                }
+            }
+
+            var score = ExhibitionPreview(today, pictures, frames);
+            var medal = Exhibition.MedalOf(score);
+            _data.exhibitWeek = WeeklyMarathon.WeekOf(today);
+            _data.exhibitScore = score;
+            _data.exhibitMedal = medal;
+            _data.exhibitLevels = new List<int>();
+            _data.exhibitFrames = new List<int>();
+            for (var i = 0; i < Exhibition.Pictures; i++)
+            {
+                _data.exhibitLevels.Add(pictures[i].id);
+                _data.exhibitFrames.Add(frames[i]);
+            }
+
+            RecordSeason(today, Season.ExhibitionPoints);
+            Granted? granted = medal > 0 ? Grant(Exhibition.Rewards[medal - 1], rng) : (Granted?)null;
+            return new ExhibitionResult(score, medal, granted);
+        }
+
+        // ---------- Посылка после перерыва ----------
+
+        /// <summary>Сколько дней без игры нужно для посылки от бабушки.</summary>
+        public const int ComebackDays = 3;
+
+        /// <summary>
+        /// Игрок зашёл в игру: если его не было ComebackDays дней и больше, ждёт посылка. Запоминает день.
+        /// Часы назад посылку не дают и последний день не сдвигают назад.
+        /// </summary>
+        public bool Visit(int today)
+        {
+            if (_data.lastDay >= 0 && today - _data.lastDay >= ComebackDays && _data.completed.Count > 0 && !_data.comebackPending)
+            {
+                _data.comebackPending = true;
+                _data.comebackDays = today - _data.lastDay;
+            }
+
+            _data.lastDay = System.Math.Max(_data.lastDay, today);
+            return _data.comebackPending;
+        }
+
+        public bool ComebackPending => _data.comebackPending;
+
+        /// <summary>Редкость посылки: на ступень выше следующего сундука (не ниже необычной).</summary>
+        public Rarity ComebackRarity => (Rarity)System.Math.Max((int)Rarity.Uncommon, System.Math.Min((int)Rarity.Legendary, (int)NextChestRarity + 1));
+
+        /// <summary>
+        /// Открыть посылку: монеты как в сундуке этой редкости (середина), бустер из открытых и моток не ниже
+        /// её редкости (легендарная — не ниже эпической). Следующая новая картинка — с полным тёплым стартом.
+        /// </summary>
+        public Granted? ClaimComeback(System.Random rng)
+        {
+            if (!_data.comebackPending)
+            {
+                return null;
+            }
+
+            var rarity = ComebackRarity;
+            var range = Chest.CoinRange(rarity);
+            var open = new List<BoosterType>();
+            foreach (BoosterType type in System.Enum.GetValues(typeof(BoosterType)))
+            {
+                if (IsBoosterOpen(type, CurrentLevel))
+                {
+                    open.Add(type);
+                }
+            }
+
+            BoosterType? booster = open.Count > 0 ? open[rng.Next(open.Count)] : (BoosterType?)null;
+            var floor = rarity > Rarity.Epic ? Rarity.Epic : rarity;
+            var yarn = RollYarn(rng, floor);
+            _data.comebackPending = false;
+            _data.comebackWarm = true;
+            return Grant(new Reward((range.Min + range.Max) / 2, booster, Chest.BoosterCountOf(rarity), yarn), rng);
         }
 
         // ---------- Вязальный марафон ----------
@@ -835,6 +1123,7 @@ namespace KnittedPicture.Core
             }
 
             _data.missionsClaimed = true;
+            RecordSeason(today, Season.MissionsPoints);
             return Grant(MissionsReward(today), rng);
         }
 
@@ -930,7 +1219,7 @@ namespace KnittedPicture.Core
         }
 
         /// <summary>Засчитать победу и начислить награду.</summary>
-        public WinReward CompleteLevel(int levelId, bool hard, int stars = 3, int comboCoins = 0)
+        public WinReward CompleteLevel(int levelId, bool hard, int stars = 3, int comboCoins = 0, int today = -1)
         {
             // Такого уровня нет: ничего не засчитываем (ошибка вызова не должна ронять экран победы).
             if (levelId < 1 || levelId > LevelCount)
@@ -959,6 +1248,17 @@ namespace KnittedPicture.Core
             if (stars > previousStars)
             {
                 _data.stars[levelId - 1] = stars;
+            }
+
+            if (firstTime)
+            {
+                _data.comebackWarm = false;
+            }
+
+            // Сезон: звёзды за новую картинку, прибавка звёзд за улучшение, 1 очко за простой повтор.
+            if (today >= 0)
+            {
+                RecordSeason(today, firstTime ? stars : stars > previousStars ? stars - previousStars : Season.ReplayPoints);
             }
 
             // Серия растёт и приносит монеты только за новые уровни: перепрохождение старых
@@ -999,7 +1299,8 @@ namespace KnittedPicture.Core
                 yarn.NewYarn,
                 yarn.DuplicateCoins,
                 firstTime ? YarnCatalog.CoinsBonus(PerkPower(YarnPerk.Coins)) : 0,
-                nextChance);
+                nextChance,
+                yarn.GoldStep);
             _data.coins += reward.BaseCoins + reward.ComboCoins + reward.PerkCoins;
             _data.totalWins++;
             _data.winsSinceInterstitial++;
@@ -1035,12 +1336,47 @@ namespace KnittedPicture.Core
         }
     }
 
+    /// <summary>Забранная ступень сезона: сама ступень, что выдано и рамка (-1 — без рамки).</summary>
+    public readonly struct SeasonClaim
+    {
+        public SeasonClaim(SeasonStep step, Granted granted, int frame)
+        {
+            Step = step;
+            Granted = granted;
+            Frame = frame;
+        }
+
+        public SeasonStep Step { get; }
+
+        public Granted Granted { get; }
+
+        public int Frame { get; }
+    }
+
+    /// <summary>Итог выставки: очки, медаль и награда (null — без медали).</summary>
+    public readonly struct ExhibitionResult
+    {
+        public ExhibitionResult(int score, int medal, Granted? granted)
+        {
+            Score = score;
+            Medal = medal;
+            Granted = granted;
+        }
+
+        public int Score { get; }
+
+        public int Medal { get; }
+
+        public Granted? Granted { get; }
+    }
+
     /// <summary>Из чего сложилась награда за победу — экран победы показывает строки.</summary>
     public readonly struct WinReward
     {
         public WinReward(int baseCoins, int comboCoins, int streak, int stars, bool newRecord,
-            int yarn = -1, bool newYarn = false, int yarnCoins = 0, int perkCoins = 0, int nextYarnChance = 0)
+            int yarn = -1, bool newYarn = false, int yarnCoins = 0, int perkCoins = 0, int nextYarnChance = 0, int goldStep = 0)
         {
+            GoldStep = goldStep;
             NextYarnChance = nextYarnChance;
             PerkCoins = perkCoins;
             Yarn = yarn;
@@ -1079,8 +1415,11 @@ namespace KnittedPicture.Core
         /// <summary>Бонус пряжи «в работе» (Тёплая копилка) за новую картинку.</summary>
         public int PerkCoins { get; }
 
+        /// <summary>Повтор на максимальном уровне: шаг к золотой версии (0 — не было).</summary>
+        public int GoldStep { get; }
+
         /// <summary>Повтор мотка поднял его уровень (монет за повтор нет).</summary>
-        public bool YarnLevelUp => Yarn >= 0 && !NewYarn && YarnCoins == 0;
+        public bool YarnLevelUp => Yarn >= 0 && !NewYarn && YarnCoins == 0 && GoldStep == 0;
 
         public int Total => BaseCoins + ComboCoins + YarnCoins + PerkCoins;
     }

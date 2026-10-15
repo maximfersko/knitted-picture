@@ -336,15 +336,14 @@ namespace KnittedPicture.ArtPreview
         /// <summary>Рамки альбома: все стили в ряд, крупно и в размере плитки.</summary>
         private static void Frames(string dir)
         {
-            const int cell = 230;
-            var img = new Raster(5 * cell + 20, 2 * cell + 20 + 90);
+            const int cell = 150;
+            const int cols = 9;
+            var rows = (FrameRaster.Styles + cols - 1) / cols;
+            var img = new Raster(cols * cell + 20, rows * cell + 20);
             Png.Fill(img, Rgba.Hex("#F3F5F8"));
             for (var i = 0; i < FrameRaster.Styles; i++)
             {
-                var frame = FrameRaster.Frame(i);
-                Png.Put(img, frame, 10 + (i % 5) * cell, 100 + (1 - i / 5) * cell, 216, 216);
-                // В размере плитки альбома (около 64 точек, ×1.2 для плотности экрана).
-                Png.Put(img, frame, 10 + i * 115, 10, 78, 78);
+                Png.Put(img, FrameRaster.Frame(i), 10 + (i % cols) * cell, 10 + (rows - 1 - i / cols) * cell, 140, 140);
             }
 
             Png.Save(img, Path.Combine(dir, "frames.png"));

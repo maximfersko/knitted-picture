@@ -160,5 +160,26 @@ namespace KnittedPicture.Core
         /// <summary>Бустер за видео (окно «Не хватает монет»): день и сколько раз в этот день.</summary>
         public int videoBoosterDay = -1;
         public int videoBoosterCount;
+
+        /// <summary>«Вязальный сезон»: номер сезона (-1 — ещё не было), очки и сколько ступеней забрано.</summary>
+        public int seasonId = -1;
+        public int seasonPoints;
+        public int seasonClaimed;
+
+        /// <summary>«Выставка недели»: неделя, оценка, медаль (0..3), выставленные картинки и их рамки.</summary>
+        public int exhibitWeek = -1;
+        public int exhibitScore;
+        public int exhibitMedal;
+        public List<int> exhibitLevels = new List<int>();
+        public List<int> exhibitFrames = new List<int>();
+
+        /// <summary>
+        /// Посылка после перерыва: последний день в игре, ждёт ли посылка, сколько дней не было,
+        /// и «тёплый старт» на следующую новую картинку после посылки.
+        /// </summary>
+        public int lastDay = -1;
+        public bool comebackPending;
+        public int comebackDays;
+        public bool comebackWarm;
     }
 }

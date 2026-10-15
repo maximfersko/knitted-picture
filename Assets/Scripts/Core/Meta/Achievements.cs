@@ -65,7 +65,7 @@ namespace KnittedPicture.Core
             new AchievementInfo(12, "Полальбома", "Довяжи 25 картинок", 25, p => p.Data.completed.Count, new Reward(75, BoosterType.Scissors, 1)),
             new AchievementInfo(13, "Весь альбом", $"Довяжи все {Collections.All[Collections.All.Length - 1].LastLevel} картинок", Collections.All[Collections.All.Length - 1].LastLevel, p => p.Data.completed.Count, new Reward(250, BoosterType.Slot, 2)),
             new AchievementInfo(14, "Пять коллекций", "Собери 5 коллекций альбома", 5, p => p.CompletedCollections, new Reward(100, BoosterType.Undo, 2)),
-            new AchievementInfo(15, "Корзинка полна", "Собери все мотки пряжи", 16, p => p.YarnKinds, Reward.CoinsOnly(200)),
+            new AchievementInfo(15, "Корзинка полна", "Собери все мотки пряжи", YarnCatalog.BaseCount, p => p.BaseYarnKinds, Reward.CoinsOnly(200)),
         };
     }
 
