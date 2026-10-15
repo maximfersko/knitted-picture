@@ -190,6 +190,9 @@ namespace KnittedPicture.Game
         private void RebuildSlots()
         {
             Ui.Clear(_loomBg);
+
+            // Чёткий контур лотка (внутри станка: трясётся и пружинит вместе с ним).
+            Ui.Outline(_loomBg, 20, Palette.Line, 1.5f);
             var n = _game.Slots.Count;
             const float gap = SlotGap;
             var slotW = (W - 2 * Pad - 16f - gap * (n - 1)) / n;
@@ -200,7 +203,9 @@ namespace KnittedPicture.Game
             _tailViews = new RectTransform?[n];
             for (var i = 0; i < n; i++)
             {
-                var frame = Ui.Box(_loomBg, "Slot" + i, 14, Palette.Card);
+                // Слот — выточенная лунка (вдавленная плашка с тенью сверху и кромкой), а не плоский квадрат.
+                var frame = Ui.Box(_loomBg, "Slot", 14, Palette.Card);
+                frame.gameObject.name = "Slot" + i;
                 Ui.Place(frame.rectTransform, 8 + i * (slotW + gap), 8, slotW, 58);
                 var outline = Ui.Image(frame.rectTransform, "Outline", Art.RoundRectOutline(14, 2), Palette.SlotEmpty);
                 outline.type = Image.Type.Sliced;

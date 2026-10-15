@@ -120,8 +120,9 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Корпус шкатулки w×h пикселей: вязка «косами» цвета морской волны, ремень-лента (стальная или золотая у звёздного),
-        /// латунная окантовка снизу с ножками, латунный замочек с ключевиной. Свет сверху слева.
+        /// Корпус шкатулки w×h пикселей: вязка «косами» цвета морской волны, металлическая лента с заклёпками (стальная
+        /// или золотая у звёздного), латунная окантовка снизу с бликом, ножки, замочек с ключевиной.
+        /// По контуру — резкая тёмная кромка, у каждой детали — блик сверху: сундук чёткий и на маленькой плитке.
         /// </summary>
         public static Raster ChestBody(int w, int h, bool golden)
         {
@@ -140,7 +141,7 @@ namespace KnittedPicture.Game
                     // Ножки.
                     var foot = MathF.Min(Draw.RoundBox(x, y, 22f * s, 6f * s, 14f * s, 6f * s, 4f * s), Draw.RoundBox(x, y, w - 22f * s, 6f * s, 14f * s, 6f * s, 4f * s));
                     var fc = Draw.Cover(foot);
-                    return fc > 0f ? brass.Shade(-0.25f).WithAlpha(fc) : Rgba.Clear;
+                    return fc > 0f ? brass.Shade(-0.25f - 0.25f * (1f - Draw.SmoothStep(-2.4f * s, -0.8f * s, foot))).WithAlpha(fc) : Rgba.Clear;
                 }
 
                 Rgba c;
@@ -152,14 +153,30 @@ namespace KnittedPicture.Game
                     // Латунная окантовка снизу.
                     var t = (top - trim) / (26f * s);
                     c = brass.Shade(0.15f - 0.4f * t);
+
+                    // Блик по верхнему краю окантовки и тёмная щель над ней.
+                    var fromTrim = top - trim;
+                    c = Rgba.Lerp(c, Rgba.White, 0.45f * Draw.Clamp01(1f - MathF.Abs(fromTrim - 2.6f * s) / (1.2f * s)));
+                    c = c.Shade(-0.35f * Draw.Clamp01(1f - fromTrim / (1f * s)));
                 }
                 else if (top > bandTop && top < bandBottom)
                 {
-                    c = band.Shade(0.1f - 0.25f * (top - bandTop) / (bandBottom - bandTop));
-                    var stitchLine = MathF.Min(MathF.Abs(top - bandTop - 4f * s), MathF.Abs(top - bandBottom + 4f * s));
-                    if (stitchLine < 1.2f * s && MathF.Sin(x / (3.5f * s)) > 0.1f)
+                    // Металлическая лента: блик по верху, тень по низу, тёмные кромки; заклёпки вместо строчки.
+                    var bt = (top - bandTop) / (bandBottom - bandTop);
+                    c = band.Shade(0.22f - 0.3f * bt);
+                    c = Rgba.Lerp(c, Rgba.White, 0.35f * Draw.Clamp01(1f - MathF.Abs(bt - 0.18f) / 0.12f));
+                    var bandEdge = MathF.Min(top - bandTop, bandBottom - top);
+                    c = c.Shade(-0.3f * Draw.Clamp01(1f - bandEdge / (1.1f * s)));
+
+                    var pitch = 30f * s;
+                    var mid = (bandTop + bandBottom) / 2f;
+                    var rx = (x - w / 2f) - MathF.Round((x - w / 2f) / pitch) * pitch;
+                    var rivet = MathF.Sqrt(rx * rx + (top - mid) * (top - mid)) - 2.6f * s;
+                    if (rivet < 0.5f && MathF.Abs(x - w / 2f) > 20f * s)
                     {
-                        c = Rgba.Lerp(c, Rgba.White, 0.85f);
+                        var rlit = Draw.Clamp01(0.5f - (rx + (top - mid)) / (5f * s));
+                        var rc = band.Shade(-0.25f + 0.55f * rlit);
+                        c = Rgba.Lerp(c, rc, Draw.Cover(rivet));
                     }
                 }
                 else
@@ -174,16 +191,19 @@ namespace KnittedPicture.Game
                     c = teal.Shade((v - 1f) * 0.9f + (groove - 1f));
                 }
 
-                // Свет сверху слева, тень у краёв.
+                // Свет сверху слева, тень у краёв, резкая тёмная кромка по контуру.
                 var light = 0.12f * (1f - x / w) * (1f - top / h);
                 c = Rgba.Lerp(c, Rgba.White, light);
-                c = c.Shade(-0.22f * Draw.SmoothStep(-10f * s, 0f, body));
+                c = c.Shade(-0.12f * Draw.SmoothStep(-10f * s, 0f, body));
+                c = c.Shade(-0.35f * (1f - Draw.SmoothStep(-1.8f * s, -0.6f * s, body)));
 
                 // Замочек по центру сверху, на ленте.
                 var lockBody = Draw.RoundBox(x, y, w / 2f, h - 40f * s, 13f * s, 17f * s, 5f * s);
                 if (lockBody < 0.5f)
                 {
                     var lc = brass.Shade(0.15f - 0.35f * Draw.Clamp01((h - 40f * s - y + 17f * s) / (34f * s)));
+                    lc = lc.Shade(-0.35f * (1f - Draw.SmoothStep(-1.6f * s, -0.5f * s, lockBody)));
+                    lc = Rgba.Lerp(lc, Rgba.White, 0.4f * Draw.Clamp01(1f - MathF.Abs(lockBody + 2.6f * s) / (1f * s)) * Draw.Clamp01((y - (h - 40f * s)) / (10f * s)));
                     var hole = MathF.Min(Draw.Circle(x, y, w / 2f, h - 36f * s, 3.4f * s), Draw.RoundBox(x, y, w / 2f, h - 43f * s, 1.6f * s, 5f * s, 1f));
                     if (hole < 0f)
                     {
@@ -217,19 +237,24 @@ namespace KnittedPicture.Game
                 }
 
                 var v = (y / h);
-                var c = teal.Shade(-0.2f + 0.3f * v);
+                var c = teal.Shade(-0.12f + 0.3f * v);
                 if (y < 10f * s)
                 {
                     c = edge.Shade(-0.1f);
                 }
 
+                // Блик: чёткий край, а не размытое пятно.
                 var gloss = Draw.Ellipse(x, y, w * 0.35f, h * 0.72f, w * 0.2f, 6f * s, -4f);
-                if (gloss < 0f)
+                if (gloss < 0.5f)
                 {
-                    c = Rgba.Lerp(c, Rgba.White, 0.4f * Draw.Clamp01(-gloss / (4f * s)));
+                    c = Rgba.Lerp(c, Rgba.White, 0.42f * Draw.Cover(gloss) * (0.55f + 0.45f * Draw.Clamp01(-gloss / (3f * s))));
                 }
 
-                return c.Shade(-0.18f * Draw.SmoothStep(-8f * s, 0f, d)).WithAlpha(cover);
+                // Светлая полоса под верхним краем купола и резкая тёмная кромка по контуру.
+                c = Rgba.Lerp(c, Rgba.White, 0.18f * Draw.Clamp01(1f - MathF.Abs(-d - 3.2f * s) / (1.2f * s)) * Draw.Clamp01((y - h * 0.5f) / (h * 0.3f)));
+                c = c.Shade(-0.14f * Draw.SmoothStep(-8f * s, 0f, d));
+                c = c.Shade(-0.35f * (1f - Draw.SmoothStep(-1.8f * s, -0.6f * s, d)));
+                return c.WithAlpha(cover);
             });
             return r;
         }
