@@ -1,0 +1,222 @@
+#nullable enable
+
+using System.Collections.Generic;
+using System.Linq;
+using KnittedPicture.Core;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace KnittedPicture.Game
+{
+    /// <summary>Бустеры: место, ножницы, отмена, время; оплата и режим ножниц.</summary>
+    public sealed partial class GameScreen
+    {
+        // ---------- Бустеры ----------
+
+        private void OnBooster(BoosterType type)
+        {
+            if (_ended || _failShown || _finishing)
+            {
+                return;
+            }
+
+            if (!App.Progress.IsBoosterOpen(type, BoosterLevel))
+            {
+                App.Toast($"Откроется на уровне {Economy.UnlockLevel(type)}");
+                return;
+            }
+
+            switch (type)
+            {
+                case BoosterType.Scissors:
+                    if (_scissors)
+                    {
+                        SetScissors(false);
+                    }
+                    else if (_run.FreeScissors > 0 || App.Progress.CanAfford(type))
+                    {
+                        SetScissors(true);
+                    }
+                    else
+                    {
+                        NotEnough(type);
+                    }
+
+                    break;
+
+                case BoosterType.Undo:
+                    if (!_game.CanUndo)
+                    {
+                        App.Toast("Пока нечего отменять");
+                    }
+                    else if (_run.FreeUndo == 0 && App.Progress.Pay(type) == Payment.NotEnough)
+                    {
+                        NotEnough(type);
+                    }
+                    else
+                    {
+                        // Подарок серии — сначала он, и звезда за него не снимается.
+                        if (_run.FreeUndo > 0)
+                        {
+                            _run.FreeUndo--;
+                        }
+                        else
+                        {
+                            _boostersUsed++;
+                        }
+
+                        App.Save();
+                        TrackBooster(BoosterType.Undo, free: false);
+                        _game.Undo();
+                        _tempo.Break();
+                        _finishedColors.Clear();
+                        RestoreUndoneGold();
+                        Sfx.Play(Sound.Pick);
+                        RefreshAll();
+                        CheckStatus();
+                    }
+
+                    break;
+
+                case BoosterType.Slot:
+                    if (_game.Slots.Count >= LoomGame.MaxSlots)
+                    {
+                        App.Toast($"На станке уже {LoomGame.MaxSlots} мест, больше нельзя");
+                    }
+                    else if (App.Progress.Pay(type) == Payment.NotEnough)
+                    {
+                        NotEnough(type);
+                    }
+                    else
+                    {
+                        App.Save();
+                        _boostersUsed++;
+                        TrackBooster(BoosterType.Slot, free: false);
+                        _game.AddSlot();
+                        RebuildSlots();
+                        RefreshAll();
+                        Sfx.Play(Sound.Unlock);
+                        Tweens.Scale(_slotFrames[_slotFrames.Length - 1], 0.4f, 1f, 0.3f);
+                        CheckStatus();
+                    }
+
+                    break;
+            }
+
+            _coins.text = App.Progress.Coins.ToString();
+        }
+
+        /// <summary>Отмена развязала золотые петли: они снова в игре, а засчитанное за них снимается.</summary>
+        private void RestoreUndoneGold()
+        {
+            foreach (var key in _goldDone.Keys.ToList())
+            {
+                int x = key % _game.Width, y = key / _game.Width;
+                if (!_game.IsKnitted(x, y))
+                {
+                    _goldDone.Remove(key);
+                    _picture.RestoreGold(x, y);
+                }
+            }
+
+            _goldCaught = _goldDone.Values.Count(caught => caught);
+            _goldCoins = _goldCaught * _goldPerLoop;
+            RefreshGoals();
+        }
+
+        /// <summary>
+        /// Отмена, ножницы или новый слот меняют состояние вне шага вязки: если после них станок
+        /// встал (или картинка готова), показать это сразу, иначе экран «зависнет» без окна.
+        /// </summary>
+        private void CheckStatus()
+        {
+            if (_ended || _failShown)
+            {
+                return;
+            }
+
+            if (_game.Status == GameStatus.Won || _game.Status == GameStatus.Jammed)
+            {
+                AfterStatus(_game.Status);
+            }
+        }
+
+        /// <summary>Ножницы сработали: сначала тратятся бесплатные от серии (без потери звезды), потом запас или монеты.</summary>
+        private void PayScissors()
+        {
+            // Ножницы из окна затора — это спасение, как «+1 слот»: одна звезда, а не две.
+            if (_scissorsRescue)
+            {
+                _scissorsRescue = false;
+                _rescues++;
+            }
+
+            TrackBooster(BoosterType.Scissors, free: _run.FreeScissors > 0);
+            if (_run.FreeScissors > 0)
+            {
+                _run.FreeScissors--;
+            }
+            else
+            {
+                App.Progress.Pay(BoosterType.Scissors);
+                _boostersUsed++;
+            }
+
+            App.Save();
+        }
+
+        private void NotEnough(BoosterType type)
+        {
+            App.ShowPopup(new NotEnoughPopup(App, type, RefreshBoosters));
+        }
+
+        private void SetScissors(bool on)
+        {
+            if (_scissors == on)
+            {
+                return;
+            }
+
+            if (!on)
+            {
+                // Передумал резать — спасение не засчитываем.
+                _scissorsRescue = false;
+            }
+
+            _scissors = on;
+            HideHint();
+            if (on)
+            {
+                HideTip();
+                _scissorsBanner = Ui.Card(Root, "ScissorsBanner", Pad, _fieldY - 50f, W - 2 * Pad, 40, 20, Palette.Primary, Palette.Primary, 0f);
+                Ui.IconImage(_scissorsBanner, Icon.Scissors, Color.white, 24, 20, 20);
+                Ui.Label(_scissorsBanner, "Выбери клубок на поле или на станке", 15, Color.white, 40, 0, W - 2 * Pad - 52, 40, true, TextAnchor.MiddleLeft);
+                var group = _scissorsBanner.gameObject.AddComponent<CanvasGroup>();
+                group.blocksRaycasts = false;
+            }
+            else
+            {
+                HideScissorsBanner();
+            }
+
+            RefreshField();
+            RefreshBoosters();
+
+            // Передумал резать, а станок стоит в заторе: вернуть окно затора.
+            if (!on && !_failShown && !_ended && _game.Status == GameStatus.Jammed)
+            {
+                _failShown = true;
+                ShowFail(FailKind.Jam);
+            }
+        }
+
+        private void HideScissorsBanner()
+        {
+            if (_scissorsBanner != null)
+            {
+                Object.Destroy(_scissorsBanner.gameObject);
+                _scissorsBanner = null;
+            }
+        }
+    }
+}
