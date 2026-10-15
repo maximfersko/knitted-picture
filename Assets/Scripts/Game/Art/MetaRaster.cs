@@ -141,7 +141,7 @@ namespace KnittedPicture.Game
                     // Ножки.
                     var foot = MathF.Min(Draw.RoundBox(x, y, 22f * s, 6f * s, 14f * s, 6f * s, 4f * s), Draw.RoundBox(x, y, w - 22f * s, 6f * s, 14f * s, 6f * s, 4f * s));
                     var fc = Draw.Cover(foot);
-                    return fc > 0f ? brass.Shade(-0.25f - 0.25f * (1f - Draw.SmoothStep(-2.4f * s, -0.8f * s, foot))).WithAlpha(fc) : Rgba.Clear;
+                    return fc > 0f ? brass.Shade(-0.25f - 0.25f * Draw.SmoothStep(-2.4f * s, -0.8f * s, foot)).WithAlpha(fc) : Rgba.Clear;
                 }
 
                 Rgba c;
@@ -195,14 +195,14 @@ namespace KnittedPicture.Game
                 var light = 0.12f * (1f - x / w) * (1f - top / h);
                 c = Rgba.Lerp(c, Rgba.White, light);
                 c = c.Shade(-0.12f * Draw.SmoothStep(-10f * s, 0f, body));
-                c = c.Shade(-0.35f * (1f - Draw.SmoothStep(-1.8f * s, -0.6f * s, body)));
+                c = c.Shade(-0.35f * Draw.SmoothStep(-1.8f * s, -0.6f * s, body));
 
                 // Замочек по центру сверху, на ленте.
                 var lockBody = Draw.RoundBox(x, y, w / 2f, h - 40f * s, 13f * s, 17f * s, 5f * s);
                 if (lockBody < 0.5f)
                 {
                     var lc = brass.Shade(0.15f - 0.35f * Draw.Clamp01((h - 40f * s - y + 17f * s) / (34f * s)));
-                    lc = lc.Shade(-0.35f * (1f - Draw.SmoothStep(-1.6f * s, -0.5f * s, lockBody)));
+                    lc = lc.Shade(-0.35f * Draw.SmoothStep(-1.6f * s, -0.5f * s, lockBody));
                     lc = Rgba.Lerp(lc, Rgba.White, 0.4f * Draw.Clamp01(1f - MathF.Abs(lockBody + 2.6f * s) / (1f * s)) * Draw.Clamp01((y - (h - 40f * s)) / (10f * s)));
                     var hole = MathF.Min(Draw.Circle(x, y, w / 2f, h - 36f * s, 3.4f * s), Draw.RoundBox(x, y, w / 2f, h - 43f * s, 1.6f * s, 5f * s, 1f));
                     if (hole < 0f)
@@ -237,7 +237,7 @@ namespace KnittedPicture.Game
                 }
 
                 var v = (y / h);
-                var c = teal.Shade(-0.12f + 0.3f * v);
+                var c = teal.Shade(-0.2f + 0.3f * v);
                 if (y < 10f * s)
                 {
                     c = edge.Shade(-0.1f);
@@ -253,54 +253,89 @@ namespace KnittedPicture.Game
                 // Светлая полоса под верхним краем купола и резкая тёмная кромка по контуру.
                 c = Rgba.Lerp(c, Rgba.White, 0.18f * Draw.Clamp01(1f - MathF.Abs(-d - 3.2f * s) / (1.2f * s)) * Draw.Clamp01((y - h * 0.5f) / (h * 0.3f)));
                 c = c.Shade(-0.14f * Draw.SmoothStep(-8f * s, 0f, d));
-                c = c.Shade(-0.35f * (1f - Draw.SmoothStep(-1.8f * s, -0.6f * s, d)));
+                c = c.Shade(-0.35f * Draw.SmoothStep(-1.8f * s, -0.6f * s, d));
                 return c.WithAlpha(cover);
             });
             return r;
         }
 
-        /// <summary>Подарок: коробка в голубой вязке, крышка шире, розовая лента и бант с узелком. 192×192.</summary>
+        /// <summary>
+        /// Подарок: коробка в голубой вязке и крышка шире неё, красная лента крест-накрест и бант с узелком. 192×192,
+        /// рисуется вдвое крупнее (сглаженные края и мелкая вязка без ступенек). У каждой детали — резкая тёмная кромка,
+        /// свет сверху слева, тень от крышки на коробке, блики на ленте и петлях банта.
+        /// </summary>
         public static Raster Gift()
         {
             const int s = 192;
-            var r = new Raster(s, s);
             var blue = Rgba.Hex("#3D7FC4");
-            var pink = Rgba.Hex("#D9483E");
-            r.Paint((x, y) =>
+            var red = Rgba.Hex("#D9483E");
+            return Raster.Render(s, s, 2, (x, y) =>
             {
                 var result = Rgba.Clear;
-                void Layer(float d, Rgba c)
+
+                // Деталь: заливка с кромкой — у самого края темнее на rim, ширина кромки 1,6 точки.
+                void Layer(float d, Rgba c, float rim = 0.35f)
                 {
                     var cover = Draw.Cover(d);
                     if (cover > 0f)
                     {
-                        result = Rgba.Over(c.WithAlpha(cover), result);
+                        var edged = c.Shade(-rim * Draw.SmoothStep(-2.2f, -0.6f, d));
+                        result = Rgba.Over(edged.WithAlpha(cover), result);
                     }
                 }
 
+                // Вязка: вертикальные столбики петель (мягкие волны) и ряды; сглаженные, без ступенек.
+                float Knit(float px, float py)
+                {
+                    var col = MathF.Abs(MathF.Sin(px / 6f * MathF.PI));
+                    var row = 1f - Draw.Clamp01(MathF.Abs(((py / 9f) % 1f) - 0.5f) / 0.12f);
+                    return col * 0.09f + row * 0.05f;
+                }
+
+                // Коробка: свет слева, тень от крышки сверху, к низу темнее.
                 var box = Draw.RoundBox(x, y, 96f, 58f, 62f, 46f, 10f);
-                var knit = MathF.Abs(MathF.Sin(x / 6f * MathF.PI)) * 0.08f + (MathF.Abs(((y / 9f) % 1f) - 0.5f) < 0.08f ? 0.06f : 0f);
-                Layer(box, blue.Shade(-0.12f - knit));
-                Layer(Draw.RoundBox(x, y, 96f, 112f, 70f, 14f, 8f), blue.Shade(0.05f - knit * 0.5f));
-                Layer(Draw.RoundBox(x, y, 96f, 66f, 10f, 60f, 3f), pink.Shade(-0.05f));
-                Layer(Draw.Ellipse(x, y, 72f, 140f, 22f, 15f, 20f), pink);
-                Layer(Draw.Ellipse(x, y, 120f, 140f, 22f, 15f, -20f), pink);
-                Layer(Draw.Ellipse(x, y, 72f, 140f, 11f, 6f, 20f), pink.Shade(-0.3f));
-                Layer(Draw.Ellipse(x, y, 120f, 140f, 11f, 6f, -20f), pink.Shade(-0.3f));
-                Layer(Draw.Circle(x, y, 96f, 132f, 11f), pink.Shade(0.1f));
+                var side = Draw.Clamp01((x - 34f) / 124f);
+                var underLid = 1f - Draw.Clamp01((98f - y) / 10f);
+                Layer(box, blue.Shade(-0.04f - 0.16f * side - Knit(x, y) - 0.22f * underLid - 0.08f * Draw.Clamp01((60f - y) / 50f)));
+
+                // Крышка: светлее, блик по верхнему краю.
+                var lid = Draw.RoundBox(x, y, 96f, 112f, 70f, 14f, 8f);
+                var lidLit = Draw.Clamp01(1f - MathF.Abs(y - 121f) / 3f);
+                Layer(lid, Rgba.Lerp(blue.Shade(0.06f - 0.12f * Draw.Clamp01((x - 26f) / 140f) - Knit(x, y) * 0.5f), Rgba.White, 0.28f * lidLit));
+
+                // Лента по коробке и крышке: блестящая полоса посередине, тёмные края.
+                var ribbon = MathF.Min(Draw.RoundBox(x, y, 96f, 66f, 10f, 60f, 3f), Draw.RoundBox(x, y, 96f, 112f, 10f, 14f, 3f));
+                var stripe = Draw.Clamp01(1f - MathF.Abs(x - 93f) / 2.5f);
+                Layer(ribbon, Rgba.Lerp(red.Shade(-0.04f - 0.1f * Draw.Clamp01((x - 86f) / 20f)), Rgba.White, 0.32f * stripe));
+
+                // Бант: две петли с тёмной серединой и бликом, узелок поверх.
+                for (var k = -1; k <= 1; k += 2)
+                {
+                    var cx = 96f + k * 24f;
+                    var loop = Draw.Ellipse(x, y, cx, 140f, 22f, 15f, -20f * k);
+                    var lit = Draw.Clamp01((y - 128f) / 24f);
+                    var shine = Draw.Clamp01(1f - MathF.Abs(Draw.Ellipse(x, y, cx - k * 3f, 145f, 14f, 7f, -20f * k)) / 2f) * lit;
+                    Layer(loop, Rgba.Lerp(red.Shade(-0.12f + 0.16f * lit), Rgba.White, 0.35f * shine));
+                    Layer(Draw.Ellipse(x, y, cx + k * 2f, 139f, 10f, 5.5f, -20f * k), red.Shade(-0.45f), 0.2f);
+                }
+
+                var knot = Draw.Circle(x, y, 96f, 132f, 11f);
+                var knotLit = Draw.Clamp01(1f - Draw.Circle(x, y, 92f, 136f, 4f) / 6f);
+                Layer(knot, Rgba.Lerp(red.Shade(0.02f), Rgba.White, 0.35f * knotLit));
                 return result;
             });
-            return r;
         }
 
-        /// <summary>Монета: золото с ободом и выпуклым клубком в середине. 128×128.</summary>
+        /// <summary>
+        /// Монета: золото с фаской по ободу (сверху слева светлая, снизу справа тёмная), утопленное поле и выпуклый
+        /// клубок с тремя витками, резкая тёмная кромка по контуру и искра блика. 128×128, рисуется втрое крупнее.
+        /// </summary>
         public static Raster Coin()
         {
             const int s = 128;
-            var r = new Raster(s, s);
             var gold = Rgba.Hex("#FFC23C");
-            var deep = Rgba.Hex("#D98E0A");
-            r.Paint((x, y) =>
+            var deep = Rgba.Hex("#C27C08");
+            return Raster.Render(s, s, 3, (x, y) =>
             {
                 var d = Draw.Circle(x, y, 64f, 64f, 60f);
                 var cover = Draw.Cover(d);
@@ -311,33 +346,47 @@ namespace KnittedPicture.Game
 
                 var nx = (x - 64f) / 60f;
                 var ny = (y - 64f) / 60f;
-                var c = gold.Shade(-0.2f * Draw.Clamp01(0.5f + 0.6f * nx - 0.6f * ny));
-                if (d > -8f)
+                var lightDir = Draw.Clamp01(0.5f - 0.5f * nx + 0.5f * ny);
+
+                // Поле монеты: чуть утоплено, к низу справа темнее.
+                var c = gold.Shade(-0.04f - 0.16f * (1f - lightDir));
+
+                // Обод шириной 9: фаска — освещённая половина светлее, теневая темнее; граница с полем чёткая.
+                var rimInner = d + 9f;
+                if (rimInner > -0.5f)
                 {
-                    c = deep.Shade(0.1f * Draw.Clamp01(-nx + ny));
+                    var rimColor = Rgba.Lerp(deep, gold, 0.25f + 0.6f * lightDir).Shade(0.08f * lightDir);
+                    var t = Draw.Clamp01((rimInner + 0.5f) / 1.2f);
+                    c = Rgba.Lerp(c, rimColor, t);
+
+                    // Тонкая тень по внутреннему краю обода (поле ниже обода).
+                    c = c.Shade(-0.3f * Draw.Clamp01(1f - MathF.Abs(rimInner) / 1.4f));
                 }
 
-                // Клубок: круг и три витка.
+                // Клубок: выпуклый круг со светом сверху слева и тремя витками.
                 var ball = Draw.Circle(x, y, 64f, 64f, 26f);
-                if (ball < 0f)
+                if (ball < 0.5f)
                 {
-                    c = gold.Shade(0.08f);
+                    var bx = (x - 64f) / 26f;
+                    var by = (y - 64f) / 26f;
+                    var lit = Draw.Clamp01(0.5f - 0.45f * bx + 0.45f * by);
+                    var bc = gold.Shade(-0.08f + 0.18f * lit);
                     var wrap = MathF.Min(MathF.Abs(Draw.Circle(x, y, 40f, 64f, 26f)), MathF.Abs(Draw.Circle(x, y, 88f, 64f, 26f)));
                     wrap = MathF.Min(wrap, MathF.Abs(y - 64f - (x - 64f) * 0.3f));
-                    if (wrap < 2.6f)
-                    {
-                        c = deep;
-                    }
-                }
-                else if (MathF.Abs(ball) < 2.4f)
-                {
-                    c = deep;
+                    bc = Rgba.Lerp(bc, deep, Draw.Cover(wrap - 1.6f) * 0.9f);
+                    c = Rgba.Lerp(c, bc, Draw.Cover(ball));
                 }
 
-                c = Rgba.Lerp(c, Rgba.White, MathF.Pow(Draw.Clamp01(-0.5f * nx + 0.6f * ny), 6f) * 0.5f);
+                // Контур клубка — тёмная линия.
+                c = Rgba.Lerp(c, deep, Draw.Cover(MathF.Abs(ball) - 1.4f));
+
+                // Искра блика сверху слева и резкая тёмная кромка монеты.
+                c = Rgba.Lerp(c, Rgba.White, MathF.Pow(Draw.Clamp01(-0.5f * nx + 0.6f * ny), 6f) * 0.55f);
+                var spark = Draw.Circle(x, y, 38f, 92f, 4f);
+                c = Rgba.Lerp(c, Rgba.White, 0.7f * Draw.Clamp01(1f - (spark + 4f) / 6f));
+                c = Rgba.Lerp(c, deep.Shade(-0.25f), Draw.SmoothStep(-1.8f, -0.5f, d));
                 return c.WithAlpha(cover);
             });
-            return r;
         }
 
         /// <summary>
