@@ -479,20 +479,34 @@ namespace KnittedPicture.Game
         /// </summary>
         private static void Header(RectTransform card, float cardW, string title, string subtitle, string? doneChip, string score)
         {
-            Ui.Fit(Ui.Label(card, title, 18, Palette.Ink, 16, 12, cardW - 140, 26, true, TextAnchor.MiddleLeft), 13);
-            Ui.Fit(Ui.Label(card, subtitle, 13, Palette.Ink2, 16, 36, cardW - 140, 20, false, TextAnchor.MiddleLeft), 10);
-            if (doneChip != null)
+            // Плашка справа — по ширине текста; название и подпись занимают остаток строки с зазором 12
+            // и ужимаются, если не влезают, но на плашку не заходят.
+            var chipText = doneChip ?? (score.Length > 0 ? score : null);
+            var chipW = 0f;
+            if (chipText != null)
             {
-                var chip = Ui.Card(card, "Done", cardW - 16 - 104, 18, 104, 28, 14, Palette.PrimarySoft, Palette.PrimarySoft, 0f);
-                Ui.IconImage(chip, Icon.Check, Palette.Primary, 18, 14, 14);
-                Ui.Label(chip, doneChip, 13, Palette.Primary, 30, 0, 70, 28, true, TextAnchor.MiddleLeft);
+                var done = doneChip != null;
+                var label = Ui.Label(card, chipText, 13, done ? Palette.Primary : Palette.Ink, true, TextAnchor.MiddleLeft);
+                label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                chipW = Mathf.Min(Mathf.Ceil(label.preferredWidth) + 42f, cardW * 0.42f);
+                var back = done ? Palette.PrimarySoft : Palette.Surface;
+                var chip = Ui.Card(card, done ? "Done" : "Score", cardW - 16 - chipW, 18, chipW, 28, 14, back, back, 0f);
+                if (done)
+                {
+                    Ui.IconImage(chip, Icon.Check, Palette.Primary, 18, 14, 14);
+                }
+                else
+                {
+                    Ui.IconImage(chip, Icon.Star, Palette.Coin, 18, 14, 16);
+                }
+
+                label.rectTransform.SetParent(chip, false);
+                Ui.Place(label.rectTransform, 30, 0, chipW - 36, 28);
             }
-            else if (score.Length > 0)
-            {
-                var chip = Ui.Card(card, "Score", cardW - 16 - 92, 18, 92, 28, 14, Palette.Surface, Palette.Surface, 0f);
-                Ui.IconImage(chip, Icon.Star, Palette.Coin, 18, 14, 16);
-                Ui.Label(chip, score, 13, Palette.Ink, 30, 0, 58, 28, true, TextAnchor.MiddleLeft);
-            }
+
+            var textW = cardW - 16 - (chipW > 0 ? chipW + 12f : 0f) - 16;
+            Ui.Fit(Ui.Label(card, title, 18, Palette.Ink, 16, 12, textW, 26, true, TextAnchor.MiddleLeft), 13);
+            Ui.Fit(Ui.Label(card, subtitle, 13, Palette.Ink2, 16, 36, textW, 20, false, TextAnchor.MiddleLeft), 10);
         }
 
         // ---------- Пряжа ----------

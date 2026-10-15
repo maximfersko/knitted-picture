@@ -37,12 +37,20 @@ namespace KnittedPicture.Game
             Tweens.Scale(skein, 0.6f, 1f, 0.35f, Ease.OutBack);
             if (active)
             {
-                var chip = Ui.Card(Card, "Active", CardWidth / 2f + 26f, Cursor + ball - 6f, 92, 24, 12, Palette.Primary, Palette.PrimaryShadow, 2f);
-                Ui.IconImage(chip, Icon.Check, Color.white, 14, 12, 12);
-                Ui.Label(chip, L.T("в работе"), 12, Color.white, 24, 0, 64, 24, true, TextAnchor.MiddleLeft);
+                // «В работе» — значок по центру под мотком, на нижнем краю круга: в одну строку, ширина по тексту,
+                // не заходит ни на клубок, ни на название.
+                var text = Ui.Label(Card, L.T("в работе"), 12, Color.white, true, TextAnchor.MiddleLeft);
+                text.horizontalOverflow = HorizontalWrapMode.Overflow;
+                var chipW = Mathf.Ceil(text.preferredWidth) + 38f;
+                var chipY = Cursor + ball + 18f - 12f;
+                var chip = Ui.Card(Card, "Active", CardWidth / 2f - chipW / 2f, chipY, chipW, 24, 12, Palette.Primary, Palette.PrimaryShadow, 2f);
+                Ui.IconImage(chip, Icon.Check, Color.white, 15, 12, 12);
+                text.rectTransform.SetParent(chip, false);
+                Ui.Place(text.rectTransform, 26, 0, chipW - 32, 24);
             }
 
-            Space(ball + 30f);
+            // Под кругом с мотком (и значком «в работе») — воздух до названия.
+            Space(ball + (active ? 48f : 34f));
             Ui.Fit(AddTitle(owned ? yarn.Name : L.T("Ещё не найдена"), 22), 15);
             var sub = AddText(L.F("Набор «{0}» · {1}", set.Name, YarnCatalog.RarityName(yarn.Rarity)), 13, 1);
             sub.color = rarityColor;
@@ -66,10 +74,19 @@ namespace KnittedPicture.Game
             var iconBack = Ui.Image(_box!, "IconBack", Art.Circle, PerkSoft(perk));
             Ui.PlaceCenter(iconBack.rectTransform, 30, _boxY + 14f, 32, 32);
             PerkIcon(_box!, perk, 30, _boxY + 14f, 18);
-            Ui.Fit(Ui.Label(_box!, YarnCatalog.PerkTitle(perk), 16, Palette.Ink, 54, _boxY, Inner - 54 - 104, 28, true, TextAnchor.MiddleLeft), 11);
+            // Статус справа — плашка по ширине текста; название бонуса занимает остаток строки с зазором 10,
+            // а если не влезает — ужимается, но на плашку не заходит.
+            var statusText = Ui.Label(_box!, status, 11, statusInk, true, TextAnchor.MiddleCenter);
+            statusText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            var pillW = Mathf.Min(Mathf.Ceil(statusText.preferredWidth) + 22f, Inner * 0.42f);
             var pill = Ui.Box(_box!, "Status", 11, statusBack).rectTransform;
-            Ui.Place(pill, Inner - 14 - 94, _boxY + 3f, 94, 22);
-            Ui.Fit(Ui.Label(pill, status, 11, statusInk, 4, 0, 86, 22), 8);
+            Ui.Place(pill, Inner - 14 - pillW, _boxY + 3f, pillW, 22);
+            statusText.rectTransform.SetParent(pill, false);
+            statusText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            Ui.Fit(statusText, 8);
+            Ui.Place(statusText.rectTransform, 6, 0, pillW - 12, 22);
+            var titleW = Inner - 14 - pillW - 10f - 54f;
+            Ui.Fit(Ui.Label(_box!, YarnCatalog.PerkTitle(perk), 16, Palette.Ink, 54, _boxY, titleW, 28, true, TextAnchor.MiddleLeft), 11);
             _boxY += 36f;
             SectionText(YarnCatalog.PerkSentence(perk, power), 14, working ? Palette.Ink : Palette.Ink2, true);
             if (hint != null)
