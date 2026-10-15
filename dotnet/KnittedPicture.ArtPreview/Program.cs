@@ -13,6 +13,8 @@ namespace KnittedPicture.ArtPreview
             Classic(dir);
             Field(dir);
             Panels(dir);
+            Icons(dir);
+            YarnTiles(dir);
             Balls(dir);
             Loom(dir);
             Export(Path.Combine(dir, "sprites"));
@@ -175,6 +177,97 @@ namespace KnittedPicture.ArtPreview
             }
 
             Png.Save(img, Path.Combine(dir, "panels.png"));
+        }
+
+        /// <summary>Объёмные значки: кубки, камни редкости, звезда уровня, корзинка с клубками, меланж.</summary>
+        private static void Icons(string dir)
+        {
+            var img = new Raster(1200, 300);
+            Png.Fill(img, Rgba.Hex("#F5F2FF"));
+            Png.Put(img, IconRaster.Trophy(true), 20, 150, 128, 128);
+            Png.Put(img, IconRaster.Trophy(false), 160, 150, 128, 128);
+            for (var i = 0; i < 3; i++)
+            {
+                Png.Put(img, IconRaster.Gem(i), 300 + i * 90, 170, 80, 80);
+            }
+
+            Png.Put(img, IconRaster.LevelStar(), 580, 160, 100, 100);
+            Png.Put(img, IconRaster.BasketBack(), 700, 40, 240, 192);
+            string[] balls = { "#F2303F", "#5FD7A5", "#8B5CF6" };
+            for (var i = 0; i < 3; i++)
+            {
+                var size = 64f;
+                var art = size / Art2BallFill;
+                Png.Put(img, BallRaster.Ball(Rgba.Hex(balls[i])), 760 + i * 52 - art / 2f + size / 2f, 120 - art / 2f + size / 2f + (i == 1 ? 10 : 0), art, art);
+            }
+
+            Png.Put(img, IconRaster.BasketFront(), 700, 40, 240, 192);
+            Png.Put(img, IconRaster.Melange(Rgba.Hex("#F49AC1"), Rgba.Hex("#FFFFFF"), 40, 48, 592), 980, 60, 200, 200);
+            Png.Save(img, Path.Combine(dir, "icons.png"));
+        }
+
+        /// <summary>Макет плиток раздела «Пряжа»: обычная, редкая (меланж), эпическая, не найдена (2 px на точку).</summary>
+        private static void YarnTiles(string dir)
+        {
+            const float k = 2f;
+            const float cellW = 81f;
+            const float cellH = 140f;
+            var img = new Raster((int)(4 * (cellW + 8) * k + 20 * k), (int)((cellH + 20) * k));
+            Png.Fill(img, Rgba.Hex("#FBFAFF"));
+            var glow = new Raster(128, 128);
+            glow.Paint((x, y) =>
+            {
+                var t = Draw.Clamp01(1f - MathF.Sqrt((x - 64) * (x - 64) + (y - 64) * (y - 64)) / 64f);
+                return Rgba.White.WithAlpha(t * t);
+            });
+            string[] backs = { "#F3F1FA", "#F3EDFF", "#FFF4D9", "#F3F1FA" };
+            string[] glows = { "", "#8B5CF6", "#FFC23C", "" };
+            var tag = 0;
+            for (var i = 0; i < 4; i++)
+            {
+                var x0 = (10 + i * (cellW + 8)) * k;
+                float Top(float topY, float h) => img.Height - (10 + topY + h) * k;
+                var r = (int)MathF.Ceiling(16 * 3);
+                Sliced(img, KnitRaster.SoftCard(r), r + 1, x0, Top(0, cellH), cellW * k, cellH * k, (r + 1) * k / 3f, Rgba.Hex(backs[i]));
+                const float ballY = 46f;
+                const float ball = 58f;
+                if (glows[i].Length > 0)
+                {
+                    var g = ball * 1.7f;
+                    Png.Put(img, glow, x0 + (cellW / 2f - g / 2f) * k, Top(ballY - g / 2f, g), g * k, g * k, Rgba.Hex(glows[i]).WithAlpha(0.28f));
+                }
+
+                Png.Put(img, BallRaster.Shadow(), x0 + (cellW / 2f - ball * 0.45f + 2f) * k, Top(ballY + ball * 0.46f - ball * 0.13f, ball * 0.26f), ball * 0.9f * k, ball * 0.26f * k);
+                var art = ball / Art2BallFill;
+                Raster ballArt = i switch
+                {
+                    1 => IconRaster.Melange(Rgba.Hex("#F49AC1"), Rgba.Hex("#FFFFFF"), 40, 48, 592),
+                    2 => BallRaster.Ball(Rgba.Hex("#8B5CF6")),
+                    3 => BallRaster.Ball(Rgba.Hex("#E6E2F0")),
+                    _ => BallRaster.Ball(Rgba.Hex("#F4E4C1")),
+                };
+                if (i == 1)
+                {
+                    Png.Put(img, ballArt, x0 + (cellW / 2f - ball / 2f) * k, Top(ballY - ball / 2f, ball), ball * k, ball * k);
+                }
+                else
+                {
+                    Png.Put(img, ballArt, x0 + (cellW / 2f - art / 2f) * k, Top(ballY - art / 2f, art), art * k, art * k);
+                }
+
+                if (i < 3)
+                {
+                    Png.Put(img, IconRaster.LevelStar(), x0 + (cellW - 17f - 15f) * k, Top(2f, 30f), 30 * k, 30 * k);
+                }
+
+                var chipW = 70f;
+                Sliced(img, KnitRaster.SoftCard(30), 31, x0 + (cellW / 2f - chipW / 2f) * k, Top(108f, 20f), chipW * k, 20 * k, 31 * k / 3f,
+                    i == 2 ? Rgba.Hex("#FFF0C2") : i == 1 ? Rgba.Hex("#EDE4FF") : Rgba.Hex("#E6E2F2"));
+                Png.Put(img, IconRaster.Gem(i == 3 ? 2 : i == 0 ? 0 : i), x0 + (cellW / 2f - chipW / 2f + 5f) * k, Top(110f, 16f), 16 * k, 16 * k);
+                tag++;
+            }
+
+            Png.Save(img, Path.Combine(dir, "yarn-tiles.png"));
         }
 
         /// <summary>9-срез: углы в масштабе, края и середина растянуты.</summary>

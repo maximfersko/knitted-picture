@@ -405,29 +405,44 @@ namespace KnittedPicture.Game
 
         // ---------- Пряжа ----------
 
-        /// <summary>Сверху — корзинка с общим прогрессом, ниже — наборы карточками: мотки, редкость, награда.</summary>
+        /// <summary>
+        /// Сверху — плетёная корзинка с найденными мотками и общим прогрессом, ниже — наборы карточками.
+        /// Плитка мотка окрашена редкостью: у редкой мягкое сияние, у эпической — медленные лучи; найденные
+        /// мотки чуть покачиваются, каждый в своём ритме, искры блёсток вспыхивают по очереди. При входе
+        /// плитки выпрыгивают волной. «Меньше движения» всё это останавливает.
+        /// </summary>
         private float BuildYarn(RectTransform content)
         {
             var progress = App.Progress;
             var cardW = W - 32f;
             var y = 6f;
+            var entering = App.PreviousScreen != typeof(CollectionsScreen);
 
-            const float bannerH = 116f;
+            const float bannerH = 150f;
             var banner = Ui.Card(content, "Basket", 16, y, cardW, bannerH, 24, Palette.Card, Palette.CardShadow, 3f);
-            var circle = Ui.Image(banner, "Back", Art.Circle, Palette.DangerSoft);
-            Ui.PlaceCenter(circle.rectTransform, 44, 32, 48, 48);
-            var logo = Ui.Image(banner, "Ball", Art2.YarnBall(Palette.Hex("#FF6FA5")), Color.white);
-            Ui.PlaceCenter(logo.rectTransform, 44, 32, 32, 32);
-            Ui.Label(banner, "Корзинка пряжи", 17, Palette.Ink, 80, 10, cardW - 140, 24, true, TextAnchor.MiddleLeft);
-            Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, 80, 32, cardW - 140, 18, false, TextAnchor.MiddleLeft);
+            BuildBasket(banner, progress);
+            const float textX = 118f;
+            Ui.Fit(Ui.Label(banner, "Корзинка пряжи", 18, Palette.Ink, textX, 14, cardW - textX - 48, 26, true, TextAnchor.MiddleLeft), 13);
+            Ui.Label(banner, $"{progress.YarnKinds} из {YarnCatalog.Count} мотков", 13, Palette.Ink2, textX, 40, cardW - textX - 48, 18, false,
+                TextAnchor.MiddleLeft);
+            var fill = Ui.ProgressBar(banner, textX, 66, cardW - textX - 18, 10, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Link);
+            if (entering && !Tweens.Calm)
+            {
+                // Полоска набирается до своего значения.
+                var full = fill.sizeDelta.x;
+                Tweens.Run(fill, 0.8f, t => fill.sizeDelta = new Vector2(Mathf.Max(10f, full * t), fill.sizeDelta.y), Ease.OutCubic, null, 0.15f);
+            }
+
             Ui.InfoButton(banner, cardW - 30, 26, "Пряжа и её бонусы",
                 "Моток выпадает за каждую новую картинку, из звёздного сундука и на 7-й день подарков. " +
                 $"С уровня {YarnCatalog.PerksFromLevel} один моток «в работе» даёт бонус: монеты за новую картинку или дороже золотые петли. " +
                 "Повтор поднимает уровень мотка (до 3), а на третьем уровне превращается в монеты. За полный набор дают награду.", 26);
-            ActiveYarnStrip(banner, 12, 64, cardW - 24, () => App.ShowCollections(CollectionsTab.Yarn));
+            ActiveYarnStrip(banner, 12, 98, cardW - 24, () => App.ShowCollections(CollectionsTab.Yarn));
             y += bannerH + 16f;
 
             const float gap = 8f;
+            var setIndex = 0;
+            var tileIndex = 0;
             foreach (var set in YarnCatalog.Sets)
             {
                 var owned = 0;
@@ -437,7 +452,7 @@ namespace KnittedPicture.Game
                 }
 
                 var cellW = (cardW - 28f - gap * (set.Count - 1)) / set.Count;
-                const float cellH = 128f;
+                const float cellH = 140f;
                 var cellsY = 66f;
                 var stripY = cellsY + cellH + 14f;
                 var cardH = stripY + 48f + 14f;
@@ -447,36 +462,14 @@ namespace KnittedPicture.Game
                 for (var i = 0; i < set.Count; i++)
                 {
                     var yarn = YarnCatalog.All[set.First + i];
-                    var has = progress.HasYarn(yarn.Id);
                     var x = 14 + i * (cellW + gap);
-                    var cell = Ui.Box(card, "Yarn", 16, has ? Palette.Surface : Palette.WithAlpha(Palette.Surface, 0.6f), has).rectTransform;
-                    Ui.Place(cell, x, cellsY, cellW, cellH);
-                    Ui.Outline(cell, 16, has ? Palette.Line : Palette.WithAlpha(Palette.Line, 0.7f), 1.5f);
-                    YarnView.Create(cell, yarn, cellW / 2f, 38, 52, has);
-
-                    Ui.Fit(Ui.Label(cell, has ? yarn.Name : "???", 13, has ? Palette.Ink : Palette.Ink3, 2, 70, cellW - 4, 20), 10);
-                    RarityChip(cell, yarn.Rarity, cellW / 2f, 104f, cellW - 8f);
-
-                    // Уровень мотка (растёт от повторов) и отметка «в работе».
-                    if (has)
+                    var cell = YarnTile(card, yarn, x, cellsY, cellW, cellH, tileIndex);
+                    if (entering)
                     {
-                        var levelChip = Ui.Card(cell, "Level", cellW - 36, 6, 30, 18, 9, Palette.Ink, Palette.Ink, 0f);
-                        Ui.Label(levelChip, "ур." + progress.YarnLevel(yarn.Id), 10, Color.white, 0, 0, 30, 18);
+                        Tweens.Scale(cell, 0.82f, 1f, 0.42f, Ease.OutBack, null, 0.08f + setIndex * 0.1f + i * 0.05f);
                     }
 
-                    if (progress.ActiveYarn == yarn.Id)
-                    {
-                        Ui.Outline(cell, 16, Palette.Primary, 2.5f);
-                        var mark = Ui.Image(cell, "Active", Art.Circle, Palette.Primary);
-                        Ui.PlaceCenter(mark.rectTransform, 15, 15, 20, 20);
-                        Ui.IconImage(cell, Icon.Check, Color.white, 15, 15, 12);
-                    }
-
-                    // Тап — карточка с характеристикой; у ненайденного видно, за чем охотиться.
-                    var id = yarn.Id;
-                    var tap = cell.gameObject.AddComponent<Tap>();
-                    cell.GetComponent<UnityEngine.UI.Image>().raycastTarget = true;
-                    tap.OnClick(() => App.ShowPopup(new YarnCardPopup(App, id, () => App.ShowCollections(CollectionsTab.Yarn))));
+                    tileIndex++;
                 }
 
                 var target = set;
@@ -485,20 +478,158 @@ namespace KnittedPicture.Game
                     (float)owned / set.Count, progress.CanClaimSet(set), progress.IsSetClaimed(set), "Набор собран!",
                     () => Claim(progress.ClaimSet(target, App.Random), "Набор «" + target.Name + "»", Icon.Gift, CollectionsTab.Yarn));
                 y += cardH + 16f;
+                setIndex++;
             }
 
             return y;
         }
 
-        /// <summary>Плашка редкости: обычная — серая, редкая — фиолетовая, эпическая — золотая.</summary>
+        /// <summary>
+        /// Корзинка в шапке: задняя стенка с ручкой, до трёх найденных мотков (сначала тот, что «в работе»,
+        /// дальше последние найденные) и передняя плетёная стенка поверх. Мотки чуть покачиваются.
+        /// </summary>
+        private static void BuildBasket(RectTransform banner, ProgressService progress)
+        {
+            const float bx = 8f;
+            const float by = 4f;
+            const float bw = 104f;
+            const float bh = bw * 96f / 120f;
+            Ui.Place(Ui.Image(banner, "BasketBack", Art2.BasketBack, Color.white).rectTransform, bx, by, bw, bh);
+
+            var shown = new System.Collections.Generic.List<int>();
+            if (progress.ActiveYarn >= 0 && progress.HasYarn(progress.ActiveYarn))
+            {
+                shown.Add(progress.ActiveYarn);
+            }
+
+            for (var id = YarnCatalog.Count - 1; id >= 0 && shown.Count < 3; id--)
+            {
+                if (progress.HasYarn(id) && !shown.Contains(id))
+                {
+                    shown.Add(id);
+                }
+            }
+
+            // Горловина корзинки в растре — на высоте 46 из 96 (снизу): мотки лежат чуть выше неё.
+            var rim = by + bh * (1f - 46f / 96f);
+            float[] xs = { 0.5f, 0.3f, 0.7f };
+            float[] lift = { 12f, 6f, 6f };
+            for (var i = shown.Count - 1; i >= 0; i--)
+            {
+                var size = i == 0 ? 36f : 30f;
+                var view = YarnView.Create(banner, YarnCatalog.All[shown[i]], bx + bw * xs[i], rim - lift[i], size, true);
+                var rest = view.anchoredPosition;
+                var phase = i * 0.33f;
+                Tweens.Run(view, 3.2f, t =>
+                {
+                    var wave = Mathf.Sin((t + phase) * Mathf.PI * 2f);
+                    view.anchoredPosition = rest + new Vector2(0f, 1.8f * wave);
+                    view.localRotation = Quaternion.Euler(0f, 0f, 4f * Mathf.Sin((t + phase) * Mathf.PI * 2f + 1f));
+                }, null, null, 0f, true);
+            }
+
+            Ui.Place(Ui.Image(banner, "BasketFront", Art2.BasketFront, Color.white).rectTransform, bx, by, bw, bh);
+        }
+
+        /// <summary>
+        /// Плитка мотка: фон по редкости (обычная — светлая, редкая — лавандовая с сиянием, эпическая — тёплая
+        /// с лучами), клубок на мягкой тени покачивается, звезда уровня, камень редкости. Не найден — бледный
+        /// силуэт с «?». «В работе» — зелёная рамка дышит. Тап — карточка мотка.
+        /// </summary>
+        private RectTransform YarnTile(RectTransform card, YarnInfo yarn, float x, float y, float cellW, float cellH, int index)
+        {
+            var progress = App.Progress;
+            var has = progress.HasYarn(yarn.Id);
+            var back = !has ? Palette.WithAlpha(Palette.Surface, 0.6f)
+                : yarn.Rarity == Rarity.Epic ? Palette.Hex("#FFF4D9")
+                : yarn.Rarity == Rarity.Rare ? Palette.Hex("#F3EDFF")
+                : Palette.Surface;
+            var cell = Ui.Box(card, "Yarn", 16, back, true).rectTransform;
+            Ui.Place(cell, x, y, cellW, cellH);
+            var border = !has ? Palette.WithAlpha(Palette.Line, 0.7f)
+                : yarn.Rarity == Rarity.Epic ? Palette.WithAlpha(Palette.Coin, 0.7f)
+                : yarn.Rarity == Rarity.Rare ? Palette.WithAlpha(Palette.Link, 0.35f)
+                : Palette.Line;
+            Ui.Outline(cell, 16, border, 1.5f);
+
+            const float ballY = 46f;
+            const float ballSize = 58f;
+            if (has && yarn.Rarity == Rarity.Epic)
+            {
+                // Тёплые лучи медленно вращаются за мотком.
+                var rays = Ui.Image(cell, "Rays", Art.Rays, Palette.WithAlpha(Palette.Coin, 0.32f));
+                var raysRt = rays.rectTransform;
+                Ui.PlaceCenter(raysRt, cellW / 2f, ballY, cellW * 0.95f, cellW * 0.95f);
+                Tweens.Run(raysRt, 26f, t => raysRt.localRotation = Quaternion.Euler(0f, 0f, -360f * t), null, null, 0f, true);
+            }
+
+            if (has && yarn.Rarity != Rarity.Common)
+            {
+                // Сияние за мотком: мягко дышит.
+                var glowColor = yarn.Rarity == Rarity.Epic ? Palette.Coin : Palette.Link;
+                var glow = Ui.Image(cell, "Glow", Art.Glow, Palette.WithAlpha(glowColor, 0.28f));
+                var glowRt = glow.rectTransform;
+                Ui.PlaceCenter(glowRt, cellW / 2f, ballY, ballSize * 1.7f, ballSize * 1.7f);
+                Tweens.Run(glowRt, 2.6f, t => glowRt.localScale = Vector3.one * (0.94f + 0.1f * Ease.Bump(t)), null, null, index * 0.21f, true);
+            }
+
+            var shadow = Ui.Image(cell, "Shadow", Art2.BallShadow, Palette.WithAlpha(Color.white, has ? 1f : 0.5f));
+            var shadowRt = shadow.rectTransform;
+            Ui.PlaceCenter(shadowRt, cellW / 2f + 2f, ballY + ballSize * 0.46f, ballSize * 0.9f, ballSize * 0.26f);
+            var ball = YarnView.Create(cell, yarn, cellW / 2f, ballY, ballSize, has);
+            if (has)
+            {
+                // Покачивание: клубок чуть приподнимается, тень под ним сжимается; у каждого свой ритм.
+                var rest = ball.anchoredPosition;
+                var period = 2.6f + (index % 3) * 0.35f;
+                Tweens.Run(ball, period, t =>
+                {
+                    var lift = 0.5f - 0.5f * Mathf.Cos(t * Mathf.PI * 2f);
+                    ball.anchoredPosition = rest + new Vector2(0f, 3f * lift);
+                    shadowRt.localScale = new Vector3(1f - 0.12f * lift, 1f - 0.12f * lift, 1f);
+                }, null, null, index * 0.37f, true);
+            }
+
+            Ui.Fit(Ui.Label(cell, has ? yarn.Name : "???", 13, has ? Palette.Ink : Palette.Ink3, 2, 84, cellW - 4, 20), 10);
+            RarityChip(cell, yarn.Rarity, cellW / 2f, 118f, cellW - 8f);
+
+            // Уровень мотка — на выпуклой звезде в углу.
+            if (has)
+            {
+                var star = Ui.Image(cell, "Level", Art2.LevelStar, Color.white);
+                Ui.PlaceCenter(star.rectTransform, cellW - 17f, 17f, 30f, 30f);
+                Ui.Label(star.rectTransform, progress.YarnLevel(yarn.Id).ToString(), 12, Color.white, 0, 2, 30, 26);
+            }
+
+            if (progress.ActiveYarn == yarn.Id)
+            {
+                var ring = Ui.Image(cell, "ActiveRing", Art.RoundRectOutline(16, 2.5f), Palette.Primary);
+                ring.type = UnityEngine.UI.Image.Type.Sliced;
+                ring.pixelsPerUnitMultiplier = Art.Density;
+                Ui.Stretch(ring.rectTransform);
+                Tweens.Run(ring, 2.2f, t => ring.color = Palette.WithAlpha(Palette.Primary, 0.55f + 0.45f * Ease.Bump(t)), null, null, 0f, true);
+                var mark = Ui.Image(cell, "Active", Art.Circle, Palette.Primary);
+                Ui.PlaceCenter(mark.rectTransform, 15, 15, 20, 20);
+                Ui.IconImage(cell, Icon.Check, Color.white, 15, 15, 12);
+            }
+
+            // Тап — карточка с характеристикой; у ненайденного видно, за чем охотиться.
+            var id = yarn.Id;
+            cell.gameObject.AddComponent<Tap>().OnClick(() =>
+                App.ShowPopup(new YarnCardPopup(App, id, () => App.ShowCollections(CollectionsTab.Yarn))));
+            return cell;
+        }
+
+        /// <summary>Плашка редкости: огранённый камень (дымчатый, аметист, топаз) и подпись цветом редкости.</summary>
         public static void RarityChip(RectTransform parent, Rarity rarity, float cx, float cy, float maxW = 0f)
         {
             var back = rarity == Rarity.Common ? Palette.Track : rarity == Rarity.Rare ? Palette.Hex("#EDE4FF") : Palette.CoinSoft;
             var text = YarnCatalog.RarityName(rarity);
             var chip = Ui.Box(parent, "Rarity", 10, back).rectTransform;
-            var label = Ui.Label(chip, text, 11, YarnView.RarityColor(rarity));
+            var label = Ui.Label(chip, text, 11, YarnView.RarityColor(rarity), true, TextAnchor.MiddleLeft);
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
-            var w = Mathf.Max(text.Length * 6.6f, label.preferredWidth) + 18f;
+            const float gem = 16f;
+            var w = Mathf.Max(text.Length * 6.6f, label.preferredWidth) + gem + 16f;
             if (maxW > 0f && w > maxW)
             {
                 // «эпическая» не вылезает за узкую плитку: плашка по ширине плитки, текст ужимается.
@@ -508,7 +639,9 @@ namespace KnittedPicture.Game
             }
 
             Ui.PlaceCenter(chip, cx, cy, w, 20);
-            Ui.Stretch(label.rectTransform);
+            var icon = Ui.Image(chip, "Gem", Art2.Gem(rarity), Color.white);
+            Ui.PlaceCenter(icon.rectTransform, 5f + gem / 2f, 9.5f, gem, gem);
+            Ui.Place(label.rectTransform, 6f + gem, 0f, w - gem - 10f, 20f);
         }
 
         // ---------- Достижения ----------
@@ -572,9 +705,42 @@ namespace KnittedPicture.Game
                 Ui.Outline(row, 18, Palette.Coin, 2f);
             }
 
-            var circle = Ui.Image(row, "Icon", Art.Circle, can ? Palette.Coin : claimed ? Palette.PrimarySoft : Palette.Surface);
-            Ui.PlaceCenter(circle.rectTransform, 36, rowH / 2f, 44, 44);
-            Ui.IconImage(row, claimed ? Icon.Check : Icon.Trophy, can ? Color.white : claimed ? Palette.Primary : Palette.Ink3, 36, rowH / 2f, 24);
+            // Кубок: золотой, когда можно забрать (на мягком сиянии, с искрами) и когда получен (с зелёной галочкой),
+            // серебряный и чуть бледнее — пока в процессе.
+            var circle = Ui.Image(row, "Icon", Art.Circle, can ? Palette.WithAlpha(Palette.Coin, 0.35f) : claimed ? Palette.PrimarySoft : Palette.Surface);
+            Ui.PlaceCenter(circle.rectTransform, 36, rowH / 2f, 48, 48);
+            if (can)
+            {
+                var glow = Ui.Image(row, "Glow", Art.Glow, Palette.WithAlpha(Palette.Coin, 0.5f));
+                var glowRt = glow.rectTransform;
+                Ui.PlaceCenter(glowRt, 36, rowH / 2f, 76, 76);
+                Tweens.Run(glowRt, 2.2f, t => glowRt.localScale = Vector3.one * (0.9f + 0.14f * Ease.Bump(t)), null, null, 0f, true);
+            }
+
+            var cup = Ui.Image(row, "Trophy", Art2.Trophy(can || claimed), Palette.WithAlpha(Color.white, can || claimed ? 1f : 0.85f));
+            var cupRt = cup.rectTransform;
+            Ui.PlaceCenter(cupRt, 36, rowH / 2f, 44, 44);
+            if (can)
+            {
+                // Кубок, который ждёт, раз в пару секунд подмигивает искрой и чуть подпрыгивает.
+                var spark = Ui.Image(row, "Spark", Art2.Sparkle, Palette.Hex("#FFF3B0"));
+                var sparkRt = spark.rectTransform;
+                Ui.PlaceCenter(sparkRt, 46, rowH / 2f - 12f, 16, 16);
+                Tweens.Run(sparkRt, 2.4f, t =>
+                {
+                    var flash = t < 0.3f ? Ease.Bump(t / 0.3f) : 0f;
+                    sparkRt.localScale = Vector3.one * (0.1f + flash);
+                    sparkRt.localRotation = Quaternion.Euler(0f, 0f, 120f * t);
+                }, null, null, 0.4f, true);
+                Tweens.Run(cupRt, 2.4f, t => cupRt.localScale = Vector3.one * (1f + 0.08f * (t > 0.5f && t < 0.75f ? Ease.Bump((t - 0.5f) / 0.25f) : 0f)),
+                    null, null, 0f, true);
+            }
+            else if (claimed)
+            {
+                var tick = Ui.Image(row, "Done", Art.Circle, Palette.Primary);
+                Ui.PlaceCenter(tick.rectTransform, 52, rowH / 2f + 14f, 18, 18);
+                Ui.IconImage(row, Icon.Check, Color.white, 52, rowH / 2f + 14f, 11);
+            }
 
             // Готовое к получению: полоска уже полная и не нужна, кнопка компактнее и стоит с отступом от текста.
             const float claimW = 100f;
@@ -622,8 +788,9 @@ namespace KnittedPicture.Game
             if (reward.Booster != null)
             {
                 var badge = Ui.Image(parent, "Booster", Art.Circle, Palette.PrimarySoft);
-                Ui.PlaceCenter(badge.rectTransform, rightEdge - 12, cy, 24, 24);
-                Ui.IconImage(parent, BoosterInfo.Icon(reward.Booster.Value), Palette.Primary, rightEdge - 12, cy, 14);
+                Ui.PlaceCenter(badge.rectTransform, rightEdge - 12, cy, 28, 28);
+                var art = Ui.Image(parent, "BoosterArt", Art2.Booster(reward.Booster.Value), Color.white);
+                Ui.PlaceCenter(art.rectTransform, rightEdge - 12, cy, 24, 24);
             }
 
             if (reward.Coins > 0)
@@ -662,8 +829,27 @@ namespace KnittedPicture.Game
             Ui.Place(bar, x, y, w, 48);
             Ui.Outline(bar, 16, canClaim ? Palette.Coin : Palette.Line, canClaim ? 2f : 1.5f);
             var iconBack = Ui.Image(bar, "IconBack", Art.Circle, claimed ? Palette.PrimarySoft : Palette.CoinSoft);
-            Ui.PlaceCenter(iconBack.rectTransform, 26, 24, 32, 32);
-            Ui.IconImage(bar, claimed ? Icon.Check : Icon.Gift, claimed ? Palette.Primary : Palette.CoinShadow, 26, 24, 18);
+            Ui.PlaceCenter(iconBack.rectTransform, 26, 24, 34, 34);
+            if (claimed)
+            {
+                Ui.IconImage(bar, Icon.Check, Palette.Primary, 26, 24, 18);
+            }
+            else
+            {
+                // Подарок-иллюстрация; когда можно забрать — потряхивается, будто внутри что-то есть.
+                var gift = Ui.Image(bar, "Gift", Art2.Gift, Color.white);
+                var giftRt = gift.rectTransform;
+                Ui.PlaceCenter(giftRt, 26, 23, 30, 30);
+                if (canClaim)
+                {
+                    Tweens.Run(giftRt, 2f, t =>
+                    {
+                        var shake = t < 0.4f ? Ease.Jolt(t / 0.4f) : 0f;
+                        giftRt.localRotation = Quaternion.Euler(0f, 0f, 12f * shake);
+                        giftRt.localScale = Vector3.one * (1f + 0.08f * Mathf.Abs(shake));
+                    }, null, null, 0f, true);
+                }
+            }
             if (canClaim)
             {
                 Ui.Fit(Ui.Label(bar, readyText, 14, Palette.Ink, 50, 12, w - 160, 24, true, TextAnchor.MiddleLeft), 10);

@@ -149,6 +149,32 @@ namespace KnittedPicture.Game
         /// <summary>Бирка на ниточке для числа (петли клубка, цена и запас бустера). Белая — красится; 72×40, тело — правые 58.</summary>
         public static Sprite Tag => Get("tag", KnitRaster.Tag);
 
+        /// <summary>Кубок достижения: золотой (можно забрать, получено) или серебряный (в процессе).</summary>
+        public static Sprite Trophy(bool gold) => Get(gold ? "trophyGold" : "trophySilver", () => IconRaster.Trophy(gold));
+
+        /// <summary>Камень редкости пряжи: дымчатый, аметист, топаз.</summary>
+        public static Sprite Gem(Rarity rarity)
+        {
+            var tier = rarity == Rarity.Epic ? 2 : rarity == Rarity.Rare ? 1 : 0;
+            return Get("gem" + tier, () => IconRaster.Gem(tier));
+        }
+
+        /// <summary>Звезда-розетка уровня мотка (цифра — подписью поверх).</summary>
+        public static Sprite LevelStar => Get("levelStar", IconRaster.LevelStar);
+
+        /// <summary>Корзинка: задняя часть (ручка, нутро) и передняя стенка; клубки кладутся между ними.</summary>
+        public static Sprite BasketBack => Get("basketBack", IconRaster.BasketBack);
+
+        public static Sprite BasketFront => Get("basketFront", IconRaster.BasketFront);
+
+        /// <summary>Меланжевый клубок в кадре YarnBall: два цвета вперемешку прожилками.</summary>
+        public static Sprite YarnBallMelange(Color main, Color second)
+        {
+            var key = "melange" + Key(main) + Key(second);
+            var tight = Tight;
+            return Get(key, () => IconRaster.Melange(ToRgba(main), ToRgba(second), (int)tight.x, (int)tight.y, (int)tight.width));
+        }
+
         /// <summary>Лунка под значок бустера.</summary>
         public static Sprite IconWell => Get("iconWell", KnitRaster.IconWell);
 
