@@ -41,6 +41,16 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Every_table_entry_keeps_placeholders_and_has_no_russian_left()
+        {
+            // Вся таблица, а не только строки из кода: ключи без русских букв («+{0} {1}») тоже переводятся.
+            var broken = En.Table.Where(p => !SamePlaceholders(p.Key, p.Value)).Select(p => p.Key + " => " + p.Value).ToList();
+            Assert.True(broken.Count == 0, "Подстановки не совпадают:\n" + string.Join("\n", broken));
+            var russian = En.Table.Where(p => Regex.IsMatch(p.Value, "[А-Яа-яЁё]")).Select(p => p.Value).ToList();
+            Assert.True(russian.Count == 0, "Русский в переводе:\n" + string.Join("\n", russian));
+        }
+
+        [Fact]
         public void Every_level_name_and_tip_is_translated()
         {
             var missing = new List<string>();

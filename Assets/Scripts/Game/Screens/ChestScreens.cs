@@ -343,7 +343,7 @@ namespace KnittedPicture.Game
                     : level < YarnCatalog.MaxLevel
                         ? L.F("Уровень {0}: {1}", level + 1, YarnCatalog.PerkText(perk, YarnCatalog.Power(yarn.Id, level + 1)))
                         : App.Progress.IsGolden(yarn.Id)
-                            ? L.F("Уже золотой: повтор даст {0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity))
+                            ? L.F("Уже золотой: повтор даст {0} {1}", YarnCatalog.DuplicateCoins(yarn.Rarity), YarnCatalog.CoinsWord(YarnCatalog.DuplicateCoins(yarn.Rarity)))
                             : L.F("Шаг к золотой версии: {0} из {1}", App.Progress.GoldProgress(yarn.Id) + 1, YarnCatalog.GoldenAfter);
             }
 
@@ -490,7 +490,7 @@ namespace KnittedPicture.Game
                 var levelUp = !isNew && yarnLevel < YarnCatalog.MaxLevel;
                 var golden = App.Progress.IsGolden(yarn.Id);
                 var chipText = isNew ? L.T("новый!") : levelUp ? L.F("ур. {0}!", yarnLevel + 1)
-                    : golden ? L.F("+{0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity))
+                    : golden ? L.F("+{0} {1}", YarnCatalog.DuplicateCoins(yarn.Rarity), YarnCatalog.CoinsWord(YarnCatalog.DuplicateCoins(yarn.Rarity)))
                     : L.F("золото {0}/{1}", App.Progress.GoldProgress(yarn.Id) + 1, YarnCatalog.GoldenAfter);
                 var chip = Ui.Box(front, "State", 11, isNew ? Palette.DangerSoft : levelUp ? Palette.PrimarySoft : Palette.CoinSoft).rectTransform;
                 Ui.PlaceCenter(chip, w / 2f, 130, w - 16, 22);

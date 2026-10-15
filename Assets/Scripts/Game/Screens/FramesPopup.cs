@@ -28,9 +28,10 @@ namespace KnittedPicture.Game
             var preview = Mathf.Min(84f, cellW - 12f);
             var cellH = preview + 100f;
             var sample = app.Levels.Get(1);
-            var viewH = app.Height * 0.66f;
+            var viewH = RoomFor(4f + 12f);
             var content = Ui.Scroll(Card, 0, Cursor, CardWidth, viewH);
             var y = 4f;
+            var built = 0;
             foreach (var (source, title, note) in new[]
                      {
                          (FrameSource.Shop, L.T("За монеты"), string.Empty),
@@ -56,7 +57,9 @@ namespace KnittedPicture.Game
                     }
 
                     var x = 24f + (index % columns) * (cellW + gap);
-                    Cell(app, content, frame, x, y + (index / columns) * (cellH + gap), cellW, preview, sample);
+                    var cy = y + (index / columns) * (cellH + gap);
+                    var target = frame;
+                    Stagger(built++, 9, () => Cell(app, content, target, x, cy, cellW, preview, sample));
                     index++;
                 }
 

@@ -46,6 +46,7 @@ namespace KnittedPicture.Game
             }
 
             AddTitle(L.T("Выставка недели"), 24);
+            var autoPicked = !done && levels == null;
             var days = WeeklyMarathon.DaysLeft(today);
             AddText(L.F("Тема: «{0}». Новая тема через {1} {2}", theme.Name, days, L.Plural(days, "день", "дня", "дней")), 14, 1);
 
@@ -72,7 +73,7 @@ namespace KnittedPicture.Game
                 total += Slot(app, theme, i, x, top, slotW, size, done);
             }
 
-            Space(size + (done ? 30f : 76f));
+            Space(size + (done ? 46f : 92f));
 
             // Сумма и медали: полоска до 360 с отметками бронзы, серебра и золота.
             var medal = Exhibition.MedalOf(total);
@@ -88,7 +89,8 @@ namespace KnittedPicture.Game
             }
 
             Space(16f);
-            Ui.Fit(Ui.Label(Card, L.T("Очки: цвета в тему, звёзды картинки и редкость рамки (рамка её коллекции ещё +6)"), 12, Palette.Ink3,
+            Ui.Fit(Ui.Label(Card, autoPicked ? L.T("Подобрали лучший набор: тапни картинку, чтобы заменить, или смени рамку")
+                : L.T("Очки: цвета в тему, звёзды картинки и редкость рамки (рамка её коллекции ещё +6)"), 12, Palette.Ink3,
                 24, Cursor, Inner, 34, false), 9).lineSpacing = 0.9f;
             Space(42f);
 
@@ -113,14 +115,23 @@ namespace KnittedPicture.Game
             var level = app.Levels.Get(_levels[index]);
             var frame = AlbumFrames.Get(_frames[index]);
             var stars = app.Progress.StarsOf(level.id);
-            var score = Exhibition.Score(level, stars, frame, theme);
+            var (colorPoints, starPoints, framePoints) = Exhibition.Breakdown(level, stars, frame, theme);
+            var score = colorPoints + starPoints + framePoints;
             var root = Ui.Place(Ui.Node(Card, "Slot" + index), x + (w - size) / 2f, y, size, size);
             MiniPicture.Framed(root, frame.Id, size, level);
             Ui.Fit(Ui.Label(Card, L.F("{0} очк.", score), 13, Palette.Ink, x, y + size + 4f, w, 20), 9);
+
+            // Из чего очки: цвета, звёзды, рамка — видно, что поменять, чтобы стало больше.
+            Ui.Fit(Ui.Label(Card, L.F("цвета {0} · ★ {1} · рамка {2}", colorPoints, starPoints, framePoints), 10, Palette.Ink3, x - 4f, y + size + 22f, w + 8f, 16,
+                false), 7);
             if (done)
             {
                 return score;
             }
+
+            // Есть рамка выгоднее для этой картинки — кнопка подсказывает, на сколько больше очков.
+            var owned = AlbumFrames.All.Where(f => app.Progress.FrameOwned(f.Id)).ToList();
+            var bestGain = owned.Max(f => Exhibition.Score(level, stars, f, theme)) - score;
 
             root.gameObject.AddComponent<Tap>().OnClick(() => app.ShowPopup(new PicturePickerPopup(app, theme, _levels, picked =>
             {
@@ -129,10 +140,14 @@ namespace KnittedPicture.Game
                 Reopen(app, levels, _frames);
             })));
 
-            Ui.Button(Card, L.T("Рамка"), x + 2f, y + size + 28f, w - 4f, 36f, Palette.Surface, Palette.CardShadow, Palette.Ink, 13).OnClick(() =>
+            var better = bestGain > 0;
+            Ui.Button(Card, better ? L.F("Рамка +{0}", bestGain) : L.T("Рамка"), x + 2f, y + size + 44f, w - 4f, 36f,
+                better ? Palette.PrimarySoft : Palette.Surface, Palette.CardShadow, better ? Palette.Primary : Palette.Ink, 13).OnClick(() =>
             {
-                var owned = AlbumFrames.All.Where(f => app.Progress.FrameOwned(f.Id)).Select(f => f.Id).ToList();
-                var next = owned[(owned.IndexOf(_frames[index]) + 1) % owned.Count];
+                // По кругу, но сначала — самая выгодная, если она ещё не стоит.
+                var ids = owned.Select(f => f.Id).ToList();
+                var best = owned.OrderByDescending(f => Exhibition.Score(level, stars, f, theme)).First().Id;
+                var next = better ? best : ids[(ids.IndexOf(_frames[index]) + 1) % ids.Count];
                 var frames = (int[])_frames.Clone();
                 frames[index] = next;
                 Reopen(app, _levels, frames);
@@ -202,9 +217,9 @@ namespace KnittedPicture.Game
 
         public static Color MedalColor(int medal) => medal switch
         {
-            3 => Palette.Hex("#D98A00"),
-            2 => Palette.Hex("#7D8590"),
-            1 => Palette.Hex("#B8662E"),
+            3 => Palette.Hex("#8A5700"),
+            2 => Palette.Hex("#5F6670"),
+            1 => Palette.Hex("#9A5222"),
             _ => Palette.Ink3,
         };
     }
@@ -223,7 +238,7 @@ namespace KnittedPicture.Game
             var cellH = cellW + 22f;
             var levels = app.Progress.Data.completed.Where(app.Levels.Has).OrderBy(id => id).ToList();
             var rows = (levels.Count + columns - 1) / columns;
-            var viewH = Mathf.Min(rows * (cellH + gap), app.Height * 0.55f);
+            var viewH = RoomFor(8f + 12f, rows * (cellH + gap));
             var content = Ui.Scroll(Card, 24, Cursor, Inner, viewH);
             content.sizeDelta = new Vector2(Inner, rows * (cellH + gap));
             for (var i = 0; i < levels.Count; i++)
@@ -231,6 +246,17 @@ namespace KnittedPicture.Game
                 var level = app.Levels.Get(levels[i]);
                 var x = (i % columns) * (cellW + gap);
                 var y = (i / columns) * (cellH + gap);
+                Stagger(i, 16, () => PickTile(app, theme, taken, picked, content, level, x, y, cellW));
+            }
+
+            Space(viewH + 8f);
+            Finish(12);
+        }
+
+        private void PickTile(App app, ExhibitionTheme theme, IReadOnlyCollection<int> taken, Action<int> picked, RectTransform content, LevelData level,
+            float x, float y, float cellW)
+        {
+            {
                 var used = taken.Contains(level.id);
                 var tile = Ui.Box(content, "Pick", 12, used ? Palette.Track : Palette.Surface, true).rectTransform;
                 Ui.Place(tile, x, y, cellW, cellW);
@@ -247,9 +273,6 @@ namespace KnittedPicture.Game
                     });
                 }
             }
-
-            Space(viewH + 8f);
-            Finish(12);
         }
     }
 }

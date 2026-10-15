@@ -129,7 +129,7 @@ namespace KnittedPicture.Game
                 var next = level < YarnCatalog.MaxLevel
                     ? L.F("Ещё такой моток: {0}", YarnCatalog.PerkShort(perk, YarnCatalog.Power(yarnId, level + 1)))
                     : golden
-                        ? L.F("Золотой моток: бонус сильнее на 1. Повтор: +{0} монет", YarnCatalog.DuplicateCoins(yarn.Rarity))
+                        ? L.F("Золотой моток: бонус сильнее на 1. Повтор: +{0} {1}", YarnCatalog.DuplicateCoins(yarn.Rarity), YarnCatalog.CoinsWord(YarnCatalog.DuplicateCoins(yarn.Rarity)))
                         : L.F("Повторы копят к золотой версии: особый вид и бонус сильнее на 1 (ещё {0})",
                             YarnCatalog.GoldenAfter - progress.GoldProgress(yarnId));
                 SectionText(next, 12, Palette.Ink2, false);

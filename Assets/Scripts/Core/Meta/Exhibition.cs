@@ -116,11 +116,18 @@ namespace KnittedPicture.Core
         /// <summary>Очки одной картинки в рамке.</summary>
         public static int Score(LevelData level, int stars, FrameInfo frame, ExhibitionTheme theme)
         {
+            var (color, star, framePoints) = Breakdown(level, stars, frame, theme);
+            return color + star + framePoints;
+        }
+
+        /// <summary>Из чего сложились очки: цвета в тему, звёзды и рамка (редкость и совпадение с коллекцией).</summary>
+        public static (int Color, int Stars, int Frame) Breakdown(LevelData level, int stars, FrameInfo frame, ExhibitionTheme theme)
+        {
             var color = (int)Math.Round(ColorPoints * Share(level, theme));
             var star = Math.Max(0, Math.Min(3, stars)) * StarPoints;
             var rarity = (int)frame.Rarity * RarityPoints;
             var match = frame.Source == FrameSource.Collection && Collections.All[frame.Tag].Contains(level.id) ? MatchPoints : 0;
-            return color + star + rarity + match;
+            return (color, star, rarity + match);
         }
 
         /// <summary>Медаль по сумме: 0 — без медали, 1 — бронза, 2 — серебро, 3 — золото.</summary>

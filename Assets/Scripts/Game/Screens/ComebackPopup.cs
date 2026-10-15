@@ -33,8 +33,8 @@ namespace KnittedPicture.Game
             RarityStyle.Chip(Card, rarity, CardWidth / 2f, Cursor + 10f, 0f, Gender.Feminine);
             Space(28f);
             var range = Chest.CoinRange(rarity);
-            AddText(L.F("Внутри: {0} монет, бустер ×{1} и моток не хуже, чем «{2}»", (range.Min + range.Max) / 2, Chest.BoosterCountOf(rarity),
-                Rarities.Name(rarity > Rarity.Epic ? Rarity.Epic : rarity, Gender.Masculine)), 13, 2);
+            AddText(L.F("Внутри: {0} {3}, бустер ×{1} и моток не хуже, чем «{2}»", (range.Min + range.Max) / 2, Chest.BoosterCountOf(rarity),
+                Rarities.Name(rarity > Rarity.Epic ? Rarity.Epic : rarity, Gender.Masculine), YarnCatalog.CoinsWord((range.Min + range.Max) / 2)), 13, 2);
             AddText(L.T("А следующая новая картинка начнётся с бесплатными бустерами"), 13, 2);
             Space(4f);
             var open = AddPrimary(L.T("Открыть"));
@@ -89,12 +89,13 @@ namespace KnittedPicture.Game
             Ui.ProgressBar(Card, 24, Cursor, Inner, 10, (float)found / total, Palette.Coin);
             Space(22f);
 
-            var viewH = app.Height * 0.62f;
+            var viewH = RoomFor(6f + 8f);
             var content = Ui.Scroll(Card, 0, Cursor, CardWidth, viewH);
             const int columns = 4;
             const float gap = 10f;
             var cellW = Mathf.Floor((Inner - gap * (columns - 1)) / columns);
             var y = 4f;
+            var built = 0;
 
             y = Heading(content, L.T("Пряжа"), yarnFound, YarnCatalog.Count, y);
             foreach (var tier in Rarities.All)
@@ -119,7 +120,7 @@ namespace KnittedPicture.Game
                     var yarn = YarnCatalog.All[items[k]];
                     var x = 24f + (k % columns) * (cellW + gap);
                     var cy = y + (k / columns) * (cellW + 24f + gap);
-                    YarnCell(app, content, yarn, x, cy, cellW);
+                    Stagger(built++, 12, () => YarnCell(app, content, yarn, x, cy, cellW));
                 }
 
                 y += ((items.Count + columns - 1) / columns) * (cellW + 24f + gap) + 6f;
@@ -147,7 +148,8 @@ namespace KnittedPicture.Game
                 {
                     var x = 24f + (k % columns) * (cellW + gap);
                     var cy = y + (k / columns) * (cellW + 34f + gap);
-                    FrameCell(app, content, items[k], x, cy, cellW);
+                    var frame = items[k];
+                    Stagger(built++, 12, () => FrameCell(app, content, frame, x, cy, cellW));
                 }
 
                 y += ((items.Count + columns - 1) / columns) * (cellW + 34f + gap) + 6f;
@@ -217,7 +219,7 @@ namespace KnittedPicture.Game
             var how = has ? frame.Name
                 : frame.Source == FrameSource.Season ? L.T("финал сезона")
                 : frame.Source == FrameSource.Collection ? L.F("все звёзды «{0}»", Collections.All[frame.Tag].Name)
-                : L.F("{0} монет", frame.Price);
+                : $"{frame.Price} {YarnCatalog.CoinsWord(frame.Price)}";
             var label = Ui.Label(content, how, 10, has ? Palette.Ink : Palette.Ink3, x - 2f, y + w + 2f, w + 4f, 30);
             label.lineSpacing = 0.85f;
             Ui.Fit(label, 8);

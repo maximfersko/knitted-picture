@@ -322,7 +322,7 @@ namespace KnittedPicture.Game
             // Разбор звёзд: каждая строка — условие и отметка, получено ли.
             Ui.Label(Card, L.T("Как получить звёзды"), 14, Palette.Ink, 24, Cursor, Inner - 40, 20, true, TextAnchor.MiddleLeft);
             Ui.InfoButton(Card, 24 + Inner - 13, Cursor + 10, L.T("Повтор уровня"),
-                L.F("Повтор даёт +{0} монет. Сохраняется лучший результат по звёздам. ", KnittedPicture.Core.Economy.ReplayReward) +
+                L.F("Повтор даёт +{0} {1}. Сохраняется лучший результат по звёздам. ", KnittedPicture.Core.Economy.ReplayReward, YarnCatalog.CoinsWord(KnittedPicture.Core.Economy.ReplayReward)) +
                 L.T("Три звезды: пройди уровень без бустеров и без спасения."), 24);
             Space(28f);
             var third = L.T("Без бустеров");

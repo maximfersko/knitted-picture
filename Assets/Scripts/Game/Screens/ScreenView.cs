@@ -363,6 +363,29 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>
+        /// Сколько высоты осталось под прокручиваемый список, чтобы окно целиком влезло в экран: от уже занятого
+        /// (Cursor) и того, что будет ниже списка (footer — кнопки и отступы), с зазором сверху. Не меньше 140.
+        /// </summary>
+        protected float RoomFor(float footer, float max = float.MaxValue) => Mathf.Clamp(App.Height - 28f - Cursor - footer, 140f, max);
+
+        /// <summary>
+        /// Построить элемент списка номер index: первые immediate — сразу, остальные по PerFrame за кадр следом.
+        /// Длинные окна (рамки, книга находок) открываются без рывка, а дальние плитки достраиваются, пока окно выезжает.
+        /// </summary>
+        protected void Stagger(int index, int immediate, System.Action build)
+        {
+            if (index < immediate)
+            {
+                build();
+                return;
+            }
+
+            Tweens.Delay(Card, 0.017f * (1 + (index - immediate) / PerFrame), build);
+        }
+
+        private const int PerFrame = 4;
+
         protected void Space(float height)
         {
             _cursor += height;

@@ -84,7 +84,7 @@ namespace KnittedPicture.Game
             var chip = Ui.Card(Root, "GoldGoal", W / 2f - chipW / 2f, GoalsY, chipW, 28, 14, Palette.Card, Palette.CardShadow, 2f, true);
 
             // Тап по цели — короткая справка; игра на это время стоит.
-            var info = L.F("Вяжи петли в золотом кольце, пока горит комбо: +{0} монет за каждую", _goldPerLoop);
+            var info = L.F("Вяжи петли в золотом кольце, пока горит комбо: +{0} {1} за каждую", _goldPerLoop, YarnCatalog.CoinsWord(_goldPerLoop));
             chip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new InfoPopup(App, L.T("Золотые петли"), info)));
             Ui.IconImage(chip, Icon.Star, Palette.Coin, 18, 14, 18);
             _goldGoal = Ui.Fit(Ui.Label(chip, "", 14, Palette.Ink, 32, 0, chipW - 38, 28, true, TextAnchor.MiddleLeft), 10);

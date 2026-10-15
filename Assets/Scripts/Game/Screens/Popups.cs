@@ -506,7 +506,7 @@ namespace KnittedPicture.Game
         {
             AddIcon(BoosterInfo.Icon(type), Palette.Ink, Palette.CoinSoft, 68);
             AddTitle(L.T("Не хватает монет"), 24);
-            AddText(L.F("{0} стоит {1} монет, у тебя {2}", BoosterInfo.Name(type), Economy.Price(type), app.Progress.Coins), 16, 1.6f);
+            AddText(L.F("{0} стоит {1} {2}, у тебя {3}", BoosterInfo.Name(type), Economy.Price(type), YarnCatalog.CoinsWord(Economy.Price(type)), app.Progress.Coins), 16, 1.6f);
 
             // Бустер за видео — не больше Economy.VideoBoostersPerDay в день: иначе монеты и бустеры теряют цену.
             if (app.Progress.VideoBoostersLeft(app.Today) > 0)
@@ -610,7 +610,7 @@ namespace KnittedPicture.Game
                 var title = freeRescue ? L.F("{0} · подарок серии", BoosterInfo.Name(type))
                     : stock > 0
                     ? L.F("{0} · есть {1}", BoosterInfo.Name(type), stock)
-                    : L.F("{0} · {1} монет", BoosterInfo.Name(type), Economy.RescuePrice(type, rescuesBefore));
+                    : L.F("{0} · {1} {2}", BoosterInfo.Name(type), Economy.RescuePrice(type, rescuesBefore), YarnCatalog.CoinsWord(Economy.RescuePrice(type, rescuesBefore)));
                 AddPrimary(title).OnClick(() =>
                 {
                     // Ножницы списываются, когда ими режут; слот и время — сразу.

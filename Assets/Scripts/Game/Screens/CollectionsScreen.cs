@@ -647,7 +647,7 @@ namespace KnittedPicture.Game
                     }
 
                     var booster = BoosterInfo.Name(target.Reward.Booster!.Value).ToLower();
-                    RewardStrip.Build(card, 12, stripY, cardW - 24, L.F("За весь набор: {0} монет и {1} ×{2}", target.Reward.Coins, booster, target.Reward.BoosterCount),
+                    RewardStrip.Build(card, 12, stripY, cardW - 24, L.F("За весь набор: {0} {3} и {1} ×{2}", target.Reward.Coins, booster, target.Reward.BoosterCount, YarnCatalog.CoinsWord(target.Reward.Coins)),
                         (float)ownedCount / target.Count, progress.CanClaimSet(target), progress.IsSetClaimed(target), L.T("Набор собран!"),
                         () => Claim(progress.ClaimSet(target, App.Random), L.F("Набор «{0}»", target.Name), Icon.Gift, CollectionsTab.Yarn));
                 }

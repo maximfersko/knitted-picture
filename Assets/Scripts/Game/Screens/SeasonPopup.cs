@@ -79,7 +79,7 @@ namespace KnittedPicture.Game
             Space(4f);
 
             // Дорожка: прокручивается, открывается на текущей ступени.
-            var viewH = Mathf.Min(RowH * 5.5f, app.Height * 0.38f);
+            var viewH = RoomFor(14f + 60f + 8f + 8f, RowH * 6.5f);
             var content = Ui.Scroll(Card, 0, Cursor, CardWidth, viewH);
             content.sizeDelta = new Vector2(CardWidth, Season.Steps * RowH + 8f);
             for (var n = 1; n <= Season.Steps; n++)

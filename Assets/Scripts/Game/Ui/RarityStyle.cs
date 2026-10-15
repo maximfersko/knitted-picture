@@ -7,7 +7,7 @@ namespace KnittedPicture.Game
 {
     /// <summary>
     /// Цвета редкости в интерфейсе (одни на всю игру, см. Rarities): основной — свечение и обводки, мягкий —
-    /// подложки, чернила — текст (темнее основного, чтобы читалось на белом).
+    /// подложки, чернила — текст (темнее основного: контраст не ниже 4,5:1 и на белом, и на своей подложке, WCAG AA).
     /// </summary>
     public static class RarityStyle
     {
@@ -17,10 +17,10 @@ namespace KnittedPicture.Game
 
         public static Color Ink(Rarity rarity) => rarity switch
         {
-            Rarity.Uncommon => Palette.Hex("#23813F"),
+            Rarity.Uncommon => Palette.Hex("#1E7537"),
             Rarity.Rare => Palette.Hex("#2559C2"),
             Rarity.Epic => Palette.Hex("#7A33C2"),
-            Rarity.Legendary => Palette.Hex("#A86A00"),
+            Rarity.Legendary => Palette.Hex("#8A5700"),
             _ => Palette.Hex("#5F6670"),
         };
 
