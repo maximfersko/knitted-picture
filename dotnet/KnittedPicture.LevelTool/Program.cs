@@ -34,6 +34,9 @@ namespace KnittedPicture.LevelTool
         {
             IncludeFields = true,
             WriteIndented = true,
+
+            // В файл — только поля уровня; Title/Tip — переводы для экрана, их не сохраняем.
+            IgnoreReadOnlyProperties = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
         };

@@ -103,6 +103,38 @@ namespace KnittedPicture.Core.Tests
         }
 
         /// <summary>
+        /// Цвета уровня — только из набора клубков YarnColors, без повторов: никаких «почти таких же» оттенков,
+        /// которые игрок путает. Касается и цвета ткани: клубки «в сеточку» и чужая пряжа бывают цвета фона.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(LevelFiles))]
+        public void Level_colors_come_from_the_yarn_set(string fileName)
+        {
+            var level = Load(fileName);
+            foreach (var color in level.colors)
+            {
+                Assert.True(YarnColors.Contains(color), $"{color} не из набора YarnColors");
+            }
+
+            Assert.Equal(level.colors.Length, level.colors.Select(c => c.ToUpperInvariant()).Distinct().Count());
+        }
+
+        /// <summary>Набор клубков: любые два цвета далеко друг от друга (CIE76 от 30; ΔE2000 у набора около 21).</summary>
+        [Fact]
+        public void Yarn_set_colors_are_far_apart()
+        {
+            var all = YarnColors.All.Select(c => c.Hex).ToArray();
+            for (var i = 0; i < all.Length; i++)
+            {
+                for (var j = i + 1; j < all.Length; j++)
+                {
+                    var distance = DeltaE(all[i], all[j]);
+                    Assert.True(distance >= 30.0, $"{all[i]} и {all[j]}: ΔE {distance:0.0}");
+                }
+            }
+        }
+
+        /// <summary>
         /// Каждому цвету рисунка хватает своих клубков: радужный — только помощь сверх нарезки.
         /// Радужный сам выбирает, что вязать, и если бы на него рассчитывали, он мог бы потратить
         /// петли не туда — уровень молча стал бы непроходимым без ошибки игрока.

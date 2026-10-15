@@ -7,7 +7,7 @@
   "palette": [
     {
       "key": ".",
-      "hex": "#C5D0DE"
+      "hex": "#4CC3F5"
     },
     {
       "key": "w",
@@ -15,27 +15,27 @@
     },
     {
       "key": "W",
-      "hex": "#93A0B8"
+      "hex": "#8C9198"
     },
     {
       "key": "k",
-      "hex": "#1F1744"
+      "hex": "#26262E"
     },
     {
       "key": "o",
-      "hex": "#FF9A3C"
+      "hex": "#FF8A1F"
     },
     {
       "key": "h",
-      "hex": "#473E76"
+      "hex": "#2552D9"
     },
     {
       "key": "r",
-      "hex": "#FF616A"
+      "hex": "#FF6FB7"
     },
     {
       "key": "R",
-      "hex": "#C7273C"
+      "hex": "#E8333A"
     }
   ],
   "picture": [

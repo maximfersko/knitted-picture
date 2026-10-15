@@ -7,7 +7,7 @@
   "palette": [
     {
       "key": ".",
-      "hex": "#D8CDC1"
+      "hex": "#2DB34A"
     },
     {
       "key": "w",
@@ -15,11 +15,11 @@
     },
     {
       "key": "k",
-      "hex": "#2B2350"
+      "hex": "#26262E"
     },
     {
       "key": "p",
-      "hex": "#FF8FB4"
+      "hex": "#FF6FB7"
     }
   ],
   "picture": [

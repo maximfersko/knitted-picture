@@ -7,27 +7,27 @@
   "palette": [
     {
       "key": ".",
-      "hex": "#FFF4D6"
+      "hex": "#4CC3F5"
     },
     {
       "key": "g",
-      "hex": "#2E9E5B"
+      "hex": "#2DB34A"
     },
     {
       "key": "l",
-      "hex": "#8EE0A6"
+      "hex": "#FFFFFF"
     },
     {
       "key": "r",
-      "hex": "#FF4F5E"
+      "hex": "#E8333A"
     },
     {
       "key": "k",
-      "hex": "#2B2350"
+      "hex": "#26262E"
     },
     {
       "key": "p",
-      "hex": "#FF8FA0"
+      "hex": "#FF6FB7"
     }
   ],
   "picture": [

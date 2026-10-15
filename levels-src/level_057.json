@@ -7,23 +7,23 @@
   "palette": [
     {
       "key": ".",
-      "hex": "#BFD9EA"
+      "hex": "#4CC3F5"
     },
     {
       "key": "r",
-      "hex": "#E2683C"
+      "hex": "#E8333A"
     },
     {
       "key": "y",
-      "hex": "#F2C14E"
+      "hex": "#FFD419"
     },
     {
       "key": "n",
-      "hex": "#8A5A34"
+      "hex": "#8A5530"
     },
     {
       "key": "d",
-      "hex": "#5E4632"
+      "hex": "#26262E"
     }
   ],
   "picture": [

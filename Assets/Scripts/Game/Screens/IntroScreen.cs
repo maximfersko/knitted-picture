@@ -57,12 +57,14 @@ namespace KnittedPicture.Game
         /// <summary>Номер показанной сцены по порядку (для шкалы сегментов).</summary>
         private int Step => System.Array.IndexOf(Shown, _page);
 
-        private static readonly Color Cream = Palette.Hex("#F3E6CF");
+        // Цвета клубков — из общего набора YarnColors, как в уровнях: без оттенков одного цвета.
+        private static readonly Color Cream = Palette.Hex("#FFFFFF");
 
-        private static readonly Color Pink = Palette.Hex("#FF5C93");
-        private static readonly Color Sky = Palette.Hex("#6CB8FF");
-        private static readonly Color Sun = Palette.Hex("#FFC23C");
-        private static readonly Color Leaf = Palette.Hex("#2EBD7E");
+        private static readonly Color Pink = Palette.Hex("#FF6FB7");
+        private static readonly Color Sky = Palette.Hex("#4CC3F5");
+        private static readonly Color Sun = Palette.Hex("#FFD419");
+        private static readonly Color Leaf = Palette.Hex("#2DB34A");
+        private static readonly Color Navy = Palette.Hex("#2552D9");
 
         private readonly RectTransform _stage;
         private readonly float _sw;
@@ -488,7 +490,7 @@ namespace KnittedPicture.Game
             var loomY = 22f + picture.Height + 26f;
             var frames = Loom(scene, 3, loomY);
             var fieldY = loomY + 74f + 52f;
-            var wrong = new[] { Sun, Leaf, Palette.Hex("#3C78D8") };
+            var wrong = new[] { Sun, Leaf, Navy };
             var flown = new List<RectTransform>();
             for (var i = 0; i < wrong.Length; i++)
             {
@@ -706,7 +708,7 @@ namespace KnittedPicture.Game
                 (L.T("Замок"), L.T("Откроется, когда на станок встанет клубок с ключом"), new Spool(0, 0, 7, locked: true), Leaf),
                 (L.T("Связка"), L.T("Едут на станок только вдвоём: нужно 2 свободных места"), new Spool(0, 0, 4, link: 1), Sun),
                 (L.T("Радужный"), L.T("Вяжет любой цвет. Выручает, когда нужного нет"), new Spool(0, 0, 5, rainbow: true), Color.white),
-                (L.T("Толстый"), L.T("Занимает 2 места, зато вяжет вдвое быстрее"), new Spool(0, 0, 24, thick: true), Palette.Hex("#3C78D8")),
+                (L.T("Толстый"), L.T("Занимает 2 места, зато вяжет вдвое быстрее"), new Spool(0, 0, 24, thick: true), Navy),
                 (L.T("Ледяной"), L.T("Оттает, когда станок свяжет столько петель его цвета, сколько на льду"), new Spool(0, 0, 6, ice: 4), Sky),
             };
 

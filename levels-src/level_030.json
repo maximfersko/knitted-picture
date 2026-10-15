@@ -7,11 +7,11 @@
   "palette": [
     {
       "key": ".",
-      "hex": "#C2D1DE"
+      "hex": "#4CC3F5"
     },
     {
       "key": "r",
-      "hex": "#FF4F5E"
+      "hex": "#E8333A"
     },
     {
       "key": "w",
@@ -19,11 +19,11 @@
     },
     {
       "key": "h",
-      "hex": "#7A4A2A"
+      "hex": "#8A5530"
     },
     {
       "key": "d",
-      "hex": "#6CB8FF"
+      "hex": "#2552D9"
     }
   ],
   "picture": [

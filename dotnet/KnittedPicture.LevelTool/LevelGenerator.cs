@@ -31,6 +31,20 @@ namespace KnittedPicture.LevelTool
         public static LevelData Generate(LevelDesign design, int seed)
         {
             var rng = new Random(seed);
+
+            // Только цвета набора клубков и без повторов: оттенки одного цвета игроки путают.
+            foreach (var entry in design.palette.Where(p => !YarnColors.Contains(p.hex)))
+            {
+                throw new InvalidOperationException(
+                    $"Уровень {design.id}: цвет {entry.hex} («{entry.key}») не из набора YarnColors. Возьми ближайший: "
+                    + string.Join(", ", YarnColors.All.Select(c => c.Hex + " " + c.Name)));
+            }
+
+            if (design.palette.Select(p => p.hex.ToUpperInvariant()).Distinct().Count() != design.palette.Count)
+            {
+                throw new InvalidOperationException($"Уровень {design.id}: два ключа палитры одного цвета");
+            }
+
             var keys = design.palette.Select(p => p.key[0]).ToList();
             var picture = design.picture
                 .Select(row => new string(row.Select(ch => Digit(keys, ch, design.id)).ToArray()))
