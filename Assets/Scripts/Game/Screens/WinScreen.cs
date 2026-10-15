@@ -173,7 +173,7 @@ namespace KnittedPicture.Game
             }
             else if (news.Chest)
             {
-                Tweens.Delay(Root, 2.2f, () => app.Toast(L.T("Звёздный сундук готов! Открой его на главной")));
+                Tweens.Delay(Root, 2.2f, () => app.Toast(L.F("{0} готов! Открой его на главной", ChestScreen.Title(app.Progress.NextChestRarity))));
             }
             else if (news.Achievement)
             {

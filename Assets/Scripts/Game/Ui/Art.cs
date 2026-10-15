@@ -140,14 +140,12 @@ namespace KnittedPicture.Game
         public static Sprite Rays => Cached("rays", () => BuildRays(256, 12));
 
         /// <summary>Корпус вязаной шкатулки: петли «ёлочкой», лента посередине, кант сверху.</summary>
-        public static Sprite ChestBody(bool big) => Art2.Get("chestBody2" + big,
-            () => MetaRaster.ChestBody(Mathf.RoundToInt(ChestBodySize.x * Density), Mathf.RoundToInt(ChestBodySize.y * Density), big));
+        public static Sprite ChestBody(Rarity rarity) => Art2.Get("chestBody3" + (int)rarity,
+            () => MetaRaster.ChestBody(Mathf.RoundToInt(ChestBodySize.x * Density), Mathf.RoundToInt(ChestBodySize.y * Density), (int)rarity));
 
-        /// <summary>Крышка шкатулки: купол той же вязки, кант снизу.</summary>
-        public static Sprite ChestLid(bool big) => Art2.Get("chestLid2" + big,
-            () => MetaRaster.ChestLid(Mathf.RoundToInt(ChestLidSize.x * Density), Mathf.RoundToInt(ChestLidSize.y * Density), big));
+        public static Sprite ChestLid(Rarity rarity) => Art2.Get("chestLid3" + (int)rarity,
+            () => MetaRaster.ChestLid(Mathf.RoundToInt(ChestLidSize.x * Density), Mathf.RoundToInt(ChestLidSize.y * Density), (int)rarity));
 
-        /// <summary>Размеры частей сундука в точках макета при ширине корпуса 220.</summary>
         public static readonly Vector2 ChestBodySize = new Vector2(220f, 118f);
 
         public static readonly Vector2 ChestLidSize = new Vector2(232f, 74f);

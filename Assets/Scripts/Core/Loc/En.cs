@@ -604,6 +604,18 @@ namespace KnittedPicture
             ["шанс у каждого"] = "chance for each",
             ["Большой сундук: хотя бы один моток редкий или лучше"] = "Big chest: at least one yarn is rare or better",
             ["{0}. Редкость: {1}"] = "{0}. Rarity: {1}",
+            ["Обычный сундук"] = "Common chest",
+            ["Необычный сундук"] = "Uncommon chest",
+            ["Редкий сундук"] = "Rare chest",
+            ["Эпический сундук"] = "Epic chest",
+            ["Легендарный сундук"] = "Legendary chest",
+            ["бустер ×{0}"] = "booster ×{0}",
+            ["моток: {0}"] = "yarn: {0}",
+            ["До эпического: {0} · до легендарного: {1}"] = "Epic in: {0} · legendary in: {1}",
+            ["Бустер на выбор ×{0}"] = "Booster of your choice ×{0}",
+            ["Гарантия: легендарный моток среди вариантов"] = "Guaranteed: the legendary yarn is among the options",
+            ["Гарантия: хотя бы один моток {0} или лучше"] = "Guaranteed: at least one {0} yarn or better",
+            ["{0} готов! Открой его на главной"] = "{0} is ready! Open it on the home screen",
         };
     }
 }

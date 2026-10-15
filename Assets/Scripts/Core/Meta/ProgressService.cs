@@ -644,6 +644,9 @@ namespace KnittedPicture.Core
         /// <summary>Следующий сундук — большой (каждый Chest.Cycle-й).</summary>
         public bool NextChestBig => Chest.IsBig(_data.chestsOpened);
 
+        /// <summary>Редкость сундука, который откроется следующим.</summary>
+        public Rarity NextChestRarity => Chest.RarityOf(_data.chestsOpened);
+
         /// <summary>Что лежит в сундуке, который откроется следующим. Не меняет сохранение.</summary>
         public ChestContents PeekChest() => Chest.Roll(_data.chestsOpened, CurrentLevel, HasYarn);
 

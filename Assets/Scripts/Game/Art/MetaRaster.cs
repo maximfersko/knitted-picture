@@ -6,7 +6,7 @@ namespace KnittedPicture.Game
 {
     /// <summary>
     /// Мета 2.0: вязаная миниатюра картинки (петли-«галочки» по клеткам — для пялец, обложек коллекций,
-    /// альбома), вязаная шкатулка-сундук (косы цвета морской волны, стальная лента со строчкой, латунный замок),
+    /// альбома), вязаная шкатулка-сундук (косы, лента и вязка в цвет редкости, латунный замок),
     /// подарок в вязаной коробке с розовым бантом, монета с клубком, деревянные пяльцы с латунным винтом.
     /// </summary>
     public static class MetaRaster
@@ -120,15 +120,15 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Корпус шкатулки w×h пикселей: вязка «косами» цвета морской волны, металлическая лента с заклёпками (стальная
-        /// или золотая у звёздного), латунная окантовка снизу с бликом, ножки, замочек с ключевиной.
+        /// Корпус шкатулки w×h пикселей: вязка «косами» цвета морской волны, металлическая лента с заклёпками (цвет по редкости:
+        /// сталь, серебро или золото, см. ChestBand), латунная окантовка снизу с бликом, ножки, замочек с ключевиной.
         /// По контуру — резкая тёмная кромка, у каждой детали — блик сверху: сундук чёткий и на маленькой плитке.
         /// </summary>
-        public static Raster ChestBody(int w, int h, bool golden)
+        public static Raster ChestBody(int w, int h, int tier)
         {
             var r = new Raster(w, h);
-            var teal = Rgba.Hex("#2F6E73");
-            var band = golden ? Rgba.Hex("#E7B64E") : Rgba.Hex("#6F93B5");
+            var teal = ChestKnit(tier);
+            var band = ChestBand(tier);
             var brass = Rgba.Hex("#E2B04A");
             var s = h / 118f;
             r.Paint((x, y) =>
@@ -218,12 +218,35 @@ namespace KnittedPicture.Game
             return r;
         }
 
-        /// <summary>Крышка шкатулки: купол той же вязки цвета морской волны с глянцем, тёмная кромка снизу.</summary>
-        public static Raster ChestLid(int w, int h, bool golden)
+        /// <summary>
+        /// Цвета сундука по редкости (tier — ступень Rarity): вязка и металл ленты. Обычный — морская волна и сталь,
+        /// необычный — зелёный и сталь, редкий — синий и серебро, эпический — фиолетовый и золото,
+        /// легендарный — тёмный янтарь и яркое золото.
+        /// </summary>
+        public static Rgba ChestKnit(int tier) => tier switch
+        {
+            1 => Rgba.Hex("#2E7A4A"),
+            2 => Rgba.Hex("#2D4E9A"),
+            3 => Rgba.Hex("#5B3192"),
+            4 => Rgba.Hex("#9A5A14"),
+            _ => Rgba.Hex("#2F6E73"),
+        };
+
+        public static Rgba ChestBand(int tier) => tier switch
+        {
+            1 => Rgba.Hex("#7FA391"),
+            2 => Rgba.Hex("#B7C8E4"),
+            3 => Rgba.Hex("#E7B64E"),
+            4 => Rgba.Hex("#FFD24F"),
+            _ => Rgba.Hex("#6F93B5"),
+        };
+
+        /// <summary>Крышка шкатулки: купол той же вязки с глянцем, кромка снизу (у эпического и легендарного — золотая).</summary>
+        public static Raster ChestLid(int w, int h, int tier)
         {
             var r = new Raster(w, h);
-            var teal = Rgba.Hex("#2F6E73");
-            var edge = golden ? Rgba.Hex("#E7B64E") : Rgba.Hex("#1F4D51");
+            var teal = ChestKnit(tier);
+            var edge = tier >= 3 ? ChestBand(tier) : ChestKnit(tier).Shade(-0.35f);
             var s = h / 74f;
             r.Paint((x, y) =>
             {

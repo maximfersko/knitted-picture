@@ -330,7 +330,7 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Chest_contents_are_stable_distinct_and_big_every_fourth()
+        public void Chest_contents_are_stable_distinct_and_follow_chest_rarity()
         {
             var progress = Fresh();
             var first = progress.PeekChest();
@@ -346,15 +346,26 @@ namespace KnittedPicture.Core.Tests
                 Assert.Equal(Chest.Choices, contents.Boosters.Length);
                 Assert.Equal(contents.Boosters.Length, new System.Collections.Generic.HashSet<BoosterType>(contents.Boosters).Count);
                 Assert.Equal(Chest.Choices, new System.Collections.Generic.HashSet<int>(contents.Yarns).Count);
-                if (contents.Big)
-                {
-                    Assert.Equal(1, contents.BoosterCount);
-                    Assert.Contains(contents.Yarns, y => YarnCatalog.All[y].Rarity >= Rarity.Rare);
-                }
+                Assert.Equal(Chest.RarityOf(n), contents.Rarity);
+                Assert.Equal(contents.Rarity >= Rarity.Epic ? 2 : 1, contents.BoosterCount);
+                var range = Chest.CoinRange(contents.Rarity);
+                Assert.InRange(contents.Coins, range.Min, range.Max);
+                Assert.Contains(contents.Yarns, y => YarnCatalog.All[y].Rarity >= Chest.YarnFloor(contents.Rarity));
             }
 
             Assert.True(Chest.IsBig(3));
             Assert.False(Chest.IsBig(4));
+
+            // Лестница сундуков на 48: 24 обычных, 12 необычных, 8 редких, 3 эпических, 1 легендарный.
+            var counts = new int[5];
+            for (var n = 0; n < 48; n++)
+            {
+                counts[(int)Chest.RarityOf(n)]++;
+            }
+
+            Assert.Equal(new[] { 24, 12, 8, 3, 1 }, counts);
+            Assert.Equal(Rarity.Legendary, Chest.RarityOf(47));
+            Assert.Contains(Chest.Roll(47, 50, _ => true).Yarns, y => YarnCatalog.All[y].Rarity == Rarity.Legendary);
 
             // Бустеры — только уже открытые: на 6-м уровне есть лишь «+1 слот».
             Assert.Equal(new[] { BoosterType.Slot }, Chest.Roll(0, 6, _ => false).Boosters);

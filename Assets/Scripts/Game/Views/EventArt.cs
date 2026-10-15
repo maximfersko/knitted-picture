@@ -1,5 +1,6 @@
 #nullable enable
 
+using KnittedPicture.Core;
 using UnityEngine;
 
 namespace KnittedPicture.Game
@@ -33,7 +34,7 @@ namespace KnittedPicture.Game
                     Missions(root, size);
                     break;
                 case EventKind.Chest:
-                    ChestView.Create(root, size / 2f, size * 0.54f, size * 0.86f, false);
+                    ChestView.Create(root, size / 2f, size * 0.54f, size * 0.86f, App.Instance != null ? App.Instance.Progress.NextChestRarity : Rarity.Common);
                     break;
                 case EventKind.Marathon:
                     var cup = Ui.Image(root, "Trophy", Art2.Trophy(true), Color.white);

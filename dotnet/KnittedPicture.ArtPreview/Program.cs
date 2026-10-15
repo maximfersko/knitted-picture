@@ -21,6 +21,22 @@ namespace KnittedPicture.ArtPreview
             Meta(dir);
             Badges(dir);
             Frames(dir);
+            Chests(dir);
+        }
+
+        /// <summary>Сундуки пяти редкостей в ряд: от обычного до легендарного.</summary>
+        private static void Chests(string dir)
+        {
+            var img = new Raster(5 * 230 + 20, 200);
+            Png.Fill(img, Rgba.Hex("#F3F5F8"));
+            for (var tier = 0; tier < 5; tier++)
+            {
+                var x = 20 + tier * 230;
+                Png.Put(img, MetaRaster.ChestBody(200, 107, tier), x, 20, 200, 107);
+                Png.Put(img, MetaRaster.ChestLid(211, 67, tier), x - 5.5f, 20 + 107 - 18, 211, 67);
+            }
+
+            Png.Save(img, Path.Combine(dir, "chests.png"));
         }
 
         /// <summary>Старый дизайн, детальнее: картинка из вязаных клеток, ткань, искры.</summary>
@@ -339,8 +355,8 @@ namespace KnittedPicture.ArtPreview
         {
             var img = new Raster(1100, 420);
             Png.Fill(img, Rgba.Hex("#F3F5F8"));
-            var body = MetaRaster.ChestBody(330, 177, false);
-            var lid = MetaRaster.ChestLid(348, 111, false);
+            var body = MetaRaster.ChestBody(330, 177, 0);
+            var lid = MetaRaster.ChestLid(348, 111, 0);
             Png.Put(img, body, 40, 60, 330, 177);
             Png.Put(img, lid, 31, 60 + 177 - 30, 348, 111);
             Png.Put(img, MetaRaster.Gift(), 400, 90, 192, 192);

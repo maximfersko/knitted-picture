@@ -78,8 +78,9 @@ namespace KnittedPicture.Game
             catcherTap.ClickSound = false;
             catcherTap.OnClick(OnStageTap);
 
-            Ui.Label(_stage, _contents.Big ? L.T("Большой сундук") : L.T("Звёздный сундук"), 26, Color.white, 16, _h * 0.06f, _w - 32, 36);
-            _chest = ChestView.Create(_stage, _w / 2f, _h * 0.42f, 210f, _contents.Big);
+            Ui.Label(_stage, ChestScreen.Title(_contents.Rarity), 26, Color.white, 16, _h * 0.06f, _w - 32, 36);
+            RarityStyle.Chip(_stage, _contents.Rarity, _w / 2f, _h * 0.06f + 50f, 0f, Gender.Masculine);
+            _chest = ChestView.Create(_stage, _w / 2f, _h * 0.42f, 210f, _contents.Rarity);
             _hint = Ui.Label(_stage, L.T("Тапни, чтобы открыть"), 16, Palette.WithAlpha(Color.white, 0.8f), 16, _h * 0.42f + 120f, _w - 32, 24, false);
             _stepTitle = Ui.Label(_stage, string.Empty, 21, Color.white, 16, StepTitleY, _w - 32, 30);
             _description = Ui.Label(_stage, string.Empty, 14, Palette.WithAlpha(Color.white, 0.82f), 24, CardsTop + CardH + 14f, _w - 48, 44, false);
@@ -554,7 +555,7 @@ namespace KnittedPicture.Game
         {
             var big = App.Progress.NextChestBig;
             var granted = App.Progress.ClaimChest(_booster, yarnChoice);
-            Analytics.Event("chest_open", ("big", big), ("level", App.Progress.CurrentLevel));
+            Analytics.Event("chest_open", ("big", big), ("rarity", _contents.Rarity.ToString()), ("level", App.Progress.CurrentLevel));
             App.Save();
             _claimed = true;
             _step = Step.Done;
@@ -588,13 +589,23 @@ namespace KnittedPicture.Game
 
     /// <summary>
     /// «Сундук»: один главный объект — сундук. Под ним звёзды до открытия (или «Открыть»),
-    /// что внутри (монеты, бустер на выбор, моток на выбор — с прицелом на большой сундук)
-    /// и путь из четырёх сундуков. Ниже — запасы бустеров плитками; описание — по тапу на плитку.
+    /// что внутри (монеты, бустер на выбор, моток на выбор) и путь из четырёх сундуков, у каждого своя
+    /// редкость. Ниже — возможный выигрыш с шансами; описание бустера — по тапу на плитку.
     /// Корзинка пряжи живёт во вкладке «Пряжа», здесь её нет, чтобы не дублировать.
     /// </summary>
     public sealed class ChestScreen : ScreenView
     {
         private RectTransform? _bar;
+
+        /// <summary>Название сундука по редкости: «Обычный сундук» … «Легендарный сундук».</summary>
+        public static string Title(Rarity rarity) => rarity switch
+        {
+            Rarity.Uncommon => L.T("Необычный сундук"),
+            Rarity.Rare => L.T("Редкий сундук"),
+            Rarity.Epic => L.T("Эпический сундук"),
+            Rarity.Legendary => L.T("Легендарный сундук"),
+            _ => L.T("Обычный сундук"),
+        };
 
         public ChestScreen(App app)
             : base(app, "ChestScreen")
@@ -614,10 +625,10 @@ namespace KnittedPicture.Game
         {
             var progress = App.Progress;
             var cardW = W - 32f;
-            const float cardH = 452f;
+            const float cardH = 478f;
             var card = Ui.Card(content, "ChestCard", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
 
-            var big = progress.NextChestBig;
+            var rarity = progress.NextChestRarity;
             var ready = progress.CanOpenChest;
 
             // Сундук — главный объект: крупно, дышит, готовый светится. Тап по готовому открывает его,
@@ -625,7 +636,7 @@ namespace KnittedPicture.Game
             var area = Ui.Place(Ui.Node(card, "ChestArea"), 0, 0, cardW, 184);
             area.gameObject.AddComponent<RectMask2D>();
             Ui.Stretch(Ui.Image(area, "Hit", null, Color.clear, true).rectTransform);
-            var chest = ChestView.Create(area, cardW / 2f, 104, 168f, big);
+            var chest = ChestView.Create(area, cardW / 2f, 104, 168f, rarity);
             chest.Breathe();
             if (ready)
             {
@@ -651,7 +662,11 @@ namespace KnittedPicture.Game
                 }
             });
 
-            Ui.Label(card, big ? L.T("Большой сундук") : L.T("Звёздный сундук"), 20, Palette.Ink, 16, 186, cardW - 32, 28);
+            // Название цветом редкости и камень слева от него.
+            var title = Ui.Label(card, Title(rarity), 20, rarity == Rarity.Common ? Palette.Ink : RarityStyle.Ink(rarity), 16, 186, cardW - 32, 28);
+            var titleW = Mathf.Min(title.preferredWidth, cardW - 72f);
+            var gem = Ui.Image(card, "Gem", Art2.Gem(rarity), Color.white);
+            Ui.PlaceCenter(gem.rectTransform, cardW / 2f - titleW / 2f - 14f, 200, 20, 20);
             if (ready)
             {
                 Ui.Button(card, L.T("Открыть"), 24, 222, cardW - 48, 56, Palette.Primary, Palette.PrimaryShadow, Color.white, 20).OnClick(Open);
@@ -668,7 +683,7 @@ namespace KnittedPicture.Game
                 Ui.Label(card, $"{value}/{ProgressService.ChestEvery}", 17, Palette.Ink, cardW - 76, 234, 60, 24, true, TextAnchor.MiddleRight);
             }
 
-            BuildInside(card, cardW, 296f, big);
+            BuildInside(card, cardW, 296f, rarity);
             BuildCycle(card, cardW, 376f);
             return y + cardH;
         }
@@ -677,34 +692,40 @@ namespace KnittedPicture.Game
 
         /// <summary>
         /// Что внутри — три плашки: монеты, бустер на выбор, моток на выбор. Ожидание награды
-        /// работает сильнее любой подсказки; у большого сундука всё щедрее и подписано золотом.
+        /// работает сильнее любой подсказки; чем реже сундук, тем щедрее, плашки — цвета редкости.
         /// </summary>
-        private void BuildInside(RectTransform card, float cardW, float y, bool big)
+        private void BuildInside(RectTransform card, float cardW, float y, Rarity rarity)
         {
+            var range = Chest.CoinRange(rarity);
+            var boosters = Chest.BoosterCountOf(rarity);
+            var floor = Chest.YarnFloor(rarity);
             const float gap = 8f;
             const float h = 66f;
             var w = (cardW - 32f - gap * 2f) / 3f;
             var items = new (string text, System.Action<RectTransform, float> icon)[]
             {
-                ($"{Chest.CoinRange(big).Min}–{Chest.CoinRange(big).Max}", (c, cx) => Ui.Coin(c, cx, 22, 26)),
-                (L.T("бустер"), (c, cx) => Ui.IconImage(c, Icon.PlusSlot, Palette.Primary, cx, 22, 24)),
-                (big ? L.T("редкий моток") : L.T("моток"), (c, cx) =>
+                ($"{range.Min}–{range.Max}", (c, cx) => Ui.Coin(c, cx, 22, 26)),
+                (boosters > 1 ? L.F("бустер ×{0}", boosters) : L.T("бустер"), (c, cx) => Ui.IconImage(c, Icon.PlusSlot, Palette.Primary, cx, 22, 24)),
+                (floor > Rarity.Common ? L.F("моток: {0}", Rarities.Name(floor, Gender.Masculine)) : L.T("моток"), (c, cx) =>
                 {
-                    var ball = Ui.Image(c, "Ball", Art2.YarnBall(big ? Palette.Hex("#3C78D8") : Palette.Hex("#E2683C")), Color.white);
+                    var ball = Ui.Image(c, "Ball", Art2.YarnBall(floor > Rarity.Common ? RarityStyle.Color(floor) : Palette.Hex("#E2683C")), Color.white);
                     Ui.PlaceCenter(ball.rectTransform, cx, 22, 28, 28);
                 }),
             };
             for (var i = 0; i < items.Length; i++)
             {
                 var x = 16f + i * (w + gap);
-                var cell = Ui.Box(card, "Inside", 16, big ? Palette.CoinSoft : Palette.Surface).rectTransform;
+                var cell = Ui.Box(card, "Inside", 16, rarity == Rarity.Common ? Palette.Surface : RarityStyle.Soft(rarity)).rectTransform;
                 Ui.Place(cell, x, y, w, h);
                 items[i].icon(cell, w / 2f);
-                Ui.Fit(Ui.Label(cell, items[i].text, 13, big ? Palette.CoinInk : Palette.Ink2, 4, 40, w - 8, 20, true), 10);
+                Ui.Fit(Ui.Label(cell, items[i].text, 13, rarity == Rarity.Common ? Palette.Ink2 : RarityStyle.Ink(rarity), 4, 40, w - 8, 20, true), 10);
             }
         }
 
-        /// <summary>Путь из четырёх сундуков: открытые с галочкой, текущий в кольце, большой — золотой.</summary>
+        /// <summary>
+        /// Путь из четырёх сундуков: открытые с галочкой, текущий в кольце, у каждого — цвет и подпись редкости
+        /// (большие крупнее). Под путём — сколько осталось до ближайшего эпического и легендарного.
+        /// </summary>
         private void BuildCycle(RectTransform card, float cardW, float y)
         {
             var opened = App.Progress.ChestsOpened;
@@ -717,11 +738,12 @@ namespace KnittedPicture.Game
             {
                 var number = first + i;
                 var big = Chest.IsBig(number);
+                var rarity = Chest.RarityOf(number);
                 var done = number < opened;
                 var current = number == opened;
                 var cx = x0 + i * step;
                 var size = big ? 48f : 40f;
-                var back = done ? Palette.PrimarySoft : big ? Palette.CoinSoft : Palette.Surface;
+                var back = done ? Palette.PrimarySoft : rarity == Rarity.Common ? Palette.Surface : RarityStyle.Soft(rarity);
                 var circle = Ui.Image(card, "Cycle" + i, Art.Circle, back);
                 Ui.PlaceCenter(circle.rectTransform, cx, y + 25, size, size);
                 if (current)
@@ -732,26 +754,48 @@ namespace KnittedPicture.Game
                     Tweens.Run(rt, 1.6f, t => rt.localScale = Vector3.one * (1f + 0.06f * Ease.Bump(t)), null, null, 0f, true);
                 }
 
-                Ui.IconImage(card, done ? Icon.Check : Icon.Chest, done ? Palette.Primary : big ? Palette.CoinShadow : Palette.Ink2, cx, y + 25,
-                    big ? 26 : 22);
+                Ui.IconImage(card, done ? Icon.Check : Icon.Chest, done ? Palette.Primary : rarity == Rarity.Common ? Palette.Ink2 : RarityStyle.Ink(rarity),
+                    cx, y + 25, big ? 26 : 22);
 
-                // Подпись только у большого: галочка и кольцо понятны без слов.
-                if (big && !done)
+                // Подпись редкости у неоткрытых (кроме обычных): галочка и кольцо понятны без слов.
+                if (rarity != Rarity.Common && !done)
                 {
-                    Ui.Label(card, L.T("большой"), 11, Palette.CoinInk, cx - 32, y + 54, 64, 16, true);
+                    Ui.Fit(Ui.Label(card, Rarities.Name(rarity, Gender.Masculine), 11, RarityStyle.Ink(rarity), cx - 32, y + 54, 64, 16, true), 8);
                 }
             }
+
+            // Сколько ещё до эпического и легендарного: их видно заранее, есть чего ждать.
+            var epic = ChestsUntil(opened, Rarity.Epic);
+            var legendary = ChestsUntil(opened, Rarity.Legendary);
+            var line = Ui.Label(card, L.F("До эпического: {0} · до легендарного: {1}", epic, legendary), 12, Palette.Ink3, 16, y + 74, cardW - 32, 18);
+            Ui.Fit(line, 9);
+        }
+
+        /// <summary>Сколько сундуков открыть до ближайшего сундука этой редкости (0 — следующий такой).</summary>
+        private static int ChestsUntil(int opened, Rarity rarity)
+        {
+            for (var n = opened; n < opened + Chest.Cycle * 12; n++)
+            {
+                if (Chest.RarityOf(n) == rarity)
+                {
+                    return n - opened;
+                }
+            }
+
+            return 0;
         }
 
         /// <summary>
         /// Возможный выигрыш этого сундука — честно, как требуют магазины для случайных наград: сколько монет,
-        /// из каких бустеров будет выбор (закрытые — с уровнем) и шанс каждой редкости мотка. У большого
-        /// сундука — гарантия: хотя бы один моток редкий или лучше. Тап по бустеру — что он делает.
+        /// из каких бустеров будет выбор (закрытые — с уровнем) и шанс каждой редкости мотка. От необычного
+        /// сундука и выше — гарантия: хотя бы один моток не ниже редкости сундука. Тап по бустеру — что он делает.
         /// </summary>
         private float BuildPrizes(RectTransform content, float y)
         {
             var progress = App.Progress;
-            var big = progress.NextChestBig;
+            var rarity = progress.NextChestRarity;
+            var floor = Chest.YarnFloor(rarity);
+            var guarantee = floor > Rarity.Common;
             var cardW = W - 32f;
             Ui.Label(content, L.T("Возможный выигрыш"), 18, Palette.Ink, 20, y, cardW, 26, true, TextAnchor.MiddleLeft);
             y += 32f;
@@ -760,21 +804,22 @@ namespace KnittedPicture.Game
             const float tileH = 92f;
             const float rowH = 30f;
             var tiers = Rarities.All;
-            var cardH = 16f + 44f + 18f + 30f + tileH + 18f + 30f + tiers.Length * rowH + (big ? 30f : 0f) + 12f;
+            var cardH = 16f + 44f + 18f + 30f + tileH + 18f + 30f + tiers.Length * rowH + (guarantee ? 30f : 0f) + 12f;
             var card = Ui.Card(content, "Prizes", 16, y, cardW, cardH, 24, Palette.Card, Palette.CardShadow, 3f);
             var cy = 16f;
 
             // Монеты: сразу, без выбора.
             Ui.Coin(card, 38, cy + 22, 30);
             Ui.Label(card, L.T("Монеты"), 16, Palette.Ink, 64, cy, cardW - 180, 44, true, TextAnchor.MiddleLeft);
-            var range = Chest.CoinRange(big);
+            var range = Chest.CoinRange(rarity);
             Ui.Label(card, $"{range.Min}–{range.Max}", 18, Palette.CoinInk, cardW - 136, cy, 120, 44, true, TextAnchor.MiddleRight);
             cy += 44f + 8f;
             Divider(card, cardW, cy);
             cy += 10f;
 
             // Бустеры: один на выбор из трёх открытых.
-            Ui.Label(card, L.T("Бустер на выбор"), 15, Palette.Ink, 20, cy, cardW - 40, 24, true, TextAnchor.MiddleLeft);
+            var count = Chest.BoosterCountOf(rarity);
+            Ui.Label(card, count > 1 ? L.F("Бустер на выбор ×{0}", count) : L.T("Бустер на выбор"), 15, Palette.Ink, 20, cy, cardW - 40, 24, true, TextAnchor.MiddleLeft);
             cy += 30f;
             const float gap = 8f;
             var tileW = (cardW - 32f - gap * (types.Length - 1)) / types.Length;
@@ -782,15 +827,15 @@ namespace KnittedPicture.Game
             {
                 var type = types[i];
                 var unlocked = progress.IsUnlocked(type, progress.CurrentLevel);
-                var rarity = Economy.RarityOf(type);
-                var tile = Ui.Box(card, type.ToString(), 16, unlocked ? RarityStyle.Soft(rarity) : Palette.Surface, true).rectTransform;
+                var boosterRarity = Economy.RarityOf(type);
+                var tile = Ui.Box(card, type.ToString(), 16, unlocked ? RarityStyle.Soft(boosterRarity) : Palette.Surface, true).rectTransform;
                 Ui.Place(tile, 16 + i * (tileW + gap), cy, tileW, tileH);
                 var circle = Ui.Image(tile, "Back", Art.Circle, unlocked ? Palette.Card : Palette.Track);
                 Ui.PlaceCenter(circle.rectTransform, tileW / 2f, 32, 44, 44);
-                Ui.IconImage(tile, unlocked ? BoosterInfo.Icon(type) : Icon.Lock, unlocked ? RarityStyle.Ink(rarity) : Palette.Ink3, tileW / 2f, 32, 22);
+                Ui.IconImage(tile, unlocked ? BoosterInfo.Icon(type) : Icon.Lock, unlocked ? RarityStyle.Ink(boosterRarity) : Palette.Ink3, tileW / 2f, 32, 22);
                 if (unlocked)
                 {
-                    var gem = Ui.Image(tile, "Gem", Art2.Gem(rarity), Color.white);
+                    var gem = Ui.Image(tile, "Gem", Art2.Gem(boosterRarity), Color.white);
                     Ui.PlaceCenter(gem.rectTransform, tileW / 2f + 19f, 48, 16, 16);
                 }
 
@@ -829,10 +874,14 @@ namespace KnittedPicture.Game
                 cy += rowH;
             }
 
-            if (big)
+            if (guarantee)
             {
-                var note = Ui.Label(card, L.T("Большой сундук: хотя бы один моток редкий или лучше"), 12, Palette.CoinInk, 20, cy + 4f, cardW - 40, 22,
-                    true, TextAnchor.MiddleLeft);
+                var text = floor == Rarity.Legendary
+                    ? L.T("Гарантия: легендарный моток среди вариантов")
+                    : L.F("Гарантия: хотя бы один моток {0} или лучше", Rarities.Name(floor, Gender.Masculine));
+                var gem = Ui.Image(card, "Gem", Art2.Gem(floor), Color.white);
+                Ui.PlaceCenter(gem.rectTransform, 30, cy + 15f, 18, 18);
+                var note = Ui.Label(card, text, 12, RarityStyle.Ink(floor), 44, cy + 4f, cardW - 64, 22, true, TextAnchor.MiddleLeft);
                 Ui.Fit(note, 9);
             }
 

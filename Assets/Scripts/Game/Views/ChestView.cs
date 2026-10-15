@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using KnittedPicture.Core;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -40,8 +41,12 @@ namespace KnittedPicture.Game
         /// <summary>Мировая точка «изнутри сундука»: отсюда вылетают награды.</summary>
         public Vector3 Mouth => _pose.TransformPoint(new Vector3(0, Art.ChestBodySize.y * _scale * 0.9f, 0));
 
-        /// <summary>Шкатулка шириной width; cx, cy — центр корпуса вместе с крышкой.</summary>
-        public static ChestView Create(RectTransform parent, float cx, float cy, float width, bool big)
+        /// <summary>
+        /// Шкатулка шириной width; cx, cy — центр корпуса вместе с крышкой. Редкость задаёт вязку и металл
+        /// (MetaRaster.ChestKnit/ChestBand), звёзды на крышке (редкий — одна, эпический — три, легендарный — пять)
+        /// и цвет свечения, когда сундук готов.
+        /// </summary>
+        public static ChestView Create(RectTransform parent, float cx, float cy, float width, Rarity rarity)
         {
             var scale = width / Art.ChestBodySize.x;
             var bodySize = Art.ChestBodySize * scale;
@@ -53,7 +58,8 @@ namespace KnittedPicture.Game
             // Свечение и лучи — позади, по центру крышки.
             var rays = Ui.Image(root, "Rays", Art.Rays, Palette.WithAlpha(Palette.CoinSoft, 0f));
             Ui.PlaceCenter(rays.rectTransform, width * 0.55f, height * 0.42f, width * 2.4f, width * 2.4f);
-            var glow = Ui.Image(root, "Glow", Art.Glow, Palette.WithAlpha(Palette.Coin, 0f));
+            var glowColor = rarity >= Rarity.Rare ? RarityStyle.Color(rarity) : Palette.Coin;
+            var glow = Ui.Image(root, "Glow", Art.Glow, Palette.WithAlpha(glowColor, 0f));
             Ui.PlaceCenter(glow.rectTransform, width * 0.55f, height * 0.42f, width * 1.9f, width * 1.9f);
 
             var shadow = Ui.Image(root, "Shadow", Art.Circle, Palette.WithAlpha(Palette.Ink, 0.16f));
@@ -66,7 +72,7 @@ namespace KnittedPicture.Game
             pose.anchoredPosition = Vector2.zero;
             pose.sizeDelta = new Vector2(width, height);
 
-            var body = Ui.Image(pose, "Body", Art.ChestBody(big), Color.white);
+            var body = Ui.Image(pose, "Body", Art.ChestBody(rarity), Color.white);
             var brt = body.rectTransform;
             brt.anchorMin = brt.anchorMax = new Vector2(0.5f, 0f);
             brt.pivot = new Vector2(0.5f, 0f);
@@ -74,7 +80,7 @@ namespace KnittedPicture.Game
             brt.sizeDelta = bodySize;
 
             // Крышка вращается вокруг заднего края: опорная точка — середина её низа.
-            var lid = Ui.Image(pose, "Lid", Art.ChestLid(big), Color.white).rectTransform;
+            var lid = Ui.Image(pose, "Lid", Art.ChestLid(rarity), Color.white).rectTransform;
             lid.anchorMin = lid.anchorMax = new Vector2(0.5f, 0f);
             lid.pivot = new Vector2(0.5f, 0f);
             lid.anchoredPosition = new Vector2(0, bodySize.y - overlap);
@@ -95,18 +101,19 @@ namespace KnittedPicture.Game
             var slit = Ui.Box(clasp, "Slit", 2f * scale, Palette.Hex("#9A6544"));
             Ui.PlaceCenter(slit.rectTransform, 15f * scale, 21f * scale, 4f * scale, 10f * scale);
 
-            if (big)
+            // Звёздочки на крышке по редкости: сразу видно, какой сундук ценнее.
+            var stars = rarity == Rarity.Legendary ? 5 : rarity == Rarity.Epic ? 3 : rarity == Rarity.Rare ? 1 : 0;
+            for (var i = 0; i < stars; i++)
             {
-                // Большой сундук: три звёздочки на крышке.
-                for (var i = -1; i <= 1; i++)
-                {
-                    var star = Ui.Image(lid, "Star", Art.Icon(Icon.Star), Palette.Hex("#FFF4D6"));
-                    var srt = star.rectTransform;
-                    srt.anchorMin = srt.anchorMax = new Vector2(0.5f, 0f);
-                    srt.pivot = new Vector2(0.5f, 0.5f);
-                    srt.anchoredPosition = new Vector2(i * 46f * scale, lidSize.y * 0.56f + (i == 0 ? 6f : 0f) * scale);
-                    srt.sizeDelta = Vector2.one * (i == 0 ? 20f : 14f) * scale;
-                }
+                var slot = i - (stars - 1) / 2f;
+                var middle = Mathf.Abs(slot) < 0.01f;
+                var star = Ui.Image(lid, "Star", Art.Icon(Icon.Star), rarity == Rarity.Legendary ? Palette.Hex("#FFE9A0") : Palette.Hex("#FFF4D6"));
+                var srt = star.rectTransform;
+                srt.anchorMin = srt.anchorMax = new Vector2(0.5f, 0f);
+                srt.pivot = new Vector2(0.5f, 0.5f);
+                var step = stars == 5 ? 34f : 46f;
+                srt.anchoredPosition = new Vector2(slot * step * scale, lidSize.y * 0.56f + (middle ? 6f : Mathf.Abs(slot) < 1.5f ? 3f : 0f) * scale);
+                srt.sizeDelta = Vector2.one * (middle ? 20f : 14f) * scale;
             }
 
             return new ChestView(root, pose, lid, clasp, glow, rays, scale);
