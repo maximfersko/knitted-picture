@@ -22,6 +22,7 @@ namespace KnittedPicture.Playtest
     ///   --players N --days N  мета-игра: N игроков по N дней (20 × 60)
     ///   --seed N              зерно случайности (1): тот же ключ — те же партии
     ///   --report FILE         отчёт в Markdown
+    ///   --economy             только баланс экономики по типам игроков (с --players, --days)
     ///   --repro L:R           повторить одну хаос-партию (уровень L, партия R) с печатью каждого хода
     ///
     /// Код выхода 1, если нарушено хоть одно правило: так проверка на GitHub краснеет.
@@ -42,6 +43,19 @@ namespace KnittedPicture.Playtest
                 .ToList();
             var findings = new Findings();
             var rules = new RulesCheck(findings, opt.Seed);
+
+            if (opt.Economy)
+            {
+                // Только баланс экономики по типам игроков: таблица в консоль (и в отчёт, если задан).
+                var table = new EconomySim(levels).Run(opt.Players, opt.Days, opt.Seed);
+                Console.WriteLine(table);
+                if (opt.Report != null)
+                {
+                    File.WriteAllText(opt.Report, table);
+                }
+
+                return 0;
+            }
 
             if (opt.Repro != null)
             {
@@ -207,6 +221,9 @@ namespace KnittedPicture.Playtest
         public string? Report;
         public string? Repro;
 
+        /// <summary>--economy: только симуляция экономики по типам игроков.</summary>
+        public bool Economy;
+
         public static Options Parse(string[] args)
         {
             var o = new Options();
@@ -224,6 +241,7 @@ namespace KnittedPicture.Playtest
                     case "--report": o.Report = Next(); break;
                     case "--repro": o.Repro = Next(); break;
                     case "--meta-player": Next(); break;
+                    case "--economy": o.Economy = true; break;
                     default: throw new ArgumentException($"неизвестный ключ {args[i]}");
                 }
             }

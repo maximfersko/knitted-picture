@@ -119,10 +119,10 @@ namespace KnittedPicture.Core
 
         public static readonly YarnSet[] Sets =
         {
-            new YarnSet(0, "Шерсть", 0, 4, new Reward(150, BoosterType.Slot, 1)),
-            new YarnSet(1, "Хлопок и шёлк", 4, 4, new Reward(200, BoosterType.Scissors, 1)),
-            new YarnSet(2, "Особая пряжа", 8, 4, new Reward(300, BoosterType.Undo, 2)),
-            new YarnSet(3, "Праздничная", 12, 4, new Reward(400, BoosterType.Slot, 2)),
+            new YarnSet(0, "Шерсть", 0, 4, new Reward(80, BoosterType.Slot, 1)),
+            new YarnSet(1, "Хлопок и шёлк", 4, 4, new Reward(100, BoosterType.Scissors, 1)),
+            new YarnSet(2, "Особая пряжа", 8, 4, new Reward(150, BoosterType.Undo, 2)),
+            new YarnSet(3, "Праздничная", 12, 4, new Reward(200, BoosterType.Slot, 2)),
         };
 
         public static int Count => All.Length;

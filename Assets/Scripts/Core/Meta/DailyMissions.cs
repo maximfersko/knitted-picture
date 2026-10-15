@@ -100,7 +100,13 @@ namespace KnittedPicture.Core
                 }
             }
 
-            return open.Count == 0 ? Reward.CoinsOnly(80) : new Reward(60, open[((day % open.Count) + open.Count) % open.Count], 1);
+            // Бустер — через день: задания каждый день, и иначе бесплатных бустеров больше, чем нужно (см. --economy).
+            if (open.Count == 0 || ((day % 2) + 2) % 2 == 1)
+            {
+                return Reward.CoinsOnly(70);
+            }
+
+            return new Reward(40, open[(((day / 2) % open.Count) + open.Count) % open.Count], 1);
         }
 
         public static string Text(MissionKind kind, int n)

@@ -48,7 +48,7 @@ namespace KnittedPicture.Core
         public static bool IsBig(int chestNumber) => chestNumber % Cycle == Cycle - 1;
 
         /// <summary>Сколько монет бывает в сундуке: показываем на экране сундука, катаем в Roll.</summary>
-        public static (int Min, int Max) CoinRange(bool big) => big ? (120, 160) : (50, 90);
+        public static (int Min, int Max) CoinRange(bool big) => big ? (80, 120) : (30, 60);
 
         /// <summary>
         /// Собрать сундук номер chestNumber (с нуля). Мотки тянутся по тем же весам, что и везде:

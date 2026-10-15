@@ -23,7 +23,7 @@ namespace KnittedPicture.Core
         /// <summary>Каждый 7-й день серии подряд — моток в подарок.</summary>
         public const int YarnEvery = 7;
 
-        public const int RewardCoins = 50;
+        public const int RewardCoins = 30;
 
         /// <summary>Какая картинка альбома сегодня (индекс 0..count-1): по дню, без повторов подряд.</summary>
         public static int PictureIndex(int day, int count) => ((day * 7 + 3) % count + count) % count;

@@ -496,7 +496,7 @@ namespace KnittedPicture.Core
 
         // ---------- Коллекции альбома ----------
 
-        public static readonly Reward CollectionReward = new Reward(100, BoosterType.Slot, 1, DailyGift.RandomYarn);
+        public static readonly Reward CollectionReward = new Reward(80, null, 0, DailyGift.RandomYarn);
 
         public bool IsCollectionDone(CollectionInfo collection)
         {

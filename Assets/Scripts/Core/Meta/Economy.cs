@@ -40,10 +40,10 @@ namespace KnittedPicture.Core
         {
             switch (type)
             {
-                case BoosterType.Slot: return 100;
-                case BoosterType.Scissors: return 120;
-                case BoosterType.Undo: return 60;
-                case BoosterType.Time: return 80;
+                case BoosterType.Slot: return 300;
+                case BoosterType.Scissors: return 360;
+                case BoosterType.Undo: return 180;
+                case BoosterType.Time: return 240;
                 default: return 0;
             }
         }

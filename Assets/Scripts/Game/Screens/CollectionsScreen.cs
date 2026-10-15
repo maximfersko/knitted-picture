@@ -918,7 +918,7 @@ namespace KnittedPicture.Game
                 done += progress.IsCompleted(id) ? 1 : 0;
             }
 
-            RewardStrip.Build(parent, x, y, w, $"Собери все {collection.Count}: монеты, место и моток", (float)done / collection.Count,
+            RewardStrip.Build(parent, x, y, w, $"Собери все {collection.Count}: монеты и моток", (float)done / collection.Count,
                 progress.CanClaimCollection(index), progress.IsCollectionClaimed(index), "Коллекция собрана!", () => Claim(app, index, refresh));
         }
 
