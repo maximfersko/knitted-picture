@@ -167,7 +167,7 @@ namespace KnittedPicture.Game
                 }
             });
 
-            CardWidth = bottomSheet ? Mathf.Min(app.CanvasWidth, 430f) : Mathf.Min(app.Width - 40f, 340f);
+            CardWidth = bottomSheet ? Mathf.Min(app.CanvasWidth, Mathf.Max(430f, app.Width)) : Mathf.Min(app.Width - 40f, app.Tablet ? 400f : 340f);
             Card = Ui.Node(Root, "Card");
             var face = Ui.Box(Card, "Face", bottomSheet ? 30 : 26, Palette.Card, true);
             Ui.Stretch(face.rectTransform);

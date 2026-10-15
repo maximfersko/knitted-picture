@@ -106,7 +106,7 @@ namespace KnittedPicture.Game
             var boosterRow = new[] { BoosterType.Scissors, BoosterType.Undo, BoosterType.Slot }.Any(t => App.Progress.IsBoosterOpen(t, BoosterLevel));
             var boostersY = boosterRow ? H - 10f - 60f : H - 4f;
             _colW = (W - 2 * Pad - 16f) / _game.ColumnCount;
-            _spoolSize = Mathf.Min(boosterRow ? 52f : 58f, _colW - 12f);
+            _spoolSize = Mathf.Min((boosterRow ? 52f : 58f) + (App.Tablet ? 8f : 0f), _colW - 12f);
 
             for (var attempt = 0; attempt < 4; attempt++)
             {
@@ -125,7 +125,7 @@ namespace KnittedPicture.Game
         private void BuildPicture()
         {
             var availH = _loomY - 10f - _top;
-            var step = Mathf.Min((W - 2 * Pad - 24f) / _game.Width, (availH - 24f - 26f) / _game.Height, 30f);
+            var step = Mathf.Min((W - 2 * Pad - 24f) / _game.Width, (availH - 24f - 26f) / _game.Height, App.Tablet ? 36f : 30f);
             var gap = Mathf.Max(1f, Mathf.Round(step * 0.1f));
             var cell = step - gap;
             var gridW = _game.Width * step - gap;

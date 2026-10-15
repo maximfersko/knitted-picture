@@ -37,6 +37,16 @@ namespace KnittedPicture.Game
         private const float DesignHeight = 844f;
         private const float MaxWidth = 430f;
 
+        /// <summary>
+        /// Планшет: макет выше (1000 вместо 844), чтобы всё не раздувалось, и колонка шире, чтобы поле и списки
+        /// заняли место, а не плавали узкой полосой. На iPad 1 единица макета ≈ 1 pt, как на телефоне.
+        /// </summary>
+        private const float TabletHeight = 1000f;
+        private const float TabletMaxWidth = 540f;
+
+        /// <summary>Планшет: короткая сторона от 3,6 дюйма (у телефонов 2,5–3,1). Без dpi — по пропорциям.</summary>
+        private const float TabletShortSideInches = 3.6f;
+
         private readonly List<Popup> _popups = new List<Popup>();
         private CanvasScaler? _scaler;
         private RectTransform? _canvas;
@@ -260,6 +270,9 @@ namespace KnittedPicture.Game
         }
 
         public float Width { get; private set; }
+
+        /// <summary>Экран планшета или раскрытого складного телефона.</summary>
+        public bool Tablet { get; private set; }
 
         public float Height { get; private set; }
 
@@ -911,22 +924,24 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Масштаб: на вытянутых телефонах ширина макета 390, на широких экранах — высота 844.
-        /// Контент — колонка внутри безопасной зоны, не шире 430.
+        /// Масштаб: на вытянутых телефонах ширина макета 390, на широких экранах — высота 844 (на планшете 1000).
+        /// Контент — колонка внутри безопасной зоны, не шире 430 (на планшете 540).
         /// </summary>
         private void ApplyLayout()
         {
             _screenSize = new Vector2Int(Screen.width, Screen.height);
             _safeArea = Screen.safeArea;
-            var tall = (float)Screen.height / Mathf.Max(1, Screen.width) >= DesignHeight / DesignWidth;
-            var scale = tall ? Screen.width / DesignWidth : Screen.height / DesignHeight;
+            Tablet = IsTablet();
+            var designHeight = Tablet ? TabletHeight : DesignHeight;
+            var tall = (float)Screen.height / Mathf.Max(1, Screen.width) >= designHeight / DesignWidth;
+            var scale = tall ? Screen.width / DesignWidth : Screen.height / designHeight;
             _scaler!.scaleFactor = scale;
 
             CanvasWidth = Screen.width / scale;
             var left = _safeArea.xMin / scale;
             var bottom = _safeArea.yMin / scale;
             var safeWidth = _safeArea.width / scale;
-            Width = Mathf.Min(safeWidth, MaxWidth);
+            Width = Mathf.Min(safeWidth, Tablet ? TabletMaxWidth : MaxWidth);
             Height = _safeArea.height / scale;
             BottomInset = bottom;
 
@@ -941,6 +956,18 @@ namespace KnittedPicture.Game
             {
                 _pattern.uvRect = new Rect(0, 0, CanvasWidth / 40f, Screen.height / scale / 40f);
             }
+        }
+
+        private static bool IsTablet()
+        {
+            float shortSide = Mathf.Min(Screen.width, Screen.height);
+            float longSide = Mathf.Max(Screen.width, Screen.height);
+            if (Screen.dpi > 0f)
+            {
+                return shortSide / Screen.dpi >= TabletShortSideInches;
+            }
+
+            return longSide / Mathf.Max(1f, shortSide) < 1.7f;
         }
 
         private void Rebuild()
