@@ -81,13 +81,19 @@ namespace KnittedPicture.Game
                 Ui.Outline(row, 18, Palette.Coin, 2f);
             }
 
+            // Диск медали в растре выше середины (снизу — ленты): кольцо, сияние и камень ставятся по центру диска,
+            // а не по центру картинки, иначе кольцо «съезжает» вниз относительно медали.
+            const float medal = 56f;
+            var discY = rowH / 2f - medal * 4f / 64f;
+            var discR = medal * 25f / 64f;
+
             // Медаль со своим рисунком: золотая, когда можно забрать (на мягком сиянии, с искрами) и когда получена
             // (с зелёной галочкой), серебряная и чуть бледнее — пока в процессе.
             if (can)
             {
                 var glow = Ui.Image(row, "Glow", Art.Glow, Palette.WithAlpha(Palette.Coin, 0.5f));
                 var glowRt = glow.rectTransform;
-                Ui.PlaceCenter(glowRt, 36, rowH / 2f, 76, 76);
+                Ui.PlaceCenter(glowRt, 36, discY, 76, 76);
                 Tweens.Run(glowRt, 2.2f, t => glowRt.localScale = Vector3.one * (0.9f + 0.14f * Ease.Bump(t)), null, null, 0f, true);
             }
 
@@ -95,14 +101,16 @@ namespace KnittedPicture.Game
             if (a.Rarity != Rarity.Common)
             {
                 var halo = Ui.Image(row, "RarityRing", Art.Ring, Palette.WithAlpha(RarityStyle.Color(a.Rarity), claimed || can ? 0.6f : 0.35f));
-                Ui.PlaceCenter(halo.rectTransform, 36, rowH / 2f, 62, 62);
+                Ui.PlaceCenter(halo.rectTransform, 36, discY, discR * 2f + 10f, discR * 2f + 10f);
             }
 
             var cup = Ui.Image(row, "Trophy", Art2.Medal(Art2.BadgeOf(a), can || claimed), Palette.WithAlpha(Color.white, can || claimed ? 1f : 0.85f));
             var cupRt = cup.rectTransform;
-            Ui.PlaceCenter(cupRt, 36, rowH / 2f, 56, 56);
+            Ui.PlaceCenter(cupRt, 36, rowH / 2f, medal, medal);
             var gem = Ui.Image(row, "RarityGem", Art2.Gem(a.Rarity), Color.white);
-            Ui.PlaceCenter(gem.rectTransform, 16, rowH / 2f + 20f, 18, 18);
+            // Камень — на кольце слева сверху: не закрывает ленты и не прилипает к краю карточки.
+            var ringR = (discR + 5f) * 0.93f;
+            Ui.PlaceCenter(gem.rectTransform, 36f - ringR * 0.7071f, discY - ringR * 0.7071f, 18, 18);
             if (can)
             {
                 // Кубок, который ждёт, раз в пару секунд подмигивает искрой и чуть подпрыгивает.
