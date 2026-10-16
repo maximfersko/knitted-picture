@@ -19,6 +19,25 @@ namespace KnittedPicture.Core.Tests
         };
 
         [Fact]
+        public void Feature_intros_only_for_new_players_and_at_most_one_a_day()
+        {
+            // Игрок, давно прошедший открытие (обновил игру), окон не видит вовсе.
+            var veteran = Fresh();
+            veteran.Data.nextLevel = 14;
+            Assert.Null(veteran.TakeFeatureIntro(100));
+            Assert.Null(veteran.TakeFeatureIntro(101));
+
+            // Новый игрок: одно окно в момент открытия, второе — не раньше следующего дня, повторов нет.
+            var p = Fresh();
+            p.Data.nextLevel = Season.FromLevel;
+            Assert.NotNull(p.TakeFeatureIntro(100));
+            Assert.Null(p.TakeFeatureIntro(100));
+            var second = p.TakeFeatureIntro(101);
+            Assert.NotNull(second);
+            Assert.Null(p.TakeFeatureIntro(102));
+        }
+
+        [Fact]
         public void Season_track_has_rarity_ladder_and_ends_with_season_yarn_and_frame()
         {
             var steps = Enumerable.Range(1, Season.Steps).Select(n => Season.Step(n, SeasonTheme.Winter)).ToList();

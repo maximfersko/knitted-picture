@@ -49,7 +49,7 @@ namespace KnittedPicture.Game
                 var isTail = _game.IsTail(i);
                 if (tail != null && (rebuild || !isTail))
                 {
-                    Object.Destroy(tail.gameObject);
+                    DropTail(tail, rebuild);
                     _tailViews[i] = null;
                     tail = null;
                 }
@@ -115,7 +115,8 @@ namespace KnittedPicture.Game
             {
                 var plate = _tailViews[i];
                 var owner = i < _game.Slots.Count ? _game.Slots[i] : null;
-                if (plate == null || owner == null)
+                // Общая ячейка на два слота не бледнеет: она — сама лунка, а ждёт клубок (он бледнеет сам).
+                if (plate == null || owner == null || plate.name == "Wide")
                 {
                     continue;
                 }
@@ -140,8 +141,11 @@ namespace KnittedPicture.Game
             return IsWide(slot) ? w + SlotGap / 2f : w / 2f;
         }
 
-        /// <summary>Широкий клубок чуть крупнее обычного: сразу видно, что он толстый.</summary>
-        private float SpoolSizeAt(int slot) => IsWide(slot) ? Mathf.Min(_slotSpool * 1.15f, 50f) : _slotSpool;
+        /// <summary>
+        /// Толстый клубок в общей ячейке заметно крупнее обычного (почти во всю высоту лунки): сразу видно,
+        /// что он толстый и занимает два места.
+        /// </summary>
+        private float SpoolSizeAt(int slot) => IsWide(slot) ? Mathf.Min(_slotSpool * 1.32f, 58f) : _slotSpool;
 
         /// <summary>Куда летит клубок на станок: в центр слота, у широкого — между двумя слотами.</summary>
         private Vector3 SlotTarget(int slot) =>
@@ -150,8 +154,9 @@ namespace KnittedPicture.Game
                 : Ui.WorldCenter(_slotFrames[slot]);
 
         /// <summary>
-        /// Второй слот толстого клубка. Если слоты соседние — одна широкая подкрашенная плашка на оба слота,
-        /// клубок стоит посередине. Если толстому достались слоты врозь — подкрашенная рамка и нить к клубку.
+        /// Второй слот толстого клубка. Если слоты соседние — они сливаются в одну общую лунку на оба слота
+        /// (без шва посередине), клубок стоит в её центре и крупнее обычного. Лунка «растекается» из своего слота
+        /// на соседний, пока клубок летит. Если толстому достались слоты врозь — подкрашенная рамка и нить к клубку.
         /// </summary>
         private RectTransform BuildTail(int slot, Spool spool)
         {
@@ -159,18 +164,26 @@ namespace KnittedPicture.Game
             var head = _game.Slots.ToList().IndexOf(spool);
             if (head >= 0 && head + 1 == slot)
             {
-                // Плашка живёт в рамке головного слота и рисуется под клубком; рамку — поверх соседней.
+                // Лунка живёт в рамке головного слота и рисуется под клубком; рамка головного — поверх соседней,
+                // а непрозрачная заливка целиком закрывает соседний слот: две клетки читаются как одна.
                 var headFrame = _slotFrames[head];
                 headFrame.SetAsLastSibling();
                 var hw = headFrame.sizeDelta.x;
-                var wide = Ui.Place(Ui.Node(headFrame, "Wide"), 0, 0, hw * 2f + SlotGap, headFrame.sizeDelta.y);
+                var total = hw * 2f + SlotGap;
+                var wide = Ui.Place(Ui.Node(headFrame, "Wide"), 0, 0, total, headFrame.sizeDelta.y);
+                wide.name = "Wide";
                 wide.SetAsFirstSibling();
-                Ui.Stretch(Ui.Box(wide, "Fill", 14, Color.Lerp(Palette.Card, color, 0.22f)).rectTransform);
-                var edge = Ui.Image(wide, "Edge", Art.RoundRectOutline(14, 2), Palette.WithAlpha(color, 0.7f));
+                Ui.Stretch(Ui.Box(wide, "Fill", 14, Color.Lerp(Palette.Card, color, 0.18f)).rectTransform);
+                var edge = Ui.Image(wide, "Edge", Art.RoundRectOutline(14, 2), Palette.WithAlpha(color, 0.6f));
                 edge.type = Image.Type.Sliced;
                 edge.pixelsPerUnitMultiplier = Art.Density;
                 Ui.Stretch(edge.rectTransform);
-                Tweens.Scale(wide, 0.9f, 1f, 0.2f);
+
+                // Слияние: ячейка растягивается вправо от своего слота на соседний, с лёгким пружинящим доводом.
+                var from = hw / total;
+                wide.localScale = new Vector3(from, 1f, 1f);
+                Tweens.Run(wide, 0.3f, t => wide.localScale = new Vector3(Mathf.LerpUnclamped(from, 1f, Ease.OutBack(t)), 1f, 1f), null,
+                    () => wide.localScale = Vector3.one);
                 return wide;
             }
 
@@ -187,6 +200,30 @@ namespace KnittedPicture.Game
             Ui.Place(thread.rectTransform, toLeft ? -8f : w / 2f, 26, w / 2f + 8f, 6);
             Tweens.Scale(root, 0.5f, 1f, 0.2f);
             return root;
+        }
+
+        /// <summary>
+        /// Толстый клубок ушёл: общая лунка «разъезжается» обратно в свой слот и тает, рамка соседнего снова видна.
+        /// При перестройке станка — сразу.
+        /// </summary>
+        private static void DropTail(RectTransform tail, bool now)
+        {
+            if (now || tail.name != "Wide" || Tweens.Calm)
+            {
+                Object.Destroy(tail.gameObject);
+                return;
+            }
+
+            var group = Ui.Group(tail);
+            group.blocksRaycasts = false;
+            var width = tail.sizeDelta.x;
+            var to = (width - SlotGap) / 2f / width;
+            Tweens.Run(tail, 0.22f, t =>
+            {
+                var e = Ease.OutCubic(t);
+                tail.localScale = new Vector3(Mathf.Lerp(1f, to, e), 1f, 1f);
+                group.alpha = 1f - e;
+            }, null, () => Object.Destroy(tail.gameObject));
         }
 
         private void RefreshField()

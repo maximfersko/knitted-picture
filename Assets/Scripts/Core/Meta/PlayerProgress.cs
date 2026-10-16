@@ -25,6 +25,9 @@ namespace KnittedPicture.Core
         /// <summary>Бустеры, для которых уже показали окно «Новый бустер».</summary>
         public List<int> introsShown = new List<int>();
 
+        /// <summary>День последнего знакомства с механикой: не больше одного окна за день.</summary>
+        public int introDay = -1;
+
         /// <summary>Лучшие звёзды по уровням: индекс — id уровня минус 1.</summary>
         public List<int> stars = new List<int>();
 

@@ -35,7 +35,7 @@ namespace KnittedPicture.Game
             }
 
             settings.OnClick(() => app.ShowPopup(new SettingsPopup(app)));
-            Ui.CoinPill(Root, progress.Coins, W - 16, 8);
+            var coinPill = (RectTransform)Ui.CoinPill(Root, progress.Coins, W - 16, 8).transform.parent;
 
             // Главная под одну руку: всё, что нажимают каждый день, — в нижних двух третях экрана, куда
             // достаёт большой палец. Снизу вверх: вкладки, «Играть», ряд событий (подарок, задания, сундук,
@@ -48,8 +48,10 @@ namespace KnittedPicture.Game
             var heroTop = 58f;
             if (progress.SeasonOpen)
             {
-                BuildSeason(58f);
-                heroTop += SeasonH + 8f;
+                // Сезон — в верхней строке между настройками и монетами, той же высоты, что они: одна ровная
+                // шапка, а не отдельная плашка вплотную под кнопками.
+                var left = 16f + 44f + 10f;
+                BuildSeason(left, W - 16f - coinPill.sizeDelta.x - 10f - left);
             }
 
             // На низких экранах (iPhone SE и меньше) зазоры ужимаются, чтобы клубку осталось место.
@@ -79,7 +81,7 @@ namespace KnittedPicture.Game
                 });
             }
 
-            // Новая механика открылась — коротко рассказать о ней, по одной за заход на главную.
+            // Новая механика только что открылась — коротко рассказать о ней новому игроку, не больше одной за день.
             Tweens.Delay(Root, 0.7f, () =>
             {
                 if (app.HasPopups || !(app.CurrentScreen is HomeScreen))
@@ -87,7 +89,7 @@ namespace KnittedPicture.Game
                     return;
                 }
 
-                var feature = app.Progress.TakeFeatureIntro();
+                var feature = app.Progress.TakeFeatureIntro(app.Today);
                 if (feature == null)
                 {
                     return;
@@ -109,7 +111,7 @@ namespace KnittedPicture.Game
             }
         }
 
-        private const float SeasonH = 52f;
+        private const float SeasonH = 44f;
 
         private static (string title, string text) FeatureText(Feature feature) => feature switch
         {
@@ -124,10 +126,10 @@ namespace KnittedPicture.Game
         };
 
         /// <summary>
-        /// Полоска «Вязального сезона» под монетами: время года, ступень, очки до следующей и камень редкости
-        /// следующей награды; есть что забрать — «Забрать» и точка. Тап — дорожка сезона.
+        /// Полоска «Вязального сезона» в шапке между настройками и монетами: камень редкости следующей награды,
+        /// время года, ступень и полоска очков до следующей; есть что забрать — золотая плашка «Забрать». Тап — дорожка сезона.
         /// </summary>
-        private void BuildSeason(float y)
+        private void BuildSeason(float x, float w)
         {
             var progress = App.Progress;
             var today = App.Today;
@@ -136,26 +138,29 @@ namespace KnittedPicture.Game
             var reached = progress.SeasonReached(today);
             var claimed = progress.SeasonClaimed(today);
             var waiting = progress.SeasonWaiting(today);
-            var w = W - 32f;
-            var strip = Ui.Card(Root, "Season", 16, y, w, SeasonH, 18, Palette.Card, Palette.CardShadow, 3f, true);
+            var strip = Ui.Card(Root, "Season", x, 8f, w, SeasonH, SeasonH / 2f, Palette.Card, Palette.CardShadow, 2f, true);
             var next = Season.Step(Mathf.Min(Season.Steps, claimed + 1), theme);
             var gem = Ui.Image(strip, "Gem", Art2.Gem(next.Rarity), Color.white);
-            Ui.PlaceCenter(gem.rectTransform, 28, SeasonH / 2f, 30, 30);
-            var textW = w - 56f - 100f;
-            Ui.Fit(Ui.Label(strip, Season.Name(theme), 15, Palette.Ink, 50, 6, textW, 20, true, TextAnchor.MiddleLeft), 11);
+            Ui.PlaceCenter(gem.rectTransform, 22, SeasonH / 2f, 24, 24);
+
+            // Справа — номер ступени или «Забрать»; название и полоска занимают остаток.
+            var rightW = waiting > 0 ? 68f : 40f;
+            var textX = 40f;
+            var textW = w - textX - rightW - 12f;
+            Ui.Fit(Ui.Label(strip, Season.Name(theme), 13, Palette.Ink, textX, 5, textW, 18, true, TextAnchor.MiddleLeft), 9);
             var points = progress.SeasonPoints(today);
             var inStep = reached >= Season.Steps ? Season.StepPoints : points - reached * Season.StepPoints;
-            Ui.ProgressBar(strip, 50, 31, textW, 8, (float)inStep / Season.StepPoints, Palette.Coin);
+            Ui.ProgressBar(strip, textX, 27, textW, 7, (float)inStep / Season.StepPoints, Palette.Coin);
             if (waiting > 0)
             {
-                var claim = Ui.Button(strip, L.T("Забрать"), w - 106f, 9, 94, 34, Palette.Coin, Palette.CoinShadow, Palette.CoinInk, 14);
+                var claim = Ui.Button(strip, L.T("Забрать"), w - rightW - 6f, 7, rightW, 30, Palette.Coin, Palette.CoinShadow, Palette.CoinInk, 12);
                 claim.OnClick(() => App.ShowPopup(new SeasonPopup(App, App.ShowHome)));
-                Ui.Sheen((RectTransform)claim.transform, 94f, 34f, 3.2f, 0.8f);
+                Ui.Sheen((RectTransform)claim.transform, rightW, 30f, 3.2f, 0.8f);
             }
             else
             {
-                Ui.Label(strip, L.F("{0}/{1}", Mathf.Min(reached + 1, Season.Steps), Season.Steps), 15, Palette.Ink2, w - 100f, 0, 86, SeasonH, true,
-                    TextAnchor.MiddleRight);
+                Ui.Fit(Ui.Label(strip, L.F("{0}/{1}", Mathf.Min(reached + 1, Season.Steps), Season.Steps), 13, Palette.Ink2, w - rightW - 10f, 0, rightW, SeasonH, true,
+                    TextAnchor.MiddleRight), 9);
             }
 
             strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new SeasonPopup(App, App.ShowHome)));
