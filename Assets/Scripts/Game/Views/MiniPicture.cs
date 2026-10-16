@@ -94,8 +94,12 @@ namespace KnittedPicture.Game
             }
         }
 
-        /// <summary>Картинка в рамке альбома frameId: рамка на весь size, картинка в проёме. Ловит тапы.</summary>
-        public static void Framed(RectTransform root, int frameId, float size, LevelData? level)
+        /// <summary>
+        /// Картинка в рамке альбома frameId: рамка на весь size, картинка в проёме. Ловит тапы.
+        /// У эпических и легендарных — живые эффекты (FrameFx): effects = false — без них (силуэт ненайденной),
+        /// lite — облегчённо, для сетки альбома, где плиток много.
+        /// </summary>
+        public static Image Framed(RectTransform root, int frameId, float size, LevelData? level, bool effects = true, bool lite = false)
         {
             var image = Ui.Image(root, "Frame", Art2.Frame(frameId), Color.white, true);
             Ui.Place(image.rectTransform, 0, 0, size, size);
@@ -103,6 +107,13 @@ namespace KnittedPicture.Game
             {
                 Create(root, level, size / 2f, size / 2f, size * FrameRaster.Opening);
             }
+
+            if (effects)
+            {
+                FrameFx.Attach(root, frameId, size, lite);
+            }
+
+            return image;
         }
 
         /// <summary>Плитка альбома: готовая картинка, текущая (бледная, в рамке) или замок.</summary>
@@ -123,7 +134,7 @@ namespace KnittedPicture.Game
             {
                 case TileState.Done:
                     // Рамка рисуется растром целиком (узор, форма, паспарту), картинка — в её проёме.
-                    Framed(root, frame.Id, size, level);
+                    Framed(root, frame.Id, size, level, lite: true);
                     break;
                 case TileState.Current:
                     Create(root, level, size / 2f, size / 2f, inner, faded: true);

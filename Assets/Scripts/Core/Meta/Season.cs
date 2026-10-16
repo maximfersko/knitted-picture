@@ -119,7 +119,7 @@ namespace KnittedPicture.Core
         {
             if (number == Steps)
             {
-                return new SeasonStep(number, Rarity.Legendary, SeasonPrize.SeasonFrame, Reward.CoinsOnly(0));
+                return new SeasonStep(number, AlbumFrames.ForSeason(theme).Rarity, SeasonPrize.SeasonFrame, Reward.CoinsOnly(0));
             }
 
             if (number == Steps - 1)

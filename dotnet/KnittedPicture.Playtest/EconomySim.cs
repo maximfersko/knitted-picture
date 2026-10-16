@@ -218,7 +218,7 @@ namespace KnittedPicture.Playtest
                 // Рамки альбома: самая дешёвая некупленная, если после покупки останется на спасение.
                 if (rng.NextDouble() < type.Decor)
                 {
-                    var next = AlbumFrames.All.FirstOrDefault(f => !p.FrameOwned(f.Id));
+                    var next = AlbumFrames.All.Where(f => f.Source == FrameSource.Shop).OrderBy(f => f.Price).FirstOrDefault(f => !p.FrameOwned(f.Id));
                     if (next != null && p.Coins >= next.Price + DecorReserve)
                     {
                         var before = p.Coins;

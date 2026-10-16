@@ -18,7 +18,7 @@ namespace KnittedPicture.Game
         /// <summary>Сколько проёма (доля стороны) свободно под картинку: паспарту чуть шире, чем картинка.</summary>
         public const float Opening = 50f / Size;
 
-        public const int Styles = 27;
+        public const int Styles = 32;
 
         private const float C = Size / 2f;
         private const float Outer = 34f;
@@ -76,6 +76,11 @@ namespace KnittedPicture.Game
             new Look("#8A8F99", "#4A4F58", "#E8B64A", "#FFFFFF"), // Мастерская — спицы
             new Look("#2E8F8A", "#17524F", "#FFD34D", "#FFFFFF"), // Путешествия — компас
             new Look("#2B2F6B", "#14163A", "#B98CFF", "#FFFFFF"), // Космос — планеты
+            new Look("#21442F", "#0E2418", "#8FD06A", "#FFFDF5"), // Светлячки — бархат, лоза, банки-фонарики
+            new Look("#101D45", "#060B22", "#7CF5C4", "#FFFFFF"), // Северное сияние — ночь, ели, кристаллы
+            new Look("#A6473A", "#4A1D14", "#E9D9C2", "#FFF8EE"), // Камин — кирпич, полка, свечи
+            new Look("#17110F", "#6B4A0C", "#F2C14E", "#FFF9EC"), // Жар-птица — хохлома, перья
+            new Look("#3D2052", "#1C0C29", "#FFD86B", "#FFFFFF"), // Волшебный клубок — вязка, радужный шнур, клубки
         };
 
         // Точки украшений — общие, а не новый массив на каждый пиксель.
@@ -96,7 +101,8 @@ namespace KnittedPicture.Game
         {
             style = style < 0 || style >= Styles ? 0 : style;
             var look = Looks[style];
-            return Raster.Render(Size, Size, 3, (x, y) => Shade(style, look, x, y));
+            // Живые рамки подробнее — и растр плотнее, чтобы мелкие детали не расплывались.
+            return Raster.Render(Size, Size, style >= FirstMagic ? 4 : 3, (x, y) => Shade(style, look, x, y));
         }
 
         private static Rgba Shade(int style, Look look, float x, float y)
@@ -164,6 +170,11 @@ namespace KnittedPicture.Game
 
         private static Rgba Pattern(int style, Look look, float x, float y, float s, float depth, float u)
         {
+            if (style >= FirstMagic)
+            {
+                return MagicPattern(style, look, x, y, s, depth, u);
+            }
+
             if (style >= 10)
             {
                 return ThemePattern(style, look, x, y, s, depth, u);
@@ -301,6 +312,11 @@ namespace KnittedPicture.Game
         /// <summary>Украшения поверх багета: пуговицы, большие цветы, сердце, звёзды и розетки на углах.</summary>
         private static Rgba Ornaments(int style, Look look, float x, float y, Rgba result)
         {
+            if (style >= FirstMagic)
+            {
+                return MagicOrnaments(style, look, x, y, result);
+            }
+
             if (style >= 10)
             {
                 return ThemeOrnaments(style, look, x, y, result);

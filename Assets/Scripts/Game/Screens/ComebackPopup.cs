@@ -204,14 +204,11 @@ namespace KnittedPicture.Game
         {
             var has = app.Progress.FrameOwned(frame.Id);
             var root = Ui.Place(Ui.Node(content, "Frame"), x, y, w, w);
-            MiniPicture.Framed(root, frame.Id, w, null);
+            var image = MiniPicture.Framed(root, frame.Id, w, null, effects: has, lite: true);
             if (!has)
             {
                 // Силуэт рамки: затемнение и замок.
-                if (root.GetComponentInChildren<UnityEngine.UI.Image>() is { } image)
-                {
-                    image.color = new Color(0.1f, 0.12f, 0.18f, 0.3f);
-                }
+                image.color = new Color(0.1f, 0.12f, 0.18f, 0.3f);
 
                 Ui.IconImage(root, Icon.Lock, Palette.Ink3, w / 2f, w / 2f, w * 0.26f);
             }

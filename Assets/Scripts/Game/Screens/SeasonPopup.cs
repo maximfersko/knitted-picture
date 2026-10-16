@@ -133,7 +133,7 @@ namespace KnittedPicture.Game
                 case SeasonPrize.SeasonFrame:
                 {
                     var root = Ui.Place(Ui.Node(row, "Frame"), iconX - 18f, h / 2f - 18f, 36, 36);
-                    MiniPicture.Framed(root, frame.Id, 36, null);
+                    MiniPicture.Framed(root, frame.Id, 36, null, lite: true);
                     text = L.F("Рамка «{0}»", frame.Name);
                     break;
                 }

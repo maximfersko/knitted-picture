@@ -28,6 +28,7 @@ namespace KnittedPicture.ArtPreview
             Meta(dir);
             Badges(dir);
             Frames(dir);
+            MagicFrames(dir);
             Chests(dir);
         }
 
@@ -348,7 +349,8 @@ namespace KnittedPicture.ArtPreview
         {
             var cases = new System.Collections.Generic.List<(string Name, Func<Raster> Draw, int Count)>
             {
-                ("Frame (×27)", () => FrameRaster.Frame(26), FrameRaster.Styles),
+                ("Frame (×32)", () => FrameRaster.Frame(26), FrameRaster.Styles),
+                ("Frame live (legendary)", () => FrameRaster.Frame(30), 1),
                 ("Medal (×24)", () => IconRaster.Badge(BadgeArt.Basket, true), 24),
                 ("Gem (×5)", () => IconRaster.Gem(4), 5),
                 ("Trophy (×2)", () => IconRaster.Trophy(true), 2),
@@ -406,6 +408,27 @@ namespace KnittedPicture.ArtPreview
             }
 
             Png.Save(img, Path.Combine(dir, "frames.png"));
+        }
+
+        /// <summary>Живые рамки крупно (статичный рисунок), сияние поверх «Северного сияния» и частицы эффектов.</summary>
+        private static void MagicFrames(string dir)
+        {
+            const int cell = 300;
+            var styles = new[] { 27, 28, 29, 30, 31 };
+            var img = new Raster(styles.Length * cell + 20, cell + 120);
+            Png.Fill(img, Rgba.Hex("#F3F5F8"));
+            for (var i = 0; i < styles.Length; i++)
+            {
+                Png.Put(img, FrameRaster.Frame(styles[i]), 10 + i * cell, 110, 290, 290);
+            }
+
+            Png.Put(img, FrameRaster.Aurora(0), 10 + cell, 110, 290, 290, Rgba.Hex("#7CF5C4"), 0.7f);
+            for (var k = 0; k < 4; k++)
+            {
+                Png.Put(img, FrameRaster.Mote(k), 20 + k * 100, 10, 80, 80, k == 2 ? Rgba.Hex("#E8742A") : (Rgba?)null);
+            }
+
+            Png.Save(img, Path.Combine(dir, "frames-magic.png"));
         }
 
         /// <summary>Мета: шкатулка (закрытая), подарок, монета, пяльцы с вязаным сердечком.</summary>

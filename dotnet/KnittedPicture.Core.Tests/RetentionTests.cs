@@ -196,7 +196,7 @@ namespace KnittedPicture.Core.Tests
             }
 
             Assert.Equal(60, Exhibition.Score(pictures[0], 0, AlbumFrames.Get(0), theme));
-            Assert.Equal(30 + 30 + 6 * 4, Exhibition.Score(pictures[1], 3, AlbumFrames.Get(9), theme));
+            Assert.Equal(30 + 30 + 6 * 4, Exhibition.Score(pictures[1], 3, AlbumFrames.Get(31), theme));
 
             var frames = new[] { 0, 0, 0 };
             Assert.Null(p.SubmitExhibition(day, new[] { pictures[0], pictures[0], pictures[1] }, frames, new System.Random(1)));

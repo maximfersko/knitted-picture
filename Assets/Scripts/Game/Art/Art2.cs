@@ -311,6 +311,12 @@ namespace KnittedPicture.Game
         /// <summary>Рамка альбома со своим узором и формой (номер рамки = стиль), квадрат; проём — FrameRaster.Opening.</summary>
         public static Sprite Frame(int style) => Get("frame" + style, () => FrameRaster.Frame(style));
 
+        /// <summary>Частица эффекта живой рамки: 0 — снежинка, 1 — лепесток, 2 — лист, 3 — искра-пёрышко.</summary>
+        public static Sprite FrameMote(int kind) => Get("frameMote" + kind, () => FrameRaster.Mote(kind));
+
+        /// <summary>Завеса северного сияния поверх рамки (белая, красится): два рисунка лучей.</summary>
+        public static Sprite Aurora(int variant) => Get("aurora" + variant, () => FrameRaster.Aurora(variant));
+
         /// <summary>Бирка на ниточке для числа (петли клубка, цена и запас бустера). Белая — красится; 72×40, тело — правые 58.</summary>
         public static Sprite Tag => Get("tag", KnitRaster.Tag);
 

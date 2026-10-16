@@ -24,7 +24,7 @@ namespace KnittedPicture.Game
                 var strip = Ui.Card(content, "FramesStrip", 16, y, cardW, stripH, 20, Palette.Card, Palette.CardShadow, 3f, true);
                 var frame = progress.SelectedFrame;
                 var sample = Ui.Place(Ui.Node(strip, "Sample"), 10, 8, 48, 48);
-                MiniPicture.Framed(sample, frame.Id, 48, App.Levels.Get(1));
+                MiniPicture.Framed(sample, frame.Id, 48, App.Levels.Get(1), lite: true);
                 // Заголовок в одну строку (ужимается, если не влезает), название рамки — под ним.
                 var title = Ui.Fit(Ui.Label(strip, L.T("Рамки для картинок"), 16, Palette.Ink, 68, 9, cardW - 192, 24, true, TextAnchor.MiddleLeft), 11);
                 title.horizontalOverflow = HorizontalWrapMode.Overflow;
