@@ -417,7 +417,10 @@ namespace KnittedPicture.Game
 
         // ---------- Спрайты эффектов ----------
 
-        /// <summary>Частица эффекта рамки: 0 — снежинка, 1 — лепесток, 2 — лист, 3 — перо-искра. Белая/цветная, 24 × 24.</summary>
+        /// <summary>
+        /// Частица эффекта рамки, 24 × 24: 0 — снежинка, 1 — лепесток, 2 — лист, 3 — перо-искра, 4 — сердечко, 5 — бабочка,
+        /// 6 — лапка, 7 — пузырёк. Белые красятся в FrameFx.
+        /// </summary>
         public static Raster Mote(int kind)
         {
             const int size = 24;
@@ -465,6 +468,51 @@ namespace KnittedPicture.Game
                         var vein = MathF.Abs(MathF.Sin(a * 2.5f)) * r;
                         var col = Rgba.White.Shade(-0.12f * Draw.Clamp01(1f - vein / 1.2f));
                         return col.WithAlpha(Draw.Cover(d));
+                    }
+
+                    case 4:
+                    {
+                        // Сердечко: белое (красится), объёмное — светлее сверху слева, блик.
+                        var d = Heart(x, y, c, c + 1f, 9f);
+                        var lit = Draw.Clamp01(0.55f - 0.04f * dx + 0.05f * dy);
+                        var col = Rgba.White.Shade(-0.28f + 0.3f * lit);
+                        col = Rgba.Lerp(col, Rgba.White, 0.9f * Draw.Cover(Draw.Ellipse(x, y, c - 4f, c + 4.5f, 2.2f, 1.2f, 35f)));
+                        return col.WithAlpha(Draw.Cover(d));
+                    }
+
+                    case 5:
+                    {
+                        // Бабочка (вид сверху): два верхних и два нижних крыла, тельце; узор на крыльях. Белая, красится;
+                        // взмах — сжатие по X в FrameFx.
+                        var ax = MathF.Abs(dx);
+                        var upper = Draw.Ellipse(ax, y, 5.4f, c + 3.2f, 5.2f, 4.2f, -25f);
+                        var lower = Draw.Ellipse(ax, y, 4.2f, c - 3.6f, 3.6f, 3f, 30f);
+                        var wings = MathF.Min(upper, lower);
+                        var body = Draw.Ellipse(x, y, c, c, 0.9f, 6.5f, 0f);
+                        var spot = Draw.Circle(ax, y, 6.2f, c + 3.6f, 1.5f);
+                        var col = Rgba.White.Shade(-0.18f * Draw.Clamp01(ax / 10f));
+                        col = Rgba.Lerp(col, Rgba.White.Shade(-0.45f), 0.8f * Draw.SmoothStep(-1.2f, -0.3f, wings));
+                        col = Rgba.Lerp(col, Rgba.White.Shade(-0.5f), Draw.Cover(spot));
+                        col = Rgba.Lerp(col, Rgba.Hex("#3A2A3A"), Draw.Cover(body));
+                        return col.WithAlpha(Draw.Cover(MathF.Min(wings, body)));
+                    }
+
+                    case 6:
+                    {
+                        // Отпечаток лапки: подушечка и четыре пальчика. Белый, красится.
+                        var pad = Draw.Ellipse(x, y, c, c - 3f, 5.2f, 4.2f, 0f);
+                        var toes = MathF.Min(MathF.Min(Draw.Ellipse(x, y, c - 6.2f, c + 2.6f, 1.9f, 2.4f, 25f), Draw.Ellipse(x, y, c - 2.2f, c + 5.6f, 2f, 2.6f, 8f)),
+                            MathF.Min(Draw.Ellipse(x, y, c + 2.2f, c + 5.6f, 2f, 2.6f, -8f), Draw.Ellipse(x, y, c + 6.2f, c + 2.6f, 1.9f, 2.4f, -25f)));
+                        return Rgba.White.WithAlpha(Draw.Cover(MathF.Min(pad, toes)));
+                    }
+
+                    case 7:
+                    {
+                        // Пузырёк: тонкая светлая оболочка, к краю плотнее, блик сверху слева.
+                        var r = MathF.Sqrt(dx * dx + dy * dy);
+                        var shell = Draw.Clamp01((r - 6f) / 4f) * Draw.Cover(r - 10f);
+                        var glint = Draw.Cover(Draw.Ellipse(x, y, c - 3.6f, c + 3.6f, 2.2f, 1.2f, 45f));
+                        return Rgba.White.WithAlpha(MathF.Max(0.15f * Draw.Cover(r - 10f), 0.85f * shell) + glint * 0.9f);
                     }
 
                     default:

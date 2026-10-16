@@ -311,7 +311,7 @@ namespace KnittedPicture.Game
         /// <summary>Рамка альбома со своим узором и формой (номер рамки = стиль), квадрат; проём — FrameRaster.Opening.</summary>
         public static Sprite Frame(int style) => Get("frame" + style, () => FrameRaster.Frame(style));
 
-        /// <summary>Частица эффекта живой рамки: 0 — снежинка, 1 — лепесток, 2 — лист, 3 — искра-пёрышко.</summary>
+        /// <summary>Частица эффекта живой рамки (FrameRaster.Mote): снежинка, лепесток, лист, искра, сердечко, бабочка, лапка, пузырёк.</summary>
         public static Sprite FrameMote(int kind) => Get("frameMote" + kind, () => FrameRaster.Mote(kind));
 
         /// <summary>Завеса северного сияния поверх рамки (белая, красится): два рисунка лучей.</summary>

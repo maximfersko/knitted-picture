@@ -9,7 +9,7 @@ using UnityEngine.UI;
 namespace KnittedPicture.Game
 {
     /// <summary>
-    /// Живые рамки альбома (эпические и легендарные). Эффекты собраны как VFX в больших играх, только на uGUI:
+    /// Живые рамки альбома (редкие, эпические и легендарные; эффекты редких — FrameFx.Rare). Эффекты собраны как VFX в больших играх, только на uGUI:
     /// <list type="bullet">
     /// <item>слои глубины: свечение и ударные волны позади рамки, частицы на багете, яркие ядра и блики поверх;</item>
     /// <item>частицы с жизнью: у каждой своя случайная судьба на каждый цикл (скорость, гравитация, сопротивление,
@@ -23,10 +23,10 @@ namespace KnittedPicture.Game
     /// заранее созданы и только двигаются. В сетке альбома — облегчённо (около трети частиц, без свечения позади).
     /// «Меньше движения» замораживает всё в спокойной позе.
     /// </summary>
-    public static class FrameFx
+    public static partial class FrameFx
     {
         /// <summary>Есть ли у рамки живой эффект.</summary>
-        public static bool Animated(int frameId) => AlbumFrames.Get(frameId).Rarity >= Rarity.Epic;
+        public static bool Animated(int frameId) => AlbumFrames.Get(frameId).Rarity >= Rarity.Rare;
 
         /// <summary>
         /// Добавить эффекты рамки frameId к плитке root (size × size, рамка на всю плитку). Вызывать после того,
@@ -42,6 +42,24 @@ namespace KnittedPicture.Game
             var fx = new Fx(root, size, lite);
             switch (frameId)
             {
+                case 4: fx.Cable(); break;
+                case 5: fx.Buttons(Palette.Hex("#FFE58A")); break;
+                case 6: fx.Blossoms(); break;
+                case 7: fx.Hearts(); break;
+                case 8: fx.StarryNight(); break;
+                case 14: fx.Buttons(Palette.Hex("#FFF3E6")); break;
+                case 15: fx.Butterflies(); break;
+                case 16: fx.PawPrints(); break;
+                case 17: fx.Sprinkles(); break;
+                case 18: fx.Sea(); break;
+                case 19: fx.Sky(); break;
+                case 20: fx.Forest(); break;
+                case 21: fx.Party(); break;
+                case 22: fx.Cosy(); break;
+                case 23: fx.Friends(); break;
+                case 24: fx.Workshop(); break;
+                case 25: fx.Journey(); break;
+                case 26: fx.Space(); break;
                 case 9: fx.GoldBaguette(); break;
                 case 10: fx.Snow(); break;
                 case 11: fx.Petals(); break;
@@ -70,7 +88,7 @@ namespace KnittedPicture.Game
         /// <summary>Частица i в цикле cycle (своя случайная судьба), возраст age 0..1, общее время time.</summary>
         private delegate void Eval(int i, int cycle, float age, float time, ref Spark s);
 
-        private sealed class Fx
+        private sealed partial class Fx
         {
             /// <summary>Длина общего цикла: всё время эффекта, дальше повтор (незаметно — частицы случайны по циклам).</summary>
             private const float Period = 600f;

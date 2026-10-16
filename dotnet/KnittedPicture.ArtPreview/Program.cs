@@ -423,9 +423,10 @@ namespace KnittedPicture.ArtPreview
             }
 
             Png.Put(img, FrameRaster.Aurora(0), 10 + cell, 110, 290, 290, Rgba.Hex("#7CF5C4"), 0.7f);
-            for (var k = 0; k < 4; k++)
+            var tints = new[] { "#FFFFFF", "#FFFFFF", "#E8742A", "#FFFFFF", "#FF5A7A", "#5EB8FF", "#5A3A22", "#8FD3FF" };
+            for (var k = 0; k < tints.Length; k++)
             {
-                Png.Put(img, FrameRaster.Mote(k), 20 + k * 100, 10, 80, 80, k == 2 ? Rgba.Hex("#E8742A") : (Rgba?)null);
+                Png.Put(img, FrameRaster.Mote(k), 20 + k * 100, 10, 80, 80, Rgba.Hex(tints[k]));
             }
 
             Png.Save(img, Path.Combine(dir, "frames-magic.png"));
