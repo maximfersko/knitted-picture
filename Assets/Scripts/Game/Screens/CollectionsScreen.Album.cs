@@ -190,7 +190,7 @@ namespace KnittedPicture.Game
             if (active < 0 || !open)
             {
                 // До 9-го уровня пряжа — просто красивая коллекция: про бонусы только одна тихая строка.
-                var text = !open ? L.F("Бонусы пряжи откроются на уровне {0}", YarnCatalog.PerksFromLevel) : L.T("В работе пока ничего: найди первый моток");
+                var text = !open ? L.F("Бонусы пряжи откроются на уровне {0}", YarnCatalog.PerksFromLevel) : L.T("На спицах пока ничего: найди первый моток");
                 Ui.Fit(Ui.Label(strip, text, 12, Palette.Ink2, 12, 0, w - 24, 40, false, TextAnchor.MiddleLeft), 9);
                 return;
             }
@@ -198,7 +198,7 @@ namespace KnittedPicture.Game
             var yarn = YarnCatalog.All[active];
             var perk = YarnCatalog.PerkOf(active);
             YarnView.Create(strip, yarn, 22, 20, 26, true);
-            Ui.Fit(Ui.Label(strip, L.F("В работе: {0} · ур. {1}", yarn.Name, progress.YarnLevel(active)), 13, Palette.Ink, 42, 3, w - 52, 18, true,
+            Ui.Fit(Ui.Label(strip, L.F("На спицах: {0} · ур. {1}", yarn.Name, progress.YarnLevel(active)), 13, Palette.Ink, 42, 3, w - 52, 18, true,
                 TextAnchor.MiddleLeft), 10);
             Ui.Fit(Ui.Label(strip, YarnCatalog.PerkText(perk, YarnCatalog.Power(active, progress.YarnLevel(active))), 11, Palette.Primary,
                 42, 20, w - 52, 16, false, TextAnchor.MiddleLeft), 8);

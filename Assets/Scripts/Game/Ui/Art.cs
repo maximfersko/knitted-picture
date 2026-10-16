@@ -136,6 +136,19 @@ namespace KnittedPicture.Game
             return t * t;
         }));
 
+        /// <summary>
+        /// Пушистое свечение с рваным краем, как ореол ворса вокруг мотка: край гуляет по нескольким волнам
+        /// и расходится прядками волокон. Варианты (0..2) различаются рисунком края: два слоя, которые медленно
+        /// крутятся навстречу, дают живой неровный контур без шейдеров.
+        /// </summary>
+        public static Sprite Fluff(int variant) => Cached("fluff" + variant, () => BuildWisp(variant, false));
+
+        /// <summary>Рваное кольцо из ворса: волна света вокруг мотка вместо ровного круга.</summary>
+        public static Sprite FluffRing => Cached("fluffRing", () => BuildWisp(2, true));
+
+        /// <summary>Пушистая подложка: плотная середина и мягкий ворсистый край вместо ровной окружности.</summary>
+        public static Sprite FluffDisc => Cached("fluffDisc", () => BuildWisp(3, false, true));
+
         /// <summary>Двенадцать тихих лучей, гаснущих к краю: подложка под открытым сундуком.</summary>
         public static Sprite Rays => Cached("rays", () => BuildRays(256, 12));
 
@@ -352,6 +365,70 @@ namespace KnittedPicture.Game
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect,
                 new Vector4(border, border, border, border));
         });
+
+        private static Sprite BuildWisp(int variant, bool ring, bool disc = false)
+        {
+            const int size = 256;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Trilinear,
+                mipMapBias = Art2.SharpBias,
+            };
+            var pixels = new Color32[size * size];
+            var c = size / 2f;
+            var radius = c - 2f;
+
+            // Шум берётся по окружности (cos, sin) — край замкнут, без шва. Крупные «облака» дают неровный
+            // контур, мелкие прядки сдвигаются с радиусом и расходятся ворсинками наружу.
+            var offset = variant * 13.7f;
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = x + 0.5f - c;
+                    var dy = y + 0.5f - c;
+                    var d = Mathf.Sqrt(dx * dx + dy * dy) / radius;
+                    var len = Mathf.Max(d * radius, 0.001f);
+                    var cos = dx / len;
+                    var sin = dy / len;
+                    var big = 0.6f * Around(cos, sin, 1.6f, offset, 0f) + 0.4f * Around(cos, sin, 3.2f, offset + 5f, 0f);
+                    var wisp = Around(cos, sin, 9f, offset + 11f, d * 2.5f);
+                    var wisp2 = Around(cos, sin, 17f, offset + 23f, d * 4f);
+                    float alpha;
+                    if (disc)
+                    {
+                        var edge = 0.74f + 0.16f * (big - 0.5f) + 0.08f * (wisp - 0.5f);
+                        alpha = Mathf.Clamp01((edge - d) / 0.1f + 0.5f);
+                        alpha = Mathf.Max(alpha, Mathf.Clamp01((edge + 0.12f * wisp2 - d) / 0.12f) * 0.35f * wisp);
+                    }
+                    else if (ring)
+                    {
+                        var mid = 0.74f + 0.14f * (big - 0.5f);
+                        var band = Mathf.Clamp01(1f - Mathf.Abs(d - mid) / (0.06f + 0.1f * wisp));
+                        alpha = Mathf.Pow(band, 1.5f) * (0.5f + 0.5f * wisp2);
+                    }
+                    else
+                    {
+                        var edge = 0.7f + 0.28f * (big - 0.5f);
+                        var core = Mathf.Clamp01(1f - d / edge);
+                        var outer = Mathf.Clamp01(1f - (d - edge * 0.55f) / (edge * 0.6f + 0.22f * wisp));
+                        alpha = Mathf.Max(core * core * 0.9f, outer * outer * (0.35f + 0.65f * wisp * wisp2) * 0.8f);
+                    }
+
+                    alpha *= Mathf.Clamp01((1f - d) / 0.06f);
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(alpha) * 255));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(true, true);
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        /// <summary>Шум по окружности радиуса k (замкнут по углу); shift сдвигает рисунок с расстоянием от центра.</summary>
+        private static float Around(float cos, float sin, float k, float offset, float shift) =>
+            Draw.Noise(cos * k + offset + shift, sin * k + offset * 1.7f + shift);
 
         private static Sprite Round(int size, System.Func<float, float, float> alphaAt)
         {

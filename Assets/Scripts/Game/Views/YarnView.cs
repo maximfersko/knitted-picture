@@ -92,38 +92,59 @@ namespace KnittedPicture.Game
                 Tweens.Run(raysRt, 24f, t => raysRt.localRotation = Quaternion.Euler(0f, 0f, -360f * t), null, null, 0f, true);
             }
 
-            // Сияние дышит: чуть растёт и ярчает.
+            // Сияние — ворсистый ореол с рваным краем: два слоя с разным рисунком края медленно крутятся
+            // навстречу друг другу, и контур всё время чуть меняется, как пух вокруг мотка. Дышит: чуть растёт и ярчает.
             var baseAlpha = legendary ? 0.5f : epic ? 0.42f : quiet ? 0.24f : 0.34f;
-            var glow = Ui.Image(root, "Glow", Art.Glow, Palette.WithAlpha(color, baseAlpha));
-            var glowRt = glow.rectTransform;
-            Ui.PlaceCenter(glowRt, size / 2f, size / 2f, size * 1.75f, size * 1.75f);
+            var halo = Ui.PlaceCenter(Ui.Node(root, "Glow"), size / 2f, size / 2f, size * 1.75f, size * 1.75f);
+            var layers = lite ? 1 : 2;
+            var fluff = new UnityEngine.UI.Image[layers];
+            for (var i = 0; i < layers; i++)
+            {
+                fluff[i] = Ui.Image(halo, "Fluff", Art.Fluff(i), Palette.WithAlpha(color, baseAlpha * (lite ? 1f : 0.62f)));
+                Ui.Stretch(fluff[i].rectTransform);
+                fluff[i].rectTransform.localRotation = Quaternion.Euler(0f, 0f, i * 70f);
+            }
+
             if (lite)
             {
                 return root;
             }
 
-            Tweens.Run(glowRt, 2.6f, t =>
+            for (var i = 0; i < layers; i++)
+            {
+                var layerRt = fluff[i].rectTransform;
+                var turn = i == 0 ? 360f : -360f;
+                var start = i * 70f;
+                Tweens.Run(layerRt, i == 0 ? 30f : 42f, t => layerRt.localRotation = Quaternion.Euler(0f, 0f, start + turn * t), null, null, 0f, true);
+            }
+
+            Tweens.Run(halo, 2.6f, t =>
             {
                 var b = Ease.Bump(t);
-                glowRt.localScale = Vector3.one * (0.94f + 0.1f * b);
-                glow.color = Palette.WithAlpha(color, baseAlpha * (0.8f + 0.3f * b));
+                halo.localScale = Vector3.one * (0.94f + 0.1f * b);
+                var a = baseAlpha * 0.62f * (0.8f + 0.3f * b);
+                foreach (var layer in fluff)
+                {
+                    layer.color = Palette.WithAlpha(color, a);
+                }
             }, null, null, delay, true);
 
-            // Волна: светлое кольцо расходится от мотка и гаснет («Меньше движения» — без волны: стоячее кольцо лишнее).
+            // Волна: рваное кольцо ворса расходится от мотка и гаснет («Меньше движения» — без волны: стоячее кольцо лишнее).
             if (quiet)
             {
                 return root;
             }
 
-            var wave = Ui.Image(root, "Wave", Art.Ring, Palette.WithAlpha(color, 0f));
+            var wave = Ui.Image(root, "Wave", Art.FluffRing, Palette.WithAlpha(color, 0f));
             wave.enabled = !Tweens.Calm;
             var waveRt = wave.rectTransform;
-            Ui.PlaceCenter(waveRt, size / 2f, size / 2f, size, size);
+            Ui.PlaceCenter(waveRt, size / 2f, size / 2f, size * 1.25f, size * 1.25f);
             Tweens.Run(waveRt, epic ? 2.4f : 3.2f, t =>
             {
                 var k = Mathf.Clamp01(t / 0.45f);
-                waveRt.localScale = Vector3.one * (0.95f + 0.6f * Ease.OutCubic(k));
-                wave.color = Palette.WithAlpha(color, t < 0.45f ? 0.55f * (1f - k) : 0f);
+                waveRt.localScale = Vector3.one * (0.8f + 0.5f * Ease.OutCubic(k));
+                waveRt.localRotation = Quaternion.Euler(0f, 0f, 40f * k);
+                wave.color = Palette.WithAlpha(color, t < 0.45f ? 0.6f * (1f - k) : 0f);
             }, null, null, delay + 0.4f, true);
 
             // Искры на орбите: медленно обходят моток и по очереди вспыхивают.

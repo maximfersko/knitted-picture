@@ -7,7 +7,7 @@ namespace KnittedPicture.Game
 {
     /// <summary>
     /// Карточка мотка: как выглядит, откуда (набор, редкость), и главное — характеристика:
-    /// какой бонус даёт моток «в работе», его уровень (растёт от повторов) и что будет на следующем.
+    /// какой бонус даёт моток на спицах, его уровень (растёт от повторов) и что будет на следующем.
     /// Ненайденный моток показывает набор, редкость и бонус — понятно, за чем охотиться.
     /// </summary>
     public sealed class YarnCardPopup : Popup
@@ -24,33 +24,41 @@ namespace KnittedPicture.Game
             var set = YarnCatalog.SetOf(yarnId);
             var rarityColor = YarnView.RarityColor(yarn.Rarity);
 
-            // Моток на мягком круге цвета редкости.
+            // Моток на пушистой подложке цвета редкости: край рваный, как ворс, а не ровный круг.
             const float ball = 92f;
-            var back = Ui.Image(Card, "Back", Art.Circle, RarityStyle.Back(yarn.Rarity));
-            Ui.PlaceCenter(back.rectTransform, CardWidth / 2f, Cursor + ball / 2f + 4f, ball + 28f, ball + 28f);
+            var cy = Cursor + ball / 2f + 4f;
+            var back = Ui.Image(Card, "Back", Art.FluffDisc, RarityStyle.Back(yarn.Rarity));
+            Ui.PlaceCenter(back.rectTransform, CardWidth / 2f, cy, (ball + 28f) * 1.3f, (ball + 28f) * 1.3f);
             if (owned)
             {
-                YarnView.Aura(Card, yarn.Rarity, CardWidth / 2f, Cursor + ball / 2f + 4f, ball);
+                YarnView.Aura(Card, yarn.Rarity, CardWidth / 2f, cy, ball);
             }
 
-            var skein = YarnView.Create(Card, yarn, CardWidth / 2f, Cursor + ball / 2f + 4f, ball, owned);
-            Tweens.Scale(skein, 0.6f, 1f, 0.35f, Ease.OutBack);
             if (active)
             {
-                // «В работе» — значок по центру под мотком, на нижнем краю круга: в одну строку, ширина по тексту,
-                // не заходит ни на клубок, ни на название.
-                var text = Ui.Label(Card, L.T("в работе"), 12, Color.white, true, TextAnchor.MiddleLeft);
-                text.horizontalOverflow = HorizontalWrapMode.Overflow;
-                var chipW = Mathf.Ceil(text.preferredWidth) + 38f;
-                var chipY = Cursor + ball + 18f - 12f;
-                var chip = Ui.Card(Card, "Active", CardWidth / 2f - chipW / 2f, chipY, chipW, 24, 12, Palette.Primary, Palette.PrimaryShadow, 2f);
-                Ui.IconImage(chip, Icon.Check, Color.white, 15, 12, 12);
-                text.rectTransform.SetParent(chip, false);
-                Ui.Place(text.rectTransform, 26, 0, chipW - 32, 24);
+                // Моток «на спицах» — так и показан: две спицы воткнуты в клубок крест-накрест (как на главной),
+                // бусины сверху. Знак из самого мира игры вместо плашки поверх картинки.
+                foreach (var angle in new[] { -140f, 140f })
+                {
+                    var needle = Ui.Image(Card, "Needle", Art.KnittingNeedle, Color.white);
+                    Ui.PlaceCenter(needle.rectTransform, CardWidth / 2f, cy - ball * 0.04f, ball * 0.12f, ball * 1.42f);
+                    needle.rectTransform.localRotation = Quaternion.Euler(0, 0, angle);
+                    Tweens.Scale(needle.rectTransform, 0.6f, 1f, 0.35f, Ease.OutBack);
+                }
             }
 
-            // Под кругом с мотком (и значком «в работе») — воздух до названия.
-            Space(ball + (active ? 48f : 34f));
+            var skein = YarnView.Create(Card, yarn, CardWidth / 2f, cy, ball, owned);
+            Tweens.Scale(skein, 0.6f, 1f, 0.35f, Ease.OutBack);
+
+            // Под мотком — воздух до названия; у мотка на спицах ещё тихая подпись об этом.
+            Space(ball + 34f);
+            if (active)
+            {
+                var onNeedles = AddText(L.T("Сейчас на спицах"), 13, 1);
+                onNeedles.color = Palette.PrimaryShadow;
+                onNeedles.fontStyle = FontStyle.Bold;
+            }
+
             Ui.Fit(AddTitle(owned ? yarn.Name : L.T("Ещё не найдена"), 22), 15);
             var sub = AddText(L.F("Набор «{0}» · {1}", set.Name, YarnCatalog.RarityName(yarn.Rarity)), 13, 1);
             sub.color = rarityColor;
@@ -65,7 +73,7 @@ namespace KnittedPicture.Game
             var (status, statusBack, statusInk) = !owned ? (L.T("не найден"), Palette.Track, Palette.Ink3)
                 : !open ? (L.F("с ур. {0}", YarnCatalog.PerksFromLevel), Palette.Track, Palette.Ink3)
                 : active ? (L.T("работает"), Palette.Primary, Color.white)
-                : (L.T("не в работе"), Palette.Track, Palette.Ink2);
+                : (L.T("не на спицах"), Palette.Track, Palette.Ink2);
             // Пояснение только там, где без него не понять: где взять ненайденный моток.
             // Остальное и так видно по статусу и кнопке «Взять в работу».
             var hint = !owned ? yarn.Seasonal ? L.T("Только за финал «Вязального сезона» своего времени года") : L.T("Выпадает за новые картинки, в сундуке и в подарке дня") : null;
@@ -138,14 +146,14 @@ namespace KnittedPicture.Game
 
             if (owned && !active && progress.PerksOpen)
             {
-                AddPrimary(L.T("Взять в работу"), 54).OnClick(() =>
+                AddPrimary(L.T("Взять на спицы"), 54).OnClick(() =>
                 {
                     progress.SetActiveYarn(yarnId);
                     app.Save();
                     Sfx.Play(Sound.Unlock, 0.7f);
                     Closed = changed;
                     Close();
-                    app.Toast(L.F("«{0}» в работе: {1}", yarn.Name, YarnCatalog.PerkText(perk, power)));
+                    app.Toast(L.F("«{0}» на спицах: {1}", yarn.Name, YarnCatalog.PerkText(perk, power)));
                 });
             }
 
@@ -231,7 +239,7 @@ namespace KnittedPicture.Game
             }
 
             AddTitle(L.T("Бонусы пряжи"), 24);
-            AddText(L.T("Моток «в работе» теперь помогает в каждом уровне. Повторы поднимают его уровень, и бонус растёт."), 14, 2);
+            AddText(L.T("Моток на спицах теперь помогает в каждом уровне. Повторы поднимают его уровень, и бонус растёт."), 14, 2);
             if (active >= 0)
             {
                 var perk = YarnCatalog.PerkOf(active);

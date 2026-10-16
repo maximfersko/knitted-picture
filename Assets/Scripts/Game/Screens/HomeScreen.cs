@@ -246,7 +246,7 @@ namespace KnittedPicture.Game
                 {
                     var perk = YarnCatalog.PerkOf(info.Id);
                     var power = App.Progress.PerkPower(perk);
-                    App.Toast(power > 0 ? L.F("{0} в работе: {1}", info.Name, YarnCatalog.PerkShort(perk, power)) : L.F("{0} в работе", info.Name));
+                    App.Toast(power > 0 ? L.F("{0} на спицах: {1}", info.Name, YarnCatalog.PerkShort(perk, power)) : L.F("{0} на спицах", info.Name));
                 }
                 var flip = taps % 7 == 0;
                 Sfx.Play(flip ? Sound.Star : Sound.Pick);
