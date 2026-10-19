@@ -228,6 +228,7 @@ namespace KnittedPicture.Game
 
         private void RefreshField()
         {
+            ClearHintExtras();
             Ui.Clear(_fieldContent);
             _field.Clear();
             _hint = null;

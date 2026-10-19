@@ -59,12 +59,9 @@ namespace KnittedPicture.Game
             }
 
             var (x, y) = FieldPosition(column, 0);
-            var ring = Ui.Image(_fieldContent, "Hint", Art.Ring, Palette.Primary);
             var size = _spoolSize + 16f;
-            Ui.PlaceCenter(ring.rectTransform, x, y, size, size);
-            _hint = ring.rectTransform;
-            var hint = _hint;
-            Tweens.Run(hint, 0.9f, t => hint.localScale = Vector3.one * (1f + 0.12f * Ease.Bump(t)), null, null, 0f, true);
+            _hint = BuildHintGlow(column, x, y);
+            PlaceSlotHint();
 
             // На первом уровне — рука, как во вступлении: тапни сюда.
             if (_level.id == 1)
@@ -85,8 +82,147 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>
+        /// Подсказка хода — заметная, но не кричащая (как в Royal Match / Toon Blast): под клубком дышит тёплое
+        /// золотое сияние, от него расходятся две волны-кольца, вокруг кружат три искры, сам клубок раз в полторы
+        /// секунды подпрыгивает и покачивается — «возьми меня». Золото контрастно на белом поле и не путается
+        /// с цветами пряжи. Всё лежит под клубком; «Меньше движения» — неподвижное кольцо и сияние.
+        /// </summary>
+        private RectTransform BuildHintGlow(int column, float x, float y)
+        {
+            var gold = Palette.Hex("#FFC531");
+            var s = _spoolSize;
+            var root = Ui.PlaceCenter(Ui.Node(_fieldContent, "Hint"), x, y, s, s);
+            var target = _field.FirstOrDefault(f => f.Column == column && f.Depth == 0);
+            if (target != null)
+            {
+                // Под клубок: сияние и волны видны вокруг него, а не поверх.
+                root.SetSiblingIndex(target.View.Root.GetSiblingIndex());
+            }
+
+            var glow = Ui.Image(root, "Glow", Art.Glow, Palette.WithAlpha(gold, 0.8f));
+            Ui.PlaceCenter(glow.rectTransform, s / 2f, s / 2f, s * 2.3f, s * 2.3f);
+            var ripples = new Image[2];
+            for (var i = 0; i < ripples.Length; i++)
+            {
+                ripples[i] = Ui.Image(root, "Ripple", Art.Ring, Color.clear);
+                Ui.PlaceCenter(ripples[i].rectTransform, s / 2f, s / 2f, s + 14f, s + 14f);
+            }
+
+            var ring = Ui.Image(root, "Ring", Art.Ring, gold);
+            Ui.PlaceCenter(ring.rectTransform, s / 2f, s / 2f, s + 14f, s + 14f);
+            var inner = Ui.Image(root, "Inner", Art.Ring, Palette.WithAlpha(Color.white, 0.9f));
+            Ui.PlaceCenter(inner.rectTransform, s / 2f, s / 2f, s + 6f, s + 6f);
+            var sparks = new Image[3];
+            for (var i = 0; i < sparks.Length; i++)
+            {
+                sparks[i] = Ui.Image(root, "Spark", Art2.Sparkle, Color.white);
+                Ui.PlaceCenter(sparks[i].rectTransform, s / 2f, s / 2f, s * 0.42f, s * 0.42f);
+            }
+
+            var spool = target?.View.Root;
+            var basePos = spool != null ? spool.anchoredPosition : Vector2.zero;
+            const float period = 1.4f;
+            Tweens.Run(root, period * 10f, t =>
+            {
+                var time = t * period * 10f;
+                var beat = (time % period) / period;
+                var pulse = 0.5f + 0.5f * Mathf.Cos(beat * Mathf.PI * 2f);
+                glow.color = Palette.WithAlpha(gold, 0.55f + 0.4f * pulse);
+                glow.rectTransform.localScale = Vector3.one * (0.9f + 0.18f * pulse);
+                ring.rectTransform.localScale = Vector3.one * (1f + 0.08f * pulse);
+                for (var i = 0; i < ripples.Length; i++)
+                {
+                    var r = (beat + i * 0.5f) % 1f;
+                    ripples[i].rectTransform.localScale = Vector3.one * (1f + 0.9f * Ease.OutCubic(r));
+                    ripples[i].color = Palette.WithAlpha(gold, time > 0.01f ? 0.85f * (1f - r) : 0f);
+                }
+
+                for (var i = 0; i < sparks.Length; i++)
+                {
+                    var a = time * 3.2f + i * Mathf.PI * 2f / sparks.Length;
+                    sparks[i].rectTransform.anchoredPosition = new Vector2(s / 2f + Mathf.Cos(a) * s * 0.68f, -s / 2f + Mathf.Sin(a) * s * 0.68f);
+                    var twinkle = 0.5f + 0.5f * Mathf.Sin(time * 7f + i * 2f);
+                    sparks[i].rectTransform.localScale = Vector3.one * (0.55f + 0.5f * twinkle);
+                    sparks[i].rectTransform.localRotation = Quaternion.Euler(0f, 0f, time * 120f);
+                    sparks[i].color = Palette.WithAlpha(Color.white, time > 0.01f ? 0.6f + 0.4f * twinkle : 0f);
+                }
+
+                // Клубок подпрыгивает (первая треть такта) и покачивается после приземления.
+                if (spool != null)
+                {
+                    var hop = beat < 0.3f ? Mathf.Sin(beat / 0.3f * Mathf.PI) : 0f;
+                    spool.anchoredPosition = basePos + new Vector2(0f, hop * s * 0.2f);
+                    var wobble = beat >= 0.3f && beat < 0.7f ? Mathf.Sin((beat - 0.3f) / 0.4f * Mathf.PI * 3f) * (0.7f - beat) / 0.4f : 0f;
+                    spool.localRotation = Quaternion.Euler(0f, 0f, wobble * 8f);
+                }
+            }, null, null, 0f, true);
+
+            _hintSpool = spool;
+            _hintSpoolPos = basePos;
+            return root;
+        }
+
+        /// <summary>Куда полетит клубок: первое свободное место на станке мягко светится золотом и дышит.</summary>
+        private void PlaceSlotHint()
+        {
+            var free = -1;
+            for (var i = 0; i < _slotFrames.Length && i < _game.Slots.Count; i++)
+            {
+                if (_game.Slots[i] == null)
+                {
+                    free = i;
+                    break;
+                }
+            }
+
+            if (free < 0)
+            {
+                return;
+            }
+
+            var gold = Palette.Hex("#FFC531");
+            var frame = _slotFrames[free];
+            var node = Ui.Stretch(Ui.Node(frame, "SlotHint"));
+            var fill = Ui.Box(node, "Fill", 14, Palette.WithAlpha(gold, 0.2f));
+            Ui.Stretch(fill.rectTransform);
+            var edge = Ui.Image(node, "Edge", Art.RoundRectOutline(14, 3), gold);
+            edge.type = Image.Type.Sliced;
+            edge.pixelsPerUnitMultiplier = Art.Density;
+            Ui.Stretch(edge.rectTransform);
+            Tweens.Run(node, 1.4f, t =>
+            {
+                var pulse = 0.5f + 0.5f * Mathf.Cos(t * Mathf.PI * 2f);
+                fill.color = Palette.WithAlpha(gold, 0.12f + 0.2f * pulse);
+                edge.color = Palette.WithAlpha(gold, 0.55f + 0.45f * pulse);
+            }, null, null, 0f, true);
+            _hintSlot = node;
+        }
+
+        private RectTransform? _hintSlot;
+        private RectTransform? _hintSpool;
+        private Vector2 _hintSpoolPos;
+
+        /// <summary>Убрать подсветку места на станке и вернуть клубок на место (если он ещё на поле).</summary>
+        private void ClearHintExtras()
+        {
+            if (_hintSlot != null)
+            {
+                Object.Destroy(_hintSlot.gameObject);
+                _hintSlot = null;
+            }
+
+            if (_hintSpool != null)
+            {
+                _hintSpool.anchoredPosition = _hintSpoolPos;
+                _hintSpool.localRotation = Quaternion.identity;
+                _hintSpool = null;
+            }
+        }
+
         private void HideHint()
         {
+            ClearHintExtras();
             if (_hint != null)
             {
                 Object.Destroy(_hint.gameObject);
