@@ -22,27 +22,19 @@
       "hex": "#8A5530"
     },
     {
-      "key": "m",
-      "hex": "#FF6FB7"
-    },
-    {
-      "key": "h",
-      "hex": "#8C9198"
-    },
-    {
       "key": "r",
       "hex": "#E8333A"
     }
   ],
   "picture": [
-    "llwllwll",
     "lwllwlll",
-    "lcmccmll",
-    "looooohl",
-    "lorrrohl",
-    "looroohl",
-    "llooolll",
-    "llllllll"
+    "llwllwll",
+    "occccoll",
+    "owwwwool",
+    "orwrwolo",
+    "orrrwolo",
+    "owrwwool",
+    "loooolll"
   ],
   "fabric": "l",
   "band": 2,

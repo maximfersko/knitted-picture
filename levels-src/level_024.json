@@ -23,16 +23,16 @@
     }
   ],
   "picture": [
-    "....ssss....",
-    "..ssSssSss..",
-    ".sSswSSwsSs.",
-    ".sSswSSwsSs.",
-    "sSswsSSswsSs",
-    "sSswsSSswsSs",
+    "............",
+    "....wSSw....",
+    "...SwSSwS...",
+    "..SswSSwsS..",
     ".SswsSSswsS.",
-    "..SSwSSwSS..",
-    "....SSSS....",
-    ".....SS....."
+    ".SswsSSswsS.",
+    "SswssSSsswsS",
+    "SswssSSsswsS",
+    ".SSSSSSSSSS.",
+    "....SSSS...."
   ],
   "fabric": ".",
   "band": 2,

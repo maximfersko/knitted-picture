@@ -15,15 +15,11 @@
     },
     {
       "key": "S",
-      "hex": "#FF8A1F"
+      "hex": "#26262E"
     },
     {
       "key": "f",
       "hex": "#FFD419"
-    },
-    {
-      "key": "k",
-      "hex": "#26262E"
     },
     {
       "key": "a",
@@ -31,14 +27,14 @@
     }
   ],
   "picture": [
-    "....SsSsS.....",
-    "..SsSsSsSs....",
-    ".sSsSaasSsS...",
-    "sSsSsaasSsSff.",
-    "SsSsSsSsSsfkff",
-    "sSsSsSsSsSfffk",
-    ".SsSsSsSsSfff.",
-    "..ff.ff..ff..."
+    "...S.S.S.aa...",
+    "..SsSsSsSaa...",
+    ".Sssssssssff..",
+    "SssssssssffSf.",
+    "sssssssssffffS",
+    ".ssssssssfff..",
+    "..ff..ff.ff...",
+    "..ff..ff.ff..."
   ],
   "fabric": ".",
   "band": 2,

@@ -20,23 +20,19 @@
     {
       "key": "y",
       "hex": "#FFD419"
-    },
-    {
-      "key": "Y",
-      "hex": "#FF8A1F"
     }
   ],
   "picture": [
-    "..yy....yy..",
-    ".y..y..y..y.",
-    "..yy.yy.yy..",
+    "...yy..yy...",
+    "..y..yy..y..",
+    "...yyyyyy...",
     ".RRRRyyRRRR.",
+    ".RRRRyyRRRR.",
+    ".yyyyyyyyyy.",
     ".rrrryyrrrr.",
-    ".rRrryyrrRr.",
-    ".YYYYyyYYYY.",
-    ".rrRryyrRrr.",
     ".rrrryyrrrr.",
-    ".RRRRyyRRRR."
+    ".rrrryyrrrr.",
+    ".rrrryyrrrr."
   ],
   "fabric": ".",
   "band": 2,

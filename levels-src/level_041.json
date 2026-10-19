@@ -24,15 +24,15 @@
   ],
   "picture": [
     "......TT......",
-    ".....tttt.....",
-    "...TTTTTTTT...",
+    "....TTTTTT....",
+    "...tttttttt...",
+    "T.ttttttttttTT",
+    "TTtwttwttwtt.T",
+    ".Ttttttttttt.T",
+    "..twttwttwttTT",
     "..tttttttttt..",
-    "TTtwttwttwtttt",
-    "T.ttttttttttTt",
-    "T.twttwttwtt.T",
-    "TTtttttttttt..",
-    "..TwTTwTTwTT..",
-    "...TTTTTTTT..."
+    "...TTTTTTTT...",
+    "....TTTTTT...."
   ],
   "fabric": ".",
   "band": 2,

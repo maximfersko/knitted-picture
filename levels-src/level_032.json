@@ -15,7 +15,7 @@
     },
     {
       "key": "C",
-      "hex": "#E8333A"
+      "hex": "#26262E"
     },
     {
       "key": "n",
@@ -24,19 +24,15 @@
     {
       "key": "N",
       "hex": "#FFFFFF"
-    },
-    {
-      "key": "s",
-      "hex": "#26262E"
     }
   ],
   "picture": [
-    ".....s....",
-    "....ss....",
-    "..cCcCcC..",
-    ".CcCcCcCc.",
-    "cCcCcCcCcC",
-    ".nnNnnnnn.",
+    "....cc....",
+    ".....c....",
+    "..cccccc..",
+    ".cCcCcCcc.",
+    "cCcCcCcCcc",
+    ".nnnnnnnn.",
     ".nNnnnnnn.",
     ".nNnnnnnn.",
     "..nnnnnn..",
@@ -66,5 +62,6 @@
   "maxForced": 0.55,
   "minDanger": 0.05,
   "maxDanger": 0.35,
-  "seed": 321
+  "seed": 4321,
+  "minSkilled": 0.6
 }

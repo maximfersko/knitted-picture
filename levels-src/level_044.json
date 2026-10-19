@@ -14,10 +14,6 @@
       "hex": "#FFFFFF"
     },
     {
-      "key": "P",
-      "hex": "#4CC3F5"
-    },
-    {
       "key": "r",
       "hex": "#FF6FB7"
     },
@@ -36,15 +32,15 @@
   ],
   "picture": [
     ".....pp.....",
-    "....pPPp....",
+    "....pppp....",
     ".....pp.....",
     "...rrrrrr...",
-    "..rryrryrr..",
-    ".rryyrryyrr.",
+    "..rrrrrrrr..",
     ".rrrrrrrrrr.",
-    ".ryrryrryrr.",
+    ".ryyryyryyr.",
+    ".rrrrrrrrrr.",
     "cCcCcCcCcCcC",
-    "CcCcCcCcCcCc"
+    "cCcCcCcCcCcC"
   ],
   "fabric": ".",
   "band": 3,

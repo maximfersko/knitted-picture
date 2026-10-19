@@ -10,12 +10,12 @@
       "hex": "#4CC3F5"
     },
     {
-      "key": "c",
-      "hex": "#FF6FB7"
+      "key": "r",
+      "hex": "#E8333A"
     },
     {
-      "key": "m",
-      "hex": "#8A5530"
+      "key": "c",
+      "hex": "#FF6FB7"
     },
     {
       "key": "v",
@@ -28,25 +28,21 @@
     {
       "key": "W",
       "hex": "#FF8A1F"
-    },
-    {
-      "key": "r",
-      "hex": "#E8333A"
     }
   ],
   "picture": [
+    ".....r....",
     "....rr....",
-    "...cccc...",
     "..cccccc..",
-    ".ccvcccvc.",
-    ".vvvvvvvv.",
-    ".vmvvvvmv.",
-    "..wWwwWw..",
-    "..WwwWww..",
+    ".cccccccc.",
+    ".ccvccvcc.",
+    ".cccccccc.",
+    ".vcvccvcv.",
+    "..wWwWwW..",
+    "..WwWwWw..",
     "...wWwW...",
-    "...WwwW...",
-    "....wW....",
-    "....WW...."
+    "....Ww....",
+    "....ww...."
   ],
   "fabric": ".",
   "band": 3,
@@ -71,5 +67,6 @@
   "maxForced": 0.55,
   "minDanger": 0.05,
   "maxDanger": 0.35,
-  "seed": 181
+  "seed": 7181,
+  "minFollower": 0.5
 }

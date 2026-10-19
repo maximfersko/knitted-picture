@@ -14,10 +14,6 @@
       "hex": "#FF8A1F"
     },
     {
-      "key": "O",
-      "hex": "#E8333A"
-    },
-    {
       "key": "c",
       "hex": "#FFFFFF"
     },
@@ -35,16 +31,16 @@
     }
   ],
   "picture": [
-    ".tt.......o.o.",
-    "tttt.....ooooo",
-    "tOtt....okoooo",
-    "ttOt....oooocc",
-    "tttOt..oooocc.",
-    ".ttOt.oooccc..",
-    "..tOtooocccn..",
-    "...tOooocccnn.",
-    "....toooccc...",
-    ".....oo..oo..."
+    ".o.o.....oooo.",
+    ".ooo....ottooo",
+    "ookoo...otcoto",
+    ".oooo...ocoooo",
+    "..oocoo.oooo..",
+    ".nnccooooooo..",
+    ".nnccoooooo...",
+    "..occooooo....",
+    "..ooooooo.....",
+    "..oo..oo......"
   ],
   "fabric": ".",
   "band": 3,
@@ -73,5 +69,5 @@
   "maxFollower": 0.4,
   "minSkilled": 0.2,
   "maxSkilled": 0.6,
-  "seed": 2000
+  "seed": 4245
 }

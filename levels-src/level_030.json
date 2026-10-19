@@ -27,19 +27,19 @@
     }
   ],
   "picture": [
-    "....rrwwrr....",
-    "..wwrrwwrrww..",
-    ".rwwrrwwrrwwr.",
+    "......rr......",
+    "....rrrrrr....",
+    "...rrwwrrww...",
+    "..rrwwrrwwrr..",
+    ".rrwwrrwwrrww.",
     "rrwwrrwwrrwwrr",
-    "rrwwrrwwrrwwrr",
-    "rr.ww.rr.ww.rr",
-    "d......h......",
-    ".......h....d.",
-    "..d....h......",
-    ".......h.....d",
-    "d......h..d...",
-    ".....h.h......",
-    "......h......."
+    "r.ww..hh..ww.r",
+    "......hh......",
+    "..d...hh...d..",
+    "......hh......",
+    "...d..hh..d...",
+    "...hh.hh......",
+    "....hhh......."
   ],
   "fabric": ".",
   "band": 2,
@@ -68,5 +68,5 @@
   "maxFollower": 0.4,
   "minSkilled": 0.2,
   "maxSkilled": 0.6,
-  "seed": 301
+  "seed": 6210
 }

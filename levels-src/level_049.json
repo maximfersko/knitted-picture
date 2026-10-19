@@ -43,19 +43,19 @@
     }
   ],
   "picture": [
-    "...........h..",
-    "..........hh..",
-    "..pp.....hh...",
-    ".pvvwwwww.....",
-    "pvbwwwwwwww...",
-    "pvbwwwkwwwww..",
-    "pvbwwwwwwwwww.",
-    "pvbwwwwwwwwnw.",
-    ".pvwwwwwwwwww.",
-    ".pbwwwwww.....",
-    "..pwwwwww.....",
-    "...wwwwww.....",
-    "...WWWWWW....."
+    "..........h...",
+    ".........hh...",
+    "..pp..WWhhW...",
+    ".pvvWWwwwwwW..",
+    "pvbWwwwwwwwwW.",
+    "pvbWwwwkwwwwwW",
+    "pvbWwwwwwwwwwW",
+    "pvbWwwwwwwwnwW",
+    ".pvWwwwwwWWWW.",
+    ".pbWwwwwwW....",
+    "..pWwwwwwW....",
+    "...WwwwwwW....",
+    "...WWWWWWW...."
   ],
   "fabric": ".",
   "band": 3,
@@ -80,5 +80,5 @@
   "maxForced": 0.55,
   "minDanger": 0.05,
   "maxDanger": 0.35,
-  "seed": 491
+  "seed": 6343
 }

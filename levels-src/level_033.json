@@ -18,28 +18,28 @@
       "hex": "#E8333A"
     },
     {
-      "key": "b",
-      "hex": "#2DB34A"
-    },
-    {
-      "key": "B",
-      "hex": "#8A5530"
-    },
-    {
       "key": "k",
       "hex": "#26262E"
+    },
+    {
+      "key": "y",
+      "hex": "#FFD419"
+    },
+    {
+      "key": "b",
+      "hex": "#2DB34A"
     }
   ],
   "picture": [
-    "....SSSS......",
-    "..SSssssSS....",
-    ".SssSSSSssS...",
-    ".SsSssssSsS...",
-    "SsSsSSssSsS.k.",
-    "SsSsssSsSsS.b.",
-    ".SsSSSSsSsS.bb",
-    "bbbbbbbbbbbbbb",
-    ".BbBbBbBbBbBb."
+    "..............",
+    "....SSSSS.....",
+    "...SsssssS....",
+    "..SsSSSSsS..k.",
+    "..SsSssSsS..y.",
+    "..SsSsSSsS.yy.",
+    "..SssSsssSyyy.",
+    ".yySSSSSSyyyy.",
+    "bbbbbbbbbbbbbb"
   ],
   "fabric": ".",
   "band": 2,

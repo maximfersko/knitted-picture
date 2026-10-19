@@ -7,18 +7,17 @@
   "colors": [
     "#2DB34A",
     "#8A5530",
-    "#E8333A",
+    "#26262E",
     "#FF8A1F",
-    "#FFFFFF",
-    "#26262E"
+    "#FFFFFF"
   ],
   "picture": [
-    "0000050000",
-    "0000550000",
-    "0012121200",
-    "0212121210",
-    "1212121212",
-    "0334333330",
+    "0000110000",
+    "0000010000",
+    "0011111100",
+    "0121212110",
+    "1212121211",
+    "0333333330",
     "0343333330",
     "0343333330",
     "0033333300",
@@ -26,8 +25,8 @@
     "0000330000"
   ],
   "canvas": [
-    "1111101111",
     "1111001111",
+    "1111101111",
     "1100000011",
     "1000000001",
     "0000000000",
@@ -39,88 +38,86 @@
     "1111001111"
   ],
   "gold": [
-    5,
-    43,
-    71,
-    96
+    26,
+    47,
+    68,
+    85
   ],
   "band": 2,
   "slots": 4,
   "spools": [
     {
-      "color": 3,
-      "loops": 5
+      "loops": 3,
+      "rainbow": true
+    },
+    {
+      "color": 4,
+      "loops": 2
     },
     {
       "loops": 4
     },
     {
-      "color": 2,
-      "loops": 12
+      "color": 4,
+      "loops": 6
     },
     {
-      "column": 1,
-      "color": 3,
-      "loops": 6,
+      "color": 1,
+      "loops": 13,
       "link": 1
     },
     {
       "column": 1,
-      "color": 4,
-      "loops": 3
+      "color": 3,
+      "loops": 8
     },
     {
       "column": 1,
+      "color": 3,
+      "loops": 8
+    },
+    {
+      "column": 2,
       "color": 1,
       "loops": 5
     },
     {
-      "column": 1,
-      "color": 3,
-      "loops": 3,
-      "link": 2
-    },
-    {
       "column": 2,
       "color": 3,
-      "loops": 7
-    },
-    {
-      "column": 2,
-      "loops": 3,
-      "rainbow": true
-    },
-    {
-      "column": 2,
-      "color": 5,
-      "loops": 3
+      "loops": 6
     },
     {
       "column": 3,
       "color": 1,
-      "loops": 12
+      "loops": 5
     },
     {
       "column": 3,
       "color": 2,
-      "loops": 3
+      "loops": 6,
+      "link": 2
     },
     {
       "column": 3,
       "color": 3,
-      "loops": 5,
-      "link": 2
+      "loops": 7
     },
     {
-      "column": 4,
-      "color": 3,
-      "loops": 6,
+      "column": 3,
+      "color": 1,
+      "loops": 2,
       "link": 1
     },
     {
       "column": 4,
       "color": 3,
-      "loops": 1
+      "loops": 5
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 1,
+      "link": 2
     }
   ]
 }

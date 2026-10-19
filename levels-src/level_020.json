@@ -24,24 +24,20 @@
     {
       "key": "l",
       "hex": "#2DB34A"
-    },
-    {
-      "key": "s",
-      "hex": "#8C9198"
     }
   ],
   "picture": [
+    "......ll....",
+    ".....ll.....",
     "...YYYYYY...",
-    ".YYyyyyyyYY.",
-    ".YywwwwwwyY.",
-    "YywllwwllwyY",
-    "YywlsllslwyY",
-    "YywwwwwwwwyY",
-    "YywlsllslwyY",
-    "YywllwwllwyY",
-    ".YywwwwwwyY.",
-    ".YYyyyyyyYY.",
-    "...YYYYYY..."
+    "..YyyyyyyY..",
+    ".YywwyyyyyY.",
+    "YyywyyyyyyyY",
+    "YyyyyyyyyyyY",
+    ".YyyyyyyyyY.",
+    "..YyyyyyyY..",
+    "...YYYYYY...",
+    "............"
   ],
   "fabric": ".",
   "band": 2,
@@ -70,5 +66,5 @@
   "maxFollower": 0.4,
   "minSkilled": 0.2,
   "maxSkilled": 0.6,
-  "seed": 201
+  "seed": 3140
 }

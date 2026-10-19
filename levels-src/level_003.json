@@ -18,10 +18,6 @@
       "hex": "#FFFFFF"
     },
     {
-      "key": "d",
-      "hex": "#8A5530"
-    },
-    {
       "key": "c",
       "hex": "#FFD419"
     },
@@ -31,14 +27,14 @@
     }
   ],
   "picture": [
-    "gggggggg",
     "ggrrrrgg",
-    "grwrrwrg",
-    "rrrrwrrr",
-    "gdcdcdcg",
-    "gggccggg",
-    "ggccccgg",
-    "glglgglg"
+    "grrwrrrg",
+    "rwrrrrwr",
+    "rrrwrrrr",
+    "gccccccg",
+    "gggwwggg",
+    "gggwwggg",
+    "llllllll"
   ],
   "fabric": "g",
   "band": 0,

@@ -31,13 +31,13 @@
     }
   ],
   "picture": [
-    ".rr....bb...",
-    "rwrr..bwbb..",
-    "rrrr..bbbb..",
-    "rrrr..bbbb..",
-    ".rr..yy.bb..",
-    "..l.ywyy.l..",
-    "..l.yyyy.l..",
+    ".rrr...bbb..",
+    "rwrrr.bwbbb.",
+    "rrrrr.bbbbb.",
+    "rrrrr.bbbbb.",
+    ".rrr...bbb..",
+    "..r.yyy..b..",
+    "...lwyyy.l..",
     "...lyyyyl...",
     "....lyyl....",
     ".....ll.....",
@@ -67,5 +67,5 @@
   "maxForced": 0.55,
   "minDanger": 0.05,
   "maxDanger": 0.35,
-  "seed": 381
+  "seed": 3266
 }

@@ -14,37 +14,29 @@
       "hex": "#FFD419"
     },
     {
-      "key": "C",
-      "hex": "#FF8A1F"
-    },
-    {
       "key": "r",
       "hex": "#E8333A"
     },
     {
       "key": "w",
       "hex": "#FFFFFF"
-    },
-    {
-      "key": "g",
-      "hex": "#2DB34A"
     }
   ],
   "picture": [
-    "..cccccc..",
-    "..cCcCcC..",
+    "..wwwwww..",
+    "..wwwwww..",
+    "..rrrrrr..",
     "..rrrrrr..",
     "..wwwwww..",
     "..rrrrrr..",
+    "..rrrrrr..",
     "..wwwwww..",
     "..rrrrrr..",
-    "..wwwwwwg.",
-    "..rrrrrrgg",
-    "rrrrrrrrgg",
-    "wwwwwwwwg.",
-    "grrrrrrrr.",
-    "ggwwwwww..",
-    ".gg......."
+    ".crrrrrrrr",
+    "ccwwwwwwcc",
+    "ccrrrrrrcc",
+    ".crrrrrrc.",
+    ".........."
   ],
   "fabric": ".",
   "band": 2,
