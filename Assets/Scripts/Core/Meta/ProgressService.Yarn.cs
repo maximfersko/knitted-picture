@@ -47,6 +47,45 @@ namespace KnittedPicture.Core
             return PerksOpen && yarn >= 0 && YarnCatalog.PerkOf(yarn) == perk ? YarnCatalog.Power(yarn, YarnLevel(yarn), IsGolden(yarn)) : 0;
         }
 
+        /// <summary>Сила мотка, если получить ещё один экземпляр: уровень растёт до максимума, затем копится золото.</summary>
+        public int PowerAfterTake(int yarn)
+        {
+            if (yarn < 0 || yarn >= YarnCatalog.Count)
+            {
+                return 0;
+            }
+
+            var level = System.Math.Min(YarnLevel(yarn) + 1, YarnCatalog.MaxLevel);
+            var golden = YarnCount(yarn) + 1 >= YarnCatalog.MaxLevel + YarnCatalog.GoldenAfter;
+            return YarnCatalog.Power(yarn, level, golden);
+        }
+
+        /// <summary>Сила мотка на спицах; 0 — мотка в работе нет.</summary>
+        public int ActivePower
+        {
+            get
+            {
+                var yarn = ActiveYarn;
+                return yarn < 0 ? 0 : PowerOf(yarn);
+            }
+        }
+
+        /// <summary>Текущая сила имеющегося мотка; 0 — такого мотка нет.</summary>
+        public int PowerOf(int yarn)
+        {
+            return yarn >= 0 && yarn < YarnCatalog.Count && HasYarn(yarn) ? YarnCatalog.Power(yarn, YarnLevel(yarn), IsGolden(yarn)) : 0;
+        }
+
+        /// <summary>
+        /// Моток yarn при силе power сильнее мотка на спицах: тот же бонус и сила больше (разные бонусы не сравниваются,
+        /// монеты за картинку и монеты за петлю не «лучше» друг друга). Единственное место, где живёт это правило.
+        /// </summary>
+        public bool StrongerThanActive(int yarn, int power)
+        {
+            var active = ActiveYarn;
+            return PerksOpen && yarn != active && (active < 0 || (YarnCatalog.PerkOf(yarn) == YarnCatalog.PerkOf(active) && power > ActivePower));
+        }
+
         /// <summary>
         /// Знакомство с натяжением полотна — один раз, в тот момент, когда оно впервые остановило столбик.
         /// </summary>
@@ -62,11 +101,14 @@ namespace KnittedPicture.Core
             return true;
         }
 
-        /// <summary>Знакомство с бонусами пряжи — один раз, на уровне, где они открываются.</summary>
+        /// <summary>
+        /// Знакомство с бонусами пряжи — один раз, на первом уровне не ниже <see cref="YarnCatalog.PerksFromLevel"/>:
+        /// если на самом уровне открытия оно не показалось (там мог быть новый бустер), покажется на следующем.
+        /// </summary>
         public bool TakePerksIntro(int levelId)
         {
             const int introId = 100;
-            if (levelId != YarnCatalog.PerksFromLevel || _data.introsShown.Contains(introId))
+            if (levelId < YarnCatalog.PerksFromLevel || _data.introsShown.Contains(introId))
             {
                 return false;
             }

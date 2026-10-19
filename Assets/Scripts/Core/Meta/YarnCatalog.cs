@@ -262,8 +262,8 @@ namespace KnittedPicture.Core
         /// </summary>
         public static YarnPerk PerkOf(int yarn) => SetOf(yarn).Id % 3 == 0 ? YarnPerk.Coins : YarnPerk.Gold;
 
-        /// <summary>С этого уровня моток «в работе» начинает давать бонус: новичка не грузим лишним.</summary>
-        public const int PerksFromLevel = 9;
+        /// <summary>С этого уровня моток «в работе» начинает давать бонус: к пятому уровню правила уже знакомы, а мотки из сундука первых уровней получают смысл.</summary>
+        public const int PerksFromLevel = 5;
 
         /// <summary>
         /// Сила бонуса: редкость (обычная и необычная 1, редкая 2, эпическая 3, легендарная 4) плюс уровень сверх
@@ -309,6 +309,13 @@ namespace KnittedPicture.Core
         {
             var n = perk == YarnPerk.Coins ? CoinsBonus(power) : GoldBonus(power);
             return perk == YarnPerk.Coins ? L.F("+{0} {1} за картинку", n, CoinsWord(n)) : L.F("+{0} {1} за золотую петлю", n, CoinsWord(n));
+        }
+
+        /// <summary>Самая короткая запись выгоды для тесной карточки сундука: «+4 за картинку», «+2 за петлю».</summary>
+        public static string PerkTiny(YarnPerk perk, int power)
+        {
+            var n = perk == YarnPerk.Coins ? CoinsBonus(power) : GoldBonus(power);
+            return perk == YarnPerk.Coins ? L.F("+{0} за картинку", n) : L.F("+{0} за петлю", n);
         }
 
         /// <summary>Понятное предложение для карточки мотка: как именно работает бонус.</summary>

@@ -235,7 +235,16 @@ namespace KnittedPicture.Game
             _goldCaught++;
             _goldCoins += _goldPerLoop;
             Fx.Sparkle(_fx, at, Palette.Coin, 10, 34f);
-            Fx.FloatText(_fx, at, "+" + _goldPerLoop, Palette.CoinShadow, 20f);
+
+            // База петли вылетает из петли, надбавка мотка на спицах: из его значка в шапке.
+            var bonus = _yarnBadge != null && _yarnPerk == YarnPerk.Gold ? _yarnBonus : 0;
+            Fx.FloatText(_fx, at, "+" + (_goldPerLoop - bonus), Palette.CoinShadow, 20f);
+            if (bonus > 0 && _yarnBadge != null)
+            {
+                Tweens.Punch(_yarnBadge, 0.2f, 0.3f);
+                Fx.FloatText(_fx, Ui.WorldCenter(_yarnBadge) - new Vector3(0, 26f * _fx.lossyScale.x, 0), "+" + bonus, Palette.CoinShadow, 18f);
+            }
+
             Sfx.Play(Sound.Coin, 0.7f);
             Haptics.Play(Haptic.Soft);
             RefreshGoals();

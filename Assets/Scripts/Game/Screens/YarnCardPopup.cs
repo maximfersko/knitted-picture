@@ -150,6 +150,7 @@ namespace KnittedPicture.Game
                 {
                     progress.SetActiveYarn(yarnId);
                     app.Save();
+                    Analytics.Event("yarn_equip", ("source", "card"), ("yarn", yarnId), ("perk", perk.ToString()), ("level", progress.YarnLevel(yarnId)));
                     Sfx.Play(Sound.Unlock, 0.7f);
                     Closed = changed;
                     Close();

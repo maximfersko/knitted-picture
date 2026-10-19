@@ -264,6 +264,86 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Power_after_take_grows_with_repeats_and_counts_gold()
+        {
+            var progress = Fresh();
+            Assert.Equal(1, progress.PowerAfterTake(0));
+            Assert.Equal(0, progress.PowerOf(0));
+            progress.AddYarn(0);
+            Assert.Equal(1, progress.PowerOf(0));
+            Assert.Equal(2, progress.PowerAfterTake(0));
+            progress.AddYarn(0);
+            progress.AddYarn(0);
+            Assert.Equal(3, progress.PowerOf(0));
+            Assert.Equal(3, progress.PowerAfterTake(0));
+
+            // Золотая версия: пятый повтор сверх максимума даёт +1.
+            for (var i = 0; i < YarnCatalog.GoldenAfter - 1; i++)
+            {
+                progress.AddYarn(0);
+                Assert.False(progress.IsGolden(0));
+                Assert.Equal(i == YarnCatalog.GoldenAfter - 2 ? 4 : 3, progress.PowerAfterTake(0));
+            }
+
+            progress.AddYarn(0);
+            Assert.True(progress.IsGolden(0));
+            Assert.Equal(4, progress.PowerOf(0));
+        }
+
+        [Fact]
+        public void Stronger_than_active_needs_open_perks_and_a_better_yarn()
+        {
+            var progress = Fresh();
+            progress.AddYarn(0); // Меринос, сила 1, на спицах
+            progress.AddYarn(3); // Кашемир, сила 3
+            Assert.False(progress.StrongerThanActive(3, progress.PowerOf(3)));
+
+            progress.Data.nextLevel = YarnCatalog.PerksFromLevel;
+            Assert.Equal(0, progress.ActiveYarn);
+            Assert.Equal(1, progress.ActivePower);
+            Assert.False(progress.StrongerThanActive(0, 99));
+            Assert.True(progress.StrongerThanActive(3, progress.PowerOf(3)));
+            Assert.False(progress.StrongerThanActive(4, 1));
+            Assert.True(progress.SetActiveYarn(3));
+            Assert.False(progress.StrongerThanActive(0, progress.PowerAfterTake(0)));
+        }
+
+        [Fact]
+        public void Stronger_ignores_other_perks_and_golden_power_does_not_grow()
+        {
+            var progress = Fresh();
+            progress.Data.nextLevel = YarnCatalog.PerksFromLevel;
+            progress.AddYarn(0); // Меринос: копилка, на спицах
+            progress.AddYarn(7); // Шёлк: золото, сила 3 — но бонус другой
+            Assert.Equal(YarnPerk.Gold, YarnCatalog.PerkOf(7));
+            Assert.False(progress.StrongerThanActive(7, progress.PowerOf(7)));
+            progress.AddYarn(3); // Кашемир: копилка, сила 3 > 1
+            Assert.True(progress.StrongerThanActive(3, progress.PowerOf(3)));
+
+            // Золотой моток на спицах: сила не растёт от новых повторов, и он сам себя «сильнее» не считает.
+            for (var i = 0; i < YarnCatalog.MaxLevel + YarnCatalog.GoldenAfter; i++)
+            {
+                progress.AddYarn(4);
+            }
+
+            Assert.True(progress.IsGolden(4));
+            var golden = progress.PowerOf(4);
+            Assert.Equal(golden, progress.PowerAfterTake(4));
+            Assert.True(progress.SetActiveYarn(4));
+            Assert.False(progress.StrongerThanActive(4, progress.PowerAfterTake(4)));
+        }
+
+        [Fact]
+        public void Perks_intro_shows_on_first_level_at_or_after_the_threshold()
+        {
+            var progress = Fresh();
+            Assert.False(progress.TakePerksIntro(YarnCatalog.PerksFromLevel - 1));
+            Assert.True(progress.TakePerksIntro(YarnCatalog.PerksFromLevel + 1));
+            Assert.False(progress.TakePerksIntro(YarnCatalog.PerksFromLevel + 1));
+            Assert.False(progress.TakePerksIntro(YarnCatalog.PerksFromLevel));
+        }
+
+        [Fact]
         public void Tension_intro_is_shown_once()
         {
             var progress = Fresh();

@@ -128,6 +128,14 @@ namespace KnittedPicture.Game
         private RectTransform _fx = null!;
         private Text _coins = null!;
 
+        /// <summary>Значок мотка на спицах в шапке (null — бонусы закрыты или мотка нет).</summary>
+        private RectTransform? _yarnBadge;
+
+        private YarnPerk _yarnPerk;
+
+        /// <summary>Сколько мотка прибавляет к золотой петле: из значка вылетает именно эта часть.</summary>
+        private int _yarnBonus;
+
         /// <summary>Значок моли в конце полоски времени: подпись, чья это полоска. Сама моль живёт на картинке.</summary>
         private Image? _timerIcon;
         private RectTransform? _timerFill;
@@ -382,7 +390,7 @@ namespace KnittedPicture.Game
             {
                 _idle += dt;
                 // Дальше — мягкий толчок, если игрок долго не делает ничего: 20 секунд без хода, станок стоит.
-                // На первых пяти уровнях это обучение — всегда; дальше — по настройке «Подсказка при паузе».
+                // На первых пяти уровнях это обучение — всегда; дальше — по настройке «Подсказка хода» (раздел «Подсказки» в «Удобстве»).
                 var threshold = _level.id == 1 ? 3f : _level.id <= 3 ? 6f : _level.id <= 5 ? 12f : Comfort.IdleHints ? IdleNudge : 0f;
                 if (threshold > 0 && _idle > threshold)
                 {

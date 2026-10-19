@@ -41,9 +41,55 @@ namespace KnittedPicture.Game
                     }
                 });
             }
+            BuildYarnBadge();
+
             // Монеты на уровне не показываем: цена бустера видна в окне покупки, заработанное — на победе.
             _coins = Ui.Label(Root, "", 1, Color.clear, 0, 0, 1, 1);
             _coins.enabled = false;
+        }
+
+        /// <summary>
+        /// Значок мотка на спицах справа в шапке: круглый моток и сила бонуса «+N». Виден, только когда бонусы открыты
+        /// и моток выбран. Тап напоминает, что именно он даёт. Слева его ограничивает плашка уровня
+        /// (она ровно по центру, у «Узора дня» шире), так что на 320 и 390 точек ничего не перекрывается.
+        /// </summary>
+        private void BuildYarnBadge()
+        {
+            var progress = App.Progress;
+            var id = progress.ActiveYarn;
+            if (!progress.PerksOpen || id < 0)
+            {
+                return;
+            }
+
+            var yarn = YarnCatalog.All[id];
+            var perk = YarnCatalog.PerkOf(id);
+            var power = progress.ActivePower;
+            var bonus = perk == YarnPerk.Coins ? YarnCatalog.CoinsBonus(power) : YarnCatalog.GoldBonus(power);
+
+            // «Тёплая копилка» платит только за новую картинку (не за повтор и не в «Узоре дня»): тогда значок
+            // тусклый и без «+N», чтобы не обещать монеты, которых не будет.
+            var idle = perk == YarnPerk.Coins && (_run.Pattern || progress.IsCompleted(_level.id));
+            var width = idle ? 44f : 72f;
+            var pill = Ui.Card(Root, "YarnBadge", W - Pad - width, 8, width, 44, 22, Palette.Card, Palette.CardShadow, 2f, true);
+            YarnView.Create(pill, yarn, idle ? 22f : 24f, 22f, 26f, true);
+            if (idle)
+            {
+                pill.gameObject.AddComponent<CanvasGroup>().alpha = 0.5f;
+            }
+            else
+            {
+                Ui.Fit(Ui.Label(pill, "+" + bonus, 16, Palette.Ink, 40f, 0, width - 46f, 44, true, TextAnchor.MiddleLeft), 11);
+            }
+
+            pill.gameObject.AddComponent<Tap>().OnClick(() =>
+            {
+                var text = YarnCatalog.PerkText(perk, power);
+                App.Toast(idle ? L.F("«{0}» на спицах: {1}. Только за новую картинку", yarn.Name, text) : L.F("«{0}» на спицах: {1}", yarn.Name, text));
+            });
+            _yarnBadge = pill;
+            _yarnPerk = perk;
+            _yarnBonus = perk == YarnPerk.Gold ? bonus : 0;
         }
 
         private void BuildTimer()

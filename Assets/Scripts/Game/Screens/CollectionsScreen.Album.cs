@@ -189,7 +189,7 @@ namespace KnittedPicture.Game
             Ui.Place(strip, x, y, w, 40);
             if (active < 0 || !open)
             {
-                // До 9-го уровня пряжа — просто красивая коллекция: про бонусы только одна тихая строка.
+                // До 5-го уровня пряжа — просто красивая коллекция: про бонусы только одна тихая строка.
                 var text = !open ? L.F("Бонусы пряжи откроются на уровне {0}", YarnCatalog.PerksFromLevel) : L.T("На спицах пока ничего: найди первый моток");
                 Ui.Fit(Ui.Label(strip, text, 12, Palette.Ink2, 12, 0, w - 24, 40, false, TextAnchor.MiddleLeft), 9);
                 return;

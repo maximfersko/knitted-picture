@@ -61,9 +61,11 @@ namespace KnittedPicture.Game
     /// <summary>«Новый бустер» — один раз, когда бустер открывается, с подарком.</summary>
     public sealed class BoosterIntroPopup : Popup
     {
-        public BoosterIntroPopup(App app, BoosterType type)
+        /// <summary>after — что показать следом, когда окно закрыто (например, знакомство с бонусами пряжи).</summary>
+        public BoosterIntroPopup(App app, BoosterType type, Action? after = null)
             : base(app)
         {
+            Closed = after;
             AddIcon(BoosterInfo.Icon(type), Palette.Primary, Palette.PrimarySoft, 76);
             AddTitle(L.T("Новый бустер"), 24);
             AddText(BoosterInfo.Name(type), 20, 1);
@@ -196,6 +198,14 @@ namespace KnittedPicture.Game
                 Close();
                 back();
             });
+        }
+
+        /// <summary>Подпись раздела над группой строк: мелкий жирный текст капсом, как в системных настройках.</summary>
+        protected void AddSection(string text)
+        {
+            var label = Ui.Label(Card, text.ToUpperInvariant(), 12, Palette.Ink2, 40f, Cursor, Inner - 32f, 18f, true, TextAnchor.MiddleLeft);
+            Ui.Fit(label, 10);
+            Space(24f);
         }
 
         /// <summary>Сгруппированный список: светлая подложка, строки через тонкие разделители.</summary>
@@ -402,19 +412,24 @@ namespace KnittedPicture.Game
 
             AddTitle(L.T("Удобство"), 24);
             var data = app.Progress.Data;
-            var group = Group(4, TallRowH);
+            AddSection(L.T("Экран и движение"));
+            var group = Group(3, TallRowH);
             ToggleRow(group, 0, KnittedPicture.Game.Icon.Pause, Palette.Primary, L.T("Меньше движения"),
                 () => data.reduceMotion, on => Set(() => data.reduceMotion = on),
                 L.T("Без покачиваний, всплытий, пружин и тряски"), TallRowH);
             ToggleRow(group, 1, new Badge("Aa"), Palette.CoinShadow, L.T("Крупный текст"),
                 () => data.largeText, on => Set(() => data.largeText = on),
                 L.T("Мелкие подписи крупнее, где помещаются"), TallRowH);
-            ToggleRow(group, 2, KnittedPicture.Game.Icon.Hand, Palette.Danger, L.T("Подсказка при паузе"),
-                () => data.idleHints, on => Set(() => data.idleHints = on),
-                L.T("Рука покажет ход, если долго нет хода"), TallRowH);
-            ToggleRow(group, 3, KnittedPicture.Game.Icon.Bolt, Palette.Ink2, L.T("Экономия заряда"),
+            ToggleRow(group, 2, KnittedPicture.Game.Icon.Bolt, Palette.Ink2, L.T("Экономия заряда"),
                 () => data.batterySaver, on => Set(() => data.batterySaver = on),
                 L.T("30 кадров в секунду вместо 60: телефон меньше греется"), TallRowH);
+
+            Space(12f);
+            AddSection(L.T("Подсказки"));
+            var hints = Group(1, TallRowH);
+            ToggleRow(hints, 0, KnittedPicture.Game.Icon.Hand, Palette.Danger, L.T("Подсказка хода"),
+                () => data.idleHints, on => Set(() => data.idleHints = on),
+                L.T("Нужный клубок засветится, если долго нет хода"), TallRowH);
 
             // Крупный текст ложится на новые подписи: экран под шторкой перестраивается, когда она закрыта.
             Closed = () =>

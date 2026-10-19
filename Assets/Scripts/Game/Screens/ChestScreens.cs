@@ -350,6 +350,25 @@ namespace KnittedPicture.Game
             ShowButton(L.T("Взять"));
         }
 
+        /// <summary>
+        /// Тихая ссылка «Не сейчас» под кнопкой «Взять на спицы»: закрывает окно как «Готово». Появляется вместе с кнопкой.
+        /// </summary>
+        private CanvasGroup BuildLaterLink()
+        {
+            var node = Ui.Place(Ui.Node(_stage, "Later"), 24, _h - 46f, _w - 48f, 40f);
+            var group = node.gameObject.AddComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.blocksRaycasts = false;
+            Ui.Stretch(Ui.Image(node, "Hit", null, Color.clear, true).rectTransform);
+            Ui.Label(node, L.T("Не сейчас"), 15, Palette.WithAlpha(Color.white, 0.7f), 0, 0, _w - 48f, 40f, false);
+            node.gameObject.AddComponent<Tap>().OnClick(() =>
+            {
+                Close();
+                _finished();
+            });
+            return group;
+        }
+
         private void ShowButton(string text)
         {
             _buttonLabel.text = text;
@@ -451,7 +470,9 @@ namespace KnittedPicture.Game
         {
             _step = Step.Yarns;
             _stepTitle.text = L.T("Выбери моток");
-            _description.text = L.T("Рубашка подсказывает редкость");
+            _description.text = App.Progress.PerksOpen
+                ? L.T("Моток на спицах приносит монеты. Повтор делает его сильнее")
+                : L.F("С уровня {0} моток на спицах начнёт приносить монеты", YarnCatalog.PerksFromLevel);
             var options = _contents.Yarns;
             Tweens.Delay(_stage, 0.8f + 0.28f * (options.Length - 1) + 0.45f, () => _selectable = true);
             for (var i = 0; i < options.Length; i++)
@@ -482,9 +503,21 @@ namespace KnittedPicture.Game
                 Ui.Place(front, 0, 0, w, CardH);
                 YarnView.Aura(front, yarn.Rarity, w / 2f, 46, 62, i * 0.3f);
                 YarnView.Create(front, yarn, w / 2f, 46, 62, true);
-                var name = Ui.Label(front, yarn.Name, 13, Palette.Ink, 6, 80, w - 12, 34);
+                // Лицо: имя, под ним строка выгоды (когда бонусы открыты), внизу чип состояния.
+                var perksOpen = App.Progress.PerksOpen;
+                var name = perksOpen
+                    ? Ui.Label(front, yarn.Name, 13, Palette.Ink, 6, 78, w - 12, 22)
+                    : Ui.Label(front, yarn.Name, 13, Palette.Ink, 6, 80, w - 12, 34);
                 name.lineSpacing = 0.85f;
-                Ui.Fit(name, 10);
+                Ui.Fit(name, perksOpen ? 9 : 10);
+                var perkOf = YarnCatalog.PerkOf(yarn.Id);
+                var powerAfter = App.Progress.PowerAfterTake(yarn.Id);
+                var stronger = App.Progress.StrongerThanActive(yarn.Id, powerAfter);
+                if (perksOpen)
+                {
+                    var benefit = Ui.Label(front, YarnCatalog.PerkTiny(perkOf, powerAfter), 10, stronger ? Palette.Primary : Palette.Ink2, 4, 100, w - 8, 16);
+                    Ui.Fit(benefit, 8);
+                }
                 var isNew = !App.Progress.HasYarn(yarn.Id);
                 var yarnLevel = App.Progress.YarnLevel(yarn.Id);
                 var levelUp = !isNew && yarnLevel < YarnCatalog.MaxLevel;
@@ -502,6 +535,18 @@ namespace KnittedPicture.Game
                     var perkBack = Ui.Image(front, "Perk", Art.Circle, Palette.Surface);
                     Ui.PlaceCenter(perkBack.rectTransform, 18, 18, 26, 26);
                     YarnCardPopup.PerkIcon(front, YarnCatalog.PerkOf(yarn.Id), 18, 18, 15);
+                }
+
+                // Ленточка «сильнее» в правом верхнем углу: этот моток лучше того, что на спицах.
+                if (stronger)
+                {
+                    var ribbonText = Ui.Label(front, L.T("сильнее"), 10, Color.white, 0, 0, 10, 16);
+                    var ribbonW = Mathf.Min(ribbonText.preferredWidth + 12f, w - 40f);
+                    var ribbon = Ui.Box(front, "Stronger", 8, Palette.Primary).rectTransform;
+                    Ui.Place(ribbon, w - 5f - ribbonW, 2f, ribbonW, 16f);
+                    ribbonText.rectTransform.SetParent(ribbon, false);
+                    Ui.Place(ribbonText.rectTransform, 0, 0, ribbonW, 16f);
+                    Ui.Fit(ribbonText, 8);
                 }
                 front.gameObject.SetActive(false);
 
@@ -587,6 +632,40 @@ namespace KnittedPicture.Game
             Fx.Sparkle(_stage, Ui.WorldCenter(chip), Palette.Coin, 10, 60f);
             Sfx.Play(Sound.Win, 0.5f);
             Haptics.Play(Haptic.Success);
+
+            // Новый или подросший моток сильнее того, что на спицах: сразу предлагаем взять его в работу.
+            var progress = App.Progress;
+            var power = progress.PowerOf(yarn.Id);
+            var active = progress.ActiveYarn;
+
+            // AddYarn сам ставит первый моток на спицы, так что active здесь всегда есть, если бонусы открыты.
+            if (granted != null && active >= 0 && progress.StrongerThanActive(yarn.Id, power))
+            {
+                var perk = YarnCatalog.PerkOf(yarn.Id);
+                var offer = L.F("Он сильнее мотка на спицах: {0} вместо {1}", YarnCatalog.PerkShort(perk, power), YarnCatalog.PerkShort(YarnCatalog.PerkOf(active), progress.ActivePower));
+                _description.text += "\n" + offer;
+                _description.rectTransform.sizeDelta = new Vector2(_w - 48, 78f);
+                var later = BuildLaterLink();
+                Tweens.Delay(_stage, 0.5f, () =>
+                {
+                    // Кнопка выше обычного: под ней место для ссылки «Не сейчас» с нормальной зоной тапа.
+                    _button.anchoredPosition = new Vector2(_button.anchoredPosition.x, -(_h - 112f));
+                    ShowButton(L.T("Взять на спицы"));
+                    later.blocksRaycasts = true;
+                    Tweens.Fade(later, 0f, 1f, 0.2f);
+                });
+                _confirm = () =>
+                {
+                    progress.SetActiveYarn(yarn.Id);
+                    App.Save();
+                    App.Toast(L.F("«{0}» на спицах: {1}", yarn.Name, YarnCatalog.PerkText(perk, power)));
+                    Analytics.Event("yarn_equip", ("source", "chest"), ("yarn", yarn.Id), ("perk", perk.ToString()), ("level", progress.YarnLevel(yarn.Id)));
+                    Close();
+                    _finished();
+                };
+                return;
+            }
+
             Tweens.Delay(_stage, 0.5f, () => ShowButton(L.T("Готово")));
             _confirm = () =>
             {

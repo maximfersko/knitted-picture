@@ -518,13 +518,19 @@ namespace KnittedPicture.Game
             Analytics.Event("level_start", ("level", levelId), ("attempt", attempt), ("hard", level.hard), ("timed", level.timeLimit > 0),
                 ("completed_before", Progress.IsCompleted(levelId)), ("warm", warm.Any));
             Show(() => new GameScreen(this, level, game, run));
-            if (intro != null)
-            {
-                ShowPopup(new BoosterIntroPopup(this, intro.Value));
-            }
-            else if (Progress.TakePerksIntro(levelId))
+            var perksIntro = Progress.TakePerksIntro(levelId);
+            if (perksIntro)
             {
                 Save();
+            }
+
+            if (intro != null)
+            {
+                // Новый бустер и бонусы пряжи на одном уровне: окна идут по очереди, второе после закрытия первого.
+                ShowPopup(new BoosterIntroPopup(this, intro.Value, perksIntro ? () => ShowPopup(new YarnPerksIntroPopup(this)) : (Action?)null));
+            }
+            else if (perksIntro)
+            {
                 ShowPopup(new YarnPerksIntroPopup(this));
             }
         }
