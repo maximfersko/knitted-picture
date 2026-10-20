@@ -82,6 +82,17 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Coins_genitive_for_shortage_follows_russian_forms_and_english_has_two()
+        {
+            Assert.Equal("монеты", YarnCatalog.CoinsGenitive(1));
+            Assert.Equal("монет", YarnCatalog.CoinsGenitive(2));
+            Assert.Equal("монет", YarnCatalog.CoinsGenitive(5));
+            Assert.Equal("монеты", YarnCatalog.CoinsGenitive(21));
+            Assert.Equal("coin", L.PluralIn(En.Table, 1, "монеты", "монет", "монет"));
+            Assert.Equal("coins", L.PluralIn(En.Table, 2, "монеты", "монет", "монет"));
+        }
+
+        [Fact]
         public void Numbers_fall_back_to_a_template_and_plurals_use_two_english_forms()
         {
             Assert.Equal("Finish all 65 pictures", L.Translate(En.Table, "Довяжи все 65 картинок"));

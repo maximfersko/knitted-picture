@@ -374,10 +374,7 @@ namespace KnittedPicture.Game
 
             if (!progress.IsAvailable(levelId))
             {
-                Tweens.Shake(tile, 6f, 0.3f);
-                Sfx.Play(Sound.Deny, 0.5f);
-                Haptics.Play(Haptic.Soft);
-                app.Toast(L.F("Уровень {0} пока закрыт. Сейчас ты на уровне {1}", levelId, progress.CurrentLevel));
+                Ui.Deny(tile, L.F("Уровень {0} пока закрыт. Сейчас ты на уровне {1}", levelId, progress.CurrentLevel), 6f);
                 return;
             }
 

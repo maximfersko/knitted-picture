@@ -198,17 +198,7 @@ namespace KnittedPicture.Game
 
         private void Denied()
         {
-            if (transform is RectTransform rt)
-            {
-                Tweens.Shake(rt, 5f, 0.28f);
-            }
-
-            Sfx.Play(Sound.Deny, 0.5f);
-            Haptics.Play(Haptic.Soft);
-            if (DeniedHint!.Length > 0)
-            {
-                App.Instance?.Toast(DeniedHint);
-            }
+            Ui.Deny(transform as RectTransform, DeniedHint);
         }
     }
 }

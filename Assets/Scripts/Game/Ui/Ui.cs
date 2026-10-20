@@ -356,6 +356,25 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
+        /// Единый отказ: цель коротко мотает «головой» (при «Меньше движения» тише, см. Tweens.Shake), глухой звук,
+        /// лёгкий толчок и, если есть текст, тост с причиной. Так «нельзя» выглядит и звучит одинаково везде.
+        /// </summary>
+        public static void Deny(RectTransform? target, string? text, float shake = 5f)
+        {
+            if (target != null)
+            {
+                Tweens.Shake(target, shake, 0.28f);
+            }
+
+            Sfx.Play(Sound.Deny, 0.5f);
+            Haptics.Play(Haptic.Soft);
+            if (!string.IsNullOrEmpty(text))
+            {
+                App.Instance?.Toast(text!);
+            }
+        }
+
+        /// <summary>
         /// Не дать тексту вылезти за свою рамку: шрифт уменьшается (до minSize), пока строка не влезет.
         /// Для названий и подписей, длина которых заранее неизвестна.
         /// </summary>

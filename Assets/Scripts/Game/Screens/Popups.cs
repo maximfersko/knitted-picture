@@ -113,13 +113,12 @@ namespace KnittedPicture.Game
             }
 
             AddPrimary(L.T("Продолжить")).OnClick(Close);
+            // Звук и музыка переключаются на месте: меняются подпись и значок, окно остаётся.
             var sound = AddSecondary(SoundLabel(app.Progress.SoundOn), app.Progress.SoundOn ? KnittedPicture.Game.Icon.SoundOn : KnittedPicture.Game.Icon.SoundOff);
-            sound.OnClick(() =>
-            {
-                app.SetSound(!app.Progress.SoundOn);
-                Close();
-                app.ShowPopup(new PausePopup(app, restart, home, warning));
-            });
+            BindToggle(sound, () => app.Progress.SoundOn, app.SetSound, SoundLabel,
+                on => on ? KnittedPicture.Game.Icon.SoundOn : KnittedPicture.Game.Icon.SoundOff, false);
+            var music = AddSecondary(MusicLabel(app.Progress.Data.musicOn), KnittedPicture.Game.Icon.Star, 50f);
+            BindToggle(music, () => app.Progress.Data.musicOn, app.SetMusic, MusicLabel, _ => KnittedPicture.Game.Icon.Star, true);
             var (again, toHome) = AddPair(L.T("Заново"), KnittedPicture.Game.Icon.Restart, L.T("Домой"), KnittedPicture.Game.Icon.Home);
             again.OnClick(() =>
             {
@@ -135,6 +134,48 @@ namespace KnittedPicture.Game
                 app.ShowPopup(new ComfortPopup(app, () => app.ShowPopup(new PausePopup(app, restart, home, warning))));
             });
             Finish(12);
+        }
+
+        private static string MusicLabel(bool on) => on ? L.T("Музыка: включена") : L.T("Музыка: выключена");
+
+        /// <summary>Кнопка-переключатель на месте: подпись, значок (и его положение под новую ширину подписи) меняются без пересоздания окна.</summary>
+        private void BindToggle(Tap button, Func<bool> get, Action<bool> set, Func<bool, string> text,
+            Func<bool, KnittedPicture.Game.Icon> icon, bool dimWhenOff)
+        {
+            var label = button.GetComponentInChildren<UnityEngine.UI.Text>();
+            UnityEngine.UI.Image? image = null;
+            foreach (var candidate in button.GetComponentsInChildren<UnityEngine.UI.Image>())
+            {
+                if (candidate.name.StartsWith("Icon", StringComparison.Ordinal))
+                {
+                    image = candidate;
+                }
+            }
+
+            void Show(bool on)
+            {
+                label.text = text(on);
+                if (image == null)
+                {
+                    return;
+                }
+
+                image.sprite = Art.Icon(icon(on));
+                image.color = dimWhenOff && !on ? Palette.Ink3 : Palette.Ink;
+                var rt = image.rectTransform;
+                rt.anchoredPosition = new Vector2(Inner / 2f - label.preferredWidth / 2f - 6f, rt.anchoredPosition.y);
+            }
+
+            button.OnClick(() =>
+            {
+                var on = !get();
+                set(on);
+                Show(on);
+            });
+            if (dimWhenOff && image != null)
+            {
+                image.color = get() ? Palette.Ink : Palette.Ink3;
+            }
         }
 
         private static string SoundLabel(bool on) => on ? L.T("Звук: включён") : L.T("Звук: выключен");
@@ -325,7 +366,7 @@ namespace KnittedPicture.Game
                 () => app.Progress.SoundOn, app.SetSound);
             ToggleRow(group, line++, KnittedPicture.Game.Icon.Star, Palette.Primary, L.T("Музыка"),
                 () => app.Progress.Data.musicOn, app.SetMusic);
-            ToggleRow(group, line++, KnittedPicture.Game.Icon.Vibrate, Palette.Danger, L.T("Вибрация"),
+            ToggleRow(group, line++, KnittedPicture.Game.Icon.Vibrate, Palette.Link, L.T("Вибрация"),
                 () => app.Progress.Data.hapticsOn, app.SetHaptics);
             if (reminders)
             {
@@ -424,7 +465,7 @@ namespace KnittedPicture.Game
             Space(12f);
             AddSection(L.T("Подсказки"));
             var hints = Group(1, TallRowH);
-            ToggleRow(hints, 0, KnittedPicture.Game.Icon.Hand, Palette.Danger, L.T("Подсказка хода"),
+            ToggleRow(hints, 0, KnittedPicture.Game.Icon.Hand, Palette.Primary, L.T("Подсказка хода"),
                 () => data.idleHints, on => Set(() => data.idleHints = on),
                 L.T("Нужный клубок засветится, если долго нет хода"), TallRowH);
 
@@ -517,8 +558,11 @@ namespace KnittedPicture.Game
             : base(app)
         {
             AddIcon(BoosterInfo.Icon(type), Palette.Ink, Palette.CoinSoft, 68);
-            AddTitle(L.T("Не хватает монет"), 24);
-            AddText(L.F("{0} стоит {1} {2}, у тебя {3}", BoosterInfo.Name(type), Economy.Price(type), YarnCatalog.CoinsWord(Economy.Price(type)), app.Progress.Coins), 16, 1.6f);
+            var deficit = Math.Max(1, Economy.Price(type) - app.Progress.Coins);
+            // Монеты могли прийти, пока окно открыто: тогда вместо «Не хватает 1» просто название бустера.
+            var missing = Economy.Price(type) - app.Progress.Coins;
+            AddTitle(missing > 0 ? L.F("Не хватает {0} {1}", deficit, YarnCatalog.CoinsGenitive(deficit)) : BoosterInfo.Name(type), 24);
+            AddText(L.F("{0} стоит {1} {2}", BoosterInfo.Name(type), Economy.Price(type), YarnCatalog.CoinsWord(Economy.Price(type))), 16, 1.6f);
 
             // Бустер за видео — не больше Economy.VideoBoostersPerDay в день: иначе монеты и бустеры теряют цену.
             if (app.Progress.VideoBoostersLeft(app.Today) > 0)
@@ -609,22 +653,42 @@ namespace KnittedPicture.Game
             // Затор: какие цвета ждёт картинка — клубками в ряд.
             if (showNeeded && needed != null)
             {
-                const float ball = 30f;
+                // Подпись и клубки в одну строку; не влезают (320 точек, английский) — клубки уменьшаются до 24,
+                // а если и так тесно, переносятся на вторую строку под подписью.
                 const float gap = 8f;
                 var shown = Math.Min(needed.Length, 5);
-                var label = Ui.Label(Card, L.T("Картинка ждёт:"), 14, Palette.Ink2, 24, Cursor, Inner, ball, true, TextAnchor.MiddleLeft);
+                var label = Ui.Label(Card, L.T("Картинка ждёт:"), 14, Palette.Ink2, 24, Cursor, Inner, 30f, true, TextAnchor.MiddleLeft);
                 label.horizontalOverflow = HorizontalWrapMode.Overflow;
-                var x = 24f + label.preferredWidth + 12f;
+                var ball = 30f;
+                var room = Inner - label.preferredWidth - 12f;
                 var width = shown * ball + (shown - 1) * gap;
-                if (x + width > 24f + Inner)
+                if (width > room)
                 {
-                    x = 24f + Inner - width;
+                    ball = 24f;
+                    width = shown * ball + (shown - 1) * gap;
+                }
+
+                var wrap = width > room;
+                var x = wrap ? 24f : 24f + Inner - width;
+                if (!wrap && x < 24f + label.preferredWidth + 12f)
+                {
+                    x = 24f + label.preferredWidth + 12f;
+                }
+
+                var rowY = Cursor;
+                if (wrap)
+                {
+                    // Вторая строка: подпись над клубками по центру окна, клубки ровным рядом.
+                    label.alignment = TextAnchor.MiddleCenter;
+                    Space(30f);
+                    rowY = Cursor;
+                    x = 24f + (Inner - width) / 2f;
                 }
 
                 for (var i = 0; i < shown; i++)
                 {
                     var yarn = Ui.Image(Card, "Needed", Art2.YarnBall(needed[i]), Color.white);
-                    Ui.PlaceCenter(yarn.rectTransform, x + i * (ball + gap) + ball / 2f, Cursor + ball / 2f, ball, ball);
+                    Ui.PlaceCenter(yarn.rectTransform, x + i * (ball + gap) + ball / 2f, rowY + ball / 2f, ball, ball);
                 }
 
                 Space(ball + 10f);
@@ -645,7 +709,8 @@ namespace KnittedPicture.Game
                     : stock > 0
                     ? L.F("{0} · есть {1}", BoosterInfo.Name(type), stock)
                     : L.F("{0} · {1} {2}", BoosterInfo.Name(type), Economy.RescuePrice(type, rescuesBefore), YarnCatalog.CoinsWord(Economy.RescuePrice(type, rescuesBefore)));
-                AddPrimary(title).OnClick(() =>
+                var rescueButton = AddPrimary(title);
+                rescueButton.OnClick(() =>
                 {
                     // Ножницы списываются, когда ими режут; слот и время — сразу.
                     // Цена растёт с каждым спасением в этой попытке (Economy.RescuePrice).
@@ -654,7 +719,8 @@ namespace KnittedPicture.Game
                         : app.Progress.PayRescue(type, rescuesBefore) != Payment.NotEnough;
                     if (!paid)
                     {
-                        app.Toast(videoAllowed ? L.T("Не хватает монет, можно за видео") : L.T("Не хватает монет"));
+                        var deficit = Math.Max(1, Economy.RescuePrice(type, rescuesBefore) - app.Progress.Coins);
+                        Ui.Deny((RectTransform)rescueButton.transform, L.F("Не хватает {0} {1}", deficit, YarnCatalog.CoinsGenitive(deficit)));
                         return;
                     }
 

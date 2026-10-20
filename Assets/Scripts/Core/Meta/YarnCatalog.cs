@@ -289,6 +289,14 @@ namespace KnittedPicture.Core
 
         public static string PerkTitle(YarnPerk perk) => perk == YarnPerk.Coins ? L.T("Тёплая копилка") : L.T("Золотые руки");
 
+        /// <summary>
+        /// Родительный падеж для «Не хватает N …»: «монеты» (1, 21), «монет» (2–4, 5+, 11–14). По-английски coin/coins.
+        /// </summary>
+        public static string CoinsGenitive(int n)
+        {
+            return L.Plural(n, "монеты", "монет", "монет");
+        }
+
         /// <summary>«монета», «монеты» или «монет» — по числу.</summary>
         public static string CoinsWord(int n)
         {

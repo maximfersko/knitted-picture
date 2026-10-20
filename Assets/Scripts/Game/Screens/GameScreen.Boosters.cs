@@ -22,7 +22,7 @@ namespace KnittedPicture.Game
 
             if (!App.Progress.IsBoosterOpen(type, BoosterLevel))
             {
-                App.Toast(L.F("Откроется на уровне {0}", Economy.UnlockLevel(type)));
+                DenyBooster(type, L.F("Откроется на уровне {0}", Economy.UnlockLevel(type)));
                 return;
             }
 
@@ -47,7 +47,7 @@ namespace KnittedPicture.Game
                 case BoosterType.Undo:
                     if (!_game.CanUndo)
                     {
-                        App.Toast(L.T("Пока нечего отменять"));
+                        DenyBooster(BoosterType.Undo, L.T("Пока нечего отменять"));
                     }
                     else if (_run.FreeUndo == 0 && App.Progress.Pay(type) == Payment.NotEnough)
                     {
@@ -81,7 +81,7 @@ namespace KnittedPicture.Game
                 case BoosterType.Slot:
                     if (_game.Slots.Count >= LoomGame.MaxSlots)
                     {
-                        App.Toast(L.F("На станке уже {0} мест, больше нельзя", LoomGame.MaxSlots));
+                        DenyBooster(BoosterType.Slot, L.F("На станке уже {0} мест, больше нельзя", LoomGame.MaxSlots));
                     }
                     else if (App.Progress.Pay(type) == Payment.NotEnough)
                     {
@@ -181,6 +181,12 @@ namespace KnittedPicture.Game
         private void NotEnough(BoosterType type)
         {
             App.ShowPopup(new NotEnoughPopup(App, type, RefreshBoosters));
+        }
+
+        /// <summary>Единый отказ на кнопке бустера: тряска, звук, толчок и причина тостом.</summary>
+        private void DenyBooster(BoosterType type, string text)
+        {
+            Ui.Deny(_boosters.TryGetValue(type, out var button) ? button.Tap.transform as RectTransform : null, text);
         }
 
         private void SetScissors(bool on)

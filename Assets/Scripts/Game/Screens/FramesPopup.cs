@@ -1,5 +1,6 @@
 #nullable enable
 
+using System;
 using KnittedPicture.Core;
 using UnityEngine;
 
@@ -16,20 +17,54 @@ namespace KnittedPicture.Game
             : base(app, bottomSheet: true)
         {
             AddTitle(L.T("Рамки для альбома"), 24);
-            var coins = app.Progress.Coins;
-            var balance = AddText(L.F("У тебя {0} {1}", coins, YarnCatalog.CoinsWord(coins)), 15, 1);
-            balance.color = Palette.CoinInk;
+            _balance = AddText(BalanceText(app), 15, 1);
+            _balance.color = Palette.CoinInk;
             Space(4f);
 
             // Три раздела: магазин, за коллекции, сезонные. Список длинный — прокручивается.
-            const int columns = 3;
-            const float gap = 10f;
-            var cellW = Mathf.Floor((Inner - gap * (columns - 1)) / columns);
-            var preview = Mathf.Min(84f, cellW - 12f);
-            var cellH = preview + 100f;
-            var sample = app.Levels.Get(1);
+            _cellW = Mathf.Floor((Inner - Gap * (Columns - 1)) / Columns);
+            _preview = Mathf.Min(84f, _cellW - 12f);
+            _sample = app.Levels.Get(1);
             var viewH = RoomFor(4f + 12f);
-            var content = Ui.Scroll(Card, 0, Cursor, CardWidth, viewH);
+            _content = Ui.Scroll(Card, 0, Cursor, CardWidth, viewH);
+            Fill(app, true);
+            Space(viewH + 4f);
+
+            // Альбом под окном перерисуется с новой рамкой.
+            Closed = app.RefreshScreen;
+            Finish(12);
+        }
+
+        private const int Columns = 3;
+        private const float Gap = 10f;
+
+        private readonly UnityEngine.UI.Text _balance;
+        private readonly RectTransform _content;
+        private readonly LevelData _sample;
+        private readonly float _cellW;
+        private readonly float _preview;
+
+        /// <summary>Номер перестройки: отложенные достройки ячеек от прежней сборки игнорируются.</summary>
+        private int _fillVersion;
+
+        /// <summary>Сбросить подпись единственной «вооружённой» кнопки покупки (null — вооружённой нет).</summary>
+        private Action? _disarm;
+
+        private static string BalanceText(App app)
+        {
+            var coins = app.Progress.Coins;
+            return L.F("У тебя {0} {1}", coins, YarnCatalog.CoinsWord(coins));
+        }
+
+        /// <summary>
+        /// Собрать ячейки в прокрутку. staggered — при открытии окна часть ячеек достраивается следом (без рывка);
+        /// при выборе и покупке ячейки собираются сразу и на месте: окно не закрывается, прокрутка остаётся.
+        /// </summary>
+        private void Fill(App app, bool staggered)
+        {
+            var content = _content;
+            var version = ++_fillVersion;
+            _disarm = null;
             var y = 4f;
             var built = 0;
             foreach (var (source, title, note) in new[]
@@ -49,6 +84,7 @@ namespace KnittedPicture.Game
 
                 y += 6f;
                 var index = 0;
+                var cellH = _preview + 100f;
                 foreach (var frame in AlbumFrames.All)
                 {
                     if (frame.Source != source)
@@ -56,22 +92,45 @@ namespace KnittedPicture.Game
                         continue;
                     }
 
-                    var x = 24f + (index % columns) * (cellW + gap);
-                    var cy = y + (index / columns) * (cellH + gap);
+                    var x = 24f + (index % Columns) * (_cellW + Gap);
+                    var cy = y + (index / Columns) * (cellH + Gap);
                     var target = frame;
-                    Stagger(built++, 9, () => Cell(app, content, target, x, cy, cellW, preview, sample));
+                    if (staggered)
+                    {
+                        Stagger(built++, 9, () =>
+                        {
+                            if (version == _fillVersion)
+                            {
+                                Cell(app, _content, target, x, cy, _cellW, _preview, _sample);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        Cell(app, _content, target, x, cy, _cellW, _preview, _sample);
+                    }
+
                     index++;
                 }
 
-                y += ((index + columns - 1) / columns) * (cellH + gap) + 10f;
+                y += ((index + Columns - 1) / Columns) * (cellH + Gap) + 10f;
             }
 
             content.sizeDelta = new Vector2(CardWidth, y);
-            Space(viewH + 4f);
+        }
 
-            // Альбом под окном перерисуется с новой рамкой.
-            Closed = app.RefreshScreen;
-            Finish(12);
+        /// <summary>Перестроить ячейки на месте после выбора или покупки: без закрытия окна, звука и анимации входа.</summary>
+        private void Refill(App app)
+        {
+            _balance.text = BalanceText(app);
+            for (var i = _content.childCount - 1; i >= 0; i--)
+            {
+                var child = _content.GetChild(i).gameObject;
+                child.SetActive(false);
+                UnityEngine.Object.Destroy(child);
+            }
+
+            Fill(app, false);
         }
 
         private void Cell(App app, RectTransform parent, FrameInfo frame, float x, float y, float w, float preview, LevelData sample)
@@ -109,7 +168,7 @@ namespace KnittedPicture.Game
                 {
                     progress.SelectFrame(frame.Id);
                     app.Save();
-                    Reopen(app);
+                    Refill(app);
                 });
                 return;
             }
@@ -130,11 +189,61 @@ namespace KnittedPicture.Game
             var buy = Ui.Button(parent, frame.Price.ToString(), x + 4f, by, w - 8f, bh,
                 affordable ? Palette.Coin : Palette.Track, affordable ? Palette.CoinShadow : Palette.CardShadow,
                 affordable ? Palette.CoinInk : Palette.Ink3, 14);
+            var buyLabel = Ui.Fit(buy.GetComponentInChildren<UnityEngine.UI.Text>(), 9);
+            var priceText = buyLabel.text;
+            var armed = false;
+            var armedAt = 0f;
+            void Disarm()
+            {
+                if (armed && buyLabel != null)
+                {
+                    armed = false;
+                    buyLabel.text = priceText;
+                }
+            }
+
             buy.OnClick(() =>
             {
+                if (!affordable)
+                {
+                    var deficit = Mathf.Max(1, frame.Price - progress.Coins);
+                    Ui.Deny((RectTransform)buy.transform, L.F("Не хватает {0} {1}", deficit, YarnCatalog.CoinsGenitive(deficit)));
+                    return;
+                }
+
+                if (!armed)
+                {
+                    // Первый тап спрашивает, второй покупает; без второго за 3 с кнопка возвращается к цене.
+                    // Вооружённая кнопка одна: прежней сразу возвращается цена.
+                    _disarm?.Invoke();
+                    armed = true;
+                    armedAt = Time.unscaledTime;
+                    _disarm = Disarm;
+                    buyLabel.text = L.F("Купить за {0}?", frame.Price);
+                    Haptics.Play(Haptic.Medium);
+                    // Таймер прежнего вооружения не снимает новое: сверяем момент вооружения.
+                    var armedNow = armedAt;
+                    Tweens.Delay(buy, 3f, () =>
+                    {
+                        if (armed && armedAt == armedNow)
+                        {
+                            Disarm();
+                        }
+                    });
+                    return;
+                }
+
+                // Двойной тап не покупает: второе касание принимается не раньше чем через 0,3 с.
+                if (Time.unscaledTime - armedAt < 0.3f)
+                {
+                    return;
+                }
+
                 if (!progress.BuyFrame(frame.Id))
                 {
-                    app.Toast(L.F("Не хватает монет: нужно {0}, у тебя {1}", frame.Price, progress.Coins));
+                    var lack = frame.Price - progress.Coins;
+                    Ui.Deny((RectTransform)buy.transform, lack > 0 ? L.F("Не хватает {0} {1}", lack, YarnCatalog.CoinsGenitive(lack)) : null);
+                    Refill(app);
                     return;
                 }
 
@@ -142,16 +251,8 @@ namespace KnittedPicture.Game
                 app.Save();
                 Sfx.Play(Sound.Coin);
                 Haptics.Play(Haptic.Success);
-                Reopen(app);
+                Refill(app);
             });
-        }
-
-        private void Reopen(App app)
-        {
-            Closed = null;
-            Close();
-            app.RefreshScreen();
-            app.ShowPopup(new FramesPopup(app));
         }
     }
 }
