@@ -30,7 +30,7 @@ namespace KnittedPicture.Game
 
         public bool Available => _available;
 
-        public void Buy(string productId, Action<bool> done)
+        public void Buy(string productId, Action<BuyResult> done)
         {
             var parameters = new ProductPurchaseParams(new ProductId(productId));
             RuStorePayClient.Instance.Purchase(
@@ -38,18 +38,19 @@ namespace KnittedPicture.Game
                 onFailure: error =>
                 {
                     Debug.LogWarning("[Pay] purchase: " + error);
-                    _app.RunOnMain(() => done(false));
+                    var result = IsCancel(error) ? BuyResult.Cancelled : BuyResult.Failed;
+                    _app.RunOnMain(() => done(result));
                 },
-                onSuccess: _ => _app.RunOnMain(() => done(true)));
+                onSuccess: _ => _app.RunOnMain(() => done(BuyResult.Ok)));
         }
 
-        public void Restore(Action<IReadOnlyCollection<string>> owned)
+        public void Restore(Action<RestoreResult, IReadOnlyCollection<string>> done)
         {
             RuStorePayClient.Instance.GetPurchases(
                 onFailure: error =>
                 {
                     Debug.LogWarning("[Pay] purchases: " + error);
-                    _app.RunOnMain(() => owned(Array.Empty<string>()));
+                    _app.RunOnMain(() => done(RestoreResult.Failed, Array.Empty<string>()));
                 },
                 onSuccess: purchases =>
                 {
@@ -62,8 +63,20 @@ namespace KnittedPicture.Game
                         }
                     }
 
-                    _app.RunOnMain(() => owned(ids));
+                    _app.RunOnMain(() => done(ids.Count > 0 ? RestoreResult.Restored : RestoreResult.NothingFound, ids));
                 });
+        }
+
+        /// <summary>
+        /// Отмена оплаты самим игроком. В коде нет документированного признака отмены, поэтому смотрим на имя типа
+        /// и текст ошибки («...Cancelled...»): так называется ошибка отмены в RuStore Pay SDK. Не узнали — это обычный сбой.
+        /// ПРОВЕРИТЬ: признак отмены нужно сверить с версией RuStore Pay SDK на устройстве. Если отмена не опознана,
+        /// игрок увидит окно сбоя (без выдачи товара), а не тост об отмене.
+        /// </summary>
+        private static bool IsCancel(object? error)
+        {
+            var text = (error?.GetType().Name ?? string.Empty) + " " + error;
+            return text.IndexOf("cancel", StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }

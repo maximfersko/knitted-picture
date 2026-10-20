@@ -92,28 +92,95 @@ namespace KnittedPicture.Game
             Ads.SetPersonalized(allowed);
         }
 
-        /// <summary>Купить «Без рекламы»; после оплаты межуровневой рекламы больше нет.</summary>
+        /// <summary>Идёт покупка или ручная проверка покупок: повторные тапы по «Купить» и «Восстановить» не реагируют.</summary>
+        private DateTime _purchaseUntil = DateTime.MinValue;
+
+        /// <summary>Номер последнего запроса к магазину: поздний ответ старого запроса не снимает занятость нового.</summary>
+        private int _purchaseToken;
+
+        /// <summary>Сколько секунд запрос к магазину считается идущим, если ответ не пришёл (оплата может быть долгой).</summary>
+        private const double PurchaseTimeout = 120.0;
+
+        private bool PurchaseBusy => DateTime.UtcNow < _purchaseUntil;
+
+        private int BeginPurchase()
+        {
+            _purchaseUntil = DateTime.UtcNow.AddSeconds(PurchaseTimeout);
+            return ++_purchaseToken;
+        }
+
+        private void EndPurchase(int token)
+        {
+            if (token == _purchaseToken)
+            {
+                _purchaseUntil = DateTime.MinValue;
+            }
+        }
+
+        /// <summary>
+        /// Купить «Без рекламы»; после оплаты межуровневой рекламы больше нет. Отмену игрок видит коротким тостом
+        /// («деньги не списаны»), сбой объясняется окном с путями «Восстановить покупки» и «Написать нам».
+        /// </summary>
         public void BuyNoAds(Action? done = null)
         {
-            Purchases.Buy(StoreConfig.NoAdsProduct, ok =>
+            if (PurchaseBusy)
             {
-                Analytics.Event("purchase", ("product", StoreConfig.NoAdsProduct), ("ok", ok));
-                if (ok)
+                Toast(L.T("Подожди, покупка ещё идёт"));
+                return;
+            }
+
+            var token = BeginPurchase();
+            Purchases.Buy(StoreConfig.NoAdsProduct, result =>
+            {
+                EndPurchase(token);
+                Analytics.Event("purchase", ("product", StoreConfig.NoAdsProduct), ("ok", result == BuyResult.Ok), ("result", result.ToString()));
+                switch (result)
                 {
-                    Progress.Data.adsRemoved = true;
-                    Save();
-                    Toast(L.T("Готово: рекламы между уровнями больше не будет. Спасибо!"));
+                    case BuyResult.Ok:
+                        Progress.Data.adsRemoved = true;
+                        Save();
+                        Toast(L.T("Готово: рекламы между уровнями больше не будет. Спасибо!"));
+                        break;
+                    case BuyResult.Cancelled:
+                        Toast(L.T("Покупка отменена, деньги не списаны"));
+                        break;
+                    default:
+                        var support = StoreLinks.Support(this) != null;
+                        ShowPopup(new InfoPopup(this, L.T("Покупка не прошла"),
+                            support ? L.T("Проверь интернет и способ оплаты. Если деньги списались, тапни «Восстановить покупки» или напиши нам")
+                                : L.T("Проверь интернет и способ оплаты. Если деньги списались, тапни «Восстановить покупки»"), support));
+                        break;
                 }
 
                 done?.Invoke();
             });
         }
 
-        /// <summary>Вернуть разовые покупки (переустановка, новый телефон, сброс прогресса).</summary>
+        /// <summary>
+        /// Вернуть разовые покупки (переустановка, новый телефон, сброс прогресса). tell — игрок нажал сам:
+        /// ответ тостом, повторные тапы пока идёт запрос не реагируют. Тихая проверка при запуске молчит и в том числе о сбое.
+        /// </summary>
         public void RestorePurchases(bool tell)
         {
-            Purchases.Restore(owned =>
+            var token = 0;
+            if (tell)
             {
+                if (PurchaseBusy)
+                {
+                    Toast(L.T("Подожди, покупка ещё идёт"));
+                    return;
+                }
+
+                token = BeginPurchase();
+            }
+
+            Purchases.Restore((result, owned) =>
+            {
+                if (tell)
+                {
+                    EndPurchase(token);
+                }
+
                 var noAds = System.Linq.Enumerable.Contains(owned, StoreConfig.NoAdsProduct);
                 if (noAds && !Progress.Data.adsRemoved)
                 {
@@ -123,7 +190,8 @@ namespace KnittedPicture.Game
 
                 if (tell)
                 {
-                    Toast(noAds ? L.T("Покупка «Без рекламы» восстановлена") : L.T("Покупок не найдено"));
+                    Toast(result == RestoreResult.Failed ? L.T("Не удалось проверить покупки. Проверь интернет и попробуй ещё раз")
+                        : noAds ? L.T("Покупка «Без рекламы» восстановлена") : L.T("Покупок не найдено"));
                 }
             });
         }
@@ -616,11 +684,37 @@ namespace KnittedPicture.Game
             }
         }
 
-        /// <summary>«Дальше» после победы: при необходимости реклама, потом следующий уровень.</summary>
+        /// <summary>«Дальше» уже нажали: реклама или переход идут, повторный вход не нужен. Сбрасывается при любой смене экрана.</summary>
+        private bool _continuing;
+
+        /// <summary>Номер последнего «Дальше»: страховочный таймер старого нажатия не трогает новое.</summary>
+        private int _continueId;
+
+        /// <summary>
+        /// «Дальше» после победы: при необходимости реклама, потом следующий уровень. Повторный тап (двойной тап,
+        /// тап во время рекламы) игнорируется: иначе уровень стартовал бы дважды, а межуровневая реклама тратилась бы заново.
+        /// Если ответ рекламы не пришёл за 30 секунд, переход всё равно случится (один раз).
+        /// </summary>
         public void ContinueAfterWin(int levelId)
         {
+            if (_continuing)
+            {
+                return;
+            }
+
+            _continuing = true;
+            var id = ++_continueId;
+            var finished = false;
+
             void Next()
             {
+                if (finished || id != _continueId || !_continuing)
+                {
+                    return;
+                }
+
+                finished = true;
+                _continuing = false;
                 if (Progress.AllDone)
                 {
                     ShowHome();
@@ -634,6 +728,13 @@ namespace KnittedPicture.Game
             if (Progress.TakeInterstitialSlot(levelId))
             {
                 Save();
+                After(30f, () =>
+                {
+                    if (id == _continueId && _continuing)
+                    {
+                        Next();
+                    }
+                });
                 Ads.ShowInterstitial("level_complete", Next);
             }
             else
@@ -655,6 +756,55 @@ namespace KnittedPicture.Game
         {
             _popups.Remove(popup);
             Unsettle(0.3f);
+        }
+
+        /// <summary>Идёт показ видео за награду: второй тап по кнопке «за видео» не запускает второй показ.</summary>
+        private DateTime _rewardedUntil = DateTime.MinValue;
+
+        /// <summary>Номер последнего показа: поздний ответ старого не снимает занятость нового.</summary>
+        private int _rewardedToken;
+
+        /// <summary>Сколько секунд показ видео считается идущим, если ответ не пришёл.</summary>
+        private const double RewardedTimeout = 60.0;
+
+        /// <summary>
+        /// Единый путь видео за награду. granted вызывается только после Watched (лимиты и награду тратит он);
+        /// при Skipped и Unavailable игрок получает тост с причиной, а окно, из которого он пришёл, остаётся как было.
+        /// notGranted (необязательно) вызывается в этих двух случаях, чтобы вернуть кнопку в исходное состояние.
+        /// </summary>
+        public void ShowRewarded(string placement, Action granted, Action? notGranted = null)
+        {
+            if (DateTime.UtcNow < _rewardedUntil)
+            {
+                Toast(L.T("Видео ещё идёт"));
+                notGranted?.Invoke();
+                return;
+            }
+
+            _rewardedUntil = DateTime.UtcNow.AddSeconds(RewardedTimeout);
+            var token = ++_rewardedToken;
+            Ads.ShowRewarded(placement, result =>
+            {
+                if (token == _rewardedToken)
+                {
+                    _rewardedUntil = DateTime.MinValue;
+                }
+
+                switch (result)
+                {
+                    case RewardedResult.Watched:
+                        granted();
+                        break;
+                    case RewardedResult.Skipped:
+                        Toast(L.T("Награда приходит за видео, досмотренное до конца"));
+                        notGranted?.Invoke();
+                        break;
+                    default:
+                        Toast(L.T("Видео сейчас нет. Проверь интернет или попробуй чуть позже"));
+                        notGranted?.Invoke();
+                        break;
+                }
+            });
         }
 
         /// <summary>Плашка «видео-реклама» вместо настоящего SDK.</summary>
@@ -861,6 +1011,7 @@ namespace KnittedPicture.Game
 
         private void Show(Func<ScreenView> route)
         {
+            _continuing = false;
             SetGround(Palette.Ground);
             CloseAllPopups();
             PreviousScreen = _screen?.GetType();
@@ -915,7 +1066,7 @@ namespace KnittedPicture.Game
                 var top = _popups[_popups.Count - 1];
                 if (top.Closable)
                 {
-                    top.Close();
+                    top.Dismiss();
                 }
 
                 return;

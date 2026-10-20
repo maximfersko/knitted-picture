@@ -69,6 +69,26 @@ namespace KnittedPicture.Game
             BuildLogo(heroTop + (heroBottom - heroTop - ball) / 2f, ball);
             TabBar.Create(app, Root, W, H, MainTab.Home);
 
+            // Сохранение восстановили из копии или не смогли прочитать: сказать об этом один раз, раньше остальных окон.
+            if (SaveStore.NoticePending)
+            {
+                Tweens.Delay(Root, 0.5f, () =>
+                {
+                    if (!SaveStore.NoticePending || app.HasPopups || !(app.CurrentScreen is HomeScreen))
+                    {
+                        return;
+                    }
+
+                    var lost = SaveStore.Outcome == LoadOutcome.Lost;
+                    var support = StoreLinks.Support(app) != null;
+                    SaveStore.NoticeShown();
+                    var text = !lost ? L.T("Прогресс восстановлен из резервной копии")
+                        : support ? L.T("Не получилось прочитать сохранение. Если прогресс пропал, напиши нам: поможем")
+                        : L.T("Не получилось прочитать сохранение, прогресс начат заново");
+                    app.ShowPopup(new InfoPopup(app, L.T("Сохранение"), text, lost));
+                });
+            }
+
             // До первой рекламы — один раз спросить про персональную рекламу.
             if (app.Ads.NeedsConsent && progress.Data.adsConsent == 0)
             {

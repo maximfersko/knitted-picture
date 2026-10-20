@@ -189,15 +189,12 @@ namespace KnittedPicture.Game
 
         /// <summary>
         /// Кнопка «назад» слева от заголовка вложенной шторки: закрывает её и открывает ту, откуда пришли.
-        /// Крестик и тап мимо закрывают совсем.
+        /// Крестик, тап мимо и системная «Назад» делают то же самое (Popup.Dismiss), а не закрывают всё.
         /// </summary>
         protected void AddBack(Action back)
         {
-            Ui.RoundButton(Card, KnittedPicture.Game.Icon.Back, 10f, 10f, 44f, true).OnClick(() =>
-            {
-                Close();
-                back();
-            });
+            Back = back;
+            Ui.RoundButton(Card, KnittedPicture.Game.Icon.Back, 10f, 10f, 44f, true).OnClick(Dismiss);
         }
 
         /// <summary>Подпись раздела над группой строк: мелкий жирный текст капсом, как в системных настройках.</summary>
@@ -528,17 +525,19 @@ namespace KnittedPicture.Game
             {
                 AddPrimary(L.T("Получить за видео")).OnClick(() =>
                 {
-                    Close();
-                    app.Ads.ShowRewarded("booster_" + type, ok =>
+                    // Окно остаётся, пока видео не досмотрено: при отмене или без видео игрок видит то же окно и тост с причиной.
+                    app.ShowRewarded("booster_" + type, () =>
                     {
-                        if (!ok)
+                        // Видео досмотрено: запас начисляем в любом случае, но закрытое окно и его экран не трогаем.
+                        app.Progress.AddStock(type, 1);
+                        app.Progress.RecordVideoBooster(app.Today);
+                        app.Save();
+                        if (!IsOpen)
                         {
                             return;
                         }
 
-                        app.Progress.AddStock(type, 1);
-                        app.Progress.RecordVideoBooster(app.Today);
-                        app.Save();
+                        Close();
                         granted();
                     });
                 });
@@ -647,30 +646,29 @@ namespace KnittedPicture.Game
                 // Спасение за видео — одно на попытку: дальше только запас или монеты.
                 if (!freeRescue && videoAllowed)
                 {
-                AddSecondary(BoosterInfo.Name(type) + L.T(" за видео"), KnittedPicture.Game.Icon.Video, 46f).OnClick(() =>
-                {
-                    Close();
-                    app.Ads.ShowRewarded("rescue_" + type, ok =>
+                    AddSecondary(BoosterInfo.Name(type) + L.T(" за видео"), KnittedPicture.Game.Icon.Video, 46f).OnClick(() =>
                     {
-                        if (!ok)
+                        // Окно проигрыша не закрываем и не пересоздаём: при отмене или без видео оно остаётся как было, с тостом.
+                        app.ShowRewarded("rescue_" + type, () =>
                         {
-                            app.ShowPopup(new FailPopup(app, kind, rescue, reason, percent, rescued, restart, home, freeRescue, streakWarning, needed, advice,
-                                rescuesBefore, videoAllowed, videoUsed));
-                            return;
-                        }
+                            if (!IsOpen)
+                            {
+                                return;
+                            }
 
-                        videoUsed?.Invoke();
+                            Close();
+                            videoUsed?.Invoke();
 
-                        if (type == BoosterType.Scissors)
-                        {
-                            // Ножницы за видео — в запас: ими и срежут.
-                            app.Progress.AddStock(type, 1);
-                            app.Save();
-                        }
+                            if (type == BoosterType.Scissors)
+                            {
+                                // Ножницы за видео — в запас: ими и срежут.
+                                app.Progress.AddStock(type, 1);
+                                app.Save();
+                            }
 
-                        rescued(type);
+                            rescued(type);
+                        });
                     });
-                });
                 }
             }
 

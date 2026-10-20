@@ -5,11 +5,24 @@ using UnityEngine;
 
 namespace KnittedPicture.Game
 {
+    /// <summary>Чем кончился показ видео за награду.</summary>
+    public enum RewardedResult
+    {
+        /// <summary>Досмотрено до конца: награду выдаём.</summary>
+        Watched,
+
+        /// <summary>Игрок закрыл видео раньше времени: награды нет, но и ошибки нет.</summary>
+        Skipped,
+
+        /// <summary>Видео нет (не загрузилось, нет сети) или оно не показалось: награды нет.</summary>
+        Unavailable,
+    }
+
     /// <summary>Реклама. Сейчас заглушка; при подключении SDK издателя меняется только реализация.</summary>
     public interface IAds
     {
-        /// <summary>Видео за награду. done(true) — досмотрено, награду выдаём.</summary>
-        void ShowRewarded(string placement, Action<bool> done);
+        /// <summary>Видео за награду. done вызывается один раз, в главном потоке; награду выдаём только при Watched.</summary>
+        void ShowRewarded(string placement, Action<RewardedResult> done);
 
         /// <summary>Межуровневая реклама. done вызывается всегда, даже если показать нечего.</summary>
         void ShowInterstitial(string placement, Action done);
@@ -47,10 +60,10 @@ namespace KnittedPicture.Game
             _app = app;
         }
 
-        public void ShowRewarded(string placement, Action<bool> done)
+        public void ShowRewarded(string placement, Action<RewardedResult> done)
         {
             Debug.Log($"[Ads] rewarded: {placement}");
-            _app.ShowRewardedStub(() => done(true));
+            _app.ShowRewardedStub(() => done(RewardedResult.Watched));
         }
 
         public void ShowInterstitial(string placement, Action done)
@@ -67,7 +80,7 @@ namespace KnittedPicture.Game
         }
     }
 
-    /// <summary>Обёртка, которая пишет в аналитику каждый показ: где предложили видео и досмотрели ли его.</summary>
+    /// <summary>Обёртка, которая пишет в аналитику каждый показ: где предложили видео и чем кончилось (watched, skipped, unavailable).</summary>
     public sealed class TrackedAds : IAds
     {
         private readonly IAds _inner;
@@ -81,11 +94,12 @@ namespace KnittedPicture.Game
 
         public void SetPersonalized(bool allowed) => _inner.SetPersonalized(allowed);
 
-        public void ShowRewarded(string placement, Action<bool> done) =>
-            _inner.ShowRewarded(placement, ok =>
+        public void ShowRewarded(string placement, Action<RewardedResult> done) =>
+            _inner.ShowRewarded(placement, result =>
             {
-                Analytics.Event("ad_rewarded", ("placement", placement), ("watched", ok));
-                done(ok);
+                Analytics.Event("ad_rewarded", ("placement", placement), ("watched", result == RewardedResult.Watched),
+                    ("result", result.ToString().ToLowerInvariant()));
+                done(result);
             });
 
         public void ShowInterstitial(string placement, Action done) =>

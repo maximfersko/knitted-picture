@@ -225,7 +225,7 @@ namespace KnittedPicture.Game
             {
                 if (Closable && CloseOnDim)
                 {
-                    Close();
+                    Dismiss();
                 }
             });
 
@@ -314,8 +314,38 @@ namespace KnittedPicture.Game
         /// </summary>
         protected System.Action? Closed { get; set; }
 
+        /// <summary>
+        /// Родительское окно вложенной шторки («Настройки» для «Удобства» и «Об игре», «Пауза» для «Удобства» из уровня).
+        /// Задано — крестик, тап мимо и системная «Назад» возвращают в него, а не закрывают всё.
+        /// </summary>
+        protected System.Action? Back { get; set; }
+
+        /// <summary>
+        /// Закрыть по желанию игрока (крестик, тап мимо, «Назад»): у вложенной шторки это возврат в родительское окно,
+        /// у остальных окон — обычное закрытие. Окно меняется в том же кадре, поэтому таймер уровня не успевает пойти.
+        /// </summary>
+        public void Dismiss()
+        {
+            var back = Back;
+            Close();
+            back?.Invoke();
+        }
+
+        private bool _closed;
+
+        /// <summary>Окно ещё открыто: не закрыто и не уничтожено (экран мог перестроиться, пока шло видео).</summary>
+        public bool IsOpen => !_closed && Root != null;
+
+
         public void Close()
         {
+            // Повторный Close (или Close уже уничтоженного окна) ничего не трогает.
+            if (_closed || Root == null)
+            {
+                return;
+            }
+
+            _closed = true;
             App.RemovePopup(this);
             _group.blocksRaycasts = false;
 
@@ -359,7 +389,7 @@ namespace KnittedPicture.Game
             // Закрыть можно не только тапом мимо окна: крестик 44 pt / 48 dp в углу, как принято на iOS и Android.
             if (Closable)
             {
-                Ui.RoundButton(Card, Icon.Close, CardWidth - 44f - 10f, 10f, 44f, true).OnClick(Close);
+                Ui.RoundButton(Card, Icon.Close, CardWidth - 44f - 10f, 10f, 44f, true).OnClick(Dismiss);
             }
         }
 

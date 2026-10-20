@@ -204,6 +204,14 @@ namespace KnittedPicture.Game
             LevelData? heroData = null;
             next.OnClick(() =>
             {
+                // Двойной тап: после первого кнопка не реагирует (App.ContinueAfterWin тоже защищён от повторного входа).
+                if (!next.Interactable)
+                {
+                    return;
+                }
+
+                next.Interactable = false;
+
                 // Эскиз следующей картинки перелетит с кнопки на станок, как с «Играть» на главной.
                 if (heroFrame != null && heroData != null)
                 {
@@ -250,11 +258,11 @@ namespace KnittedPicture.Game
             doubleTap.OnClick(() =>
             {
                 doubleTap.Interactable = false;
-                app.Ads.ShowRewarded("double_reward", ok =>
+                // Лимит дня тратится только после досмотренного видео; иначе кнопка возвращается как была, а тост объясняет почему.
+                app.ShowRewarded("double_reward", () =>
                 {
-                    if (!ok)
+                    if (Root == null)
                     {
-                        doubleTap.Interactable = true;
                         return;
                     }
 
@@ -264,7 +272,7 @@ namespace KnittedPicture.Game
                     Sfx.Play(Sound.Coin);
                     Fly((RectTransform)doubleTap.transform, total, 0f);
                     doubleTap.gameObject.SetActive(false);
-                });
+                }, () => doubleTap.Interactable = true);
             });
         }
 

@@ -5,17 +5,46 @@ using System.Collections.Generic;
 
 namespace KnittedPicture.Game
 {
+    /// <summary>Чем кончилась покупка.</summary>
+    public enum BuyResult
+    {
+        /// <summary>Оплачено, товар выдаём.</summary>
+        Ok,
+
+        /// <summary>Игрок сам отменил оплату: деньги не списаны, ругать нечего.</summary>
+        Cancelled,
+
+        /// <summary>Не вышло (нет сети, отказ магазина, ошибка SDK).</summary>
+        Failed,
+    }
+
+    /// <summary>Чем кончилась проверка прежних покупок.</summary>
+    public enum RestoreResult
+    {
+        /// <summary>Магазин ответил, покупки есть.</summary>
+        Restored,
+
+        /// <summary>Магазин ответил, покупок нет.</summary>
+        NothingFound,
+
+        /// <summary>Магазин не ответил (нет сети, ошибка SDK): неизвестно, есть ли покупки.</summary>
+        Failed,
+    }
+
     /// <summary>Покупки внутри игры. Реализация зависит от магазина; без SDK — «покупок нет».</summary>
     public interface IPurchases
     {
         /// <summary>Можно ли сейчас покупать (SDK подключён и магазин разрешает оплату).</summary>
         bool Available { get; }
 
-        /// <summary>Купить товар. done(true) — оплачено, выдаём.</summary>
-        void Buy(string productId, Action<bool> done);
+        /// <summary>Купить товар. done вызывается один раз, в главном потоке.</summary>
+        void Buy(string productId, Action<BuyResult> done);
 
-        /// <summary>Какие разовые покупки у игрока уже есть (после переустановки, на новом телефоне).</summary>
-        void Restore(Action<IReadOnlyCollection<string>> owned);
+        /// <summary>
+        /// Какие разовые покупки у игрока уже есть (после переустановки, на новом телефоне). done вызывается один раз,
+        /// в главном потоке; список пуст при NothingFound и Failed.
+        /// </summary>
+        void Restore(Action<RestoreResult, IReadOnlyCollection<string>> done);
     }
 
     /// <summary>Покупок нет: Google Play, редактор, сборка без SDK RuStore.</summary>
@@ -23,9 +52,9 @@ namespace KnittedPicture.Game
     {
         public bool Available => false;
 
-        public void Buy(string productId, Action<bool> done) => done(false);
+        public void Buy(string productId, Action<BuyResult> done) => done(BuyResult.Failed);
 
-        public void Restore(Action<IReadOnlyCollection<string>> owned) => owned(Array.Empty<string>());
+        public void Restore(Action<RestoreResult, IReadOnlyCollection<string>> done) => done(RestoreResult.NothingFound, Array.Empty<string>());
     }
 
     public static class PurchasesFactory

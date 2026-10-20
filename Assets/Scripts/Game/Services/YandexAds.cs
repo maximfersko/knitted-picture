@@ -69,19 +69,19 @@ namespace KnittedPicture.Game
             }
         }
 
-        public void ShowRewarded(string placement, Action<bool> done)
+        public void ShowRewarded(string placement, Action<RewardedResult> done)
         {
             var ad = _rewarded;
             if (ad == null)
             {
-                _app.Toast(L.T("Видео ещё не загрузилось, попробуй чуть позже"));
                 LoadRewarded();
-                done(false);
+                done(RewardedResult.Unavailable);
                 return;
             }
 
             _rewarded = null;
             var earned = false;
+            var failed = false;
             var finished = false;
             void Finish()
             {
@@ -93,12 +93,16 @@ namespace KnittedPicture.Game
                 finished = true;
                 ad.Destroy();
                 LoadRewarded();
-                done(earned);
+                done(earned ? RewardedResult.Watched : failed ? RewardedResult.Unavailable : RewardedResult.Skipped);
             }
 
             ad.OnRewarded += (_, _) => _app.RunOnMain(() => earned = true);
             ad.OnAdDismissed += (_, _) => _app.RunOnMain(Finish);
-            ad.OnAdFailedToShow += (_, _) => _app.RunOnMain(Finish);
+            ad.OnAdFailedToShow += (_, _) => _app.RunOnMain(() =>
+            {
+                failed = true;
+                Finish();
+            });
             ad.Show();
         }
 

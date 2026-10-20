@@ -91,16 +91,21 @@ namespace KnittedPicture.Game
 
             Space(112);
             var coinsFrom = items.Count > 0 && granted.Reward.Coins > 0 ? (RectTransform)Card.Find("Item") : null;
-            AddPrimary(L.T("Забрать")).OnClick(() =>
+            AddPrimary(L.T("Забрать")).OnClick(Close);
+
+            // Монеты летят из плитки в счётчик экрана при любом закрытии (кнопка, крестик, «назад»): награда «переезжает»
+            // к игроку. Монеты уже начислены при получении награды, здесь только полёт, поэтому дважды они не прибавятся.
+            var after = closed;
+            Closed = () =>
             {
-                // Монеты летят из плитки в счётчик экрана: награда «переезжает» к игроку.
-                if (coinsFrom != null)
+                if (coinsFrom != null && granted.Reward.Coins > 0)
                 {
-                    app.FlyCoins(coinsFrom.TransformPoint(new Vector3(46f, -30f, 0)), granted.Reward.Coins);
+                    var from = coinsFrom.localScale.x > 0.5f ? coinsFrom.TransformPoint(new Vector3(46f, -30f, 0)) : Ui.WorldCenter(Card);
+                    app.FlyCoins(from, granted.Reward.Coins);
                 }
 
-                Close();
-            });
+                after?.Invoke();
+            };
             Finish(8);
             Sfx.Play(Sound.Win, 0.6f);
         }
@@ -392,13 +397,20 @@ namespace KnittedPicture.Game
     /// <summary>Короткая справка по кнопке «i»: значок, заголовок, пара строк и «Понятно». Закрывается и тапом мимо.</summary>
     public sealed class InfoPopup : Popup
     {
-        public InfoPopup(App app, string title, string text)
+        /// <summary>offerSupport: под «Понятно» ссылка «Написать нам», если в сборке задан адрес поддержки (как в «Об игре»).</summary>
+        public InfoPopup(App app, string title, string text, bool offerSupport = false)
             : base(app)
         {
             AddIcon(Icon.Info, Palette.Link, Palette.Hex("#E1EAF8"), 52);
             AddTitle(title, 19);
             AddText(text, 14, 1);
             AddPrimary(L.T("Понятно"), 50).OnClick(Close);
+            var mail = offerSupport ? StoreLinks.Support(app) : null;
+            if (mail != null)
+            {
+                AddLink(L.T("Написать нам")).OnClick(() => Application.OpenURL(mail));
+            }
+
             Finish(4);
         }
     }
