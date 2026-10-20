@@ -306,7 +306,13 @@ namespace KnittedPicture.Game
 
             // Один баннер на старте — самое важное: сложный уровень, иначе загадка, иначе подарок серии.
             var bannerY = _top + 40f;
-            if (_level.hard)
+            if (_run.StuckHelp)
+            {
+                // Застрявшему: тёплое слово вместо «сложно», помощь уже выдана (ножницы, если открыты, и подсказка хода).
+                Banner(ScissorsOpen() ? L.T("Не сдаёмся: ножницы в подарок на эту попытку") : L.T("Не сдаёмся: подсказка хода включена"),
+                    Palette.CoinShadow, bannerY, 0.3f, 3.2f);
+            }
+            else if (_level.hard)
             {
                 Banner(L.T("Сложный уровень"), Palette.Danger, bannerY);
             }
@@ -351,7 +357,10 @@ namespace KnittedPicture.Game
             return parts.Count <= 1 ? string.Concat(parts) : string.Join(", ", parts.Take(parts.Count - 1)) + L.T(" и ") + parts[parts.Count - 1];
         }
 
-        private void Banner(string text, Color color, float y, float delay = 0f)
+        /// <summary>Ножницы на этом уровне уже открыты: подарок «Не сдаёмся» включает и их.</summary>
+        private bool ScissorsOpen() => App.Progress.IsBoosterOpen(BoosterType.Scissors, BoosterLevel);
+
+        private void Banner(string text, Color color, float y, float delay = 0f, float hold = 1.6f)
         {
             var width = Mathf.Min(W - 2 * Pad, 320f);
             var banner = Ui.Card(Root, "Banner", W / 2f - width / 2f, y, width, 56, 28, color, color, 0f);
@@ -360,7 +369,7 @@ namespace KnittedPicture.Game
             group.blocksRaycasts = false;
             banner.localScale = Vector3.zero;
             Tweens.Scale(banner, 0.6f, 1f, 0.3f, Ease.OutBack, null, delay);
-            Tweens.Fade(group, 1f, 0f, 0.4f, () => Object.Destroy(banner.gameObject), 1.6f + delay);
+            Tweens.Fade(group, 1f, 0f, 0.4f, () => Object.Destroy(banner.gameObject), hold + delay);
         }
     }
 }

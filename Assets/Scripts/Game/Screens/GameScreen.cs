@@ -44,6 +44,9 @@ namespace KnittedPicture.Game
         /// <summary>Сколько секунд бездействия (станок стоит, ходов нет) до подсказки на уровнях с 6-го.</summary>
         private const float IdleNudge = 20f;
 
+        /// <summary>Через сколько секунд бездействия подсказка хода сама появляется на «застрявшей» попытке.</summary>
+        private const float StuckNudge = 8f;
+
         private static readonly Color IceBlue = new Color(0.55f, 0.82f, 1f);
         private static readonly Color RushColor = new Color(1f, 0.6f, 0.15f);
 
@@ -392,6 +395,12 @@ namespace KnittedPicture.Game
                 // Дальше — мягкий толчок, если игрок долго не делает ничего: 20 секунд без хода, станок стоит.
                 // На первых пяти уровнях это обучение — всегда; дальше — по настройке «Подсказка хода» (раздел «Подсказки» в «Удобстве»).
                 var threshold = _level.id == 1 ? 3f : _level.id <= 3 ? 6f : _level.id <= 5 ? 12f : Comfort.IdleHints ? IdleNudge : 0f;
+                if (_run.StuckHelp)
+                {
+                    // Застрявшему подсказка нужна раньше и даже при выключенной настройке.
+                    threshold = threshold > 0f ? Mathf.Min(threshold, StuckNudge) : StuckNudge;
+                }
+
                 if (threshold > 0 && _idle > threshold)
                 {
                     ShowHint();
@@ -568,6 +577,12 @@ namespace KnittedPicture.Game
         public int FreeScissors { get; set; }
 
         public int FreeUndo { get; set; }
+
+        /// <summary>
+        /// «Не сдаёмся»: с 4-й попытки нового уровня (один раз на уровень) на эту попытку подарены бесплатные ножницы
+        /// (как у тёплой серии, звезду не снимают) и подсказка хода включена независимо от настройки, раньше обычного.
+        /// </summary>
+        public bool StuckHelp { get; set; }
 
         /// <summary>Номер попытки этого уровня (для аналитики) и когда она началась.</summary>
         public int Attempt { get; set; } = 1;

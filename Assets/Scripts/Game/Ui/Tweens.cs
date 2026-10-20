@@ -125,6 +125,9 @@ namespace KnittedPicture.Game
             _instance = host.AddComponent<Tweens>();
         }
 
+        /// <summary>Планировщик твинов запущен: без него (проверочные сборки) отложенные действия идут сразу.</summary>
+        public static bool Installed => _instance != null;
+
         public static void Run(UnityEngine.Object owner, float duration, Action<float> step, Func<float, float>? ease = null,
             Action? done = null, float delay = 0f, bool loop = false, int channel = 0)
         {

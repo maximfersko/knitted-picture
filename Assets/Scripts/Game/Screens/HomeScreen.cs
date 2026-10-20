@@ -615,7 +615,7 @@ namespace KnittedPicture.Game
                         // Часы переводили назад: узор связан «в будущем» и откроется после той даты, а не завтра.
                         var when = progress.PatternAhead(App.Today)
                             ? L.T("Новый узор откроется после даты последнего: на телефоне переводили часы назад.")
-                            : L.T("Новый узор появится завтра.");
+                            : L.F("Новый узор через {0}.", Limits.ResetIn(Limits.NextMidnight()));
                         App.ShowPopup(new InfoPopup(App, L.T("Узор дня связан"),
                             L.F("{0} Серия: {1} дн. подряд, каждый {2}-й день моток в подарок.", when, progress.PatternStreak(App.Today), DailyPattern.YarnEvery)));
                         return;
@@ -700,8 +700,26 @@ namespace KnittedPicture.Game
             {
                 var done = Ui.Button(Root, "", 20, buttonY, playW, 84, Palette.Primary, Palette.PrimaryShadow, Color.white);
                 Ui.Fit(Ui.Label((RectTransform)done.transform, L.T("Все картинки связаны!"), 22, Color.white, 8, 14, playW - 16, 30), 14);
-                Ui.Fit(Ui.Label((RectTransform)done.transform, L.T("Собирай звёзды в альбоме и пряжу"), 14, Color.white, 8, 46, playW - 16, 22, false), 10);
-                done.OnClick(App.ShowAlbum);
+                var missing = progress.MissingStars();
+                Ui.Fit(Ui.Label((RectTransform)done.transform, missing > 0 ? L.F("Ещё {0} ★ до всех звёзд", missing)
+                    : L.T("Все звёзды собраны! Загляни в узор дня"), 14, Color.white, 8, 46, playW - 16, 22, false), 10);
+                done.OnClick(() =>
+                {
+                    var first = progress.FirstUnderThreeStars();
+                    if (first > 0 && App.Levels.Has(first))
+                    {
+                        // Первая картинка без трёх звёзд: карточка объясняет, чего не хватает, и предлагает перевязать.
+                        App.ShowPopup(new LevelInfoPopup(App, App.Levels.Get(first)));
+                    }
+                    else if (progress.PatternOpen && !progress.PatternDone(App.Today))
+                    {
+                        App.StartPattern();
+                    }
+                    else
+                    {
+                        App.ShowAlbum();
+                    }
+                });
                 return;
             }
 

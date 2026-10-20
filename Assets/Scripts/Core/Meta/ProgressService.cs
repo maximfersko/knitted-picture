@@ -63,6 +63,7 @@ namespace KnittedPicture.Core
             d.yarnSetsClaimed ??= new System.Collections.Generic.List<int>();
             d.collectionsClaimed ??= new System.Collections.Generic.List<int>();
             d.attempts ??= new System.Collections.Generic.List<int>();
+            d.stuckHelped ??= new System.Collections.Generic.List<int>();
             d.exhibitLevels ??= new System.Collections.Generic.List<int>();
             d.exhibitFrames ??= new System.Collections.Generic.List<int>();
             d.seasonPoints = System.Math.Max(0, d.seasonPoints);

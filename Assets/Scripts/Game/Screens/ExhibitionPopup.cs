@@ -47,8 +47,8 @@ namespace KnittedPicture.Game
 
             AddTitle(L.T("Выставка недели"), 24);
             var autoPicked = !done && levels == null;
-            var days = WeeklyMarathon.DaysLeft(today);
-            AddText(L.F("Тема: «{0}». Новая тема через {1} {2}", theme.Name, days, L.Plural(days, "день", "дня", "дней")), 14, 1);
+            AddText(L.F("Тема: «{0}»", theme.Name), 14, 1);
+            AddLimit(() => L.F("Новая тема через {0}", Limits.ResetIn(Limits.NextMonday(app.Today))));
 
             // Цвета темы кружками: видно, какие картинки подойдут.
             var dot = 22f;
@@ -96,7 +96,7 @@ namespace KnittedPicture.Game
 
             if (done)
             {
-                AddText(L.T("Картинки уже на выставке. Новая тема в понедельник"), 14, 1);
+                AddText(L.T("Картинки уже на выставке"), 14, 1);
                 AddPrimary(L.T("Понятно"), 54).OnClick(Close);
             }
             else

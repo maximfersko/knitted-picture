@@ -48,9 +48,10 @@ namespace KnittedPicture.Game
     /// <summary>Что нового открылось этой победой: достижение ждёт в коллекциях, сундук готов.</summary>
     public sealed class WinNews
     {
-        public WinNews(bool achievement, bool chest, bool mission = false, bool allMissions = false, bool record = false)
+        public WinNews(bool achievement, bool chest, bool mission = false, bool allMissions = false, bool record = false, bool replay = false)
         {
             Record = record;
+            Replay = replay;
             Achievement = achievement;
             Chest = chest;
             Mission = mission;
@@ -61,6 +62,9 @@ namespace KnittedPicture.Game
 
         /// <summary>Перепрохождение со звёздами больше прежних: штамп «Рекорд!».</summary>
         public bool Record { get; }
+
+        /// <summary>Повтор уже пройденной картинки: в альбоме сохраняется лучший результат.</summary>
+        public bool Replay { get; }
 
         /// <summary>Этой победой выполнено задание дня; все три — награда ждёт.</summary>
         public bool Mission { get; }
@@ -158,7 +162,7 @@ namespace KnittedPicture.Game
 
             Ui.Label(Root, reward.NewRecord ? L.T("Новый рекорд!") : L.T("Готово!"), compact ? 32 : 36, Palette.Ink, 16, y, W - 32, 42);
             y += 40f;
-            Ui.Fit(Ui.Label(Root, StarsHint(level, reward.Stars, stats), 15, Palette.Ink2, 16, y, W - 32, 22, false), 11);
+            Ui.Fit(Ui.Label(Root, StarsHint(level, reward.Stars, stats, news.Replay), 15, Palette.Ink2, 16, y, W - 32, 22, false), 11);
             y += 30f;
 
             y = CoinsCard(parts, y);
@@ -243,12 +247,18 @@ namespace KnittedPicture.Game
             }
             else
             {
-                Ui.Label(face, L.T("На главную"), 22, Color.white, 0, 0, W - 40, 70);
+                // Все картинки связаны: сколько звёзд ещё можно собрать (или что их уже все собрали).
+                var missing = app.Progress.MissingStars();
+                Ui.Label(face, L.T("На главную"), 22, Color.white, 0, 8, W - 40, 30);
+                Ui.Fit(Ui.Label(face, missing > 0 ? L.F("Ещё {0} ★ до всех звёзд", missing) : L.T("Все звёзды собраны! Загляни в узор дня"),
+                    13, Color.white, 10, 40, W - 60, 22, false), 10);
             }
 
             // Удвоение за видео — до Economy.DoublesPerDay раз в день: видео помогает, но не печатает монеты.
+            // Лимит выбран — не пропадает молча, а становится строкой с причиной и временем обновления.
             if (app.Progress.DoublesLeft(app.Today) <= 0)
             {
+                DoubleStatus(app);
                 return;
             }
 
@@ -272,8 +282,24 @@ namespace KnittedPicture.Game
                     Sfx.Play(Sound.Coin);
                     Fly((RectTransform)doubleTap.transform, total, 0f);
                     doubleTap.gameObject.SetActive(false);
+                    DoubleStatus(app);
                 }, () => doubleTap.Interactable = true);
             });
+        }
+
+        /// <summary>
+        /// Вместо кнопки «Удвоить»: сколько удвоений за видео уже сделано сегодня; когда лимит выбран, ещё и когда он обновится.
+        /// </summary>
+        private void DoubleStatus(App app)
+        {
+            string Text()
+            {
+                var used = Economy.DoublesPerDay - app.Progress.DoublesLeft(app.Today);
+                var line = L.F("Удвоить за видео: {0} из {1} на сегодня", used, Economy.DoublesPerDay);
+                return used >= Economy.DoublesPerDay ? line + " · " + L.F("новые через {0}", Limits.ResetIn(Limits.NextMidnight())) : line;
+            }
+
+            Limits.Line(Root, Text(), 20, H - 24f - 44f + 2f, W - 40, Text, 40f, TextAnchor.MiddleCenter);
         }
 
         private int TotalFlights()
@@ -288,14 +314,15 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Под заголовком: чего не хватило до трёх звёзд, иначе — про альбом.</summary>
-        private static string StarsHint(LevelData level, int stars, LevelStats stats)
+        private static string StarsHint(LevelData level, int stars, LevelStats stats, bool replay)
         {
-            if (stars >= 3)
+            if (stars < 3 && stats.Helped)
             {
-                return L.F("«{0}» теперь в альбоме", level.Title);
+                return L.T("Третья звезда: пройди без бустеров и спасений");
             }
 
-            return stats.Helped ? L.T("Третья звезда: пройди без бустеров и спасений") : L.F("«{0}» теперь в альбоме", level.Title);
+            // Повтор: картинка уже была в альбоме, там остаётся лучший результат.
+            return replay ? L.T("Лучший результат сохранён в альбоме") : L.F("«{0}» теперь в альбоме", level.Title);
         }
 
         /// <summary>

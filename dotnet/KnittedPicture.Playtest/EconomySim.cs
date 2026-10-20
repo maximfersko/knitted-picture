@@ -71,6 +71,16 @@ namespace KnittedPicture.Playtest
 
         private readonly IReadOnlyList<LevelData> _levels;
 
+        /// <summary>
+        /// Учитывать «Не сдаёмся»: с 4-й попытки нового уровня один раз бесплатные ножницы (если открыты) и подсказка хода.
+        /// Допущения: ножницы без траты запаса и звезды работают как половина шанса провала (игрок срежет ими затор),
+        /// подсказка хода даёт ещё −10% к шансу проигрыша; без открытых ножниц (уровни до 8-го) только подсказка.
+        /// </summary>
+        public bool StuckHelp { get; set; } = true;
+
+        private const double StuckScissorsFactor = 0.5;
+        private const double StuckHintFactor = 0.9;
+
         public EconomySim(IReadOnlyList<LevelData> levels)
         {
             _levels = levels;
@@ -89,6 +99,10 @@ namespace KnittedPicture.Playtest
             public int FailsAffordable;
             public int FailsRescued;
             public int BoostersUsed;
+            public int StuckHelps;
+            public int StuckScissors;
+            public int AttemptsToWin;
+            public int Wins;
             public long DecorSpent;
             public readonly Dictionary<int, List<int>> Frames = new Dictionary<int, List<int>>();
             public readonly List<int> AllDoneDay = new List<int>();
@@ -106,8 +120,8 @@ namespace KnittedPicture.Playtest
             var sources = new StringBuilder();
             sources.AppendLine("| Тип | Откуда монеты | Откуда бустеры (штук на игрока) |");
             sources.AppendLine("|---|---|---|");
-            summary.AppendLine("| Тип | Заработано в день | Потрачено в день | Из них на рамки | Бустеров за уровень | Проигрышей со спасением по карману | Спасся | Все уровни к дню |");
-            summary.AppendLine("|---|---|---|---|---|---|---|---|");
+            summary.AppendLine("| Тип | Заработано в день | Потрачено в день | Из них на рамки | Бустеров за уровень | Бустеров потрачено на игрока | «Не сдаёмся»: помощей / ножниц на игрока | Попыток на новый уровень | Проигрышей со спасением по карману | Спасся | Все уровни к дню |");
+            summary.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|");
             foreach (var type in Types)
             {
                 var stats = new Stats();
@@ -128,7 +142,8 @@ namespace KnittedPicture.Playtest
                     .Select(kv => $"{kv.Key} {kv.Value * 100 / Math.Max(1, stats.Earned)}%")) + " | " +
                     string.Join(", ", stats.StockSources.Where(kv => kv.Value > 0).OrderByDescending(kv => kv.Value)
                         .Select(kv => $"{kv.Key} {kv.Value / (double)players:0.0}")) + " |");
-                summary.AppendLine($"| {type.Name} | {stats.Earned / playedDays:0} | {stats.Spent / playedDays:0} | {stats.DecorSpent / playedDays:0} | {(double)stats.BoostersUsed / levelsPlayed:0.00} | " +
+                summary.AppendLine($"| {type.Name} | {stats.Earned / playedDays:0} | {stats.Spent / playedDays:0} | {stats.DecorSpent / playedDays:0} | {(double)stats.BoostersUsed / levelsPlayed:0.00} | {(double)stats.BoostersUsed / players:0.0} | " +
+                    $"{(double)stats.StuckHelps / players:0.00} / {(double)stats.StuckScissors / players:0.00} | {(double)stats.AttemptsToWin / Math.Max(1, stats.Wins):0.00} | " +
                     $"{Percent(stats.FailsAffordable, stats.Fails)} | {Percent(stats.FailsRescued, stats.Fails)} | {allDone} |");
             }
 
@@ -268,6 +283,19 @@ namespace KnittedPicture.Playtest
             var fail = (level.hard ? 0.45 : 0.18) + (level.timeLimit > 0 ? 0.1 : 0) + Math.Min(0.12, id * 0.002);
             fail *= type.Skill * (replay ? 0.5 : 1.0);
 
+            // «Не сдаёмся»: каждая попытка нового уровня считается, как в игре (App.StartLevel).
+            var attempt = p.NextAttempt(id);
+            if (StuckHelp && p.TakeStuckHelp(id, attempt))
+            {
+                stats.StuckHelps++;
+                fail *= StuckHintFactor;
+                if (p.IsUnlocked(BoosterType.Scissors, id))
+                {
+                    stats.StuckScissors++;
+                    fail *= StuckScissorsFactor;
+                }
+            }
+
             if (rng.NextDouble() < type.PreBuy && TryBuy(p, PreBuyType(p, id), stats))
             {
                 boosters++;
@@ -316,6 +344,12 @@ namespace KnittedPicture.Playtest
                 }
 
                 return;
+            }
+
+            if (!replay)
+            {
+                stats.Wins++;
+                stats.AttemptsToWin += attempt;
             }
 
             var stars = Economy.Stars(boosters, rescued);

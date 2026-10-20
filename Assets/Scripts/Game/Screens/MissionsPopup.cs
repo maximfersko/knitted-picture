@@ -80,7 +80,8 @@ namespace KnittedPicture.Game
             }
             else if (progress.MissionsClaimed(today))
             {
-                AddText(L.T("Награда получена. Новые задания завтра"), 14, 1);
+                AddText(L.T("Награда получена"), 14, 1);
+                AddLimit(() => L.F("Новые задания через {0}", Limits.ResetIn(Limits.NextMidnight())));
                 AddPrimary(L.T("Понятно"), 54).OnClick(Close);
             }
             else if (!progress.AllDone)

@@ -541,15 +541,21 @@ namespace KnittedPicture.Game
                         granted();
                     });
                 });
+                AddLimit(VideoLimitText);
             }
             else
             {
                 AddText(L.T("Бустеры за видео на сегодня закончились. Монеты дают уровни, задания и подарок дня"), 14, 2f);
+                AddLimit(VideoLimitText);
             }
 
             AddLink(L.T("Не сейчас")).OnClick(Close);
             Finish(8);
         }
+
+        /// <summary>«Использовано 1 из 3 · новые через 5 ч»: лимит бустеров за видео и когда он обновится.</summary>
+        private string VideoLimitText() => Limits.Used(Economy.VideoBoostersPerDay - App.Progress.VideoBoostersLeft(App.Today),
+            Economy.VideoBoostersPerDay, Limits.NextMidnight());
     }
 
     public enum FailKind
@@ -571,11 +577,25 @@ namespace KnittedPicture.Game
         {
             AddIcon(kind == FailKind.Jam ? KnittedPicture.Game.Icon.Knot : KnittedPicture.Game.Icon.Moth, Palette.Danger, Palette.DangerSoft, 64);
             AddTitle(kind == FailKind.Jam ? L.T("Станок застрял") : L.T("Моль добралась до картинки"), 24);
-            if (percent >= 50)
+            // Сколько уже довязано, видно всегда: это прогресс, а не упрёк. От половины рядом тёплое «почти!»
+            // (не красное): оно подталкивает попробовать ещё раз сильнее лёгкой победы.
             {
-                // «Почти!» мотивирует попробовать ещё раз сильнее лёгкой победы.
-                var near = AddText(L.F("Довязано {0}%, почти!", percent), 18, 1);
-                near.color = Palette.Danger;
+                var done = Ui.Label(Card, L.F("Довязано {0}%", percent), 18, Palette.Ink2, 24, Cursor, Inner, 24);
+                if (percent >= 50)
+                {
+                    done.horizontalOverflow = HorizontalWrapMode.Overflow;
+                    done.alignment = TextAnchor.MiddleLeft;
+                    var near = Ui.Label(Card, L.T("почти!"), 18, Palette.CoinInk, 24, Cursor, Inner, 24);
+                    near.horizontalOverflow = HorizontalWrapMode.Overflow;
+                    near.alignment = TextAnchor.MiddleLeft;
+                    var gap = 8f;
+                    var total = done.preferredWidth + gap + near.preferredWidth;
+                    var left = 24f + Inner / 2f - total / 2f;
+                    Ui.Place(done.rectTransform, left, Cursor, done.preferredWidth + 2f, 24);
+                    Ui.Place(near.rectTransform, left + done.preferredWidth + gap, Cursor, near.preferredWidth + 2f, 24);
+                }
+
+                Space(30f);
             }
 
             // Коротко и по очереди: есть спасение — что ждёт картинка (или причина), нет — совет на следующую попытку.
@@ -621,7 +641,7 @@ namespace KnittedPicture.Game
             {
                 var type = rescue.Value;
                 var stock = app.Progress.Stock(type);
-                var title = freeRescue ? L.F("{0} · подарок серии", BoosterInfo.Name(type))
+                var title = freeRescue ? L.F("{0} · в подарок", BoosterInfo.Name(type))
                     : stock > 0
                     ? L.F("{0} · есть {1}", BoosterInfo.Name(type), stock)
                     : L.F("{0} · {1} {2}", BoosterInfo.Name(type), Economy.RescuePrice(type, rescuesBefore), YarnCatalog.CoinsWord(Economy.RescuePrice(type, rescuesBefore)));
@@ -643,7 +663,14 @@ namespace KnittedPicture.Game
                     Close();
                     rescued(type);
                 });
-                // Спасение за видео — одно на попытку: дальше только запас или монеты.
+                // Спасение за видео — одно на попытку: дальше только запас или монеты. Когда оно уже было,
+                // кнопка не прячется молча, а становится строкой с причиной.
+                if (!freeRescue && !videoAllowed)
+                {
+                    Limits.Line(Card, L.T("Спасение за видео уже было в этой попытке"), 24, Cursor, Inner, null, 20f);
+                    Space(26f);
+                }
+
                 if (!freeRescue && videoAllowed)
                 {
                     AddSecondary(BoosterInfo.Name(type) + L.T(" за видео"), KnittedPicture.Game.Icon.Video, 46f).OnClick(() =>

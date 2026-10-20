@@ -145,12 +145,14 @@ namespace KnittedPicture.Game
         private void PayScissors()
         {
             // Ножницы из окна затора — это спасение, как «+1 слот»: одна звезда, а не две, и цена спасения
-            // растёт с каждым следующим в этой попытке.
-            var rescue = _scissorsRescue;
+            // растёт с каждым следующим в этой попытке. Подарочные ножницы (серия, «Не сдаёмся») не спасение и
+            // не бустер: ни звезду, ни цену следующих спасений они не трогают, даже взятые в окне затора.
+            var free = _run.FreeScissors > 0;
+            var rescue = _scissorsRescue && !free;
             var rescuesBefore = _rescues;
-            if (_scissorsRescue)
+            _scissorsRescue = false;
+            if (rescue)
             {
-                _scissorsRescue = false;
                 _rescues++;
             }
 

@@ -149,6 +149,52 @@ namespace KnittedPicture.Core
             return ++_data.attempts[levelId - 1];
         }
 
+        /// <summary>
+        /// «Не сдаёмся»: с <see cref="Economy.StuckHelpFromAttempt"/>-й попытки нового (ещё не пройденного) уровня игрок один раз
+        /// получает помощь на эту попытку: бесплатные ножницы (если открыты) и подсказку хода. Запоминает уровень, чтобы
+        /// не повторять. Пройденные уровни, узор дня и первые попытки помощи не дают.
+        /// </summary>
+        public bool TakeStuckHelp(int levelId, int attempt)
+        {
+            if (levelId < 1 || levelId > LevelCount || attempt < Economy.StuckHelpFromAttempt || IsCompleted(levelId) ||
+                _data.stuckHelped.Contains(levelId))
+            {
+                return false;
+            }
+
+            _data.stuckHelped.Add(levelId);
+            return true;
+        }
+
+        /// <summary>Уже подарили помощь «застрявшему» на этом уровне.</summary>
+        public bool StuckHelped(int levelId) => _data.stuckHelped.Contains(levelId);
+
+        /// <summary>Сколько звёзд ещё не собрано на всех уровнях (три на каждый, пройденный или нет).</summary>
+        public int MissingStars()
+        {
+            var missing = 0;
+            for (var id = 1; id <= LevelCount; id++)
+            {
+                missing += 3 - System.Math.Min(3, StarsOf(id));
+            }
+
+            return missing;
+        }
+
+        /// <summary>Первая картинка без трёх звёзд или 0, если все звёзды собраны.</summary>
+        public int FirstUnderThreeStars()
+        {
+            for (var id = 1; id <= LevelCount; id++)
+            {
+                if (StarsOf(id) < 3)
+                {
+                    return id;
+                }
+            }
+
+            return 0;
+        }
+
         public bool TakeInterstitialSlot(int levelId)
         {
             if (_data.adsRemoved || levelId < Economy.InterstitialFromLevel || _data.winsSinceInterstitial < Economy.InterstitialEveryWins)

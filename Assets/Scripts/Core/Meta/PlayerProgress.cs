@@ -152,6 +152,9 @@ namespace KnittedPicture.Core
         /// <summary>Сколько раз начинали каждый уровень (индекс — номер уровня − 1): для аналитики «с какой попытки проходят».</summary>
         public List<int> attempts = new List<int>();
 
+        /// <summary>Уровни, на которых «застрявшему» уже подарили помощь (ножницы и подсказку хода): один раз на уровень.</summary>
+        public List<int> stuckHelped = new List<int>();
+
         /// <summary>Купленные рамки альбома (деревянная есть всегда) и выбранная.</summary>
         public List<int> frames = new List<int>();
         public int frame;

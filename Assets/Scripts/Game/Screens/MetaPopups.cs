@@ -237,7 +237,7 @@ namespace KnittedPicture.Game
             }
             else
             {
-                AddText(L.T("Следующий подарок будет завтра"), 15, 1);
+                AddLimit(() => L.F("Следующий подарок через {0}", Limits.ResetIn(Limits.NextMidnight())));
                 AddPrimary(L.T("Понятно")).OnClick(Close);
             }
 

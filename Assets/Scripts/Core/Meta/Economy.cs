@@ -87,6 +87,12 @@ namespace KnittedPicture.Core
         /// <summary>Спасение за видео — одно на уровень: видео помогает, но не заменяет игру.</summary>
         public const int VideoRescuesPerLevel = 1;
 
+        /// <summary>
+        /// С какой попытки нового уровня «застрявшему» один раз дарят помощь: бесплатные ножницы (не снимают звезду)
+        /// и подсказку хода на эту попытку.
+        /// </summary>
+        public const int StuckHelpFromAttempt = 4;
+
         /// <summary>«Удвоить награду за видео» — не больше стольких раз в день: иначе видео печатают монеты.</summary>
         public const int DoublesPerDay = 5;
 

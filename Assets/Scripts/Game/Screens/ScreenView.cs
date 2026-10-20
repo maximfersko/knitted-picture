@@ -465,6 +465,18 @@ namespace KnittedPicture.Game
             return label;
         }
 
+        /// <summary>
+        /// Строка лимита или ожидания под текстом (<see cref="Limits.Line"/>): одна или две строки, сама обновляется раз в минуту.
+        /// text собирает строку заново, поэтому «через 5 ч» не застывает, пока окно открыто.
+        /// </summary>
+        protected UnityEngine.UI.Text AddLimit(System.Func<string> text)
+        {
+            var label = Limits.Line(Card, text(), 24, _cursor, Inner, text);
+            var height = label.preferredHeight > 20f ? 32f : 18f;
+            _cursor += height + 12f;
+            return label;
+        }
+
         protected Tap AddPrimary(string text, float height = 60f)
         {
             var tap = Ui.Button(Card, text, 24, _cursor, Inner, height, Palette.Primary, Palette.PrimaryShadow, Color.white, 20);

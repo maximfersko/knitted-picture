@@ -37,9 +37,8 @@ namespace KnittedPicture.Game
             YarnView.Create(Card, yarn, CardWidth / 2f + art / 2f + 10f, Cursor + art / 2f, art * 0.8f, true);
             Space(art + 10f);
             AddTitle(Season.Name(theme), 22);
-            var days = Season.DaysLeft(today);
-            AddText(L.F("Финал: рамка «{0}» и моток «{1}». До конца сезона {2} {3}", frame.Name, yarn.Name, days,
-                L.Plural(days, "день", "дня", "дней")), 13, 2);
+            AddText(L.F("Финал: рамка «{0}» и моток «{1}»", frame.Name, yarn.Name), 13, 2);
+            AddLimit(() => L.F("Сезон закончится через {0}", Limits.ResetIn(Limits.SeasonEnd(app.Today))));
 
             // Очки до следующей ступени.
             var inStep = reached >= Season.Steps ? Season.StepPoints : points - reached * Season.StepPoints;
@@ -58,7 +57,6 @@ namespace KnittedPicture.Game
                 var targets = WeeklyMarathon.Targets;
                 var last = targets[targets.Length - 1];
                 var stitches = Mathf.Min(progress.MarathonStitches(today), last);
-                var weekDays = WeeklyMarathon.DaysLeft(today);
                 Ui.Fit(Ui.Label(Card, L.F("Неделя: {0} из {1} петель, каждая веха +1 ступень", stitches, last), 12, Palette.Ink2, 24, Cursor, Inner, 18,
                     true, TextAnchor.MiddleLeft), 9);
                 Space(20f);
@@ -71,8 +69,8 @@ namespace KnittedPicture.Game
                 }
 
                 Space(14f);
-                Ui.Fit(Ui.Label(Card, L.F("Новая неделя через {0} {1}", weekDays, L.Plural(weekDays, "день", "дня", "дней")), 11, Palette.Ink3, 24, Cursor, Inner, 16,
-                    false, TextAnchor.MiddleLeft), 9);
+                Limits.Line(Card, L.F("Новая неделя через {0}", Limits.ResetIn(Limits.NextMonday(today))), 24, Cursor, Inner,
+                    () => L.F("Новая неделя через {0}", Limits.ResetIn(Limits.NextMonday(app.Today))), 16f, TextAnchor.UpperLeft);
                 Space(20f);
             }
 

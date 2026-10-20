@@ -411,9 +411,9 @@ namespace KnittedPicture.Game
                 {
                     ShowPopup(new ComebackPopup(this, ShowDailyIfWaiting));
                 }
-                else if (Progress.CanClaimDaily(Today) && Progress.Data.completed.Count > 0)
+                else
                 {
-                    ShowPopup(new DailyGiftPopup(this, ShowHome));
+                    OfferDailyGift();
                 }
             }
             else
@@ -429,11 +429,29 @@ namespace KnittedPicture.Game
         private void ShowDailyIfWaiting()
         {
             ShowHome();
+            OfferDailyGift();
+        }
+
+        /// <summary>Подарок дня встречает игрока сразу, как только он уже прошёл хотя бы одну картинку: при входе и при возврате в новый день.</summary>
+        private void OfferDailyGift()
+        {
+            // Окно уже открыто (например, подарок показали раньше): второго поверх не ставим.
+            if (_popups.Count > 0)
+            {
+                return;
+            }
+
             if (Progress.CanClaimDaily(Today) && Progress.Data.completed.Count > 0)
             {
                 ShowPopup(new DailyGiftPopup(this, ShowHome));
             }
         }
+
+        /// <summary>День, в который игру свернули (-1 — не сворачивали): по нему видно, что за время паузы наступил новый.</summary>
+        private int _pausedDay = -1;
+
+        /// <summary>Новый день наступил при свёрнутой игре, но главная была закрыта (уровень, окно): подарок покажет следующая главная.</summary>
+        private bool _newDayPending;
 
         private void Update()
         {
@@ -473,15 +491,38 @@ namespace KnittedPicture.Game
                 Save();
                 (_screen as GameScreen)?.AutoPause();
                 Reminders.Schedule(Progress, Today);
+                _pausedDay = Today;
             }
             else
             {
                 Reminders.CancelAll();
+                if (Progress == null)
+                {
+                    return;
+                }
+
+                // Пока игра была свёрнута, наступил новый день (часы назад новым днём не считаются).
+                var newDay = _pausedDay >= 0 && Today > _pausedDay;
+                _pausedDay = -1;
 
                 // Вернулись после долгого перерыва, не перезапуская игру: посылка на главной.
-                if (Progress != null && Progress.Visit(Today) && _popups.Count == 0 && _screen is HomeScreen)
+                var comeback = Progress.Visit(Today);
+                if (_popups.Count > 0 || !(_screen is HomeScreen))
+                {
+                    _newDayPending |= newDay;
+                    return;
+                }
+
+                if (comeback)
                 {
                     ShowPopup(new ComebackPopup(this, ShowDailyIfWaiting));
+                }
+                else if (newDay)
+                {
+                    // Как при холодном старте: главная перестраивается (значки «ждёт» и подписи за новый день), подарок дня встречает.
+                    _newDayPending = false;
+                    RefreshScreen();
+                    OfferDailyGift();
                 }
             }
         }
@@ -520,7 +561,17 @@ namespace KnittedPicture.Game
             SaveStore.Save(Progress.Data);
         }
 
-        public void ShowHome() => Show(() => new HomeScreen(this));
+        public void ShowHome()
+        {
+            Show(() => new HomeScreen(this));
+
+            // Новый день наступил, пока игра была свёрнута посреди уровня или окна: подарок встречает на главной.
+            if (_newDayPending && _popups.Count == 0)
+            {
+                _newDayPending = false;
+                OfferDailyGift();
+            }
+        }
 
         public void ShowAlbum() => ShowCollections(CollectionsTab.Album);
 
@@ -568,6 +619,9 @@ namespace KnittedPicture.Game
             var level = Levels.Get(levelId);
             var intro = Progress.TakeBoosterIntro(levelId);
             var attempt = Progress.NextAttempt(levelId);
+
+            // «Не сдаёмся»: с 4-й попытки нового уровня один раз дарим помощь на эту попытку.
+            var stuck = Progress.TakeStuckHelp(levelId, attempt);
             Save();
             var game = new LoomGame(level);
             var run = new LevelRun { Attempt = attempt };
@@ -583,6 +637,19 @@ namespace KnittedPicture.Game
 
             run.FreeScissors = warm.FreeScissors ? 1 : 0;
             run.FreeUndo = warm.FreeUndo ? 1 : 0;
+            if (stuck)
+            {
+                // Бесплатные ножницы, если они на этом уровне открыты, идут тем же путём, что подарок серии: запас
+                // и звезда не тратятся. Подсказку хода включает сам экран по run.StuckHelp.
+                run.StuckHelp = true;
+                if (Progress.IsBoosterOpen(BoosterType.Scissors, levelId))
+                {
+                    run.FreeScissors = System.Math.Max(run.FreeScissors, 1);
+                }
+
+                Analytics.Event("stuck_help", ("level", levelId), ("attempts", attempt));
+            }
+
             Analytics.Event("level_start", ("level", levelId), ("attempt", attempt), ("hard", level.hard), ("timed", level.timeLimit > 0),
                 ("completed_before", Progress.IsCompleted(levelId)), ("warm", warm.Any));
             Show(() => new GameScreen(this, level, game, run));
@@ -645,7 +712,7 @@ namespace KnittedPicture.Game
             }
             else
             {
-                Toast(L.T("Узор дня уже связан. Новый будет завтра"));
+                Toast(L.F("Узор дня уже связан. Новый через {0}", Limits.ResetIn(Limits.NextMidnight())));
             }
         }
 
@@ -671,7 +738,7 @@ namespace KnittedPicture.Game
             var reward = Progress.CompleteLevel(level.id, level.hard, stars, stats.RushCoins + stats.GoldCoins, Today);
             Save();
             var news = new WinNews(Progress.PendingClaims > pendingBefore, Progress.CanOpenChest && !chestBefore, missionsDone > 0,
-                Progress.CanClaimMissions(Today), wasDone && stars > oldStars);
+                Progress.CanClaimMissions(Today), wasDone && stars > oldStars, wasDone);
             Show(() => new WinScreen(this, level, reward, stats, news));
 
             // Все звёзды коллекции — её рамка открыта.

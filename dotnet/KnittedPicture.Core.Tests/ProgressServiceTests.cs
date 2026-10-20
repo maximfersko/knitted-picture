@@ -37,6 +37,53 @@ namespace KnittedPicture.Core.Tests
         private static ProgressService Fresh() => new ProgressService(new PlayerProgress(), levelCount: 15);
 
         [Fact]
+        public void Stuck_help_comes_from_the_fourth_attempt_of_a_new_level_and_only_once()
+        {
+            var progress = Fresh();
+            for (var attempt = 1; attempt < Economy.StuckHelpFromAttempt; attempt++)
+            {
+                Assert.Equal(attempt, progress.NextAttempt(3));
+                Assert.False(progress.TakeStuckHelp(3, attempt));
+            }
+
+            var fourth = progress.NextAttempt(3);
+            Assert.Equal(Economy.StuckHelpFromAttempt, fourth);
+            Assert.True(progress.TakeStuckHelp(3, fourth));
+            Assert.True(progress.StuckHelped(3));
+
+            // Дальше тот же уровень помощи не даёт, а другой уровень считает свои попытки сам.
+            Assert.False(progress.TakeStuckHelp(3, progress.NextAttempt(3)));
+            Assert.False(progress.TakeStuckHelp(4, progress.NextAttempt(4)));
+            Assert.Contains(3, progress.Data.stuckHelped);
+        }
+
+        [Fact]
+        public void Stuck_help_is_not_given_on_a_level_already_completed()
+        {
+            var progress = Fresh();
+            progress.CompleteLevel(1, hard: false, stars: 3);
+            for (var i = 0; i < 6; i++)
+            {
+                progress.NextAttempt(1);
+            }
+
+            Assert.False(progress.TakeStuckHelp(1, 6));
+            Assert.False(progress.StuckHelped(1));
+        }
+
+        [Fact]
+        public void Missing_stars_count_all_levels_and_point_at_the_first_incomplete_picture()
+        {
+            var progress = Fresh();
+            Assert.Equal(progress.LevelCount * 3, progress.MissingStars());
+            Assert.Equal(1, progress.FirstUnderThreeStars());
+            progress.CompleteLevel(1, hard: false, stars: 3);
+            progress.CompleteLevel(2, hard: false, stars: 1);
+            Assert.Equal(progress.LevelCount * 3 - 4, progress.MissingStars());
+            Assert.Equal(2, progress.FirstUnderThreeStars());
+        }
+
+        [Fact]
         public void New_player_starts_at_level_one_with_start_coins()
         {
             var progress = Fresh();

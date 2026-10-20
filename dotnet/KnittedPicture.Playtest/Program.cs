@@ -23,6 +23,7 @@ namespace KnittedPicture.Playtest
     ///   --seed N              зерно случайности (1): тот же ключ — те же партии
     ///   --report FILE         отчёт в Markdown
     ///   --economy             только баланс экономики по типам игроков (с --players, --days)
+    ///   --no-stuck-help       в экономике не учитывать подарок «Не сдаёмся» (для сравнения «до»)
     ///   --repro L:R           повторить одну хаос-партию (уровень L, партия R) с печатью каждого хода
     ///
     /// Код выхода 1, если нарушено хоть одно правило: так проверка на GitHub краснеет.
@@ -78,7 +79,7 @@ namespace KnittedPicture.Playtest
             if (opt.Economy)
             {
                 // Только баланс экономики по типам игроков: таблица в консоль (и в отчёт, если задан).
-                var table = new EconomySim(levels).Run(opt.Players, opt.Days, opt.Seed);
+                var table = new EconomySim(levels) { StuckHelp = !opt.NoStuckHelp }.Run(opt.Players, opt.Days, opt.Seed);
                 Console.WriteLine(table);
                 if (opt.Report != null)
                 {
@@ -255,6 +256,9 @@ namespace KnittedPicture.Playtest
         /// <summary>--economy: только симуляция экономики по типам игроков.</summary>
         public bool Economy;
 
+        /// <summary>--no-stuck-help: симуляция экономики без подарка «Не сдаёмся» (с 4-й попытки нового уровня).</summary>
+        public bool NoStuckHelp;
+
         public bool SolverBench;
 
         public static Options Parse(string[] args)
@@ -275,6 +279,7 @@ namespace KnittedPicture.Playtest
                     case "--repro": o.Repro = Next(); break;
                     case "--meta-player": Next(); break;
                     case "--economy": o.Economy = true; break;
+                    case "--no-stuck-help": o.NoStuckHelp = true; break;
                     case "--solver-bench": o.SolverBench = true; break;
                     default: throw new ArgumentException($"неизвестный ключ {args[i]}");
                 }
