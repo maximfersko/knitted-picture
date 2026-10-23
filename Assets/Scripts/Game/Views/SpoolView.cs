@@ -116,7 +116,24 @@ namespace KnittedPicture.Game
 
         public float Size { get; }
 
-        public Tap Tap => Root.TryGetComponent<Tap>(out var tap) ? tap : Root.gameObject.AddComponent<Tap>();
+        /// <summary>
+        /// Нажимаемая зона клубка. Клубок отзывается мягким «подушечным» откликом (<see cref="KnittedPicture.Game.Tap.Squishy"/>),
+        /// в отличие от кнопок интерфейса, у которых пресс 0.96 без отскока.
+        /// </summary>
+        public Tap Tap
+        {
+            get
+            {
+                if (Root.TryGetComponent<Tap>(out var tap))
+                {
+                    return tap;
+                }
+
+                tap = Root.gameObject.AddComponent<Tap>();
+                tap.Squishy = true;
+                return tap;
+            }
+        }
 
         public static SpoolView Create(RectTransform parent, float size)
         {

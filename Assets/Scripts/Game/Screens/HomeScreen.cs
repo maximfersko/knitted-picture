@@ -31,7 +31,13 @@ namespace KnittedPicture.Game
                 gear.sprite = Art2.Gear;
                 gear.color = Color.white;
                 gearRt.sizeDelta = new Vector2(30f, 30f);
-                settings.OnClick(() => Tweens.Run(gearRt, 0.35f, t => gearRt.localRotation = Quaternion.Euler(0f, 0f, -45f * t), Ease.OutBack));
+                settings.OnClick(() =>
+                {
+                    // От текущего угла: частые тапы докручивают шестерёнку, а не бросают её в нулевой угол.
+                    Tweens.Kill(gearRt);
+                    var from = Mathf.DeltaAngle(0f, gearRt.localEulerAngles.z);
+                    Tweens.Run(gearRt, 0.35f, t => gearRt.localRotation = Quaternion.Euler(0f, 0f, from - 45f * t), Ease.OutBack);
+                });
             }
 
             settings.OnClick(() => app.ShowPopup(new SettingsPopup(app)));
@@ -122,7 +128,8 @@ namespace KnittedPicture.Game
 
             // Вход на главную: значки событий по очереди «выпрыгивают», кнопка «Играть» мягко подрастает.
             // Только при входе с другого экрана — после получения награды главная не прыгает заново.
-            if (app.PreviousScreen != typeof(HomeScreen))
+            // Переход между вкладками (перелистывание) без прыжков: блоки уже едут целиком, итоговое состояние сразу.
+            if (app.PreviousScreen != typeof(HomeScreen) && app.PendingSlide == 0)
             {
                 for (var i = 0; i < _rails.Count; i++)
                 {
@@ -276,6 +283,15 @@ namespace KnittedPicture.Game
                 var flip = taps % 7 == 0;
                 Sfx.Play(flip ? Sound.Star : Sound.Pick);
                 Haptics.Play(flip ? Haptic.Medium : Haptic.Tap);
+
+                // «Меньше движения»: без прыжка, наклона и кувырка, только лёгкий толчок, звук и тост.
+                if (Tweens.Calm)
+                {
+                    Tweens.Punch(logo);
+                    busy = false;
+                    return;
+                }
+
                 if (flip)
                 {
                     Fx.Sparkle(Root, Ui.WorldCenter(logo), main, 10, ball * 0.7f);
@@ -362,7 +378,9 @@ namespace KnittedPicture.Game
             const float dotsGap = 18f;
             var available = CollectionHeight();
             var y = bottom - available;
-            var viewport = Ui.Place(Ui.Node(Root, "Carousel"), 0, y, W, available);
+            // Лента на 14 pt длиннее расчётного места: нижние точки получают зону касания 44 pt, а карточки не сдвигаются.
+            // Дальше лента упирается в зазор над рядом событий (не меньше 14 pt), так что с их зонами не пересекается.
+            var viewport = Ui.Place(Ui.Node(Root, "Carousel"), 0, y, W, available + DotsReach);
             var hit = Ui.Image(viewport, "Hit", null, Color.clear, true);
             Ui.Stretch(hit.rectTransform);
             viewport.gameObject.AddComponent<RectMask2D>();
@@ -418,6 +436,9 @@ namespace KnittedPicture.Game
             return y;
         }
 
+        /// <summary>Насколько зона точек выходит за расчётную высоту ленты: до 44 pt высоты касания вокруг точки.</summary>
+        private const float DotsReach = 14f;
+
         /// <summary>Лента целиком: карточка и точки под ней.</summary>
         private float CollectionHeight() => PageCardHeight() + 30f;
 
@@ -444,11 +465,12 @@ namespace KnittedPicture.Game
             for (var i = 0; i < n; i++)
             {
                 _dotX[i] = W / 2f + (i - (n - 1) / 2f) * step;
+                // Зона касания — на шаг в ширину и 44 pt в высоту: зоны соседних точек стык в стык, не пересекаются.
                 var dot = Ui.Box(parent, "Dot", 4, Palette.Inactive, true);
-                Ui.PlaceCenter(dot.rectTransform, _dotX[i], y, 22, 22);
+                Ui.PlaceCenter(dot.rectTransform, _dotX[i], y, step, 44);
                 dot.color = Color.clear;
                 var visible = Ui.Box(dot.rectTransform, "Visible", 4, Palette.Inactive);
-                Ui.PlaceCenter(visible.rectTransform, 11, 11, 8, 8);
+                Ui.PlaceCenter(visible.rectTransform, step / 2f, 22, 8, 8);
                 var target = i;
                 dot.gameObject.AddComponent<Tap>().OnClick(() => Turn(target));
             }
@@ -542,6 +564,11 @@ namespace KnittedPicture.Game
                 Ui.PlaceCenter(claim, cardW / 2f, 42, Mathf.Min(cardW - 112, 200), 22);
                 Ui.Outline(claim, 11, Palette.Coin, 1.5f);
                 Ui.Label(claim, L.T("Забрать награду"), 12, Palette.CoinInk, 0, 0, Mathf.Min(cardW - 112, 200), 22);
+
+                // Зона касания выше плашки: по y карточки 20…56 (36 pt), выше нельзя: с 58 начинаются плитки.
+                // Событие всплывает к Tap на плашке, поэтому она проседает, как и при касании самой плашки.
+                var claimHit = Ui.Image(claim, "Hit", null, Color.clear, true);
+                Ui.Place(claimHit.rectTransform, 0, 20f - 31f, Mathf.Min(cardW - 112, 200), 36);
                 var collectionIndex = index;
                 claim.gameObject.AddComponent<Tap>().OnClick(() => CollectionReward.Claim(App, collectionIndex, App.ShowHome));
             }
@@ -734,7 +761,7 @@ namespace KnittedPicture.Game
                 Art2.Prefetch(data);
                 var frame = Ui.Box(face, "Preview", 14, Palette.Card);
                 Ui.Place(frame.rectTransform, 12, 10, 64, 64);
-                KnitPreview(frame.rectTransform, data, App.PreviousScreen != typeof(HomeScreen));
+                KnitPreview(frame.rectTransform, data, App.PreviousScreen != typeof(HomeScreen) && App.PendingSlide == 0);
                 if (data.mystery)
                 {
                     Ui.Label(frame.rectTransform, "?", 30, Palette.Ink2, 0, 0, 64, 64);

@@ -197,15 +197,15 @@ namespace KnittedPicture.Game
             // Подписи станка нет: слоты видны. Надпись появляется, только когда места кончаются.
             _loomTitle = Ui.Label(Root, "", 13, Palette.Ink2, Pad + 6, _loomY + 2f, 120, 24, true, TextAnchor.MiddleLeft);
             _loomLabel = Ui.Label(Root, "", 13, Palette.Ink2, W - Pad - 186, _loomY + 2f, 180, 24, true, TextAnchor.MiddleRight);
-            _loomBgImage = Ui.Box(Root, "Loom", 20, Palette.LoomBg);
+            _loomBgImage = Ui.Box(Root, "Loom", 22, Palette.LoomBg);
             _loomBg = Ui.Layer(_loomBgImage.rectTransform, true);
             Ui.Place(_loomBg, Pad, _loomY + LoomTop, W - 2 * Pad, LoomH);
             // Рамки тревоги и «Разгона» лежат ровно по краю станка, внутрь, а не выступают на соседей.
-            _loomAlert = Ui.Image(Root, "LoomAlert", Art.RoundRectOutline(20, 3), Color.clear);
+            _loomAlert = Ui.Image(Root, "LoomAlert", Art.RoundRectOutline(22, 3), Color.clear);
             _loomAlert.type = Image.Type.Sliced;
             _loomAlert.pixelsPerUnitMultiplier = Art.Density;
             Ui.Place(_loomAlert.rectTransform, Pad, _loomY + LoomTop, W - 2 * Pad, LoomH);
-            _rushGlow = Ui.Image(Root, "RushGlow", Art.RoundRectOutline(20, 4), Color.clear);
+            _rushGlow = Ui.Image(Root, "RushGlow", Art.RoundRectOutline(22, 4), Color.clear);
             _rushGlow.type = Image.Type.Sliced;
             _rushGlow.pixelsPerUnitMultiplier = Art.Density;
             Ui.Place(_rushGlow.rectTransform, Pad, _loomY + LoomTop, W - 2 * Pad, LoomH);
@@ -237,8 +237,9 @@ namespace KnittedPicture.Game
         {
             Ui.Clear(_loomBg);
 
+            // Радиус станка 22 = радиус лунок 14 + отступ 8: углы лунок и станка концентричны.
             // Чёткий контур лотка (внутри станка: трясётся и пружинит вместе с ним).
-            Ui.Outline(_loomBg, 20, Palette.Line, 1.5f);
+            Ui.Outline(_loomBg, 22, Palette.Line, 1.5f);
             var n = _game.Slots.Count;
             const float gap = SlotGap;
             var slotW = (W - 2 * Pad - 16f - gap * (n - 1)) / n;
@@ -367,9 +368,17 @@ namespace KnittedPicture.Game
             Ui.Fit(Ui.Label(banner, text, 20, Color.white, 14, 0, width - 28, 56), 13);
             var group = banner.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
+
+            // До своего часа плашка невидима и сжата: масштаб и ход к исчезновению запускаются только по истечении задержки,
+            // иначе её было бы видно сжатой до появления.
+            group.alpha = 0f;
             banner.localScale = Vector3.zero;
-            Tweens.Scale(banner, 0.6f, 1f, 0.3f, Ease.OutBack, null, delay);
-            Tweens.Fade(group, 1f, 0f, 0.4f, () => Object.Destroy(banner.gameObject), hold + delay);
+            Tweens.Delay(banner, delay, () =>
+            {
+                group.alpha = 1f;
+                Tweens.Scale(banner, 0.6f, 1f, 0.3f, Ease.OutBack);
+                Tweens.Fade(group, 1f, 0f, 0.4f, () => Object.Destroy(banner.gameObject), hold);
+            });
         }
     }
 }

@@ -427,11 +427,15 @@ namespace KnittedPicture.Game
             var card = Ui.Card(Root, "Reward", 16, y, cardW, 100, 20, Palette.Card, Palette.CardShadow);
             Ui.Label(card, L.T("НАГРАДА"), 12, Palette.Ink3, 18, 12, 120, 26, true, TextAnchor.MiddleLeft);
             var sum = Ui.Label(card, "+" + total, 26, Palette.Ink, cardW - 16 - 120, 6, 120, 38, true, TextAnchor.MiddleRight);
+            // Монета стоит по ширине итоговой суммы (замер до набегания): текст выровнен вправо, и монета
+            // не уезжает, пока число растёт от нуля.
+            sum.horizontalOverflow = HorizontalWrapMode.Overflow;
+            var sumWidth = sum.preferredWidth;
+            _sumFrom = Ui.Coin(card, cardW - 16 - sumWidth - 18f, 25, 26);
+
             // Сумма набегает с нуля, пока монеты не полетели: видно, из чего она складывается.
             sum.text = "+0";
             Ui.RollTo(sum, total, 0.6f, "+{0}", 0.25f);
-            sum.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _sumFrom = Ui.Coin(card, cardW - 16 - sum.preferredWidth - 18f, 25, 26);
 
             // Плашки источников: «за картинку +20», «разгон ×11 +4»… — переносятся на вторую строку, если не влезли.
             const float chipH = 28f;

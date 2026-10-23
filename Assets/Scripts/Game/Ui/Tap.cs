@@ -9,15 +9,20 @@ namespace KnittedPicture.Game
 {
     /// <summary>
     /// Нажимаемый элемент: проседает под пальцем, звучит и вызывает действие.
-    /// Нажатие — на пружине: быстро вдавливается (по высоте чуть сильнее, как подушка под пальцем),
-    /// а отпущенный элемент отскакивает с лёгким перелётом и затихает. Проседание накладывается поверх
-    /// текущего масштаба: «дышащие» кнопки и клубки тоже отзываются на палец и возвращаются к своей анимации.
+    /// Нажатие — на пружине: быстро вдавливается до масштаба 0.96 по обеим осям, а отпущенный элемент
+    /// возвращается критически демпфированно, без перелёта и отскока (кнопки интерфейса, частые действия).
+    /// Мягкий «подушечный» отклик (<see cref="Squishy"/>) только у игровых клубков: по высоте просадка сильнее,
+    /// а при возврате есть лёгкий перелёт. Проседание накладывается поверх текущего масштаба: «дышащие» кнопки
+    /// и клубки тоже отзываются на палец и возвращаются к своей анимации.
     /// </summary>
     public sealed class Tap : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler, IPointerClickHandler
     {
-        /// <summary>Насколько проседает по ширине и по высоте при полном нажатии.</summary>
-        private const float SquashX = 0.055f;
-        private const float SquashY = 0.075f;
+        /// <summary>Просадка кнопки интерфейса при полном нажатии: масштаб 0.96 по обеим осям.</summary>
+        private const float PressSquash = 0.04f;
+
+        /// <summary>Просадка «подушечного» отклика (клубки поля) по ширине и по высоте при полном нажатии.</summary>
+        private const float SquishX = 0.055f;
+        private const float SquishY = 0.075f;
 
         private Vector3 _base = Vector3.one;
         private Vector3 _applied = Vector3.one;
@@ -41,6 +46,29 @@ namespace KnittedPicture.Game
         /// «головой», глухо отзывается звуком и толчком, а подсказка всплывает плашкой: тап не проходит в пустоту.
         /// </summary>
         public string? DeniedHint { get; set; }
+
+        /// <summary>
+        /// Мягкий «подушечный» отклик: просадка сильнее по высоте и возврат с лёгким перелётом (при «Меньше движения»
+        /// перелёта нет). По умолчанию false: пресс 0.96 и возврат без отскока. Включён только у клубков поля.
+        /// </summary>
+        public bool Squishy { get; set; }
+
+        /// <summary>
+        /// Дополнительный множитель масштаба от «толчка» (<see cref="Tweens.Punch"/>). Масштаб элемента с Tap
+        /// всегда считается как база × просадка пружины × Extra: толчок не пишет localScale сам и не спорит с пружиной,
+        /// поэтому множители не копятся. Пока Extra не единица, Tap пишет масштаб каждый кадр, даже когда пружина в покое.
+        /// </summary>
+        public Vector3 Extra { get; private set; } = Vector3.one;
+
+        /// <summary>Задать множитель толчка; не единица — разбудить пружину, чтобы она его применяла.</summary>
+        public void SetExtra(Vector3 extra)
+        {
+            Extra = extra;
+            if (extra != Vector3.one && isActiveAndEnabled)
+            {
+                Begin();
+            }
+        }
 
         /// <summary>Проседать ли под пальцем. Фоновым областям (затемнение) — нет.</summary>
         public bool PressFeedback { get; set; } = true;
@@ -107,7 +135,8 @@ namespace KnittedPicture.Game
                 _base = transform.localScale;
             }
 
-            // Вдавливание — жёсткая пружина почти без перелёта (~80 мс); отпускание — мягче, с отскоком выше своего размера.
+            // Вдавливание — жёсткая пружина почти без перелёта (~80 мс). Отпускание: у кнопок критическое затухание
+            // (2·√380 ≈ 39), без отскока; у «подушечных» клубков мягче, с отскоком выше своего размера.
             float stiffness, damping;
             if (_pressed)
             {
@@ -117,19 +146,21 @@ namespace KnittedPicture.Game
             else
             {
                 stiffness = 380f;
-                damping = Tweens.Calm ? 39f : 15f;
+                damping = Squishy && !Tweens.Calm ? 15f : 39f;
             }
 
             var target = _pressed ? 1f : 0f;
             _velocity += ((target - _depth) * stiffness - _velocity * damping) * dt;
             _depth += _velocity * dt;
-            if (!_pressed && Mathf.Abs(_depth) < 0.003f && Mathf.Abs(_velocity) < 0.05f)
+            if (!_pressed && Mathf.Abs(_depth) < 0.003f && Mathf.Abs(_velocity) < 0.05f && Extra == Vector3.one)
             {
                 Settle();
                 return false;
             }
 
-            _applied = Vector3.Scale(_base, new Vector3(1f - SquashX * _depth, 1f - SquashY * _depth, 1f));
+            var squashX = Squishy ? SquishX : PressSquash;
+            var squashY = Squishy ? SquishY : PressSquash;
+            _applied = Vector3.Scale(Vector3.Scale(_base, new Vector3(1f - squashX * _depth, 1f - squashY * _depth, 1f)), Extra);
             transform.localScale = _applied;
             return true;
         }

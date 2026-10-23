@@ -387,16 +387,20 @@ namespace KnittedPicture.Game
             return label;
         }
 
-        /// <summary>Кнопка «i» в кружке: по тапу — короткая справка. Подробности не загромождают экран.</summary>
+        /// <summary>
+        /// Кнопка «i» в кружке: по тапу — короткая справка. Подробности не загромождают экран.
+        /// Зона касания не меньше 44×44 pt (для крупного значка size + 14), видимый кружок остаётся своего размера.
+        /// </summary>
         public static Tap InfoButton(RectTransform parent, float cx, float cy, string title, string text, float size = 26f)
         {
-            var root = PlaceCenter(Node(parent, "Info"), cx, cy, size + 14f, size + 14f);
+            var zone = Mathf.Max(44f, size + 14f);
+            var root = PlaceCenter(Node(parent, "Info"), cx, cy, zone, zone);
             var hit = Image(root, "Hit", null, Color.clear, true);
             Stretch(hit.rectTransform);
             var circle = Image(root, "Back", Art.Circle, Palette.Surface);
-            PlaceCenter(circle.rectTransform, (size + 14f) / 2f, (size + 14f) / 2f, size, size);
+            PlaceCenter(circle.rectTransform, zone / 2f, zone / 2f, size, size);
             Outline(circle.rectTransform, size / 2f, Palette.Line, 1.5f);
-            IconImage(root, Icon.Info, Palette.Ink2, (size + 14f) / 2f, (size + 14f) / 2f, size * 0.7f);
+            IconImage(root, Icon.Info, Palette.Ink2, zone / 2f, zone / 2f, size * 0.7f);
             var tap = root.gameObject.AddComponent<Tap>();
             tap.OnClick(() =>
             {
@@ -579,8 +583,12 @@ namespace KnittedPicture.Game
             return content;
         }
 
-        /// <summary>Красная точка-счётчик в углу кнопки: «здесь что-то ждёт».</summary>
-        public static RectTransform Badge(RectTransform parent, float cx, float cy, int count)
+        /// <summary>
+        /// Красная точка-счётчик в углу кнопки: «здесь что-то ждёт».
+        /// popIn = false: сразу на месте, без выпрыгивания (при смене вкладки панель и значки не прыгают заново);
+        /// «биение» остаётся.
+        /// </summary>
+        public static RectTransform Badge(RectTransform parent, float cx, float cy, int count, bool popIn = true)
         {
             var size = count > 9 ? 26f : 22f;
             var root = PlaceCenter(Node(parent, "Badge"), cx, cy, size, 22f);
@@ -588,8 +596,16 @@ namespace KnittedPicture.Game
             var label = Label(root, count > 0 ? count.ToString() : "!", 13, Color.white);
             Stretch(label.rectTransform);
             // Выпрыгивает, а потом «бьётся» двумя ударами с паузой: заметно, но не мельтешит, как ровный пульс.
-            Tweens.Scale(root, 0f, 1f, 0.4f, Ease.OutBack, () =>
-                Tweens.Run(root, 2.2f, t => root.localScale = Vector3.one * (1f + 0.16f * Ease.Heartbeat(t)), null, null, 0f, true), 0.25f);
+            void Beat() => Tweens.Run(root, 2.2f, t => root.localScale = Vector3.one * (1f + 0.16f * Ease.Heartbeat(t)), null, null, 0f, true);
+            if (popIn)
+            {
+                Tweens.Scale(root, 0f, 1f, 0.4f, Ease.OutBack, Beat, 0.25f);
+            }
+            else
+            {
+                Beat();
+            }
+
             return root;
         }
 

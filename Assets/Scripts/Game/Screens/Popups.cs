@@ -117,8 +117,8 @@ namespace KnittedPicture.Game
             var sound = AddSecondary(SoundLabel(app.Progress.SoundOn), app.Progress.SoundOn ? KnittedPicture.Game.Icon.SoundOn : KnittedPicture.Game.Icon.SoundOff);
             BindToggle(sound, () => app.Progress.SoundOn, app.SetSound, SoundLabel,
                 on => on ? KnittedPicture.Game.Icon.SoundOn : KnittedPicture.Game.Icon.SoundOff, false);
-            var music = AddSecondary(MusicLabel(app.Progress.Data.musicOn), KnittedPicture.Game.Icon.Star, 50f);
-            BindToggle(music, () => app.Progress.Data.musicOn, app.SetMusic, MusicLabel, _ => KnittedPicture.Game.Icon.Star, true);
+            var music = AddSecondary(MusicLabel(app.Progress.Data.musicOn), KnittedPicture.Game.Icon.Music, 50f);
+            BindToggle(music, () => app.Progress.Data.musicOn, app.SetMusic, MusicLabel, _ => KnittedPicture.Game.Icon.Music, true);
             var (again, toHome) = AddPair(L.T("Заново"), KnittedPicture.Game.Icon.Restart, L.T("Домой"), KnittedPicture.Game.Icon.Home);
             again.OnClick(() =>
             {
@@ -152,7 +152,7 @@ namespace KnittedPicture.Game
                 }
             }
 
-            void Show(bool on)
+            void Show(bool on, bool animate)
             {
                 label.text = text(on);
                 if (image == null)
@@ -160,17 +160,41 @@ namespace KnittedPicture.Game
                     return;
                 }
 
-                image.sprite = Art.Icon(icon(on));
-                image.color = dimWhenOff && !on ? Palette.Ink3 : Palette.Ink;
+                var sprite = Art.Icon(icon(on));
+                var changed = image.sprite != sprite;
+                image.sprite = sprite;
+                var tint = dimWhenOff && !on ? Palette.Ink3 : Palette.Ink;
+                image.color = tint;
                 var rt = image.rectTransform;
                 rt.anchoredPosition = new Vector2(Inner / 2f - label.preferredWidth / 2f - 6f, rt.anchoredPosition.y);
+
+                // Сменился значок: новый вырастает с 0.25 до 1 и проявляется за 0.3 с, без отскока. У музыки спрайт
+                // один, её состояние читается цветом, поэтому она не «выпрыгивает». «Меньше движения» — сразу итог.
+                Tweens.Kill(rt);
+                rt.localScale = Vector3.one;
+                if (!animate || !changed || Tweens.Calm)
+                {
+                    return;
+                }
+
+                rt.localScale = Vector3.one * 0.25f;
+                image.color = Palette.WithAlpha(tint, 0f);
+                Tweens.Run(rt, 0.3f, t =>
+                {
+                    rt.localScale = Vector3.one * Mathf.LerpUnclamped(0.25f, 1f, t);
+                    image.color = Palette.WithAlpha(tint, t);
+                }, Ease.OutCubic, () =>
+                {
+                    rt.localScale = Vector3.one;
+                    image.color = tint;
+                });
             }
 
             button.OnClick(() =>
             {
                 var on = !get();
                 set(on);
-                Show(on);
+                Show(on, true);
             });
             if (dimWhenOff && image != null)
             {
@@ -235,7 +259,7 @@ namespace KnittedPicture.Game
         protected void AddBack(Action back)
         {
             Back = back;
-            Ui.RoundButton(Card, KnittedPicture.Game.Icon.Back, 10f, 10f, 44f, true).OnClick(Dismiss);
+            Ui.RoundButton(Card, KnittedPicture.Game.Icon.Back, 8f, 8f, 44f, true).OnClick(Dismiss);
         }
 
         /// <summary>Подпись раздела над группой строк: мелкий жирный текст капсом, как в системных настройках.</summary>
@@ -331,14 +355,17 @@ namespace KnittedPicture.Game
             {
                 var on = !get();
                 set(on);
-                // Шарик перескакивает на пружине и чуть сплющивается в полёте, как капля.
+                // Шарик едет от того места, где он сейчас (тап посреди пути не рвёт движение), и замедляется к краю,
+                // без отскока. В полёте чуть сплющивается, как капля; «Меньше движения» без сплющивания.
+                var from = Mathf.Clamp01((knob.anchoredPosition.x - trackH / 2f) / (trackW - trackH));
+                var to = on ? 1f : 0f;
                 Tweens.Kill(knob);
                 Tweens.Run(knob, 0.36f, t =>
                 {
-                    Show(on ? t : 1f - t);
-                    var squash = 0.18f * Ease.Bump(Mathf.Clamp01(t));
+                    Show(Mathf.LerpUnclamped(from, to, t));
+                    var squash = Tweens.Calm ? 0f : 0.18f * Ease.Bump(Mathf.Clamp01(t));
                     knob.localScale = new Vector3(1f + squash, 1f - squash * 0.6f, 1f);
-                }, Tweens.Calm ? Ease.OutCubic : Ease.Spring, () => knob.localScale = Vector3.one);
+                }, Ease.OutCubic, () => knob.localScale = Vector3.one);
             });
         }
     }
@@ -364,7 +391,7 @@ namespace KnittedPicture.Game
             var line = 0;
             ToggleRow(group, line++, KnittedPicture.Game.Icon.SoundOn, Palette.Link, L.T("Звук"),
                 () => app.Progress.SoundOn, app.SetSound);
-            ToggleRow(group, line++, KnittedPicture.Game.Icon.Star, Palette.Primary, L.T("Музыка"),
+            ToggleRow(group, line++, KnittedPicture.Game.Icon.Music, Palette.Primary, L.T("Музыка"),
                 () => app.Progress.Data.musicOn, app.SetMusic);
             ToggleRow(group, line++, KnittedPicture.Game.Icon.Vibrate, Palette.Link, L.T("Вибрация"),
                 () => app.Progress.Data.hapticsOn, app.SetHaptics);

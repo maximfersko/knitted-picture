@@ -166,7 +166,8 @@ namespace KnittedPicture.Game
         /// <summary>
         /// Остановить твины владельца на канале (0 — все неповторяющиеся). Так новое движение не борется
         /// со старым: окно закрывают, пока оно ещё выезжает, — выезд останавливается, а не дописывает масштаб поверх.
-        /// Done остановленных не вызывается.
+        /// Done остановленных не вызывается. Остановленные «толчок» и «покачивание» (каналы 31 и 32) откатывают
+        /// свой след: масштаб, смещение и наклон возвращаются, элемент не остаётся сдвинутым или раздутым.
         /// </summary>
         public static void Kill(UnityEngine.Object owner, int channel = 0)
         {
@@ -180,6 +181,7 @@ namespace KnittedPicture.Game
             {
                 if (Match(_instance._active[i]))
                 {
+                    Rollback(_instance._active[i]);
                     _instance.RemoveAt(i);
                 }
             }
@@ -188,8 +190,28 @@ namespace KnittedPicture.Game
             {
                 if (Match(_instance._adding[i]))
                 {
+                    Rollback(_instance._adding[i]);
                     _instance._adding.RemoveAt(i);
                 }
+            }
+        }
+
+        /// <summary>Откатить след остановленного толчка или покачивания (см. <see cref="Kill"/>).</summary>
+        private static void Rollback(Tween tween)
+        {
+            var owner = tween.Owner;
+            if (owner == null || (tween.Channel != PunchChannel && tween.Channel != ShakeChannel) || !Residues.TryGetValue(owner, out var residue))
+            {
+                return;
+            }
+
+            if (tween.Channel == PunchChannel && owner is Transform transform)
+            {
+                ResetPunch(transform, residue);
+            }
+            else if (tween.Channel == ShakeChannel && owner is RectTransform rt)
+            {
+                ApplyShake(rt, residue, 0f, 0f);
             }
         }
 
@@ -267,16 +289,58 @@ namespace KnittedPicture.Game
             Run(rt, duration, t => rt.position = Vector3.LerpUnclamped(fromWorld, toWorld, t), ease ?? KnittedPicture.Game.Ease.OutCubic, done, delay);
         }
 
+        /// <summary>
+        /// Масштаб от from к to. Начальный масштаб ставится сразу (элемент, который прячут на время задержки,
+        /// остаётся спрятанным). «Меньше движения»: без нарастания. Видимый элемент (from > 0) сразу получает итоговый
+        /// масштаб; спрятанный (from = 0) ждёт задержку и появляется сразу целым, в своё время.
+        /// </summary>
         public static void Scale(Transform target, float from, float to, float duration, Func<float, float>? ease = null,
             Action? done = null, float delay = 0f)
         {
+            if (Calm && _instance != null)
+            {
+                if (delay <= 0f || from > 0f)
+                {
+                    target.localScale = Vector3.one * to;
+                    done?.Invoke();
+                    return;
+                }
+
+                target.localScale = Vector3.one * from;
+                Run(target, 0.0001f, t => target.localScale = Vector3.one * to, null, done, delay);
+                return;
+            }
+
             target.localScale = Vector3.one * from;
             Run(target, duration, t => target.localScale = Vector3.one * Mathf.LerpUnclamped(from, to, t), ease ?? KnittedPicture.Game.Ease.OutBack, done, delay);
         }
 
+        /// <summary>Канал твина «толчок» (<see cref="Punch"/>): новый толчок останавливает прежний, не трогая прочие движения.</summary>
+        public const int PunchChannel = 31;
+
+        /// <summary>Канал твина «покачивание» (<see cref="Shake"/>).</summary>
+        public const int ShakeChannel = 32;
+
+        /// <summary>
+        /// Что толчок или покачивание сейчас добавили к элементу. По этому следу прерванное движение можно откатить,
+        /// а новое не запоминает чужой сдвиг за исходную позу. Живёт, пока жив элемент.
+        /// </summary>
+        private sealed class Residue
+        {
+            public Vector2 Offset;
+            public float Angle;
+            public Vector3 Factor = Vector3.one;
+            public Vector3 Written;
+        }
+
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<UnityEngine.Object, Residue> Residues =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<UnityEngine.Object, Residue>();
+
         /// <summary>
         /// Короткий «прыжок» размера: подтверждение действия. Упруго, как желе: раздувается, по ширине
-        /// чуть больше, чем по высоте, и пару раз затухающе отскакивает.
+        /// чуть больше, чем по высоте, и пару раз затухающе отскакивает. Масштаб множится на текущий и в конце
+        /// возвращается к тому, что был до толчка (не к единице). Свой канал: повторный толчок сначала
+        /// снимает прежний, поэтому масштаб не накапливается.
         /// </summary>
         public static void Punch(Transform target, float amount = 0.12f, float duration = 0.22f)
         {
@@ -286,35 +350,92 @@ namespace KnittedPicture.Game
                 amount *= 0.35f;
             }
 
+            var residue = Residues.GetOrCreateValue(target);
+            Kill(target, PunchChannel);
+            ResetPunch(target, residue);
             Run(target, length, t =>
             {
                 var j = amount * KnittedPicture.Game.Ease.Jolt(t);
-                target.localScale = new Vector3(1f + j * 1.1f, 1f + j * 0.8f, 1f);
-            }, null, () => target.localScale = Vector3.one);
+                SetPunch(target, residue, new Vector3(1f + j * 1.1f, 1f + j * 0.8f, 1f));
+            }, null, () => ResetPunch(target, residue), 0f, false, PunchChannel);
         }
 
-        /// <summary>Покачать по горизонтали: «нельзя» или затор.</summary>
+        /// <summary>Снять множитель толчка (единица).</summary>
+        private static void ResetPunch(Transform target, Residue residue) => SetPunch(target, residue, Vector3.one);
+
+        /// <summary>
+        /// Поставить множитель толчка. У элемента с Tap масштаб пишет сам Tap (база × пружина × множитель), иначе
+        /// два писателя копили бы множители. Без Tap: масштаб делится на прежний множитель и умножается на новый.
+        /// </summary>
+        private static void SetPunch(Transform target, Residue residue, Vector3 factor)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            var tap = target.GetComponent<Tap>();
+            if (tap != null)
+            {
+                tap.SetExtra(factor);
+                return;
+            }
+
+            ApplyPunch(target, residue, factor);
+        }
+
+        /// <summary>
+        /// Поставить множитель толчка: масштаб делится на прежний множитель и умножается на новый. Если масштаб
+        /// тем временем поставил кто-то другой (не наша запись), прежний множитель считается уже снятым.
+        /// </summary>
+        private static void ApplyPunch(Transform target, Residue residue, Vector3 factor)
+        {
+            var scale = target.localScale;
+            if (scale != residue.Written)
+            {
+                residue.Factor = Vector3.one;
+            }
+
+            scale = new Vector3(scale.x / residue.Factor.x * factor.x, scale.y / residue.Factor.y * factor.y, scale.z / residue.Factor.z * factor.z);
+            target.localScale = scale;
+            residue.Factor = factor;
+            residue.Written = scale;
+        }
+
+        /// <summary>
+        /// Покачать по горизонтали: «нельзя» или затор. Смещение и наклон добавляются дельтой (как в Offset), поэтому
+        /// исходная поза не запоминается и раскладка элемента не страдает. Свой канал: повторное покачивание сначала
+        /// снимает остаток прерванного, и элемент не остаётся сдвинутым или повёрнутым.
+        /// </summary>
         public static void Shake(RectTransform rt, float amount = 8f, float duration = 0.35f)
         {
-            var origin = rt.anchoredPosition;
-            var tilt = rt.localRotation;
             var lean = Calm ? 0f : 0.25f;
             if (Calm)
             {
                 amount *= 0.35f;
             }
 
+            var residue = Residues.GetOrCreateValue(rt);
+            Kill(rt, ShakeChannel);
+            ApplyShake(rt, residue, 0f, 0f);
             Run(rt, duration, t =>
             {
                 // Затухание квадратом: первый рывок сильный, хвост быстро стихает; лёгкий наклон в такт — «мотает головой».
                 var wave = Mathf.Sin(t * Mathf.PI * 6f) * (1f - t) * (1f - t);
-                rt.anchoredPosition = origin + new Vector2(wave * amount, 0);
-                rt.localRotation = tilt * Quaternion.Euler(0, 0, -wave * amount * lean);
+                ApplyShake(rt, residue, wave * amount, wave * amount * lean);
             }, null, () =>
             {
-                rt.anchoredPosition = origin;
-                rt.localRotation = tilt;
-            });
+                ApplyShake(rt, residue, 0f, 0f);
+            }, 0f, false, ShakeChannel);
+        }
+
+        /// <summary>Поставить покачивание: к позе добавляется только изменение смещения и наклона с прошлого кадра.</summary>
+        private static void ApplyShake(RectTransform rt, Residue residue, float offset, float angle)
+        {
+            rt.anchoredPosition += new Vector2(offset - residue.Offset.x, 0f);
+            rt.localRotation *= Quaternion.Euler(0, 0, -(angle - residue.Angle));
+            residue.Offset = new Vector2(offset, 0f);
+            residue.Angle = angle;
         }
 
         public static void Fade(CanvasGroup group, float from, float to, float duration, Action? done = null, float delay = 0f)

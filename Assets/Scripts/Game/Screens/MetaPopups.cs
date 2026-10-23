@@ -158,7 +158,7 @@ namespace KnittedPicture.Game
             : base(app)
         {
             AddIcon(Icon.Gift, Palette.Danger, Palette.DangerSoft, 72);
-            Ui.InfoButton(Card, CardWidth - 30, 30, L.T("Как работает подарок"),
+            Ui.InfoButton(Card, 30, 30, L.T("Как работает подарок"),
                 L.T("Подарки идут по кругу 7 дней и растут. Пропустишь день, не страшно: неделя продолжится с того же места. ") +
                 L.T("На 7-й день: 150 монет и моток пряжи."), 26);
             AddTitle(L.T("Подарок дня"), 24);

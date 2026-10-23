@@ -231,7 +231,8 @@ namespace KnittedPicture.Game
 
             CardWidth = bottomSheet ? Mathf.Min(app.CanvasWidth, Mathf.Max(430f, app.Width)) : Mathf.Min(app.Width - 40f, app.Tablet ? 400f : 340f);
             Card = Ui.Node(Root, "Card");
-            var face = Ui.Box(Card, "Face", bottomSheet ? 30 : 26, Palette.Card, true);
+            // Радиус окна и шторки 30: крестик (44) и «назад» стоят в углу с отступом 8, их радиус 22, 22 + 8 = 30, углы концентричны.
+            var face = Ui.Box(Card, "Face", 30, Palette.Card, true);
             Ui.Stretch(face.rectTransform);
             if (bottomSheet)
             {
@@ -352,18 +353,20 @@ namespace KnittedPicture.Game
             // Закрыли, пока окно ещё выпрыгивало: выезд останавливается и не спорит с уходом.
             Tweens.Kill(Card, Motion);
             Tweens.Kill(_group);
+
+            // Уход с замедлением (OutCubic): на выходе окно сразу реагирует на касание, а не разгоняется из покоя.
             if (Tweens.Calm)
             {
                 // Только гаснет.
             }
             else if (_bottomSheet)
             {
-                Tweens.Offset(Card, Vector2.zero, new Vector2(0, -(Card.sizeDelta.y + 40f)), 0.22f, Ease.InCubic);
+                Tweens.Offset(Card, Vector2.zero, new Vector2(0, -(Card.sizeDelta.y + 40f)), 0.22f, Ease.OutCubic);
             }
             else
             {
                 var scale = Card.localScale.x;
-                Tweens.Run(Card, 0.16f, t => Card.localScale = Vector3.one * Mathf.Lerp(scale, 0.92f, t), Ease.InCubic);
+                Tweens.Run(Card, 0.16f, t => Card.localScale = Vector3.one * Mathf.Lerp(scale, 0.92f, t), Ease.OutCubic);
             }
 
             Tweens.Fade(_group, _group.alpha, 0f, 0.17f, Destroy);
@@ -386,10 +389,10 @@ namespace KnittedPicture.Game
             var extra = _bottomSheet ? 30f + App.BottomInset : 0f;
             Card.sizeDelta = new Vector2(CardWidth, _cursor + bottomPadding + extra);
 
-            // Закрыть можно не только тапом мимо окна: крестик 44 pt / 48 dp в углу, как принято на iOS и Android.
+            // Закрыть можно не только тапом мимо окна: крестик 44 pt / 48 dp в углу (отступ 8), как принято на iOS и Android.
             if (Closable)
             {
-                Ui.RoundButton(Card, Icon.Close, CardWidth - 44f - 10f, 10f, 44f, true).OnClick(Dismiss);
+                Ui.RoundButton(Card, Icon.Close, CardWidth - 44f - 8f, 8f, 44f, true).OnClick(Dismiss);
             }
         }
 
@@ -486,8 +489,8 @@ namespace KnittedPicture.Game
 
         protected Tap AddSecondary(string text, Icon? icon = null, float height = 54f)
         {
-            var root = Ui.Card(Card, "Secondary", 24, _cursor, Inner, height, 20, Palette.Card, Palette.CardShadow, 3f, true);
-            Ui.Outline(root, 20, Palette.CardShadow, 2f);
+            // Как PairButton: плашка Surface на мягкой тени, без обводки.
+            var root = Ui.Card(Card, "Secondary", 24, _cursor, Inner, height, 20, Palette.Surface, Palette.CardShadow, 3f, true);
             var label = Ui.Label(root, text, 17, Palette.Ink, icon != null ? 14 : 0, 0, Inner, height);
             if (icon != null)
             {

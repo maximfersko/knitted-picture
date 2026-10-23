@@ -38,6 +38,7 @@ namespace KnittedPicture.Game
         Info,
         Vibrate,
         Bell,
+        Music,
     }
 
     /// <summary>
@@ -1242,6 +1243,11 @@ namespace KnittedPicture.Game
                     // Колокольчик: купол, юбка, язычок.
                     p.Arc(12, 11, 6, 180, 360).Line(6, 11, 6, 16).Line(18, 11, 18, 16).Line(4, 17, 20, 17)
                         .Line(12, 3, 12, 5).Disc(12, 20, 1.8f);
+                    break;
+                case KnittedPicture.Game.Icon.Music:
+                    // Две ноты под общей планкой: две головки, две палочки и перекладина.
+                    p.Disc(7.3f, 17.6f, 3.1f).Disc(16.3f, 15.8f, 3.1f).Stroke(2.4f).Line(10.1f, 17, 10.1f, 5.4f).Line(19.1f, 15.2f, 19.1f, 3.8f)
+                        .Stroke(3.2f).Line(10.1f, 5.6f, 19.1f, 4.2f);
                     break;
                 case KnittedPicture.Game.Icon.Gift:
                     p.Box(12, 15.5f, 7.5f, 5.5f, 1.5f, false).Box(12, 9.5f, 9, 2.5f, 1.2f, false).Line(12, 7, 12, 21)

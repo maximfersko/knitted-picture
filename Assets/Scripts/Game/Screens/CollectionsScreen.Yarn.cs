@@ -20,20 +20,35 @@ namespace KnittedPicture.Game
             var progress = App.Progress;
             var cardW = W - 32f;
             var y = 6f;
-            var entering = App.PreviousScreen != typeof(CollectionsScreen);
+            // Анимации входа (набор счёта и полоски, выпрыгивание плиток) только при входе с другого экрана и не при
+            // перелистывании вкладок: там сразу итоговое состояние. Считаем один раз: плитки достраиваются позже (Defer).
+            var entering = App.PreviousScreen != typeof(CollectionsScreen) && App.PendingSlide == 0;
 
             const float bannerH = 150f;
             var banner = Ui.Card(content, "Basket", 16, y, cardW, bannerH, 24, Palette.Card, Palette.CardShadow, 3f);
             BuildBasket(banner, progress);
             const float textX = 118f;
             Ui.Fit(Ui.Label(banner, L.T("Корзинка пряжи"), 18, Palette.Ink, textX, 14, cardW - textX - 48, 26, true, TextAnchor.MiddleLeft), 13);
-            var kinds = Ui.Label(banner, L.F("{0} из {1} мотков", progress.YarnKinds, YarnCatalog.Count), 13, Palette.Ink2, textX, 40, cardW - textX - 48, 18, false,
-                TextAnchor.MiddleLeft);
+
+            // «N из M мотков»: число отдельной подписью фиксированной ширины (по самому широкому числу) с выравниванием
+            // вправо, а хвост «из M мотков» стоит на месте и не ездит, пока счёт набегает. Хвост берём из той же строки
+            // перевода с пустым числом: ключ локализации остаётся прежним.
+            const float tailGap = 4f;
+            var kindsW = cardW - textX - 48;
+            var kindsText = L.F("{0} из {1} мотков", string.Empty, YarnCatalog.Count).Trim();
+            var count = Ui.Label(banner, new string('8', YarnCatalog.Count.ToString().Length), 13, Palette.Ink2, textX, 40, kindsW, 18, false,
+                TextAnchor.MiddleRight);
+            count.horizontalOverflow = HorizontalWrapMode.Overflow;
+            var countW = Mathf.Ceil(count.preferredWidth);
+            Ui.Place(count.rectTransform, textX, 40, countW, 18);
+            count.text = entering ? "0" : progress.YarnKinds.ToString();
+            // Хвост ужимается, а не переносится: при «Крупном тексте» строка остаётся одной.
+            Ui.Fit(Ui.Label(banner, kindsText, 13, Palette.Ink2, textX + countW + tailGap, 40, kindsW - countW - tailGap, 18, false, TextAnchor.MiddleLeft), 10);
             if (entering)
             {
-                kinds.text = L.F("0 из {0} мотков", YarnCatalog.Count);
-                Ui.RollTo(kinds, progress.YarnKinds, 0.8f, L.F("{{0}} из {0} мотков", YarnCatalog.Count), 0.15f);
+                Ui.RollTo(count, progress.YarnKinds, 0.8f, "{0}", 0.15f);
             }
+
             var fill = Ui.ProgressBar(banner, textX, 66, cardW - textX - 18, 10, (float)progress.YarnKinds / YarnCatalog.Count, Palette.Link);
             if (entering && !Tweens.Calm)
             {

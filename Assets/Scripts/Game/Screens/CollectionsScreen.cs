@@ -262,7 +262,7 @@ namespace KnittedPicture.Game
                 _tabLabels[i] = Ui.Fit(Ui.Label(face.rectTransform, _titles[i], 15, Palette.Ink2, 0, 0, labelW, 36), 11);
                 if (pending > 0)
                 {
-                    Ui.Badge(face.rectTransform, _tabW - 12, 6, pending);
+                    Ui.Badge(face.rectTransform, _tabW - 12, 6, pending, App.PendingSlide == 0);
                 }
 
                 var index = i;

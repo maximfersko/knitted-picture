@@ -918,18 +918,24 @@ namespace KnittedPicture.Game
                 Tweens.Offset(root, new Vector2(0, 30f), Vector2.zero, 0.42f, Ease.OutSoftBack);
                 root.localScale = Vector3.one * 0.92f;
                 Tweens.Run(root, 0.4f, t => root.localScale = Vector3.one * Mathf.LerpUnclamped(0.92f, 1f, t), Ease.Spring);
-                Tweens.Offset(root, Vector2.zero, new Vector2(0, 18f), 0.3f, Ease.InCubic, null, hold);
+                Tweens.Offset(root, Vector2.zero, new Vector2(0, 18f), 0.3f, Ease.OutCubic, null, hold);
             }
 
-            Tweens.Fade(group, 1f, 0f, 0.3f, () =>
+            // Уход: по истечении выдержки плашка гаснет от той альфы, что у неё сейчас (а не от единицы:
+            // иначе вход, который ещё не закончился, мигнул бы), с замедлением к концу.
+            Tweens.Delay(group, hold, () =>
             {
-                if (_toast == root)
+                var from = group.alpha;
+                Tweens.Run(group, 0.3f, t => group.alpha = Mathf.Lerp(from, 0f, t), Ease.OutCubic, () =>
                 {
-                    _toast = null;
-                }
+                    if (_toast == root)
+                    {
+                        _toast = null;
+                    }
 
-                Destroy(root.gameObject);
-            }, hold);
+                    Destroy(root.gameObject);
+                });
+            });
         }
 
         public void SetSound(bool on)

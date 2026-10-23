@@ -86,36 +86,24 @@ namespace KnittedPicture.Game
                 var pill = Ui.Box(rt, "Active", 15, Palette.WithAlpha(Palette.Primary, 0.12f));
                 Ui.PlaceCenter(pill.rectTransform, cellW / 2f, 22, 64, 30);
 
-                // Пришли с другой вкладки: метка переезжает от неё, вытягиваясь в пути, и пружинисто встаёт на место.
+                // Пришли с другой вкладки: метка переезжает от неё и замедляется к месту, без растяжения и отскока.
                 if (app.PendingSlide != 0 && _last != null && _last != tab && !Tweens.Calm)
                 {
-                    var pillRt = pill.rectTransform;
                     var from = ((int)_last.Value - index) * cellW;
-                    Tweens.Offset(pillRt, new Vector2(from, 0), Vector2.zero, 0.42f, Ease.OutSoftBack);
-                    Tweens.Run(pillRt, 0.42f, t => pillRt.localScale = new Vector3(1f + 0.35f * Ease.Bump(t), 1f - 0.12f * Ease.Bump(t), 1f));
+                    Tweens.Offset(pill.rectTransform, new Vector2(from, 0), Vector2.zero, 0.42f, Ease.OutCubic);
                 }
             }
 
             // Объёмные значки: книга-альбом, домик, клубок. Неактивные приглушены серым, активный — в полном цвете
-            // и, если на вкладку перешли, коротко подпрыгивает.
+            // (значок при переходе не прыгает: активную вкладку выдают цвет, жирная подпись и пилюля).
             var art = tab == MainTab.Yarn ? Art2.YarnBall(Palette.Link) : tab == MainTab.Album ? Art2.AlbumBook : Art2.House;
             var icon = Ui.Image(rt, "Icon", art, on ? Color.white : new Color(0.78f, 0.81f, 0.86f, 0.85f));
-            var iconRt = icon.rectTransform;
-            Ui.PlaceCenter(iconRt, cellW / 2f, 22, 28, 28);
-            if (on && app.PendingSlide != 0 && !Tweens.Calm)
-            {
-                Tweens.Run(iconRt, 0.45f, t =>
-                {
-                    var j = Ease.Jolt(t);
-                    iconRt.localScale = new Vector3(1f + 0.18f * j, 1f + 0.26f * j, 1f);
-                    iconRt.anchoredPosition = new Vector2(iconRt.anchoredPosition.x, -22f + 6f * Mathf.Max(0f, j));
-                }, null, null, 0.08f);
-            }
+            Ui.PlaceCenter(icon.rectTransform, cellW / 2f, 22, 28, 28);
 
             Ui.Fit(Ui.Label(rt, title, 12, color, 2, 40, cellW - 4, 18, on), 10);
             if (badge > 0)
             {
-                Ui.Badge(rt, cellW / 2f + 18f, 13, badge);
+                Ui.Badge(rt, cellW / 2f + 18f, 13, badge, app.PendingSlide == 0);
             }
 
             var tap = cell.gameObject.AddComponent<Tap>();
