@@ -51,6 +51,11 @@ namespace KnittedPicture.Game
                 return;
             }
 
+            if (!App.Progress.FunnelSent(FunnelStep.FirstMove))
+            {
+                App.Funnel(FunnelStep.FirstMove);
+            }
+
             if (_scissors)
             {
                 PayScissors();

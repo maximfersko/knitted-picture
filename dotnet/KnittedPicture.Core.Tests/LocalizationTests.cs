@@ -104,6 +104,24 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal("Нет такого", L.Translate(En.Table, "Нет такого"));
         }
 
+        [Theory]
+        [InlineData(1, "Осталась 1 петля", "1 stitch left")]
+        [InlineData(2, "Осталось 2 петли", "2 stitches left")]
+        [InlineData(5, "Осталось 5 петель", "5 stitches left")]
+        [InlineData(11, "Осталось 11 петель", "11 stitches left")]
+        [InlineData(21, "Осталась 21 петля", "21 stitches left")]
+        [InlineData(22, "Осталось 22 петли", "22 stitches left")]
+        public void Stitches_left_follows_russian_forms_and_english_has_two(int n, string ru, string en)
+        {
+            const string one = "Осталась {0} петля";
+            const string few = "Осталось {0} петли";
+            const string many = "Осталось {0} петель";
+            Assert.Equal(ru, string.Format(L.RussianPlural(n, one, few, many), n));
+
+            // В английском формы две: единственное число только у 1.
+            Assert.Equal(en, string.Format(L.PluralIn(En.Table, n, one, few, many), n));
+        }
+
         [Fact]
         public void English_text_keeps_the_house_style()
         {

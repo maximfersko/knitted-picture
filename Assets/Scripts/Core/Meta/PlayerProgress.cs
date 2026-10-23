@@ -43,6 +43,12 @@ namespace KnittedPicture.Core
         /// <summary>Вступление «как играть» уже показано.</summary>
         public bool introSeen;
 
+        /// <summary>Какие шаги воронки первых минут уже отправлены в аналитику (бит = <see cref="FunnelStep"/>).</summary>
+        public int funnel;
+
+        /// <summary>Сколько раз запускали игру (для аналитики и удержания).</summary>
+        public int launches;
+
         /// <summary>Мотки «Корзинки»: индекс — номер мотка в каталоге, значение — сколько штук.</summary>
         public List<int> yarns = new List<int>();
 
@@ -147,6 +153,8 @@ namespace KnittedPicture.Core
             remindersAsked = remindersAsked,
             adsRemoved = adsRemoved,
             adsConsent = adsConsent,
+            funnel = funnel,
+            launches = launches,
         };
 
         /// <summary>Сколько раз начинали каждый уровень (индекс — номер уровня − 1): для аналитики «с какой попытки проходят».</summary>

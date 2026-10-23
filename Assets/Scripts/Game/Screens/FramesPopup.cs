@@ -17,6 +17,7 @@ namespace KnittedPicture.Game
             : base(app, bottomSheet: true)
         {
             AddTitle(L.T("Рамки для альбома"), 24);
+            Analytics.Event("offer_view", ("placement", "frames"));
             _balance = AddText(BalanceText(app), 15, 1);
             _balance.color = Palette.CoinInk;
             Space(4f);

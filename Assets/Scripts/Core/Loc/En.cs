@@ -749,6 +749,11 @@ namespace KnittedPicture
             ["цвета {0} · ★ {1} · рамка {2}"] = "colors {0} · ★ {1} · frame {2}",
             ["Рамка +{0}"] = "Frame +{0}",
             ["Подобрали лучший набор: тапни картинку, чтобы заменить, или смени рамку"] = "We picked the best set: tap a picture to replace it or change the frame",
+            ["Осталась {0} петля|Осталось {0} петель"] = "{0} stitch left|{0} stitches left",
+            ["Станок полон, хода нет"] = "The loom is full, no moves left",
+            ["Передние клубки пока не взять"] = "The front balls can't be taken yet",
+            ["Как вязалось"] = "How it was knitted",
+            ["Ещё раз"] = "Again",
         };
     }
 }

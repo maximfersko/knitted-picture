@@ -386,6 +386,7 @@ namespace KnittedPicture.Game
             }
 
             UpdateLoomAlert(dt);
+            MaybeLoomFullTip();
             UpdateCombo(dt);
             _picture.SetGoldLive(_tempo.Active);
 
@@ -394,7 +395,9 @@ namespace KnittedPicture.Game
                 _idle += dt;
                 // Дальше — мягкий толчок, если игрок долго не делает ничего: 20 секунд без хода, станок стоит.
                 // На первых пяти уровнях это обучение — всегда; дальше — по настройке «Подсказка хода» (раздел «Подсказки» в «Удобстве»).
-                var threshold = _level.id == 1 ? 3f : _level.id <= 3 ? 6f : _level.id <= 5 ? 12f : Comfort.IdleHints ? IdleNudge : 0f;
+                // Самый первый ход на первом уровне: рука появляется раньше, чтобы новичок не стоял в растерянности.
+                var firstMove = _level.id == 1 && _game.Taps == 0 && _run.Attempt == 1;
+                var threshold = _level.id == 1 ? (firstMove ? 2.4f : 3f) : _level.id <= 3 ? 6f : _level.id <= 5 ? 12f : Comfort.IdleHints ? IdleNudge : 0f;
                 if (_run.StuckHelp)
                 {
                     // Застрявшему подсказка нужна раньше и даже при выключенной настройке.

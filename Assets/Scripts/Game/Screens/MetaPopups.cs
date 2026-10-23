@@ -265,8 +265,20 @@ namespace KnittedPicture.Game
             // Шапка: картинка слева, справа название, номер и звёзды.
             const float pic = 108f;
             var top = Cursor - 8f;
-            var frame = Ui.Card(Card, "Frame", 24, top, pic, pic, 20, Palette.Surface, Palette.CardShadow, 3f);
+            var frame = Ui.Card(Card, "Frame", 24, top, pic, pic, 20, Palette.Surface, Palette.CardShadow, 3f, true);
             MiniPicture.Create(frame, level, pic / 2f, pic / 2f, pic - 18f);
+
+            // Карточка открывается только у пройденных уровней (картинка готова): тап по ней — крупный просмотр «как вязалось»
+            // поверх этой карточки. В углу значок «играть», чтобы тап не оставался тайной.
+            var replayable = progress.IsCompleted(level.id);
+            void OpenReplay() => app.ShowPopup(new KnitReplayPopup(app, level));
+            if (replayable)
+            {
+                var badge = Ui.Image(frame, "PlayBack", Art.Circle, Palette.Card);
+                Ui.PlaceCenter(badge.rectTransform, pic - 18f, pic - 18f, 28f, 28f);
+                Ui.IconImage(frame, Icon.Play, Palette.Ink, pic - 18f, pic - 18f, 14f);
+                frame.gameObject.AddComponent<Tap>().OnClick(OpenReplay);
+            }
             var textX = 24 + pic + 16;
             var textW = CardWidth - textX - 20;
             // Длинные названия («Мордочка котика») ужимаются в свою строку и не наезжают на подпись.
@@ -277,6 +289,13 @@ namespace KnittedPicture.Game
             {
                 var star = Ui.Image(Card, "Star", Art.Icon(Icon.Star), i < stars ? Palette.Coin : Palette.Track);
                 Ui.PlaceCenter(star.rectTransform, textX + 14 + i * 32, top + 80, 28, 28);
+            }
+
+            if (replayable)
+            {
+                var replayLink = Ui.TextButton(Card, L.T("Как вязалось"), textX, top + 86f, textW, 44f, Palette.Link, 13f);
+                replayLink.GetComponentInChildren<UnityEngine.UI.Text>().alignment = TextAnchor.MiddleLeft;
+                replayLink.OnClick(OpenReplay);
             }
 
             Space(pic + 6f);

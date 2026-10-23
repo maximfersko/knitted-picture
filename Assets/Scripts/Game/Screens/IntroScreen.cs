@@ -82,7 +82,7 @@ namespace KnittedPicture.Game
         public IntroScreen(App app)
             : base(app, "Intro")
         {
-            Ui.TextButton(Root, L.T("Пропустить"), W - 136, 8, 120, 44, Palette.Ink2, 15).OnClick(Finish);
+            Ui.TextButton(Root, L.T("Пропустить"), W - 136, 8, 120, 44, Palette.Ink2, 15).OnClick(() => Finish(true));
 
             _sw = W - 32f;
             _sh = Mathf.Clamp(H * 0.5f, 300f, 430f);
@@ -194,7 +194,7 @@ namespace KnittedPicture.Game
 
         public override bool OnBack()
         {
-            Finish();
+            Finish(true);
             return true;
         }
 
@@ -204,7 +204,7 @@ namespace KnittedPicture.Game
         {
             if (Step >= Shown.Length - 1)
             {
-                Finish();
+                Finish(false);
             }
             else
             {
@@ -212,9 +212,9 @@ namespace KnittedPicture.Game
             }
         }
 
-        private void Finish()
+        private void Finish(bool skipped)
         {
-            App.FinishIntro();
+            App.FinishIntro(skipped, Mathf.Max(0, Step));
         }
 
         private void Go(int page)
@@ -231,6 +231,11 @@ namespace KnittedPicture.Game
             }
 
             _page = page;
+            if (!App.Progress.Data.introSeen)
+            {
+                Analytics.Event("intro_step", ("step", Mathf.Max(0, Step)), ("first", true));
+            }
+
             _title.text = Titles[page];
             _text.text = Texts[page];
             _nextLabel.text = page == Shown[Shown.Length - 1] ? L.T("Начать вязать") : L.T("Дальше");

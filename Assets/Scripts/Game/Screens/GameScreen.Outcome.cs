@@ -147,7 +147,7 @@ namespace KnittedPicture.Game
         /// <summary>
         /// Затор: показать на поле, что случилось. Красное кольцо — где проблема, зелёное — что поможет,
         /// выноска в несколько слов. Один фокус, без длинных текстов: подробный совет — в окне.
-        /// false — показать нечего (окно сразу).
+        /// Нет конкретной цели: красное кольцо на станке и общая фраза (станок полон или передние клубки не взять).
         /// </summary>
         private bool ExplainJam()
         {
@@ -270,8 +270,11 @@ namespace KnittedPicture.Game
 
             if (target == null)
             {
+                // Конкретной причины на поле нет: показываем общее состояние станка, чтобы игрок не гадал, что случилось.
                 ClearJamMarks();
-                return false;
+                target = JamMark(_loomBg, Palette.Danger);
+                text = _game.FreeSlots == 0 ? L.T("Станок полон, хода нет") : L.T("Передние клубки пока не взять");
+                below = false;
             }
 
             ShowTip(text, target, below);
@@ -476,7 +479,10 @@ namespace KnittedPicture.Game
                 }
             }
 
-            var percent = Mathf.FloorToInt(100f * _game.KnittedCount / _game.TotalStitches);
+            var percent = ProgressPercent;
+
+            // «Почти получилось»: сколько петель не хватило. Это и в событии, и в окне проигрыша.
+            var left = _game.TotalStitches - _game.KnittedCount;
 
             // Каких цветов ждут столбцы, которые можно вязать прямо сейчас: игрок видит, чего не хватило.
             var needed = kind == FailKind.Jam && rescue != null
@@ -487,8 +493,10 @@ namespace KnittedPicture.Game
             Analytics.Event("level_fail", LevelParams(
                 ("reason", kind == FailKind.Jam ? "jam" : "time"),
                 ("rescue_offered", rescue?.ToString() ?? "none"),
-                ("jam_advice", kind == FailKind.Jam ? _game.Advice().ToString() : "")));
-            App.ShowPopup(new FailPopup(App, kind, rescue, reason, percent, Rescue, Restart, LeaveHome,
+                ("jam_advice", kind == FailKind.Jam ? _game.Advice().ToString() : ""),
+                ("left", left)));
+            App.Funnel(FunnelStep.FirstFail);
+            App.ShowPopup(new FailPopup(App, kind, rescue, reason, percent, left, Rescue, Restart, LeaveHome,
                 rescue == BoosterType.Scissors && _run.FreeScissors > 0, StreakWarning(), needed, advice,
                 _rescues, _run.VideoRescues < Economy.VideoRescuesPerLevel, () => _run.VideoRescues++));
         }
@@ -510,12 +518,12 @@ namespace KnittedPicture.Game
             }
         }
 
-        private void Rescue(BoosterType type)
+        private void Rescue(BoosterType type, string via)
         {
             _failShown = false;
             _mothEating = false;
             ClearJamMarks();
-            Analytics.Event("rescue", LevelParams(("type", type.ToString())));
+            Analytics.Event("rescue", LevelParams(("type", type.ToString()), ("via", via)));
             if (type == BoosterType.Scissors)
             {
                 // Ножницы оплачиваются, когда ими режут; затор снимается этим ходом.
@@ -569,6 +577,12 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>Сколько процентов картинки связано (0..100): для аналитики и окна проигрыша.</summary>
+        public int ProgressPercent => Mathf.FloorToInt(100f * _game.KnittedCount / Mathf.Max(1, _game.TotalStitches));
+
+        /// <summary>Номер уровня для аналитики: 0 у «Узора дня».</summary>
+        public int AnalyticsLevel => _run.Pattern ? 0 : _level.id;
+
         /// <summary>Общие параметры событий уровня: какой уровень, какая попытка, сколько длится, сколько связано.</summary>
         private (string, object)[] LevelParams(params (string, object)[] extra)
         {
@@ -578,7 +592,7 @@ namespace KnittedPicture.Game
                 ("pattern", _run.Pattern),
                 ("attempt", _run.Attempt),
                 ("seconds", Mathf.RoundToInt(Time.realtimeSinceStartup - _run.StartedAt)),
-                ("progress", Mathf.FloorToInt(100f * _game.KnittedCount / Mathf.Max(1, _game.TotalStitches))),
+                ("progress", ProgressPercent),
                 ("taps", _game.Taps),
             };
             list.AddRange(extra);
@@ -590,6 +604,12 @@ namespace KnittedPicture.Game
 
         private void Restart()
         {
+            // Заново посреди уровня (не из окна проигрыша и не после победы) — это уход с уровня.
+            if (!_ended && !_failShown)
+            {
+                Analytics.Event("level_quit", LevelParams(("via", "restart")));
+            }
+
             if (_run.Pattern)
             {
                 App.StartPattern();
@@ -605,7 +625,7 @@ namespace KnittedPicture.Game
         {
             if (!_ended)
             {
-                Analytics.Event("level_quit", LevelParams());
+                Analytics.Event("level_quit", LevelParams(("via", "home"), ("after_fail", _failShown)));
             }
 
             if (!_run.Pattern && !_ended && _game.Taps > 0 && !App.Progress.IsCompleted(_level.id))

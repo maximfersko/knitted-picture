@@ -51,5 +51,21 @@ namespace KnittedPicture.Core
 
             return result;
         }
+
+        /// <summary>
+        /// Знакомство с затором: совет «Места кончились, а работы нет?» показывается один раз, когда станок впервые
+        /// заполнился на первых уровнях. Помечает показанным; false — уже показывали.
+        /// </summary>
+        public bool TakeLoomFullIntro()
+        {
+            const int introId = 300;
+            if (_data.introsShown.Contains(introId))
+            {
+                return false;
+            }
+
+            _data.introsShown.Add(introId);
+            return true;
+        }
     }
 }

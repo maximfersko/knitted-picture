@@ -19,15 +19,25 @@ namespace KnittedPicture.Game
     {
         private static readonly Dictionary<string, Texture2D> Textures = new Dictionary<string, Texture2D>();
 
-        public static RawImage Create(RectTransform parent, LevelData level, float cx, float cy, float size, bool faded = false)
+        /// <summary>
+        /// Текстура миниатюры уровня (готовая или бледный эскиз) из общего кэша. У «узора дня» номер один на все дни,
+        /// поэтому ключ включает и название картинки, чтобы не показать вчерашнюю.
+        /// </summary>
+        internal static Texture2D TextureOf(LevelData level, bool faded)
         {
-            // У «узора дня» номер один на все дни — ключ включает и картинку, чтобы не показать вчерашнюю.
             var key = level.id + ":" + level.name + (faded ? "f" : "");
             if (!Textures.TryGetValue(key, out var texture) || texture == null)
             {
                 texture = Art.PictureTexture(level, done: !faded);
                 Textures[key] = texture;
             }
+
+            return texture;
+        }
+
+        public static RawImage Create(RectTransform parent, LevelData level, float cx, float cy, float size, bool faded = false)
+        {
+            var texture = TextureOf(level, faded);
 
             var rt = Ui.Node(parent, "Mini");
             var raw = rt.gameObject.AddComponent<RawImage>();

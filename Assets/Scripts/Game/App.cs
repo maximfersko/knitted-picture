@@ -391,8 +391,12 @@ namespace KnittedPicture.Game
             Comfort.Apply(Progress.Data);
             L.Set(LanguageFor(Progress.Data.language));
             Analytics.Init();
+            var launch = Progress.CountLaunch();
             Analytics.Event("app_open", ("level", Progress.CurrentLevel), ("wins", Progress.Data.totalWins), ("coins", Progress.Coins),
-                ("store", StoreConfig.Flavor.ToString()), ("ads_removed", Progress.Data.adsRemoved), ("first", !Progress.Data.introSeen));
+                ("store", StoreConfig.Flavor.ToString()), ("ads_removed", Progress.Data.adsRemoved), ("first", !Progress.Data.introSeen),
+                ("launch", launch));
+            Funnel(FunnelStep.FirstOpen);
+            Save();
             Ads = AdsFactory.Create(this);
             Ads.SetPersonalized(Progress.Data.adsConsent == 1);
             Purchases = PurchasesFactory.Create(this);
@@ -418,12 +422,32 @@ namespace KnittedPicture.Game
             }
             else
             {
-                ShowIntro();
+                StartFirstRun();
             }
 
             // Заставка поверх всего: нитка сматывается в клубок, пока в фоне рисуются клубки.
             Splash.Show(_canvas!, Palette.Ground);
             Unsettle(2.2f);
+        }
+
+        /// <summary>
+        /// Шаг воронки первых минут: уходит в аналитику один раз за установку (и сохраняется, чтобы не повторяться).
+        /// В событии: сколько секунд с запуска приложения и какой это по счёту запуск.
+        /// </summary>
+        public void Funnel(FunnelStep step)
+        {
+            if (Progress.TakeFunnel(step))
+            {
+                Analytics.Event(step.EventName(), ("sec", (int)Time.realtimeSinceStartup), ("launch", Progress.Data.launches));
+            }
+        }
+
+        /// <summary>Самый первый запуск: без вступления сразу в уровень 1, игра учит ходом (рука-подсказка). «Как играть» остаётся в настройках.</summary>
+        private void StartFirstRun()
+        {
+            Progress.Data.introSeen = true;
+            Save();
+            StartLevel(1);
         }
 
         private void ShowDailyIfWaiting()
@@ -484,10 +508,31 @@ namespace KnittedPicture.Game
             Comfort.Idle(Time.unscaledDeltaTime, Touched(), _screen is GameScreen);
         }
 
+        /// <summary>Игру свернули: на каком экране и в каком окне, на каком уровне и сколько связано (где уходят из игры).</summary>
+        private void TrackBackground()
+        {
+            if (Progress == null)
+            {
+                return;
+            }
+
+            var game = _screen as GameScreen;
+            var popup = _popups.Count > 0 ? _popups[_popups.Count - 1].GetType().Name : string.Empty;
+            Analytics.Event("app_background",
+                ("screen", _screen?.GetType().Name ?? string.Empty),
+                ("popup", popup),
+                ("level", game != null ? game.AnalyticsLevel : Progress.CurrentLevel),
+                ("in_level", game != null),
+                ("progress", game != null ? game.ProgressPercent : 0),
+                ("sec", (int)Time.realtimeSinceStartup),
+                ("launch", Progress.Data.launches));
+        }
+
         private void OnApplicationPause(bool paused)
         {
             if (paused)
             {
+                TrackBackground();
                 Save();
                 (_screen as GameScreen)?.AutoPause();
                 Reminders.Schedule(Progress, Today);
@@ -564,6 +609,7 @@ namespace KnittedPicture.Game
         public void ShowHome()
         {
             Show(() => new HomeScreen(this));
+            Funnel(FunnelStep.FirstHome);
 
             // Новый день наступил, пока игра была свёрнута посреди уровня или окна: подарок встречает на главной.
             if (_newDayPending && _popups.Count == 0)
@@ -585,9 +631,10 @@ namespace KnittedPicture.Game
         public void ShowIntro() => Show(() => new IntroScreen(this));
 
         /// <summary>Вступление закончено или пропущено: новичка сразу в первый уровень.</summary>
-        public void FinishIntro()
+        public void FinishIntro(bool skipped = false, int step = 0)
         {
-            Analytics.Event("intro_finish", ("first", !Progress.Data.introSeen));
+            Analytics.Event("intro_finish", ("first", !Progress.Data.introSeen), ("skipped", skipped), ("step", step),
+                ("sec", (int)Time.realtimeSinceStartup));
             Progress.Data.introSeen = true;
             Save();
             if (Progress.IsCompleted(1))
@@ -653,7 +700,16 @@ namespace KnittedPicture.Game
             Analytics.Event("level_start", ("level", levelId), ("attempt", attempt), ("hard", level.hard), ("timed", level.timeLimit > 0),
                 ("completed_before", Progress.IsCompleted(levelId)), ("warm", warm.Any));
             Show(() => new GameScreen(this, level, game, run));
-            var perksIntro = Progress.TakePerksIntro(levelId);
+            if (levelId == 1)
+            {
+                Funnel(FunnelStep.FirstLevelShown);
+            }
+            else if (levelId == 2)
+            {
+                Funnel(FunnelStep.Level2Start);
+            }
+
+            var perksIntro = Progress.TakePerksIntro(levelId, intro != null);
             if (perksIntro)
             {
                 Save();
@@ -737,6 +793,15 @@ namespace KnittedPicture.Game
             var framesBefore = Progress.CollectionFramesOwned;
             var reward = Progress.CompleteLevel(level.id, level.hard, stars, stats.RushCoins + stats.GoldCoins, Today);
             Save();
+            switch (level.id)
+            {
+                case 1: Funnel(FunnelStep.Level1Win); break;
+                case 2: Funnel(FunnelStep.Level2Win); break;
+                case 3: Funnel(FunnelStep.Level3Win); break;
+                case 5: Funnel(FunnelStep.Level5Win); break;
+                case 10: Funnel(FunnelStep.Level10Win); break;
+            }
+
             var news = new WinNews(Progress.PendingClaims > pendingBefore, Progress.CanOpenChest && !chestBefore, missionsDone > 0,
                 Progress.CanClaimMissions(Today), wasDone && stars > oldStars, wasDone);
             Show(() => new WinScreen(this, level, reward, stats, news));
@@ -1048,7 +1113,7 @@ namespace KnittedPicture.Game
             Comfort.Apply(Progress.Data);
             HomeScreen.ResetCarousel();
             SaveStore.Save(Progress.Data);
-            ShowIntro();
+            StartFirstRun();
         }
 
         /// <summary>

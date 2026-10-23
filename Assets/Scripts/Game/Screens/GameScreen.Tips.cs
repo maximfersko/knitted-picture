@@ -261,6 +261,27 @@ namespace KnittedPicture.Game
             _tipKeep = true;
         }
 
+        /// <summary>
+        /// Станок впервые заполнился на одном из первых уровней: коротко объяснить затор прямо над станком, пока
+        /// игрок не встретил его на деле. Один раз за игру. Не мешает выноске уровня (ждёт, пока она уйдёт) и
+        /// разбору затора (тот прячет эту выноску и показывает свою).
+        /// </summary>
+        private void MaybeLoomFullTip()
+        {
+            if (_level.id > LoomFullTipMaxLevel || _run.Pattern || _ended || _finishing || _failShown || _tip != null || App.HasPopups ||
+                _game.Status != GameStatus.Playing || _game.FreeSlots != 0 || !App.Progress.TakeLoomFullIntro())
+            {
+                return;
+            }
+
+            App.Save();
+            ShowTip(L.T("Места кончились, а работы нет? Это затор. Бери клубки, которым сразу есть дело"), _loomBg, false);
+            _tipKeep = true;
+        }
+
+        /// <summary>До какого уровня включительно показывается совет о заторе.</summary>
+        private const int LoomFullTipMaxLevel = 4;
+
         private void ShowTip(string tipText, RectTransform? target, bool below)
         {
             if (_ended || _finishing || _tip != null || string.IsNullOrEmpty(tipText))

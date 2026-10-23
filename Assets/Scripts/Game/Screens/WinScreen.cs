@@ -141,10 +141,43 @@ namespace KnittedPicture.Game
             // Пяльцы: кремовая ткань, на ней вязаная миниатюра петлями, сверху деревянный обруч с латунным винтом.
             var cloth = Ui.Image(hoopRoot, "Cloth", Art.Circle, Palette.Hex("#FBF5EA"));
             Ui.PlaceCenter(cloth.rectTransform, hoop / 2f, hoop / 2f, hoop - 6, hoop - 6);
-            KnitInHoop(hoopRoot, level, hoop);
+
+            // Картинка проявляется так же, как вязалась (змейкой по рядам); тап по ткани и кнопка «смотреть» показывают снова.
+            var replay = KnitReplay.Create(hoopRoot, level, hoop / 2f, hoop / 2f, hoop * 0.66f);
+            replay.Celebrate = false;
+            replay.Play(1f, 0.4f);
+            void ReplayAgain()
+            {
+                replay.Play(3.5f);
+                Analytics.Event("replay_view", ("from", "win"), ("level", level.id));
+            }
+
+            replay.IdleTap = ReplayAgain;
+            cloth.raycastTarget = true;
+            var clothTap = cloth.gameObject.AddComponent<Tap>();
+            clothTap.ClickSound = false;
+            clothTap.PressFeedback = false;
+            clothTap.OnClick(() =>
+            {
+                if (replay.Playing)
+                {
+                    replay.ShowDone();
+                }
+                else
+                {
+                    ReplayAgain();
+                }
+            });
             var ring = Ui.Image(hoopRoot, "Hoop", Art2.Hoop, Color.white);
             Ui.PlaceCenter(ring.rectTransform, hoop / 2f, hoop / 2f - hoop * 0.035f, hoop * 1.12f, hoop * 1.12f * 400f / 384f);
             Tweens.Scale(hoopRoot, 0.6f, 1f, 0.45f);
+
+            // Кнопка «посмотреть, как вязалось» у правого нижнего края пялец; на малых пяльцах (меньше 140) — справа от них
+            // на уровне центра. Звёзды ниже (hoopY + hoop + 10), «Домой» и монеты выше, поэтому ни с чем не пересекается.
+            var playButton = hoop >= 140f
+                ? Ui.RoundButton(Root, Icon.Play, W / 2f + hoop / 2f - 34f, hoopY + hoop - 44f, 44f)
+                : Ui.RoundButton(Root, Icon.Play, W / 2f + hoop * 0.56f + 6f, hoopY + hoop / 2f - 22f, 44f);
+            playButton.OnClick(ReplayAgain);
 
             // Картинка довязалась — ткань «натягивается»: пяльцы коротко пружинят, искры по кругу.
             var ringRt = ring.rectTransform;
@@ -262,6 +295,7 @@ namespace KnittedPicture.Game
                 return;
             }
 
+            Analytics.Event("offer_view", ("placement", "double_reward"));
             var doubleTap = Ui.TextButton(Root, L.T("Удвоить награду за видео"), 20, H - 24f - 44f, W - 40, 44, Palette.Ink2, 15, Icon.Video);
             var total = _flights.Count > 0 ? TotalFlights() : 0;
             doubleTap.DeniedHint = L.T("Видео уже загружается");
@@ -553,42 +587,6 @@ namespace KnittedPicture.Game
                 TextAnchor.MiddleLeft), 9);
             Ui.Label(chest, $"{value}/{ProgressService.ChestEvery} ★", 13, Palette.Ink, 50, 27, tileW - 58, 18, true, TextAnchor.MiddleLeft);
             Ui.ProgressBar(chest, 50, 47, tileW - 64, 6, (float)value / ProgressService.ChestEvery, Palette.Coin);
-        }
-
-        /// <summary>
-        /// Картинка в пяльцах проявляется так же, как вязалась: бледный эскиз, по которому снизу вверх
-        /// ряд за рядом проходят цветные петли, с тихим стуком спиц.
-        /// </summary>
-        private static void KnitInHoop(RectTransform hoopRoot, LevelData level, float hoop)
-        {
-            var size = hoop * 0.66f;
-            MiniPicture.Create(hoopRoot, level, hoop / 2f, hoop / 2f, size, faded: true);
-            var mask = Ui.Node(hoopRoot, "Knit");
-            mask.anchorMin = mask.anchorMax = Vector2.zero;
-            mask.pivot = Vector2.zero;
-            mask.anchoredPosition = new Vector2((hoop - size) / 2f, (hoop - size) / 2f);
-            mask.sizeDelta = new Vector2(size, 0f);
-            mask.gameObject.AddComponent<RectMask2D>();
-            var picture = MiniPicture.Create(mask, level, size / 2f, size / 2f, size).rectTransform;
-            picture.anchorMin = picture.anchorMax = new Vector2(0.5f, 0f);
-            picture.pivot = new Vector2(0.5f, 0.5f);
-            picture.anchoredPosition = new Vector2(0f, size / 2f);
-
-            var rows = Mathf.Max(1, level.height);
-            var shown = 0;
-            Tweens.Run(mask, 1f, t =>
-            {
-                var row = Mathf.CeilToInt(t * rows);
-                mask.sizeDelta = new Vector2(size, size * row / rows);
-                if (row > shown)
-                {
-                    shown = row;
-                    if (row % 2 == 0)
-                    {
-                        Sfx.Play(Sound.Stitch, 0.25f);
-                    }
-                }
-            }, null, null, 0.4f);
         }
 
         /// <summary>Строки отдают монеты по очереди: сначала «за картинку», потом бонусы.</summary>

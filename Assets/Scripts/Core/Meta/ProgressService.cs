@@ -42,6 +42,7 @@ namespace KnittedPicture.Core
                 d.frame = 0;
             }
 
+            d.launches = System.Math.Max(0, d.launches);
             d.doubleCount = System.Math.Max(0, d.doubleCount);
             d.videoBoosterCount = System.Math.Max(0, d.videoBoosterCount);
 

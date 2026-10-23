@@ -70,7 +70,7 @@ keytool -genkeypair -v -keystore Signing/knitted-upload.keystore -alias knitted 
 3. Установи плагин AppMetrica для Unity по инструкции AppMetrica (раздел SDK → Unity), затем External Dependency Manager → Android Resolver → Force Resolve.
 4. **Knitted → Сборка → Проверить, какие SDK найдены** → «Аналитика AppMetrica: найдена».
 
-Какие события отправляет игра и какие отчёты по ним строить, описано в `docs/analytics.md`. Без плагина события
+Какие события отправляет игра и какие отчёты по ним строить, описано в `docs/ANALYTICS.md`. Без плагина события
 просто пишутся в Console Unity (в редакторе и в Development-сборке), так их удобно проверять.
 
 > Код отправки: `Assets/Scripts/Game/Services/Analytics/AppMetricaSink.cs` (плагин версий 6+, `Io.AppMetrica`).

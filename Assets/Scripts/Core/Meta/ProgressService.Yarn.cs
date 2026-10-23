@@ -103,12 +103,13 @@ namespace KnittedPicture.Core
 
         /// <summary>
         /// Знакомство с бонусами пряжи — один раз, на первом уровне не ниже <see cref="YarnCatalog.PerksFromLevel"/>:
-        /// если на самом уровне открытия оно не показалось (там мог быть новый бустер), покажется на следующем.
+        /// если на самом уровне открытия показывается окно нового бустера (boosterIntroNow), бонусы пряжи ждут:
+        /// флаг не ставится, окно покажется на старте следующего уровня.
         /// </summary>
-        public bool TakePerksIntro(int levelId)
+        public bool TakePerksIntro(int levelId, bool boosterIntroNow = false)
         {
             const int introId = 100;
-            if (levelId < YarnCatalog.PerksFromLevel || _data.introsShown.Contains(introId))
+            if (boosterIntroNow || levelId < YarnCatalog.PerksFromLevel || _data.introsShown.Contains(introId))
             {
                 return false;
             }

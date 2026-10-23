@@ -439,6 +439,7 @@ namespace KnittedPicture.Game
             });
             if (buyNoAds)
             {
+                Analytics.Event("offer_view", ("placement", "no_ads"));
                 NavRow(help, row++, KnittedPicture.Game.Icon.Star, Palette.CoinShadow, L.T("Убрать рекламу"), () =>
                 {
                     Close();
@@ -594,6 +595,7 @@ namespace KnittedPicture.Game
             // Бустер за видео — не больше Economy.VideoBoostersPerDay в день: иначе монеты и бустеры теряют цену.
             if (app.Progress.VideoBoostersLeft(app.Today) > 0)
             {
+                Analytics.Event("offer_view", ("placement", "booster_" + type), ("price", Economy.Price(type)));
                 AddPrimary(L.T("Получить за видео")).OnClick(() =>
                 {
                     // Окно остаётся, пока видео не досмотрено: при отмене или без видео игрок видит то же окно и тост с причиной.
@@ -641,32 +643,51 @@ namespace KnittedPicture.Game
     /// </summary>
     public sealed class FailPopup : Popup
     {
-        public FailPopup(App app, FailKind kind, BoosterType? rescue, string reason, int percent, Action<BoosterType> rescued,
+        public FailPopup(App app, FailKind kind, BoosterType? rescue, string reason, int percent, int left, Action<BoosterType, string> rescued,
             Action restart, Action home, bool freeRescue = false, string? streakWarning = null, Color[]? needed = null,
             string? advice = null, int rescuesBefore = 0, bool videoAllowed = true, Action? videoUsed = null)
             : base(app, bottomSheet: true)
         {
             AddIcon(kind == FailKind.Jam ? KnittedPicture.Game.Icon.Knot : KnittedPicture.Game.Icon.Moth, Palette.Danger, Palette.DangerSoft, 64);
             AddTitle(kind == FailKind.Jam ? L.T("Станок застрял") : L.T("Моль добралась до картинки"), 24);
-            // Сколько уже довязано, видно всегда: это прогресс, а не упрёк. От половины рядом тёплое «почти!»
-            // (не красное): оно подталкивает попробовать ещё раз сильнее лёгкой победы.
+            // Сколько не хватило, видно всегда: это прогресс, а не упрёк. «Осталось 3 петли» понятнее процентов, а полоса
+            // показывает, как близко было. От половины или когда осталось мало рядом тёплое «почти!» (не красное):
+            // оно подталкивает попробовать ещё раз сильнее лёгкой победы.
             {
-                var done = Ui.Label(Card, L.F("Довязано {0}%", percent), 18, Palette.Ink2, 24, Cursor, Inner, 24);
-                if (percent >= 50)
+                var near = percent >= 50 || (left > 0 && left <= 5);
+                var main = left > 0
+                    ? L.F(L.Plural(left, "Осталась {0} петля", "Осталось {0} петли", "Осталось {0} петель"), left)
+                    : L.F("Довязано {0}%", percent);
+                var done = Ui.Label(Card, main, 18, left > 0 ? Palette.Ink : Palette.Ink2, 24, Cursor, Inner, 24);
+                if (near)
                 {
                     done.horizontalOverflow = HorizontalWrapMode.Overflow;
                     done.alignment = TextAnchor.MiddleLeft;
-                    var near = Ui.Label(Card, L.T("почти!"), 18, Palette.CoinInk, 24, Cursor, Inner, 24);
-                    near.horizontalOverflow = HorizontalWrapMode.Overflow;
-                    near.alignment = TextAnchor.MiddleLeft;
+                    var soon = Ui.Label(Card, L.T("почти!"), 18, Palette.CoinInk, 24, Cursor, Inner, 24);
+                    soon.horizontalOverflow = HorizontalWrapMode.Overflow;
+                    soon.alignment = TextAnchor.MiddleLeft;
                     var gap = 8f;
-                    var total = done.preferredWidth + gap + near.preferredWidth;
-                    var left = 24f + Inner / 2f - total / 2f;
-                    Ui.Place(done.rectTransform, left, Cursor, done.preferredWidth + 2f, 24);
-                    Ui.Place(near.rectTransform, left + done.preferredWidth + gap, Cursor, near.preferredWidth + 2f, 24);
+                    var total = done.preferredWidth + gap + soon.preferredWidth;
+                    var x = 24f + Inner / 2f - total / 2f;
+                    Ui.Place(done.rectTransform, x, Cursor, done.preferredWidth + 2f, 24);
+                    Ui.Place(soon.rectTransform, x + done.preferredWidth + gap, Cursor, soon.preferredWidth + 2f, 24);
                 }
 
-                Space(30f);
+                if (left > 0)
+                {
+                    // Полоса: дорожка и заливка на довязанное, по центру, не шире 220.
+                    var barWidth = Math.Min(Inner, 220f);
+                    var barX = 24f + (Inner - barWidth) / 2f;
+                    var track = Ui.Box(Card, "Progress", 4, Palette.Track);
+                    Ui.Place(track.rectTransform, barX, Cursor + 30f, barWidth, 8);
+                    var fill = Ui.Box(track.rectTransform, "Fill", 4, Palette.Primary);
+                    Ui.Place(fill.rectTransform, 0, 0, Math.Max(8f, barWidth * Math.Min(100, Math.Max(0, percent)) / 100f), 8);
+                    Space(44f);
+                }
+                else
+                {
+                    Space(30f);
+                }
             }
 
             // Коротко и по очереди: есть спасение — что ждёт картинка (или причина), нет — совет на следующую попытку.
@@ -736,6 +757,9 @@ namespace KnittedPicture.Game
                     : stock > 0
                     ? L.F("{0} · есть {1}", BoosterInfo.Name(type), stock)
                     : L.F("{0} · {1} {2}", BoosterInfo.Name(type), Economy.RescuePrice(type, rescuesBefore), YarnCatalog.CoinsWord(Economy.RescuePrice(type, rescuesBefore)));
+                var viaPay = freeRescue ? "free" : stock > 0 ? "stock" : "coins";
+                Analytics.Event("offer_view", ("placement", "rescue_" + type), ("price", freeRescue ? 0 : Economy.RescuePrice(type, rescuesBefore)),
+                    ("stock", stock), ("video", !freeRescue && videoAllowed));
                 var rescueButton = AddPrimary(title);
                 rescueButton.OnClick(() =>
                 {
@@ -754,7 +778,7 @@ namespace KnittedPicture.Game
                     app.Save();
                     Sfx.Play(Sound.Coin);
                     Close();
-                    rescued(type);
+                    rescued(type, viaPay);
                 });
                 // Спасение за видео — одно на попытку: дальше только запас или монеты. Когда оно уже было,
                 // кнопка не прячется молча, а становится строкой с причиной.
@@ -786,7 +810,7 @@ namespace KnittedPicture.Game
                                 app.Save();
                             }
 
-                            rescued(type);
+                            rescued(type, "video");
                         });
                     });
                 }

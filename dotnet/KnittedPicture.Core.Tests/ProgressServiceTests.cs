@@ -37,6 +37,25 @@ namespace KnittedPicture.Core.Tests
         private static ProgressService Fresh() => new ProgressService(new PlayerProgress(), levelCount: 15);
 
         [Fact]
+        public void Perks_intro_waits_while_a_booster_intro_is_on_the_same_level()
+        {
+            var progress = Fresh();
+            Assert.False(progress.TakePerksIntro(YarnCatalog.PerksFromLevel, boosterIntroNow: true));
+            Assert.DoesNotContain(100, progress.Data.introsShown);
+            Assert.True(progress.TakePerksIntro(YarnCatalog.PerksFromLevel + 1, boosterIntroNow: false));
+            Assert.False(progress.TakePerksIntro(YarnCatalog.PerksFromLevel + 1, boosterIntroNow: false));
+        }
+
+        [Fact]
+        public void Loom_full_intro_is_taken_once()
+        {
+            var progress = Fresh();
+            Assert.True(progress.TakeLoomFullIntro());
+            Assert.False(progress.TakeLoomFullIntro());
+            Assert.Contains(300, progress.Data.introsShown);
+        }
+
+        [Fact]
         public void Stuck_help_comes_from_the_fourth_attempt_of_a_new_level_and_only_once()
         {
             var progress = Fresh();
