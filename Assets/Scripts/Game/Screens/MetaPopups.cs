@@ -69,12 +69,13 @@ namespace KnittedPicture.Game
             for (var i = 0; i < items.Count; i++)
             {
                 var (build, caption, captionColor) = items[i];
-                var cell = Ui.Place(Ui.Node(Card, "Item"), x + i * itemW, y, itemW, 104);
+                var cell = Ui.Place(Ui.Node(Card, "Item"), x + i * itemW, y, itemW, 118);
                 var tile = Ui.Box(cell, "Tile", 16, Palette.Surface);
                 Ui.Place(tile.rectTransform, 6, 0, itemW - 12, 62);
                 Ui.Outline(tile.rectTransform, 16, Palette.Line, 1.5f);
                 build(cell);
-                var label = Ui.Label(cell, caption, 13, captionColor, 0, 66, itemW, 38, true, TextAnchor.UpperCenter);
+                // Подпись до трёх строк («Золотая нить» в две и «новый моток!»); длиннее ужимается, а не наезжает на кнопку.
+                var label = Ui.Fit(Ui.Label(cell, caption, 13, captionColor, 0, 66, itemW, 52, true, TextAnchor.UpperCenter), 10);
                 label.lineSpacing = 0.85f;
                 // Каждая плитка «выпрыгивает» с лёгким подскоком и искрами своего цвета.
                 cell.localScale = Vector3.zero;
@@ -89,7 +90,7 @@ namespace KnittedPicture.Game
                 });
             }
 
-            Space(112);
+            Space(126);
             var coinsFrom = items.Count > 0 && granted.Reward.Coins > 0 ? (RectTransform)Card.Find("Item") : null;
             AddPrimary(L.T("Забрать")).OnClick(Close);
 
