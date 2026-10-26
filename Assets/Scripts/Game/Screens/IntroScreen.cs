@@ -231,10 +231,7 @@ namespace KnittedPicture.Game
             }
 
             _page = page;
-            if (!App.Progress.Data.introSeen)
-            {
-                Analytics.Event("intro_step", ("step", Mathf.Max(0, Step)), ("first", true));
-            }
+            Analytics.Event("intro_step", ("step", Mathf.Max(0, Step)), ("first", !App.Progress.Data.introSeen));
 
             _title.text = Titles[page];
             _text.text = Texts[page];

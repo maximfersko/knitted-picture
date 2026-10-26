@@ -294,12 +294,14 @@ namespace KnittedPicture.Game
 
             if (replayable)
             {
-                var replayLink = Ui.TextButton(Card, L.T("Как вязалось"), textX, top + 86f, textW, 44f, Palette.Link, 13f);
+                // Зона 44 точки: top + 80 .. top + 124. Текст по её центру (top + 102) ниже звёзд (они до top + 94), а нижний край
+                // совпадает со строкой плашек (Space(pic + 8) ниже: Cursor = top + 124), зоны не пересекаются.
+                var replayLink = Ui.TextButton(Card, L.T("Как вязалось"), textX, top + 80f, textW, 44f, Palette.Link, 13f);
                 replayLink.GetComponentInChildren<UnityEngine.UI.Text>().alignment = TextAnchor.MiddleLeft;
                 replayLink.OnClick(OpenReplay);
             }
 
-            Space(pic + 6f);
+            Space(pic + 8f);
 
             // Особенности уровня — чтобы было понятно, что ждёт.
             var chips = new List<(string text, Color back, Color ink)>();

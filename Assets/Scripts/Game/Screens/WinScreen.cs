@@ -142,7 +142,8 @@ namespace KnittedPicture.Game
             var cloth = Ui.Image(hoopRoot, "Cloth", Art.Circle, Palette.Hex("#FBF5EA"));
             Ui.PlaceCenter(cloth.rectTransform, hoop / 2f, hoop / 2f, hoop - 6, hoop - 6);
 
-            // Картинка проявляется так же, как вязалась (змейкой по рядам); тап по ткани и кнопка «смотреть» показывают снова.
+            // Картинка проявляется так же, как вязалась (змейкой по рядам); тап по ней (во время показа домотать до конца,
+            // потом показать снова) и кнопка «смотреть» показывают снова. Ткань тап не ловит: её зона закрывала бы кнопку ▶.
             var replay = KnitReplay.Create(hoopRoot, level, hoop / 2f, hoop / 2f, hoop * 0.66f);
             replay.Celebrate = false;
             replay.Play(1f, 0.4f);
@@ -153,29 +154,16 @@ namespace KnittedPicture.Game
             }
 
             replay.IdleTap = ReplayAgain;
-            cloth.raycastTarget = true;
-            var clothTap = cloth.gameObject.AddComponent<Tap>();
-            clothTap.ClickSound = false;
-            clothTap.PressFeedback = false;
-            clothTap.OnClick(() =>
-            {
-                if (replay.Playing)
-                {
-                    replay.ShowDone();
-                }
-                else
-                {
-                    ReplayAgain();
-                }
-            });
             var ring = Ui.Image(hoopRoot, "Hoop", Art2.Hoop, Color.white);
             Ui.PlaceCenter(ring.rectTransform, hoop / 2f, hoop / 2f - hoop * 0.035f, hoop * 1.12f, hoop * 1.12f * 400f / 384f);
             Tweens.Scale(hoopRoot, 0.6f, 1f, 0.45f);
 
             // Кнопка «посмотреть, как вязалось» у правого нижнего края пялец; на малых пяльцах (меньше 140) — справа от них
             // на уровне центра. Звёзды ниже (hoopY + hoop + 10), «Домой» и монеты выше, поэтому ни с чем не пересекается.
+            // Левый край кнопки не заходит на зону картинки (replay.Root ловит тап), поэтому на небольших пяльцах она сдвинута вправо.
+            var playX = W / 2f + Mathf.Max(hoop / 2f - 34f, replay.Root.sizeDelta.x / 2f + 2f);
             var playButton = hoop >= 140f
-                ? Ui.RoundButton(Root, Icon.Play, W / 2f + hoop / 2f - 34f, hoopY + hoop - 44f, 44f)
+                ? Ui.RoundButton(Root, Icon.Play, playX, hoopY + hoop - 44f, 44f)
                 : Ui.RoundButton(Root, Icon.Play, W / 2f + hoop * 0.56f + 6f, hoopY + hoop / 2f - 22f, 44f);
             playButton.OnClick(ReplayAgain);
 

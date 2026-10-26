@@ -391,6 +391,7 @@ namespace KnittedPicture.Game
             Comfort.Apply(Progress.Data);
             L.Set(LanguageFor(Progress.Data.language));
             Analytics.Init();
+            Progress.MarkLegacyFunnel();
             var launch = Progress.CountLaunch();
             Analytics.Event("app_open", ("level", Progress.CurrentLevel), ("wins", Progress.Data.totalWins), ("coins", Progress.Coins),
                 ("store", StoreConfig.Flavor.ToString()), ("ads_removed", Progress.Data.adsRemoved), ("first", !Progress.Data.introSeen),
@@ -508,7 +509,11 @@ namespace KnittedPicture.Game
             Comfort.Idle(Time.unscaledDeltaTime, Touched(), _screen is GameScreen);
         }
 
-        /// <summary>Игру свернули: на каком экране и в каком окне, на каком уровне и сколько связано (где уходят из игры).</summary>
+        /// <summary>
+        /// Игру свернули: на каком экране и в каком окне, на каком уровне и сколько связано (где уходят из игры).
+        /// ad = идёт видео за награду или межуровневая реклама, purchase = идёт окно оплаты: такое сворачивание
+        /// делает сама реклама или магазин, это не уход игрока, и в отчёте «где уходят» его отфильтровывают (ad = false).
+        /// </summary>
         private void TrackBackground()
         {
             if (Progress == null)
@@ -524,6 +529,8 @@ namespace KnittedPicture.Game
                 ("level", game != null ? game.AnalyticsLevel : Progress.CurrentLevel),
                 ("in_level", game != null),
                 ("progress", game != null ? game.ProgressPercent : 0),
+                ("ad", DateTime.UtcNow < _rewardedUntil || _continuing),
+                ("purchase", PurchaseBusy),
                 ("sec", (int)Time.realtimeSinceStartup),
                 ("launch", Progress.Data.launches));
         }
@@ -1055,7 +1062,7 @@ namespace KnittedPicture.Game
                 L.Set(LanguageFor(language));
                 CloseAllPopups();
                 ShowHome();
-                ShowPopup(new SettingsPopup(this));
+                ShowPopup(new SettingsPopup(this, true));
                 cover.transform.SetAsLastSibling();
                 Tweens.Fade(group, 1f, 0f, 0.28f, () => Destroy(cover.gameObject), 0.35f);
             });

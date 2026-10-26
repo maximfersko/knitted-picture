@@ -268,8 +268,15 @@ namespace KnittedPicture.Game
         /// </summary>
         private void MaybeLoomFullTip()
         {
-            if (_level.id > LoomFullTipMaxLevel || _run.Pattern || _ended || _finishing || _failShown || _tip != null || App.HasPopups ||
-                _game.Status != GameStatus.Playing || _game.FreeSlots != 0 || !App.Progress.TakeLoomFullIntro())
+            if (_loomTipDone || _level.id > LoomFullTipMaxLevel || _run.Pattern || _ended || _finishing || _failShown || _tip != null ||
+                App.HasPopups || _game.Status != GameStatus.Playing || _game.FreeSlots != 0)
+            {
+                return;
+            }
+
+            // Совет уже показывали (раньше или только что): больше не спрашиваем сохранение, метод зовётся каждый кадр.
+            _loomTipDone = true;
+            if (!App.Progress.TakeLoomFullIntro())
             {
                 return;
             }
@@ -278,6 +285,9 @@ namespace KnittedPicture.Game
             ShowTip(L.T("Места кончились, а работы нет? Это затор. Бери клубки, которым сразу есть дело"), _loomBg, false);
             _tipKeep = true;
         }
+
+        /// <summary>Совет о заторе показан (сейчас или раньше): проверка по сохранению больше не нужна.</summary>
+        private bool _loomTipDone;
 
         /// <summary>До какого уровня включительно показывается совет о заторе.</summary>
         private const int LoomFullTipMaxLevel = 4;

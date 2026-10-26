@@ -129,27 +129,23 @@ namespace KnittedPicture.Game
             // Сначала причина прямо на поле (кольца и короткая выноска), потом окно. Тап пропускает.
             Tweens.Delay(Root, 0.45f, () =>
             {
-                if (ExplainJam())
+                ExplainJam();
+                Interlude(1.9f, () =>
                 {
-                    Interlude(1.9f, () =>
-                    {
-                        HideTip();
-                        ShowFail(FailKind.Jam);
-                    });
-                }
-                else
-                {
-                    Tweens.Delay(Root, 0.15f, () => ShowFail(FailKind.Jam));
-                }
+                    HideTip();
+                    ShowFail(FailKind.Jam);
+                });
             });
         }
 
         /// <summary>
         /// Затор: показать на поле, что случилось. Красное кольцо — где проблема, зелёное — что поможет,
         /// выноска в несколько слов. Один фокус, без длинных текстов: подробный совет — в окне.
-        /// Нет конкретной цели: красное кольцо на станке и общая фраза (станок полон или передние клубки не взять).
+        /// Нет конкретной цели: красные кольца на клубках станка (на пустом станке на рамках мест) и общая фраза
+        /// (станок полон или передние клубки не взять); сам станок остаётся только якорем выноски. Выноска и кольца
+        /// показываются всегда, так что окно проигрыша идёт после паузы <c>Interlude</c>.
         /// </summary>
-        private bool ExplainJam()
+        private void ExplainJam()
         {
             ClearJamMarks();
             RectTransform? target = null;
@@ -272,14 +268,31 @@ namespace KnittedPicture.Game
             {
                 // Конкретной причины на поле нет: показываем общее состояние станка, чтобы игрок не гадал, что случилось.
                 ClearJamMarks();
-                target = JamMark(_loomBg, Palette.Danger);
+                var marked = false;
+                foreach (var slot in _slotViews)
+                {
+                    if (slot != null)
+                    {
+                        JamMark(slot.View.Root, Palette.Danger);
+                        marked = true;
+                    }
+                }
+
+                if (!marked)
+                {
+                    foreach (var frame in _slotFrames)
+                    {
+                        JamMark(frame, Palette.Danger);
+                    }
+                }
+
+                target = _loomBg;
                 text = _game.FreeSlots == 0 ? L.T("Станок полон, хода нет") : L.T("Передние клубки пока не взять");
                 below = false;
             }
 
             ShowTip(text, target, below);
             _tipKeep = true;
-            return true;
         }
 
         private RectTransform? FieldView(int column, int depth) =>

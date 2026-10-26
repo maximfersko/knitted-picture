@@ -78,6 +78,50 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
+        public void Legacy_save_with_finished_levels_sends_no_funnel_steps()
+        {
+            var legacy = new ProgressService(new PlayerProgress { completed = new List<int> { 1, 2, 3 } }, levelCount: 15);
+            Assert.Equal(0, legacy.Data.launches);
+            Assert.True(legacy.MarkLegacyFunnel());
+            Assert.Equal(1, legacy.CountLaunch());
+
+            foreach (var step in Enum.GetValues(typeof(FunnelStep)).Cast<FunnelStep>())
+            {
+                Assert.True(legacy.FunnelSent(step), step.ToString());
+                Assert.False(legacy.TakeFunnel(step), step.ToString());
+            }
+        }
+
+        [Fact]
+        public void Legacy_save_with_only_the_intro_seen_is_also_marked()
+        {
+            var legacy = new ProgressService(new PlayerProgress { introSeen = true }, levelCount: 15);
+            Assert.True(legacy.MarkLegacyFunnel());
+            Assert.False(legacy.TakeFunnel(FunnelStep.FirstOpen));
+        }
+
+        [Fact]
+        public void New_player_still_sends_every_funnel_step()
+        {
+            var fresh = Fresh();
+            Assert.False(fresh.MarkLegacyFunnel());
+            fresh.CountLaunch();
+            Assert.Equal(0, fresh.Data.funnel);
+            foreach (var step in Enum.GetValues(typeof(FunnelStep)).Cast<FunnelStep>())
+            {
+                Assert.True(fresh.TakeFunnel(step), step.ToString());
+            }
+        }
+
+        [Fact]
+        public void Migration_is_skipped_once_launches_are_counted()
+        {
+            var counted = new ProgressService(new PlayerProgress { launches = 3, introSeen = true, completed = new List<int> { 1 } }, levelCount: 15);
+            Assert.False(counted.MarkLegacyFunnel());
+            Assert.Equal(0, counted.Data.funnel);
+        }
+
+        [Fact]
         public void Event_names_are_unique_prefixed_short_and_fit_the_mask()
         {
             var steps = Enum.GetValues(typeof(FunnelStep)).Cast<FunnelStep>().ToList();

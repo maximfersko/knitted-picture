@@ -378,7 +378,12 @@ namespace KnittedPicture.Game
     /// </summary>
     public sealed class SettingsPopup : ListSheet
     {
-        public SettingsPopup(App app)
+        /// <param name="app">Приложение.</param>
+        /// <param name="fromBack">
+        /// Окно построено заново (возврат из «Удобства» и «Об игре», смена языка), а не открыто игроком:
+        /// показ предложения «Убрать рекламу» второй раз в аналитику не уходит (один <c>offer_view</c> за открытие настроек).
+        /// </param>
+        public SettingsPopup(App app, bool fromBack = false)
             : base(app)
         {
             AddTitle(L.T("Настройки"), 24);
@@ -430,7 +435,7 @@ namespace KnittedPicture.Game
             NavRow(help, row++, new Badge("Aa"), Palette.Link, L.T("Удобство"), () =>
             {
                 Close();
-                app.ShowPopup(new ComfortPopup(app, () => app.ShowPopup(new SettingsPopup(app))));
+                app.ShowPopup(new ComfortPopup(app, () => app.ShowPopup(new SettingsPopup(app, true))));
             });
             NavRow(help, row++, KnittedPicture.Game.Icon.Info, Palette.Primary, L.T("Как играть"), () =>
             {
@@ -439,7 +444,11 @@ namespace KnittedPicture.Game
             });
             if (buyNoAds)
             {
-                Analytics.Event("offer_view", ("placement", "no_ads"));
+                if (!fromBack)
+                {
+                    Analytics.Event("offer_view", ("placement", "no_ads"));
+                }
+
                 NavRow(help, row++, KnittedPicture.Game.Icon.Star, Palette.CoinShadow, L.T("Убрать рекламу"), () =>
                 {
                     Close();
@@ -524,7 +533,7 @@ namespace KnittedPicture.Game
         public AboutPopup(App app)
             : base(app)
         {
-            AddBack(() => app.ShowPopup(new SettingsPopup(app)));
+            AddBack(() => app.ShowPopup(new SettingsPopup(app, true)));
             AddTitle(L.T("Об игре"), 24);
 
             var rate = StoreLinks.Rate;
@@ -681,7 +690,17 @@ namespace KnittedPicture.Game
                     var track = Ui.Box(Card, "Progress", 4, Palette.Track);
                     Ui.Place(track.rectTransform, barX, Cursor + 30f, barWidth, 8);
                     var fill = Ui.Box(track.rectTransform, "Fill", 4, Palette.Primary);
-                    Ui.Place(fill.rectTransform, 0, 0, Math.Max(8f, barWidth * Math.Min(100, Math.Max(0, percent)) / 100f), 8);
+                    var filled = Math.Min(100, Math.Max(0, percent));
+                    if (filled > 0)
+                    {
+                        // Заливка не уже круглого края (8); при 0% полоса пустая, без «остатка».
+                        Ui.Place(fill.rectTransform, 0, 0, Math.Max(8f, barWidth * filled / 100f), 8);
+                    }
+                    else
+                    {
+                        fill.gameObject.SetActive(false);
+                    }
+
                     Space(44f);
                 }
                 else
