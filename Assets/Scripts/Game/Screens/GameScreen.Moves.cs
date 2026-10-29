@@ -159,6 +159,9 @@ namespace KnittedPicture.Game
                         }, null, () => landed.localScale = Vector3.one);
                         Fx.Dust(_fx, target + new Vector3(0f, -SpoolSizeAt(placed.Slot) * 0.42f * _fx.lossyScale.x, 0f), _colors[spool.Color]);
                         Haptics.Play(Haptic.Tap);
+
+                        // Тихий «пух» посадки: клубок мягко сел в лунку (высота чуть гуляет в самом Sfx).
+                        Sfx.Play(Sound.Puff, 0.2f);
                     }
                 });
             }

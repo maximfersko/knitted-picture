@@ -140,16 +140,15 @@ namespace KnittedPicture.Game
         /// <summary>Пустой клубок: расходящееся кольцо и пух.</summary>
         public static void Poof(RectTransform layer, Vector3 at, Color color, float size)
         {
-            var image = Ui.Image(layer, "Ring", Art.Ring, color);
+            // Кольцо берётся из общего пула кружков и возвращается в него: пустых клубков на уровне десятки.
+            var image = Dot(layer, color, size, Art.Ring);
             var rt = image.rectTransform;
-            UnityEngine.Object.Destroy(image.gameObject, 0.5f);
-            rt.sizeDelta = new Vector2(size, size);
             rt.position = at;
-            Tweens.Run(rt, 0.35f, t =>
+            Tweens.Run(image, 0.35f, t =>
             {
                 rt.localScale = Vector3.one * (0.6f + 0.9f * t);
                 image.color = Palette.WithAlpha(color, 1f - t);
-            }, Ease.OutCubic);
+            }, Ease.OutCubic, () => Release(image));
             Sparkle(layer, at, color, 7, size * 0.9f);
         }
 
@@ -223,25 +222,93 @@ namespace KnittedPicture.Game
             }
         }
 
-        /// <summary>Всплывающая надпись: подпрыгивает и уплывает вверх.</summary>
+        /// <summary>Готовая всплывающая надпись: корень с тенью-текстом, текстом и прозрачностью.</summary>
+        private sealed class Floater
+        {
+            public RectTransform Root = null!;
+            public CanvasGroup Group = null!;
+        }
+
+        /// <summary>
+        /// Пул надписей по (текст, размер, цвет): такие же надписи выглядят одинаково (тиснение зависит от цвета), поэтому
+        /// их можно брать заново без пересборки. «+1» за каждую петлю летит много раз в секунду, без пула это мусор.
+        /// </summary>
+        private static readonly Dictionary<(string Text, float Size, Color Color), Stack<Floater>> FloatPool =
+            new Dictionary<(string Text, float Size, Color Color), Stack<Floater>>();
+
+        /// <summary>Сколько одинаковых надписей держим про запас.</summary>
+        private const int FloatPoolDepth = 12;
+
+        /// <summary>Всплывающая надпись: подпрыгивает и уплывает вверх. Берётся из пула и возвращается в него.</summary>
         public static void FloatText(RectTransform layer, Vector3 at, string text, Color color, float size = 22f)
         {
-            var root = Ui.Node(layer, "FloatText");
-            root.sizeDelta = new Vector2(240, 40);
+            var key = (text, size, color);
+            Floater? floater = null;
+            if (FloatPool.TryGetValue(key, out var spare))
+            {
+                // Надписи со слоя, который уже уничтожен (ушли с экрана), пропадают вместе с ним: пропускаем.
+                while (spare.Count > 0 && floater == null)
+                {
+                    var candidate = spare.Pop();
+                    if (candidate.Root != null)
+                    {
+                        floater = candidate;
+                    }
+                }
+            }
+
+            if (floater == null)
+            {
+                var made = Ui.Node(layer, "FloatText");
+                made.sizeDelta = new Vector2(240, 40);
+                var shadow = Ui.Label(made, text, size, Palette.WithAlpha(Palette.Ink, 0.25f));
+                Ui.Place(shadow.rectTransform, 1, 2, 240, 40);
+                var label = Ui.Label(made, text, size, color);
+                Ui.Place(label.rectTransform, 0, 0, 240, 40);
+                var madeGroup = made.gameObject.AddComponent<CanvasGroup>();
+                madeGroup.blocksRaycasts = false;
+                floater = new Floater { Root = made, Group = madeGroup };
+            }
+            else
+            {
+                floater.Root.SetParent(layer, false);
+                floater.Root.SetAsLastSibling();
+                floater.Root.gameObject.SetActive(true);
+            }
+
+            var root = floater.Root;
+            var group = floater.Group;
             root.position = at;
-            var shadow = Ui.Label(root, text, size, Palette.WithAlpha(Palette.Ink, 0.25f));
-            Ui.Place(shadow.rectTransform, 1, 2, 240, 40);
-            var label = Ui.Label(root, text, size, color);
-            Ui.Place(label.rectTransform, 0, 0, 240, 40);
-            var group = root.gameObject.AddComponent<CanvasGroup>();
-            group.blocksRaycasts = false;
+            group.alpha = 1f;
             var unit = Unit(layer);
             Tweens.Run(root, 0.9f, t =>
             {
                 root.position = at + new Vector3(0, 46f * unit * Ease.OutCubic(t), 0);
                 root.localScale = Vector3.one * (t < 0.2f ? Mathf.Lerp(0.5f, 1.15f, t / 0.2f) : Mathf.Lerp(1.15f, 1f, (t - 0.2f) / 0.8f));
                 group.alpha = t < 0.6f ? 1f : 1f - (t - 0.6f) / 0.4f;
-            }, null, () => UnityEngine.Object.Destroy(root.gameObject));
+            }, null, () =>
+            {
+                if (root == null)
+                {
+                    return;
+                }
+
+                root.gameObject.SetActive(false);
+                if (!FloatPool.TryGetValue(key, out var stack))
+                {
+                    stack = new Stack<Floater>();
+                    FloatPool[key] = stack;
+                }
+
+                if (stack.Count < FloatPoolDepth)
+                {
+                    stack.Push(floater);
+                }
+                else
+                {
+                    UnityEngine.Object.Destroy(root.gameObject);
+                }
+            });
         }
 
         private static Vector3 Cubic(Vector3 a, Vector3 b, Vector3 c, Vector3 d, float t)

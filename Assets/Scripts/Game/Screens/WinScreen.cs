@@ -102,7 +102,11 @@ namespace KnittedPicture.Game
 
             _shownCoins = app.Progress.Coins - reward.Total;
             Ui.RoundButton(Root, Icon.Home, 16, 8).OnClick(app.ShowHome);
-            _coins = Ui.CoinPill(Root, _shownCoins, W - 16, 8);
+
+            // Ширина пилюли по самой большой сумме, до которой счётчик дорастёт на этом экране: итог после награды
+            // и, если удвоение за видео ещё доступно, вместе с удвоенной частью. Левый край пилюли не прыгает.
+            var finalCoins = app.Progress.Coins + (app.Progress.DoublesLeft(app.Today) > 0 ? reward.Total : 0);
+            _coins = Ui.CoinPill(Root, _shownCoins, W - 16, 8, finalCoins);
             Confetti();
 
             // Монеты по источникам: одна крупная сумма и мелкие плашки «откуда» — вместо стены строк.
@@ -379,13 +383,20 @@ namespace KnittedPicture.Game
                 var index = i;
                 Tweens.Delay(rt, 0.35f + i * 0.28f, () =>
                 {
-                    Sfx.Play(Sound.Star, 0.8f, 1f + index * 0.12f);
-                    Haptics.Play(Haptic.Soft);
                     var rest = rt.anchoredPosition;
                     var drop = Tweens.Calm ? 0f : 46f;
                     var turn = index == 1 ? 0f : index == 0 ? -1f : 1f;
+                    var landed = false;
                     Tweens.Run(rt, 0.5f, t =>
                     {
+                        // Звон и тычок в руку в момент касания гнезда (t = 0.55), а не в начале падения.
+                        if (!landed && t >= 0.55f)
+                        {
+                            landed = true;
+                            Sfx.Play(Sound.Star, 0.8f, 1f + index * 0.12f);
+                            Haptics.Play(Haptic.Soft);
+                        }
+
                         // Падает в гнездо, отскакивает и встаёт, на лету довернувшись.
                         var fall = t < 0.55f ? 1f - Ease.InCubic(t / 0.55f) : 0f;
                         var bounce = t >= 0.55f ? Ease.Jolt((t - 0.55f) / 0.45f) : 0f;

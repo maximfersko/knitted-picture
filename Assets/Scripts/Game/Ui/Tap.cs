@@ -31,6 +31,9 @@ namespace KnittedPicture.Game
         private float _depth;
         private float _velocity;
 
+        /// <summary>Действие этого касания уже сработало на нажатии (<see cref="FireOnPress"/>): следующий клик его не повторяет.</summary>
+        private bool _firedOnPress;
+
         public event Action? Clicked;
 
         public bool Interactable { get; set; } = true;
@@ -70,6 +73,14 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>
+        /// Срабатывать на нажатии, а не на отпускании. По умолчанию false (кнопки интерфейса ждут отпускания, чтобы
+        /// палец можно было увести). Включён у игровых клубков и слотов станка: ход виден сразу, без задержки на подъём
+        /// пальца. Звук, действие и отказ (<see cref="DeniedHint"/>) идут при нажатии; клик того же касания игнорируется,
+        /// а уход пальца с элемента уже сработавшее не отменяет.
+        /// </summary>
+        public bool FireOnPress { get; set; }
+
         /// <summary>Проседать ли под пальцем. Фоновым областям (затемнение) — нет.</summary>
         public bool PressFeedback { get; set; } = true;
 
@@ -81,6 +92,21 @@ namespace KnittedPicture.Game
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            // Флаг ставится заново с каждым нажатием: касание, которое увели с элемента (клика не будет), не глушит следующее.
+            _firedOnPress = FireOnPress;
+            if (FireOnPress)
+            {
+                // Сначала отклик пальцу (пресс), потом действие: действие может перестроить экран и убрать сам элемент.
+                if (Interactable && PressFeedback)
+                {
+                    _pressed = true;
+                    Begin();
+                }
+
+                Activate();
+                return;
+            }
+
             if (!Interactable || !PressFeedback)
             {
                 return;
@@ -181,6 +207,7 @@ namespace KnittedPicture.Game
         private void OnDisable()
         {
             _pressed = false;
+            _firedOnPress = false;
             Settle();
         }
 
@@ -201,6 +228,19 @@ namespace KnittedPicture.Game
         }
 
         public void OnPointerClick(PointerEventData eventData)
+        {
+            if (_firedOnPress)
+            {
+                // Это касание уже сработало на нажатии.
+                _firedOnPress = false;
+                return;
+            }
+
+            Activate();
+        }
+
+        /// <summary>Само действие: отказ, если элемент недоступен, иначе звук, тактильный тик и событие.</summary>
+        private void Activate()
         {
             if (!Interactable)
             {

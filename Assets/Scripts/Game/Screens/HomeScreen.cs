@@ -658,14 +658,14 @@ namespace KnittedPicture.Game
             for (var i = 0; i < items.Count; i++)
             {
                 var item = items[i];
-                Rail(x0 + i * step, top, railH, item.kind, item.tint, item.title, item.waiting, item.open);
+                Rail(x0 + i * step, top, railH, item.kind, item.tint, item.title, item.waiting, item.open, i);
             }
         }
 
         /// <summary>Один значок события: круг 56 и подпись — касание не меньше 48×48.</summary>
         private readonly System.Collections.Generic.List<RectTransform> _rails = new System.Collections.Generic.List<RectTransform>();
 
-        private void Rail(float cx, float top, float h, EventKind kind, Color tint, string title, bool waiting, System.Action open)
+        private void Rail(float cx, float top, float h, EventKind kind, Color tint, string title, bool waiting, System.Action open, int index)
         {
             var root = Ui.Place(Ui.Node(Root, "Rail" + title), cx - 40f, top, 80f, h);
             _rails.Add(root);
@@ -683,8 +683,14 @@ namespace KnittedPicture.Game
                 var halo = tintCircle.rectTransform;
                 // Без красной точки: ореол и покачивание и так говорят «здесь ждёт», точки остаются только на вкладках.
                 Tweens.Run(halo, 1.8f, t => halo.localScale = Vector3.one * (1f + 0.14f * Ease.Bump(t)), null, null, 0f, true);
+                // Значки качаются не в унисон: у каждого своя задержка (0.4 + 0.55 с на номер) и период 3.2 с:
+                // полторы секунды покачивания, потом пауза. Так ряд не «дёргается» разом, а оживает по очереди.
                 var rt = art;
-                Tweens.Run(rt, 1.6f, t => rt.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 4f) * 10f * Ease.Bump(t)), null, null, 0.4f, true);
+                Tweens.Run(rt, 3.2f, t =>
+                {
+                    var sway = t < 0.5f ? t * 2f : 1f;
+                    rt.localRotation = Quaternion.Euler(0, 0, sway < 1f ? Mathf.Sin(sway * Mathf.PI * 4f) * 10f * Ease.Bump(sway) : 0f);
+                }, null, null, 0.4f + index * 0.55f, true);
             }
 
             root.gameObject.AddComponent<Tap>().OnClick(open);

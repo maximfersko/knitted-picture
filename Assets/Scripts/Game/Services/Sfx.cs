@@ -56,9 +56,26 @@ namespace KnittedPicture.Game
             (Sound.Unlock, "unlock", 0.55f),
             (Sound.Coin, "coin", 0.45f),
         };
-        private AudioSource? _source;
+
+        /// <summary>Сколько голосов в пуле: звуки идут параллельно, каждый со своей высотой и громкостью.</summary>
+        private const int Voices = 6;
+
+        /// <summary>Разброс высоты у коротких «бытовых» звуков (плюс-минус 3.5%): повтор не звучит как копия.</summary>
+        private const float PitchSpread = 0.035f;
+
+        /// <summary>Сколько петель могут звучать одновременно: лишние пропускаются, иначе очередь превращается в кашу.</summary>
+        private const int MaxStitchVoices = 2;
+
+        private readonly AudioSource[] _voices = new AudioSource[Voices];
+
+        /// <summary>Что играет в каждом голосе (для лимита петель).</summary>
+        private readonly Sound[] _voiceSound = new Sound[Voices];
+        private int _nextVoice;
         private float _lastStitch;
         private int _stitchCombo;
+
+        /// <summary>Сдвиг высоты текущей «лесенки» петель: выбирается в её начале и держится до конца серии.</summary>
+        private float _stitchBase = 1f;
 
         public static bool Enabled { get; set; } = true;
 
@@ -80,19 +97,24 @@ namespace KnittedPicture.Game
         /// <summary>Звук с высотой тона: звёзды и монеты подряд звучат всё выше.</summary>
         public static void Play(Sound sound, float volume, float pitch)
         {
-            if (_instance == null || !Enabled || _instance._source == null || !_instance._clips.TryGetValue(sound, out var clip))
+            if (_instance == null || !Enabled || !_instance._clips.TryGetValue(sound, out var clip))
             {
                 return;
             }
 
-            _instance._source.pitch = pitch;
-            _instance._source.PlayOneShot(clip, volume * _instance.Gain(sound));
+            // Высоту задал вызывающий (музыкальная «лесенка» звёзд и монет): разброс не добавляем.
+            _instance.Voice(sound, clip, volume, pitch);
         }
 
         private void Awake()
         {
-            _source = gameObject.AddComponent<AudioSource>();
-            _source.playOnAwake = false;
+            for (var i = 0; i < Voices; i++)
+            {
+                var voice = gameObject.AddComponent<AudioSource>();
+                voice.playOnAwake = false;
+                _voices[i] = voice;
+            }
+
             // Щелчок — мягкий, «шерстяной»: глухой низкий тук и чуть шороха вместо звонкого писка.
             _clips[Sound.Click] = WoolTap();
             _clips[Sound.Needles] = Needles();
@@ -124,24 +146,81 @@ namespace KnittedPicture.Game
 
         private void PlayInternal(Sound sound, float volume)
         {
-            if (_source == null || !_clips.TryGetValue(sound, out var clip))
+            if (!_clips.TryGetValue(sound, out var clip))
             {
                 return;
             }
 
+            var pitch = 1f;
             if (sound == Sound.Stitch)
             {
-                // Петли подряд звучат всё выше — приятная «очередь».
-                _stitchCombo = Time.unscaledTime - _lastStitch < 0.15f ? Mathf.Min(_stitchCombo + 1, 24) : 0;
+                // Петли подряд звучат всё выше — приятная «очередь». Высота ступеньки принадлежит только этому голосу.
+                // Серия целиком чуть сдвинута случайно, а шаги внутри неё ровные: разброс не ломает лесенку.
+                var inRun = Time.unscaledTime - _lastStitch < 0.15f;
+                _stitchCombo = inRun ? Mathf.Min(_stitchCombo + 1, 24) : 0;
                 _lastStitch = Time.unscaledTime;
-                _source.pitch = 1f + _stitchCombo * 0.025f;
+                if (!inRun)
+                {
+                    _stitchBase = Spread();
+                }
+
+                pitch = _stitchBase * (1f + _stitchCombo * 0.025f);
+                if (PlayingCount(Sound.Stitch) >= MaxStitchVoices)
+                {
+                    // Лесенка уже сдвинулась, а сам звук пропускаем: частая очередь не копит голоса.
+                    return;
+                }
             }
-            else
+            else if (sound == Sound.Click || sound == Sound.Pick || sound == Sound.Coin || sound == Sound.Puff)
             {
-                _source.pitch = 1f;
+                pitch = Spread();
             }
 
-            _source.PlayOneShot(clip, volume * Gain(sound));
+            Voice(sound, clip, volume, pitch);
+        }
+
+        /// <summary>Случайный множитель высоты в пределах разброса.</summary>
+        private static float Spread() => 1f + Random.Range(-PitchSpread, PitchSpread);
+
+        /// <summary>Сколько голосов сейчас играют этот звук.</summary>
+        private int PlayingCount(Sound sound)
+        {
+            var count = 0;
+            for (var i = 0; i < Voices; i++)
+            {
+                if (_voices[i].isPlaying && _voiceSound[i] == sound)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Сыграть клип отдельным голосом пула: у каждого свои клип, высота и громкость. Голоса идут по кругу,
+        /// свободный берётся первым; если заняты все, прерывается самый давний.
+        /// </summary>
+        private void Voice(Sound sound, AudioClip clip, float volume, float pitch)
+        {
+            var index = _nextVoice;
+            for (var i = 0; i < Voices; i++)
+            {
+                var candidate = (_nextVoice + i) % Voices;
+                if (!_voices[candidate].isPlaying)
+                {
+                    index = candidate;
+                    break;
+                }
+            }
+
+            _nextVoice = (index + 1) % Voices;
+            var voice = _voices[index];
+            voice.clip = clip;
+            voice.pitch = pitch;
+            voice.volume = Mathf.Clamp01(volume * Gain(sound));
+            _voiceSound[index] = sound;
+            voice.Play();
         }
 
         // Все звуки — чистые тоны с плавной атакой и затуханием до нуля. Шум (случайные отсчёты) не используем:

@@ -87,6 +87,7 @@ namespace KnittedPicture.Game
                     Tweens.Run(cell, 0.35f, t => cell.anchoredPosition = rest + new Vector2(0, 14f * Ease.Bump(t)));
                     Fx.Sparkle(Card, cell.TransformPoint(new Vector3(itemW / 2f, -31f, 0)), sparkColor, 8, 46f);
                     Sfx.Play(i == 0 ? Sound.Coin : Sound.Star, 0.55f);
+                    Haptics.Play(Haptic.Soft);
                 });
             }
 

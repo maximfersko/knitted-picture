@@ -61,6 +61,8 @@ namespace KnittedPicture.Game
 
         public virtual void Dispose()
         {
+            // Уходим с экрана: заморозка кадра (хит-стоп) не должна пережить его.
+            Tweens.ResetFreeze();
             Object.Destroy(Root.gameObject);
         }
 

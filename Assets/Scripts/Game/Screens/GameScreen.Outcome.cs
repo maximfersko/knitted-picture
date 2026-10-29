@@ -78,6 +78,8 @@ namespace KnittedPicture.Game
             MothLeave();
             Tweens.Delay(Root, BeadFlight + 0.1f, () =>
             {
+                // Последняя петля села: короткая заморозка кадра перед «открытием» картинки.
+                Tweens.HitStop(0.08f);
                 _picture.Refresh();
                 RefreshProgress();
                 Sfx.Play(Sound.Unlock);
@@ -114,7 +116,9 @@ namespace KnittedPicture.Game
             HideHint();
             HideTip();
             _tempo.Break();
-            _hitStop = 0.12f;
+
+            // Затор: кадр замирает на миг, и только потом начинается встряска (её твины ждут конца заморозки).
+            Tweens.HitStop(0.12f);
             Sfx.Play(Sound.Jam);
             Haptics.Play(Haptic.Warning);
             Tweens.Shake(_loomBg, 10f, 0.4f);

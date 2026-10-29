@@ -575,6 +575,9 @@ namespace KnittedPicture.Game
                 back.gameObject.SetActive(false);
                 front.gameObject.SetActive(true);
                 Sfx.Play(Sound.Star, 0.35f);
+
+                // Карточка перевернулась: тычок в руку вместе со звуком (по редкости он станет разным позже).
+                Haptics.Play(Haptic.Soft);
                 Tweens.Run(front, 0.2f, t =>
                 {
                     var s = visual.localScale.y;

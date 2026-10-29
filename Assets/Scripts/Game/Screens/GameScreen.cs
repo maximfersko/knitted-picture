@@ -199,7 +199,6 @@ namespace KnittedPicture.Game
         private float _spoolSize;
 
         private float _stepClock;
-        private float _hitStop;
         private float _alertClock;
         private bool _ended;
         private bool _failShown;
@@ -317,9 +316,9 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            if (_hitStop > 0)
+            if (Tweens.Frozen)
             {
-                _hitStop -= dt;
+                // Хит-стоп (затор, последняя петля, старт «Разгона»): станок на миг замирает вместе с анимациями.
                 return;
             }
 

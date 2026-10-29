@@ -159,7 +159,9 @@ namespace KnittedPicture.Game
             }
 
             var color = free == 1 ? TimerWarm : Palette.Danger;
-            var pulse = 0.45f + 0.55f * Ease.Bump(Mathf.Repeat(_alertClock / 0.9f, 1f));
+
+            // «Меньше движения»: без мигания, ровная яркость; «нет мест» заметно ярче, чем «одно место».
+            var pulse = Tweens.Calm ? (free == 1 ? 0.8f : 1f) : 0.45f + 0.55f * Ease.Bump(Mathf.Repeat(_alertClock / 0.9f, 1f));
             _loomAlert.color = Palette.WithAlpha(color, pulse);
         }
     }

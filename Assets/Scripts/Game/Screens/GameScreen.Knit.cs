@@ -266,6 +266,7 @@ namespace KnittedPicture.Game
             var at = Ui.WorldCenter(_loomBg) + new Vector3(0, 46f * _fx.lossyScale.y, 0);
             if (combo == TempoCombo.RushFrom)
             {
+                Tweens.HitStop(0.05f);
                 Fx.FloatText(_fx, at, L.T("Разгон!"), RushColor, 30f);
                 Sfx.Play(Sound.Combo, 0.9f);
                 Haptics.Play(Haptic.Medium);
@@ -326,7 +327,8 @@ namespace KnittedPicture.Game
             if (_tempo.Rush)
             {
                 _rushClock += dt;
-                var pulse = 0.55f + 0.45f * Ease.Bump(Mathf.Repeat(_rushClock / 0.6f, 1f));
+                // «Меньше движения»: свечение горит ровно, без пульса.
+                var pulse = Tweens.Calm ? 0.9f : 0.55f + 0.45f * Ease.Bump(Mathf.Repeat(_rushClock / 0.6f, 1f));
                 _rushGlow.color = Palette.WithAlpha(RushColor, pulse);
                 _loomBgImage.color = Color.Lerp(Palette.LoomBg, Palette.CoinSoft, 0.8f);
             }

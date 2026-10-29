@@ -528,11 +528,14 @@ namespace KnittedPicture.Game
             return root.gameObject.AddComponent<Tap>();
         }
 
-        /// <summary>Пилюля с монетами.</summary>
-        public static Text CoinPill(RectTransform parent, int coins, float rightX, float y)
+        /// <summary>
+        /// Пилюля с монетами. widthFor — сумма, под число цифр которой считается ширина (по умолчанию coins): когда счётчик
+        /// будет расти (награда, удвоение), пилюля сразу широкая, и её левый край не уезжает вместе с цифрами.
+        /// </summary>
+        public static Text CoinPill(RectTransform parent, int coins, float rightX, float y, int? widthFor = null)
         {
             // Ширина — по числу цифр: монета и число стоят рядом, без пустоты справа.
-            var digits = Mathf.Max(3, coins.ToString().Length);
+            var digits = Mathf.Max(3, Mathf.Max(coins, widthFor ?? coins).ToString().Length);
             var w = 12f + 26f + 6f + digits * 10f + 12f;
             var root = Card(parent, "Coins", rightX - w, y, w, 44, 22, Palette.Card, Palette.CardShadow, 2f);
             Coin(root, 25, 22, 26);
@@ -651,10 +654,12 @@ namespace KnittedPicture.Game
         /// <summary>Мировая позиция центра элемента — для анимаций перелёта между панелями.</summary>
         public static Vector3 WorldCenter(RectTransform rt)
         {
-            var corners = new Vector3[4];
-            rt.GetWorldCorners(corners);
-            return (corners[0] + corners[2]) / 2f;
+            rt.GetWorldCorners(Corners);
+            return (Corners[0] + Corners[2]) / 2f;
         }
+
+        /// <summary>Общий буфер углов для <see cref="WorldCenter"/>: зовётся на каждую петлю, свой массив каждый раз — мусор.</summary>
+        private static readonly Vector3[] Corners = new Vector3[4];
 
         public static void Clear(Transform parent)
         {

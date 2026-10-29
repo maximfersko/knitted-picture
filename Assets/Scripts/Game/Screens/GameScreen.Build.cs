@@ -265,6 +265,9 @@ namespace KnittedPicture.Game
                 frame.raycastTarget = true;
                 tap.ClickSound = false;
                 tap.PressFeedback = false;
+
+                // Тап по слоту (вернуть клубок, занять платный) тоже на нажатии, как ход по клубку.
+                tap.FireOnPress = true;
                 tap.OnClick(() => OnSlotTap(slot));
             }
         }

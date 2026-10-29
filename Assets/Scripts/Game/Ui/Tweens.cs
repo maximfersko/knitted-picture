@@ -123,6 +123,49 @@ namespace KnittedPicture.Game
         public static void Install(GameObject host)
         {
             _instance = host.AddComponent<Tweens>();
+            ResetFreeze();
+        }
+
+        /// <summary>Самая долгая заморозка: страховка от опечатки в вызове, игра не должна «зависать» дольше.</summary>
+        private const float MaxHitStop = 0.25f;
+
+        /// <summary>Сколько кадров заморозка длится минимум: на низкой частоте кадров 0.05 с — это один кадр, а его не видно.</summary>
+        private const int MinHitStopFrames = 2;
+
+        /// <summary>Сколько секунд (реального времени) заморозка ещё продлится.</summary>
+        private static float _freezeLeft;
+
+        /// <summary>Сколько кадров заморозка ещё продлится как минимум.</summary>
+        private static int _freezeFrames;
+
+        /// <summary>
+        /// Заморозка кадра («хит-стоп»): пока она идёт, анимации не продвигаются, а станок не делает шагов. Время твинов
+        /// при этом тоже стоит, поэтому после заморозки они продолжают с того же места. Пружины нажатия
+        /// (<see cref="Tap.FollowPressed"/>) живут как обычно: палец отзывается и во время заморозки.
+        /// </summary>
+        public static bool Frozen => _freezeLeft > 0f || _freezeFrames > 0;
+
+        /// <summary>
+        /// Остановить анимации на короткое время в момент удара: затор, последняя петля, старт «Разгона». Считается
+        /// в реальном времени (не зависит от Time.timeScale) и длится не меньше двух кадров. Повторный вызов не
+        /// складывается, а продлевает до более долгого. Без планировщика (проверочные сборки) ничего не делает.
+        /// </summary>
+        public static void HitStop(float seconds)
+        {
+            if (_instance == null)
+            {
+                return;
+            }
+
+            _freezeLeft = Mathf.Max(_freezeLeft, Mathf.Clamp(seconds, 0f, MaxHitStop));
+            _freezeFrames = Mathf.Max(_freezeFrames, MinHitStopFrames);
+        }
+
+        /// <summary>Снять заморозку сразу: уход с экрана, пауза приложения, уничтожение планировщика.</summary>
+        public static void ResetFreeze()
+        {
+            _freezeLeft = 0f;
+            _freezeFrames = 0;
         }
 
         /// <summary>Планировщик твинов запущен: без него (проверочные сборки) отложенные действия идут сразу.</summary>
@@ -452,6 +495,14 @@ namespace KnittedPicture.Game
                 _adding.Clear();
             }
 
+            if (Frozen)
+            {
+                // Заморозка: твины стоят (ни время, ни задержки не идут), заморозка тает по реальному времени.
+                _freezeLeft = Mathf.Max(0f, _freezeLeft - UnityEngine.Time.unscaledDeltaTime);
+                _freezeFrames = Mathf.Max(0, _freezeFrames - 1);
+                return;
+            }
+
             // Шаг не больше 1/30 с: после долгого кадра (экран строился) анимация продолжается с того же места,
             // а не перескакивает вперёд — переход не теряет начало и не дёргается.
             var dt = Mathf.Min(UnityEngine.Time.unscaledDeltaTime, 1f / 30f);
@@ -504,6 +555,25 @@ namespace KnittedPicture.Game
         private void LateUpdate()
         {
             Tap.FollowPressed();
+        }
+
+        /// <summary>Приложение свернули: заморозка не должна пережить паузу и «застрять» после возвращения.</summary>
+        private void OnApplicationPause(bool pause)
+        {
+            if (pause)
+            {
+                ResetFreeze();
+            }
+        }
+
+        private void OnDisable()
+        {
+            ResetFreeze();
+        }
+
+        private void OnDestroy()
+        {
+            ResetFreeze();
         }
     }
 }

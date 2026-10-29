@@ -86,8 +86,22 @@ namespace KnittedPicture.Game
 #endif
 
 #if UNITY_ANDROID && !UNITY_EDITOR && KNITTED_ANDROIDJNI
+        /// <summary>Вибромотор: получаем один раз и держим, а не просим у системы на каждый толчок.</summary>
         private static AndroidJavaObject? _vibrator;
         private static int _sdk;
+
+        /// <summary>Длительность (мс) и амплитуда каждого вида отклика, по порядку <see cref="Haptic"/>.</summary>
+        private static readonly (long Ms, int Amplitude)[] Patterns =
+        {
+            (12L, 70),
+            (18L, 100),
+            (30L, 170),
+            (55L, 210),
+            (70L, 240),
+        };
+
+        /// <summary>Готовые эффекты вибрации (Android 8 и новее) по одному на вид отклика: на лету их не создаём.</summary>
+        private static AndroidJavaObject[]? _effects;
 
         private static void PlayAndroid(Haptic haptic)
         {
@@ -100,26 +114,28 @@ namespace KnittedPicture.Game
                     _vibrator = activity.Call<AndroidJavaObject>("getSystemService", "vibrator");
                     using var version = new AndroidJavaClass("android.os.Build$VERSION");
                     _sdk = version.GetStatic<int>("SDK_INT");
+                    if (_sdk >= 26)
+                    {
+                        // Класс нужен только чтобы создать эффекты; после этого он не держится.
+                        using var effects = new AndroidJavaClass("android.os.VibrationEffect");
+                        var made = new AndroidJavaObject[Patterns.Length];
+                        for (var i = 0; i < Patterns.Length; i++)
+                        {
+                            made[i] = effects.CallStatic<AndroidJavaObject>("createOneShot", Patterns[i].Ms, Patterns[i].Amplitude);
+                        }
+
+                        _effects = made;
+                    }
                 }
 
-                var (ms, amplitude) = haptic switch
+                var index = Mathf.Clamp((int)haptic, 0, Patterns.Length - 1);
+                if (_effects != null)
                 {
-                    Haptic.Tap => (12L, 70),
-                    Haptic.Soft => (18L, 100),
-                    Haptic.Medium => (30L, 170),
-                    Haptic.Success => (55L, 210),
-                    _ => (70L, 240),
-                };
-
-                if (_sdk >= 26)
-                {
-                    using var effects = new AndroidJavaClass("android.os.VibrationEffect");
-                    using var effect = effects.CallStatic<AndroidJavaObject>("createOneShot", ms, amplitude);
-                    _vibrator.Call("vibrate", effect);
+                    _vibrator.Call("vibrate", _effects[index]);
                 }
                 else
                 {
-                    _vibrator.Call("vibrate", ms);
+                    _vibrator.Call("vibrate", Patterns[index].Ms);
                 }
             }
             catch (System.Exception)

@@ -400,6 +400,9 @@ namespace KnittedPicture.Game
             {
                 var current = queue[0];
                 current.Tap.ClickSound = false;
+
+                // Обучающий ход, как настоящий, срабатывает на нажатии.
+                current.Tap.FireOnPress = true;
                 current.Tap.OnClick(() =>
                 {
                     if (queue.Count == 0 || queue[0] != current || placed >= frames.Length)

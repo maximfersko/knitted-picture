@@ -254,6 +254,9 @@ namespace KnittedPicture.Game
 
                     var tap = view.Tap;
                     tap.ClickSound = false;
+
+                    // Ход на нажатии: клубок откликается сразу, не дожидаясь, пока палец поднимется.
+                    tap.FireOnPress = true;
                     var columnIndex = c;
                     var depth = d;
                     tap.OnClick(() => OnSpoolTap(columnIndex, depth));
