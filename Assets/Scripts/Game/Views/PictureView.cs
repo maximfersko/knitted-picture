@@ -37,13 +37,27 @@ namespace KnittedPicture.Game
 
         /// <summary>Золото ловится только во время комбо: тогда кольца яркие и пульсируют, иначе тусклые.</summary>
         private bool _goldLive = true;
+        private bool _mysteryPeek;
+
+        /// <summary>Perfect на две секунды показывает следующий ряд загадки, сохраняя скрытыми дальние клетки.</summary>
+        public void SetMysteryPeek(bool visible)
+        {
+            if (!_game.Mystery || _mysteryPeek == visible)
+            {
+                return;
+            }
+
+            _mysteryPeek = visible;
+            RefreshColumns();
+        }
         private readonly float _cell;
         private readonly float _step;
 
-        // Натяжение полотна: пунктир, выше которого столбики ждут, и подсветка клеток, которые их держат.
+        // Натяжение полотна: линия, выше которой столбики ждут, и подсветка клеток, которые их держат.
         private RectTransform? _tension;
         private RectTransform? _lagLayer;
         private Image[]? _lagRings;
+        private Image[]? _heldThreads;
 
         public PictureView(RectTransform parent, LoomGame game, Color[] colors, float cell, float gap)
         {
@@ -104,10 +118,10 @@ namespace KnittedPicture.Game
 
         public RectTransform Root { get; }
 
-        /// <summary>Натяжение прямо сейчас держит хотя бы один столбик (пунктир виден).</summary>
+        /// <summary>Натяжение прямо сейчас держит хотя бы один столбик (линия видна).</summary>
         public bool TensionHolding { get; private set; }
 
-        /// <summary>Пунктир натяжения, если он сейчас виден: к нему привязывается подсказка.</summary>
+        /// <summary>Видимая линия натяжения: к ней привязывается подсказка.</summary>
         public RectTransform? TensionLine => TensionHolding ? _tension : null;
 
         public float Width => _game.Width * _step - (_step - _cell);
@@ -145,7 +159,7 @@ namespace KnittedPicture.Game
             var active = _game.ActiveFrontY(x) >= 0;
             var next = _game.AheadY(x, 1);
             var mark = _fronts[x];
-            mark.enabled = active && front >= 0;
+            mark.enabled = front >= 0;
             if (mark.enabled)
             {
                 var frontColor = _colors[_game.ColorAt(x, front)];
@@ -153,6 +167,10 @@ namespace KnittedPicture.Game
 
                 // На светлой клетке белая рамка не видна — тогда тёмная.
                 mark.color = Luminance(frontColor) > 0.78f ? Palette.WithAlpha(Palette.Ink, 0.45f) : Palette.WithAlpha(Color.white, 0.9f);
+                if (!active)
+                {
+                    mark.color = Palette.Danger;
+                }
             }
 
             for (var y = 0; y < _game.Height; y++)
@@ -193,7 +211,7 @@ namespace KnittedPicture.Game
                     // Фронт есть, но столбец ждёт соседей — натяжение полотна.
                     image.color = Palette.WithAlpha(color, NextAlpha);
                 }
-                else if (_game.Mystery)
+                else if (_game.Mystery && !(_mysteryPeek && y == next))
                 {
                     // Загадка: видно только фронт, остальное — дырки в ткани.
                     image.color = Palette.WithAlpha(Palette.Ink, 0.07f);
@@ -213,7 +231,7 @@ namespace KnittedPicture.Game
 
         /// <summary>
         /// Натяжение полотна видно глазами: когда столбик упирается в предел, поперёк картинки
-        /// появляется пунктир (выше него не вяжется), а клетки самого нижнего ряда, которые держат
+        /// появляется линия натяжения (выше неё не вяжется), а клетки самого нижнего ряда, которые держат
         /// остальных, мягко пульсируют рамкой. Когда никто не ждёт, ничего не показывается.
         /// </summary>
         private void BuildTension()
@@ -223,8 +241,11 @@ namespace KnittedPicture.Game
             lagGroup.blocksRaycasts = false;
             var radius = Mathf.Max(3f, _cell * 0.24f);
             _lagRings = new Image[_game.Width];
+            _heldThreads = new Image[_game.Width];
             for (var x = 0; x < _game.Width; x++)
             {
+                _heldThreads[x] = Ui.Box(_lagLayer, "HeldThread", 1f, Palette.WithAlpha(Palette.Danger, 0.7f));
+                _heldThreads[x].enabled = false;
                 var ring = Ui.Image(_lagLayer, "Lag", Art.RoundRectOutline(radius, 2), Palette.Ink);
                 ring.type = Image.Type.Sliced;
                 ring.pixelsPerUnitMultiplier = Art.Density;
@@ -236,18 +257,13 @@ namespace KnittedPicture.Game
             lagGroup.alpha = 0.85f;
             Tweens.Run(_lagLayer, 1.2f, t => lagGroup.alpha = Tweens.Calm ? 0.85f : 0.3f + 0.7f * Ease.Bump(t), null, null, 0f, true);
 
-            // Пунктир — «натянутая нить» с булавками по краям.
+            // Линия натяжения — «натянутая нить» с булавками по краям.
             var width = Width + 8f;
             _tension = Ui.Node(Root, "Tension");
             Ui.Place(_tension, -4f, 0f, width, 8f);
-            var dashColor = Palette.WithAlpha(Palette.Ink, 0.6f);
-            const float dash = 6f;
-            const float space = 4f;
-            for (var dx = 4f; dx < width - 4f; dx += dash + space)
-            {
-                var piece = Ui.Box(_tension, "Dash", 1.25f, dashColor);
-                Ui.Place(piece.rectTransform, dx, 2.75f, Mathf.Min(dash, width - 4f - dx), 2.5f);
-            }
+            var threadColor = Palette.WithAlpha(Palette.Ink, 0.6f);
+            var thread = Ui.Box(_tension, "Thread", 1.25f, threadColor);
+            Ui.Place(thread.rectTransform, 4f, 2.75f, width - 8f, 2.5f);
 
             foreach (var px in new[] { 0f, width })
             {
@@ -280,7 +296,7 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            // Столбики с фронтом выше ряда limit ждут: пунктир проходит по верхнему краю этого ряда.
+            // Столбики с фронтом выше ряда limit ждут: линия натяжения проходит по верхнему краю этого ряда.
             var lowest = _game.LowestFront;
             var limit = lowest - _game.Band;
             var gap = _step - _cell;
@@ -288,6 +304,13 @@ namespace KnittedPicture.Game
             for (var x = 0; x < _game.Width; x++)
             {
                 var ring = _lagRings[x];
+                var thread = _heldThreads![x];
+                thread.enabled = _game.IsHeld(x);
+                if (thread.enabled)
+                {
+                    var top = _game.FrontY(x) * _step + _cell;
+                    Ui.Place(thread.rectTransform, x * _step + _cell / 2f - 1f, top, 2f, lowest * _step + _cell / 2f - top);
+                }
                 ring.enabled = _game.FrontY(x) == lowest;
                 if (ring.enabled)
                 {
@@ -377,17 +400,18 @@ namespace KnittedPicture.Game
             var color = _colors[_game.ColorAt(x, y)];
             var rt = image.rectTransform;
             var tilt = (x + y) % 2 == 0 ? 10f : -10f;
+            Tweens.Kill(rt, 32);
             Tweens.Run(rt, 0.26f, t =>
             {
-                rt.localScale = Vector3.one * Mathf.LerpUnclamped(0.4f, 1f, Ease.OutBack(t));
-                rt.localRotation = Quaternion.Euler(0f, 0f, tilt * (1f - t) * Mathf.Cos(t * Mathf.PI * 2f));
+                rt.localScale = Tweens.Calm ? Vector3.one : Vector3.one * Mathf.LerpUnclamped(0.4f, 1f, Ease.OutBack(t));
+                rt.localRotation = Tweens.Calm ? Quaternion.identity : Quaternion.Euler(0f, 0f, tilt * (1f - t) * Mathf.Cos(t * Mathf.PI * 2f));
                 image.color = Color.Lerp(Color.Lerp(color, Color.white, 0.55f), color, t);
             }, null, () =>
             {
                 rt.localScale = Vector3.one;
                 rt.localRotation = Quaternion.identity;
                 image.color = color;
-            });
+            }, channel: 32);
 
             // Столбик довязан до верха и ни одна его нитка не в пути: снизу вверх пробегает блик, как застёжка.
             if (_game.FrontY(x) < 0 && _game.Status != GameStatus.Won && !ColumnPending(x))

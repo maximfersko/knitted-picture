@@ -152,6 +152,19 @@ namespace KnittedPicture.Game
         {
             _alertClock += dt;
             var free = _game.FreeSlots;
+            var danger = !_finishing && free <= 1 && !_game.IsBusy &&
+                !Enumerable.Range(0, _game.ColumnCount).Any(c => _game.CanTap(c) &&
+                    _game.Column(c).Count > 0 && _game.HasWork(_game.Column(c)[0]));
+            foreach (var booster in _boosters)
+            {
+                booster.Value.Suggest(danger && (booster.Key == BoosterType.Slot ? _game.SlotWouldHelp :
+                    booster.Key == BoosterType.Scissors && _game.ScissorsWouldHelp));
+            }
+
+            for (var i = 0; i < _slotOutlines.Length; i++)
+            {
+                _slotOutlines[i].color = danger && _game.Slots[i] == null ? TimerWarm : Palette.SlotEmpty;
+            }
             if (free >= 2 || _slotFrames.Length <= 1)
             {
                 _loomAlert.color = Color.clear;

@@ -57,6 +57,8 @@
   "ice": 0,
   "extra": 2,
   "junk": 1,
+  "maxEarlyJam": 0.3,
+  "minFollower": 0.45,
   "minWin": 0.4,
   "maxWin": 0.78,
   "maxRandom": 0.16,

@@ -73,6 +73,9 @@ namespace KnittedPicture.Core
         /// <summary>Шаги до начала вязки после того, как клубок встал на станок (пока он «летит»).</summary>
         public int Warmup { get; internal set; }
 
+        /// <summary>Шаги распускания чужой пряжи после посадки; сохраняются при копировании и отмене.</summary>
+        public int UnravelSteps { get; internal set; }
+
         /// <summary>Колонка, из которой клубок уехал на станок: ножницы возвращают нужный клубок туда. -1 — ещё не уезжал.</summary>
         public int Origin { get; internal set; } = -1;
 
@@ -84,6 +87,7 @@ namespace KnittedPicture.Core
             Revealed = Revealed,
             Origin = Origin,
             Warmup = Warmup,
+            UnravelSteps = UnravelSteps,
             Stalled = Stalled,
         };
     }

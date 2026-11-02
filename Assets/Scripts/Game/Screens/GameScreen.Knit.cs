@@ -40,8 +40,8 @@ namespace KnittedPicture.Game
             var changed = _changed;
             changed.Clear();
             var rush = _tempo.Rush;
-            // В «Разгоне» петли идут потоком: лёгкий тик вибрации в такт (Haptics сам не чаще раза в 50 мс).
-            if (rush && step.Stitches.Count > 0)
+            // Один короткий импульс на рабочий шаг, не на каждую петлю; Haptics ограничивает частоту.
+            if (step.Stitches.Count > 0)
             {
                 Haptics.Play(Haptic.Tap);
             }
@@ -102,7 +102,7 @@ namespace KnittedPicture.Game
                     {
                         // Лишняя пряжа: цвет довязан, клубок уходит недовязанным.
                         Fx.Poof(_fx, at, Palette.Ink3, _slotSpool);
-                        Fx.FloatText(_fx, at, L.T("лишняя пряжа"), Palette.Ink2, 14f);
+                        Fx.FloatText(_fx, at, done.Unraveled ? L.T("Пряжа распустилась") : L.T("лишняя пряжа"), Palette.Ink2, 14f);
                     }
                     else
                     {
@@ -112,11 +112,36 @@ namespace KnittedPicture.Game
 
                 Sfx.Play(Sound.SpoolDone, done.Leftover > 0 ? 0.35f : 0.7f);
                 Haptics.Play(Haptic.Tap);
+                if (done.Perfect)
+                {
+                    Highlight(_slotFrames[done.Slot], Palette.CoinShadow);
+                    if (_game.Mystery && _game.Status == GameStatus.Playing)
+                    {
+                        _mysteryPeekLeft = 2f;
+                        _picture.SetMysteryPeek(true);
+                        ToastOnce("perfect-peek", L.T("Идеально! Следующий ряд виден на 2 секунды"));
+                    }
+                }
             }
 
-            if (step.Stitches.Count > 0 || step.Completed.Count > 0)
+            if (step.Completed.Any(done => done.Perfect))
+            {
+                Sfx.Play(Sound.Star, 0.35f);
+            }
+
+            if (step.Progress)
             {
                 SyncLoom();
+            }
+
+            if (step.TimeAdded > 0f)
+            {
+                RefreshTimer();
+                _moth?.Startle();
+                if (_timerText != null)
+                {
+                    Fx.FloatText(_fx, Ui.WorldCenter(_timerText.rectTransform), L.F("+{0:0.#} с", step.TimeAdded), Palette.Primary, 16f);
+                }
             }
 
             if (_game.Band > 0 && changed.Count > 0)
@@ -204,13 +229,26 @@ namespace KnittedPicture.Game
         /// <summary>Числа на льду тают вместе с петлями — без перестройки поля.</summary>
         private void UpdateFieldIce()
         {
+            var cracked = false;
+            var pitch = 1f;
             foreach (var f in _field)
             {
                 var column = _game.Column(f.Column);
                 if (f.Depth < column.Count && column[f.Depth].Id == f.SpoolId)
                 {
+                    var ice = column[f.Depth].Ice;
+                    if (ice > 0 && f.View.ShownIce > ice)
+                    {
+                        cracked = true;
+                        pitch = Mathf.Max(pitch, 1f + 0.3f / ice);
+                    }
                     f.View.SetIce(column[f.Depth].Ice);
                 }
+            }
+
+            if (cracked)
+            {
+                Sfx.Play(Sound.Knot, 0.18f, pitch);
             }
         }
 
@@ -342,15 +380,23 @@ namespace KnittedPicture.Game
 
         private void Wobble(RectTransform root)
         {
+            if (Tweens.Calm)
+            {
+                return;
+            }
+
+            Tweens.Kill(root, 31);
+            var rotation = root.localRotation;
+            var scale = root.localScale;
             Tweens.Run(root, 0.12f, t =>
             {
-                root.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 2f) * 9f);
-                root.localScale = Vector3.one * (1f + 0.06f * Ease.Bump(t));
+                root.localRotation = Quaternion.Lerp(rotation, Quaternion.identity, t) * Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 2f) * 9f);
+                root.localScale = Vector3.Lerp(scale, Vector3.one, t) * (1f + 0.06f * Ease.Bump(t));
             }, null, () =>
             {
                 root.localRotation = Quaternion.identity;
                 root.localScale = Vector3.one;
-            });
+            }, channel: 31);
         }
     }
 }

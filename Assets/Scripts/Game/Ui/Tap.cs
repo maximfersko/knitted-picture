@@ -21,8 +21,8 @@ namespace KnittedPicture.Game
         private const float PressSquash = 0.04f;
 
         /// <summary>Просадка «подушечного» отклика (клубки поля) по ширине и по высоте при полном нажатии.</summary>
-        private const float SquishX = 0.055f;
-        private const float SquishY = 0.075f;
+        private const float SquishX = 0.04f;
+        private const float SquishY = 0.05f;
 
         private Vector3 _base = Vector3.one;
         private Vector3 _applied = Vector3.one;
@@ -35,6 +35,10 @@ namespace KnittedPicture.Game
         private bool _firedOnPress;
 
         public event Action? Clicked;
+        /// <summary>Начало и конец удержания для предпросмотра; обычные кнопки их не используют.</summary>
+        public event Action? Pressed;
+        public event Action? Released;
+        private bool _gestureCancelled;
 
         public bool Interactable { get; set; } = true;
 
@@ -92,6 +96,11 @@ namespace KnittedPicture.Game
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            _gestureCancelled = false;
+            if (Interactable)
+            {
+                Pressed?.Invoke();
+            }
             // Флаг ставится заново с каждым нажатием: касание, которое увели с элемента (клика не будет), не глушит следующее.
             _firedOnPress = FireOnPress;
             if (FireOnPress)
@@ -206,6 +215,7 @@ namespace KnittedPicture.Game
 
         private void OnDisable()
         {
+            Released?.Invoke();
             _pressed = false;
             _firedOnPress = false;
             Settle();
@@ -213,6 +223,7 @@ namespace KnittedPicture.Game
 
         public void OnPointerUp(PointerEventData eventData)
         {
+            Released?.Invoke();
             // Быстрый тап (палец успел подняться раньше, чем кнопка просела): толчок, чтобы отклик был виден и тогда.
             if (_pressed && _depth < 0.6f)
             {
@@ -224,11 +235,17 @@ namespace KnittedPicture.Game
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            _gestureCancelled = true;
+            Released?.Invoke();
             Release();
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (_gestureCancelled)
+            {
+                return;
+            }
             if (_firedOnPress)
             {
                 // Это касание уже сработало на нажатии.

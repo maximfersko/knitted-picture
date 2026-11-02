@@ -57,6 +57,7 @@
   "ice": 0,
   "extra": 0,
   "junk": 1,
+  "minSkilled": 0.9,
   "minWin": 0.5,
   "maxWin": 0.75,
   "maxRandom": 0.2,

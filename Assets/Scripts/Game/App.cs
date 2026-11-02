@@ -885,6 +885,11 @@ namespace KnittedPicture.Game
         public T ShowPopup<T>(T popup)
             where T : Popup
         {
+            if (_screen is GameScreen game)
+            {
+                game.CancelResponsiveInput();
+            }
+
             _popups.Add(popup);
             popup.Enter();
             Unsettle(0.6f);

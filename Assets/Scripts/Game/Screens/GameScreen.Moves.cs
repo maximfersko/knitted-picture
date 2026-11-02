@@ -28,6 +28,7 @@ namespace KnittedPicture.Game
             }
 
             HideHint();
+            CancelResponsiveInput();
             // Без ножниц работает только передний клубок. Тап по клубку из глубины раньше отправлял
             // передний — неожиданный ход, лишний тап к цели и, бывает, затор. Теперь — только подсказка.
             if (!_scissors && depth > 0)
@@ -47,10 +48,24 @@ namespace KnittedPicture.Game
             var result = _scissors ? _game.PullSpool(column, depth) : _game.TapColumn(column);
             if (!result.Accepted)
             {
+                var interval = _tempo.Rush ? StepInterval / RushSpeed : StepInterval;
+                if (!_scissors && _responsive.Buffer(_game, column, result.Reason, Time.unscaledTime,
+                    Mathf.Max(0f, interval - _stepClock), interval))
+                {
+                    Haptics.Play(Haptic.Soft);
+                    return;
+                }
+
                 Deny(column, depth, result.Reason);
                 return;
             }
 
+            PresentMove(result);
+        }
+
+        /// <summary>Одинаковый отклик прямого и отложенного хода, включая полёт, цели и комбо.</summary>
+        private void PresentMove(MoveResult result)
+        {
             if (!App.Progress.FunnelSent(FunnelStep.FirstMove))
             {
                 App.Funnel(FunnelStep.FirstMove);
@@ -67,14 +82,14 @@ namespace KnittedPicture.Game
 
             if (result.Kind == MoveKind.KnotUntied)
             {
-                Sfx.Play(Sound.Knot);
+                Sfx.Play(Sound.Knot, 0.8f, 1f + 0.08f * Mathf.Min(5, ++_knotTone));
                 Haptics.Play(Haptic.Tap);
                 RefreshField();
                 RefreshBoosters();
                 var view = FindFieldView(result.Knotted!.Id);
                 if (view != null)
                 {
-                    Tweens.Punch(view.Root, 0.2f, 0.25f);
+                    Tweens.Punch(view.Root, 0.05f, 0.2f);
                     Fx.Sparkle(_fx, Ui.WorldCenter(view.Root), Palette.Danger, 6, 26f);
                 }
 
@@ -82,6 +97,7 @@ namespace KnittedPicture.Game
             }
 
             Sfx.Play(Sound.Pick);
+            _knotTone = 0;
             Haptics.Play(Haptic.Tap);
             OnComboGrow(_tempo.OnPlaced());
             var flights = new List<(Placement placed, Vector3 from)>();
@@ -172,6 +188,7 @@ namespace KnittedPicture.Game
         /// <summary>Тап по слоту станка: с ножницами — срезать клубок, без них — подсказка про чужую пряжу.</summary>
         private void OnSlotTap(int slot)
         {
+            CancelResponsiveInput();
             if (_ended || _failShown || _finishing || App.HasPopups || slot >= _game.Slots.Count)
             {
                 return;
@@ -187,14 +204,14 @@ namespace KnittedPicture.Game
             {
                 if (_game.IsForeign(spool))
                 {
-                    ToastOnce("foreign-loom", L.T("Эта пряжа картинке не нужна: срежь её ножницами"));
+                    ToastOnce("foreign-loom", L.T("Эта пряжа распустится сама за 6 шагов. Ножницы освободят место сразу"));
                 }
                 else if (spool.Warmup == 0 && !_game.HasWork(spool) && !_game.IsSurplus(spool))
                 {
                     // Бледный клубок на станке: почему он не вяжет.
                     var held = Enumerable.Range(0, _game.Width).Any(x => _game.IsHeld(x) && _game.ColorAt(x, _game.FrontY(x)) == spool.Color);
                     ToastOnce("waiting", held
-                        ? L.T("Ждёт: сначала довяжи клетки ниже пунктира")
+                        ? L.T("Ждёт: сначала довяжи клетки ниже линии натяжения")
                         : L.T("Ждёт своей очереди: его цвета пока нет внизу"));
                 }
 
@@ -258,6 +275,7 @@ namespace KnittedPicture.Game
             switch (reason)
             {
                 case RejectReason.Locked:
+                    HighlightKey(column, depth);
                     ToastOnce("locked", L.T("Под замком: сначала поставь на станок клубок с ключом"));
                     break;
                 case RejectReason.LinkNotReady:
@@ -265,6 +283,7 @@ namespace KnittedPicture.Game
                     PunchLinkPartner(column, depth);
                     break;
                 case RejectReason.Frozen:
+                    HighlightIce(column);
                     var ice = _game.Column(column)[0].Ice;
                     ToastOnce("ice", L.F("Во льду: оттает через {0} {1} этого цвета", ice, L.Plural(ice, "петлю", "петли", "петель")));
                     break;

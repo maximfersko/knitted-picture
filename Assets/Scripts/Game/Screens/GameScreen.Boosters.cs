@@ -15,6 +15,7 @@ namespace KnittedPicture.Game
 
         private void OnBooster(BoosterType type)
         {
+            CancelResponsiveInput();
             if (_ended || _failShown || _finishing)
             {
                 return;
@@ -191,6 +192,7 @@ namespace KnittedPicture.Game
 
         private void SetScissors(bool on)
         {
+            CancelResponsiveInput();
             if (_scissors == on)
             {
                 return;

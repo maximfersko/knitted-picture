@@ -268,7 +268,7 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Foreign_yarn_stays_on_the_loom_until_cut()
+        public void Foreign_yarn_unravels_without_scissors()
         {
             var game = new LoomGame(Framed(
                 new SpoolData { column = 0, color = 0, loops = 3 },
@@ -279,9 +279,6 @@ namespace KnittedPicture.Core.Tests
 
             game.TapColumn(0);
             game.Settle();
-            Assert.Same(foreign, game.Slots[0]);
-
-            Assert.True(game.CutFromLoom(0));
             Assert.Null(game.Slots[0]);
             game.TapColumn(1);
             game.TapColumn(2);
@@ -290,7 +287,7 @@ namespace KnittedPicture.Core.Tests
         }
 
         [Fact]
-        public void Foreign_yarn_can_jam_the_loom_and_cutting_it_unjams()
+        public void Foreign_yarn_can_be_cut_before_it_unravels()
         {
             var level = Framed(
                 new SpoolData { column = 0, color = 0, loops = 3 },
@@ -300,8 +297,8 @@ namespace KnittedPicture.Core.Tests
             var game = new LoomGame(level);
 
             game.TapColumn(0);
-            game.Settle();
-            Assert.Equal(GameStatus.Jammed, game.Status);
+            game.Step();
+            Assert.Equal(GameStatus.Playing, game.Status);
             Assert.Equal(JamAdvice.ForeignYarn, game.Advice());
 
             Assert.True(game.CutFromLoom(0));

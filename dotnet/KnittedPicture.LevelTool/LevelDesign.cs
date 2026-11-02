@@ -52,7 +52,7 @@ namespace KnittedPicture.LevelTool
         public int thick;
         public int ice;
 
-        /// <summary>Чужая пряжа: клубки цвета ткани. Взятый на станок — занимает слот насовсем.</summary>
+        /// <summary>Чужая пряжа: клубки цвета ткани, временно занимают слот и распускаются за шесть шагов.</summary>
         public int junk;
 
         /// <summary>Лишние клубки сверх картинки: стоят тапа и места на станке, зато их можно не брать.</summary>

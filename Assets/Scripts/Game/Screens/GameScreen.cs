@@ -300,6 +300,7 @@ namespace KnittedPicture.Game
         /// <summary>Игру свернули посреди уровня: ставим на паузу, чтобы моль не съела картинку, пока игрока нет.</summary>
         public void AutoPause()
         {
+            CancelResponsiveInput();
             if (!_ended && !_failShown && !App.HasPopups && _game.Status == GameStatus.Playing)
             {
                 App.ShowPopup(new PausePopup(App, Restart, LeaveHome, StreakWarning()));
@@ -311,6 +312,13 @@ namespace KnittedPicture.Game
 
         public override void Tick(float dt)
         {
+            if (App.HasPopups)
+            {
+                CancelResponsiveInput();
+                return;
+            }
+
+            UpdateResponsiveInput(dt);
             if (_ended || _failShown)
             {
                 return;
@@ -343,6 +351,14 @@ namespace KnittedPicture.Game
                     _stepClock -= interval;
                     var step = _game.Step();
                     Present(step);
+                    if (!_finishing && !_scissors && !App.HasPopups)
+                    {
+                        var buffered = _responsive.Flush(_game, Time.unscaledTime);
+                        if (buffered != null)
+                        {
+                            PresentMove(buffered);
+                        }
+                    }
                     if (step.Status != GameStatus.Playing)
                     {
                         AfterStatus(step.Status);
@@ -415,6 +431,7 @@ namespace KnittedPicture.Game
 
         public override bool OnBack()
         {
+            CancelResponsiveInput();
             if (_scissors)
             {
                 SetScissors(false);
@@ -470,6 +487,7 @@ namespace KnittedPicture.Game
             private readonly CanvasGroup _group;
             private readonly Image _badgeBack;
             private readonly Text _badgeText;
+            private readonly Image _suggestion;
 
             public BoosterButton(RectTransform parent, BoosterType type, float x, float y, float w)
             {
@@ -497,9 +515,14 @@ namespace KnittedPicture.Game
                 _badgeText = Ui.Fit(Ui.Label(badge, "", 11, Color.white), 8);
                 Ui.Place(_badgeText.rectTransform, 47f * Art2.TagTextFrom, 0, 47f * (0.97f - Art2.TagTextFrom), 26);
                 Tap = root.gameObject.AddComponent<Tap>();
+                _suggestion = Outline(root, Palette.CoinShadow).GetComponent<Image>();
+                _suggestion.enabled = false;
             }
 
             public Tap Tap { get; }
+
+            /// <summary>Спокойная обводка полезного бустера до затора, без изменения доступности и цены.</summary>
+            public void Suggest(bool useful) => _suggestion.enabled = useful && !Dimmed;
 
             /// <summary>Финиш: кнопка затихает и не нажимается.</summary>
             public bool Dimmed { get; set; }

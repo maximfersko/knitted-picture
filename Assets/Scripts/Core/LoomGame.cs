@@ -24,8 +24,15 @@ namespace KnittedPicture.Core
         /// <summary>Сколько шагов клубок «летит» на станок, прежде чем начать вязать.</summary>
         public const int WarmupSteps = 3;
 
+        /// <summary>Чужая пряжа освобождает место через шесть шагов после посадки.</summary>
+        public const int ForeignLifetime = 6;
+
+        /// <summary>Отпор моли за золотую петлю, один раз за клетку даже после отмены.</summary>
+        public const float GoldTimeBonus = 2f;
+
         private readonly PictureGrid _grid;
         private readonly bool[] _gold;
+        private readonly HashSet<int> _timeRewardedGold = new HashSet<int>();
         private readonly Stack<Snapshot> _history = new Stack<Snapshot>();
         private List<Spool?> _slots;
         private List<List<Spool>> _columns;
@@ -81,6 +88,7 @@ namespace KnittedPicture.Core
             Version = other.Version;
             _grid = other._grid.Clone();
             _gold = other._gold;
+            _timeRewardedGold.UnionWith(other._timeRewardedGold);
             _slots = CloneSlots(other._slots);
             _columns = other._columns.Select(c => c.Select(s => s.Clone()).ToList()).ToList();
             _status = other._status;
@@ -147,14 +155,14 @@ namespace KnittedPicture.Core
         /// </summary>
         public int Version { get; private set; }
 
-        /// <summary>Есть ли на станке работа: клубок долетает, может связать петлю или уходит как лишний.</summary>
+        /// <summary>Станок занят: клубок долетает, вяжет, распускается или уходит как лишний.</summary>
         public bool IsBusy
         {
             get
             {
                 foreach (var s in _slots)
                 {
-                    if (s != null && (s.Warmup > 0 || HasWork(s) || IsSurplus(s)))
+                    if (s != null && (s.Warmup > 0 || HasWork(s) || IsSurplus(s) || IsForeign(s)))
                     {
                         return true;
                     }
@@ -212,9 +220,49 @@ namespace KnittedPicture.Core
 
         /// <summary>
         /// Чужая пряжа: этого цвета в рисунке нет вовсе (например, цвет ткани).
-        /// На станке такой клубок занимает слот, пока его не срежут ножницами.
+        /// На станке такой клубок распускается за ForeignLifetime шагов; ножницы освобождают место сразу.
         /// </summary>
         public bool IsForeign(Spool spool) => !spool.Rainbow && _grid.TotalOf(spool.Color) == 0;
+
+        /// <summary>
+        /// Соседство разных готовых клубков одного цвета или с радугой даёт одну дополнительную петлю.
+        /// Проверяются все занятые клубком места, включая разнесённые половины толстого клубка.
+        /// </summary>
+        public bool HasSlotSynergy(int slot)
+        {
+            if (slot < 0 || slot >= _slots.Count)
+            {
+                return false;
+            }
+
+            var spool = _slots[slot];
+            if (spool == null || spool.Warmup > 0 || IsForeign(spool) || IsSurplus(spool))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < _slots.Count; i++)
+            {
+                if (!ReferenceEquals(_slots[i], spool))
+                {
+                    continue;
+                }
+
+                for (var side = -1; side <= 1; side += 2)
+                {
+                    var n = i + side;
+                    var neighbor = n >= 0 && n < _slots.Count ? _slots[n] : null;
+                    if (neighbor != null && neighbor.Id != spool.Id && neighbor.Warmup == 0 &&
+                        !IsForeign(neighbor) && !IsSurplus(neighbor) &&
+                        (spool.Rainbow || neighbor.Rainbow || spool.Color == neighbor.Color))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>Цвета, которые прямо сейчас можно вязать хоть в одном столбце.</summary>
         public HashSet<int> FrontColors()
@@ -345,7 +393,7 @@ namespace KnittedPicture.Core
 
         /// <summary>
         /// Один шаг вязки: каждый клубок на станке (по порядку слотов) делает петлю своего цвета
-        /// в самом низком столбце, где этот цвет на фронте (толстый — две, радужный — любого цвета).
+        /// в самом низком столбце, где этот цвет на фронте (толстый — две, соседство даёт ещё одну).
         /// Пустые клубки уходят; лишние — тоже, когда их цвет в картинке кончился.
         /// </summary>
         public StepResult Step()
@@ -359,6 +407,14 @@ namespace KnittedPicture.Core
             var completed = new List<Completion>();
             var thawed = new List<int>();
             var progress = false;
+            var timeBefore = TimeLeft;
+            // Снимок до шага: уход или посадка левого соседа не меняют скорость правого в этом же шаге.
+            var synergy = new bool[_slots.Count];
+            for (var i = 0; i < _slots.Count; i++)
+            {
+                synergy[i] = HasSlotSynergy(i);
+            }
+
             for (var i = 0; i < _slots.Count; i++)
             {
                 var spool = _slots[i];
@@ -382,8 +438,21 @@ namespace KnittedPicture.Core
                     continue;
                 }
 
+                if (IsForeign(spool))
+                {
+                    spool.UnravelSteps++;
+                    progress = true;
+                    if (spool.UnravelSteps >= ForeignLifetime)
+                    {
+                        completed.Add(new Completion(spool.Id, i, TailOf(i), false, spool.Loops, true));
+                        Free(spool);
+                    }
+
+                    continue;
+                }
+
                 var knitted = false;
-                for (var k = 0; k < spool.Size && spool.Loops > 0; k++)
+                for (var k = 0; k < spool.Size + (synergy[i] ? 1 : 0) && spool.Loops > 0; k++)
                 {
                     var x = _grid.FindTarget(spool.Rainbow ? PictureGrid.AnyColor : spool.Color);
                     if (x < 0)
@@ -395,6 +464,11 @@ namespace KnittedPicture.Core
                     var color = _grid.ColorAt(x, y);
                     spool.Loops--;
                     stitches.Add(new Stitch(x, y, color, i, spool.Id));
+                    if (TimeLimit > 0 && IsGold(x, y) && _timeRewardedGold.Add(y * Width + x))
+                    {
+                        // Награда возвращает потерянное время, но не раздувает исходный таймер.
+                        TimeLeft = Math.Min(Math.Max(TimeLimit, TimeLeft), TimeLeft + GoldTimeBonus);
+                    }
                     Thaw(color, thawed);
                     knitted = true;
                 }
@@ -422,7 +496,7 @@ namespace KnittedPicture.Core
                 _status = GameStatus.Jammed;
             }
 
-            return new StepResult(stitches, completed, thawed, progress, _status);
+            return new StepResult(stitches, completed, thawed, progress, _status, TimeLeft - timeBefore);
         }
 
         /// <summary>

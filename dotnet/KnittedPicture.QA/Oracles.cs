@@ -88,7 +88,11 @@ namespace KnittedPicture.QA
             OnLoom = new HashSet<int>(g.Slots.Where(s => s != null).Select(s => s!.Id));
             Busy = g.IsBusy;
             Warmups = g.Slots.Select(s => s?.Warmup ?? -1).ToArray();
+            Speeds = Enumerable.Range(0, g.Slots.Count).Where(i => g.Slots[i] != null && !g.IsTail(i))
+                .ToDictionary(i => g.Slots[i]!.Id, i => g.Slots[i]!.Size + (g.HasSlotSynergy(i) ? 1 : 0));
         }
+
+        public Dictionary<int, int> Speeds { get; }
 
         /// <summary>«Полёт» клубка в каждом слоте (-1 — слот пуст).</summary>
         public int[] Warmups { get; }
@@ -505,7 +509,7 @@ namespace KnittedPicture.QA
                             $"клубок {kv.Key}: было {b.Loops[kv.Key]}, связал {kv.Value}, лишних {leftover}, стало {actual}");
                     }
 
-                    if (b.Colors[kv.Key].Thick ? kv.Value > 2 : kv.Value > 1)
+                    if (kv.Value > b.Speeds[kv.Key])
                     {
                         Fail("stitch-speed", Severity.Bug, "клубок связал за шаг больше, чем может", $"клубок {kv.Key}: {kv.Value} петель");
                     }

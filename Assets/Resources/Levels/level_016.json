@@ -36,52 +36,38 @@
     "111000000111"
   ],
   "gold": [
-    17,
-    49,
-    92
+    8,
+    31,
+    77
   ],
   "band": 3,
   "slots": 5,
   "spools": [
     {
       "color": 1,
-      "loops": 3
-    },
-    {
-      "color": 1,
-      "loops": 6,
-      "ice": 3
+      "loops": 5
     },
     {
       "color": 3,
-      "loops": 5
+      "loops": 2
     },
     {
       "color": 5,
       "loops": 1
     },
     {
+      "color": 3,
+      "loops": 3,
+      "ice": 12
+    },
+    {
       "color": 1,
       "loops": 2
     },
     {
-      "color": 3,
-      "loops": 2,
-      "ice": 12
-    },
-    {
+      "column": 1,
       "color": 4,
       "loops": 1
-    },
-    {
-      "column": 1,
-      "color": 3,
-      "loops": 7
-    },
-    {
-      "column": 1,
-      "color": 6,
-      "loops": 2
     },
     {
       "column": 1,
@@ -89,13 +75,28 @@
     },
     {
       "column": 1,
-      "color": 1,
-      "loops": 3
+      "color": 4,
+      "loops": 2
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 6,
+      "loops": 1
     },
     {
       "column": 2,
-      "color": 2,
-      "loops": 5
+      "color": 3,
+      "loops": 6
+    },
+    {
+      "column": 2,
+      "color": 1,
+      "loops": 9
     },
     {
       "column": 2,
@@ -104,37 +105,43 @@
     },
     {
       "column": 2,
-      "color": 3,
-      "loops": 7
-    },
-    {
-      "column": 2,
-      "color": 5,
-      "loops": 2
-    },
-    {
-      "column": 2,
       "color": 6,
       "loops": 1
     },
     {
-      "column": 2,
-      "color": 1,
+      "column": 3,
+      "color": 5,
       "loops": 1
     },
     {
       "column": 3,
+      "color": 3,
+      "loops": 17,
+      "ice": 4
+    },
+    {
+      "column": 3,
       "color": 1,
+      "loops": 8
+    },
+    {
+      "column": 3,
+      "color": 5,
+      "loops": 2
+    },
+    {
+      "column": 4,
+      "color": 2,
+      "loops": 3
+    },
+    {
+      "column": 4,
+      "color": 2,
       "loops": 5
     },
     {
-      "column": 3,
-      "color": 3,
-      "loops": 7
-    },
-    {
-      "column": 3,
-      "color": 3,
+      "column": 4,
+      "color": 6,
       "loops": 1
     },
     {
@@ -144,23 +151,8 @@
     },
     {
       "column": 4,
-      "color": 1,
-      "loops": 5
-    },
-    {
-      "column": 4,
-      "color": 1,
-      "loops": 2
-    },
-    {
-      "column": 4,
       "color": 3,
       "loops": 1
-    },
-    {
-      "column": 4,
-      "color": 5,
-      "loops": 3
     }
   ]
 }

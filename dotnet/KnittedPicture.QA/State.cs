@@ -33,7 +33,7 @@ namespace KnittedPicture.QA
             }
 
             sb.Append('|');
-            var slots = string.Concat(g.Slots.Select(s => (s == null ? "_" : $"{s.Id}:{s.Loops}:{s.Warmup}") + ","));
+            var slots = string.Concat(g.Slots.Select(s => (s == null ? "_" : $"{s.Id}:{s.Loops}:{s.Warmup}:{s.UnravelSteps}") + ","));
             while (slots.EndsWith("_,"))
             {
                 slots = slots.Substring(0, slots.Length - 2);

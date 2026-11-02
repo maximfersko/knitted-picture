@@ -83,7 +83,6 @@ namespace KnittedPicture.Core.Tests
             };
             var game = new LoomGame(level);
             game.TapColumn(0);
-            game.Settle();
             Assert.False(game.ReturnsToField(game.Slots[0]!));
 
             Assert.True(game.CutFromLoom(0));

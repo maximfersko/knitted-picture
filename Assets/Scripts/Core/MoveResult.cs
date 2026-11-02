@@ -92,13 +92,14 @@ namespace KnittedPicture.Core
     /// <summary>Клубок довязал все петли и освободил слот.</summary>
     public readonly struct Completion
     {
-        public Completion(int spoolId, int slot, int tailSlot, bool perfect, int leftover)
+        public Completion(int spoolId, int slot, int tailSlot, bool perfect, int leftover, bool unraveled = false)
         {
             SpoolId = spoolId;
             Slot = slot;
             TailSlot = tailSlot;
             Perfect = perfect;
             Leftover = leftover;
+            Unraveled = unraveled;
         }
 
         public int SpoolId { get; }
@@ -110,6 +111,9 @@ namespace KnittedPicture.Core
 
         /// <summary>Клубок работал без простоя от начала до конца.</summary>
         public bool Perfect { get; }
+
+        /// <summary>Чужая пряжа распустилась без петель и Perfect.</summary>
+        public bool Unraveled { get; }
 
         /// <summary>
         /// Лишняя пряжа: цвет клубка в картинке кончился, и он ушёл со станка недовязанным.
@@ -142,21 +146,25 @@ namespace KnittedPicture.Core
         public int TailSlot { get; }
     }
 
-    /// <summary>Результат одного шага вязки: каждый клубок на станке сделал не больше одной петли.</summary>
+    /// <summary>Результат шага вязки с учётом толщины и синергии соседей.</summary>
     public sealed class StepResult
     {
         public static readonly StepResult Idle = new StepResult(Array.Empty<Stitch>(), Array.Empty<Completion>(), Array.Empty<int>(), false, GameStatus.Playing);
 
-        internal StepResult(IReadOnlyList<Stitch> stitches, IReadOnlyList<Completion> completed, IReadOnlyList<int> thawed, bool progress, GameStatus status)
+        internal StepResult(IReadOnlyList<Stitch> stitches, IReadOnlyList<Completion> completed, IReadOnlyList<int> thawed, bool progress, GameStatus status, float timeAdded = 0f)
         {
             Stitches = stitches;
             Completed = completed;
             Thawed = thawed;
+            TimeAdded = timeAdded;
             Progress = progress;
             Status = status;
         }
 
         public IReadOnlyList<Stitch> Stitches { get; }
+
+        /// <summary>Сколько секунд действительно вернули золотые петли этого шага.</summary>
+        public float TimeAdded { get; }
 
         public IReadOnlyList<Completion> Completed { get; }
 

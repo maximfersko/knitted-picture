@@ -34,9 +34,9 @@
     "111100001111"
   ],
   "gold": [
-    14,
-    38,
-    62
+    5,
+    52,
+    88
   ],
   "band": 2,
   "slots": 4,
@@ -47,83 +47,78 @@
     },
     {
       "color": 2,
-      "loops": 4
-    },
-    {
-      "color": 3,
       "loops": 7
     },
     {
-      "color": 3,
-      "loops": 1
+      "color": 4,
+      "loops": 2
     },
     {
       "color": 3,
-      "loops": 4
+      "loops": 10
     },
     {
-      "column": 1,
-      "color": 3,
-      "loops": 5
-    },
-    {
-      "column": 1,
-      "color": 3,
-      "loops": 16
-    },
-    {
-      "column": 2,
-      "color": 1,
-      "loops": 4
-    },
-    {
-      "column": 2,
       "color": 5,
       "loops": 2
     },
     {
+      "column": 1,
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 5,
+      "loops": 3
+    },
+    {
+      "column": 1,
+      "color": 2,
+      "loops": 1
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 13
+    },
+    {
+      "column": 1,
+      "color": 3,
+      "loops": 9
+    },
+    {
       "column": 2,
+      "color": 4,
+      "loops": 1
+    },
+    {
+      "column": 2,
+      "color": 3,
+      "loops": 4
+    },
+    {
+      "column": 3,
       "color": 1,
       "loops": 4
     },
     {
       "column": 3,
-      "color": 2,
-      "loops": 4
-    },
-    {
-      "column": 3,
-      "loops": 4
-    },
-    {
-      "column": 3,
-      "color": 4,
-      "loops": 3
+      "loops": 6
     },
     {
       "column": 3,
       "color": 3,
-      "loops": 9
+      "loops": 10
     },
     {
       "column": 4,
       "color": 3,
-      "loops": 6
-    },
-    {
-      "column": 4,
-      "color": 3,
-      "loops": 6
+      "loops": 8
     },
     {
       "column": 4,
       "color": 4,
       "loops": 2
-    },
-    {
-      "column": 4,
-      "color": 4,
-      "loops": 1
     }
   ]
 }

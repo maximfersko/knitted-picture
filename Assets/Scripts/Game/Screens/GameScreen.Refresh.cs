@@ -15,6 +15,9 @@ namespace KnittedPicture.Game
 
         private void RefreshAll()
         {
+            CancelResponsiveInput();
+            _mysteryPeekLeft = 0f;
+            _picture.SetMysteryPeek(false);
             _picture.Refresh();
             RefreshGoals();
             if (_slotFrames.Length != _game.Slots.Count)
@@ -96,14 +99,19 @@ namespace KnittedPicture.Game
                     if (_game.IsForeign(spool) && !_foreignShown)
                     {
                         _foreignShown = true;
-                        ToastOnce("foreign-loom", L.T("Эта пряжа картинке не нужна: срежь её ножницами"));
+                        ToastOnce("foreign-loom", L.T("Эта пряжа распустится сама за 6 шагов. Ножницы освободят место сразу"));
                     }
                     view = _slotViews[i];
                 }
 
                 if (view != null && spool != null)
                 {
-                    view.View.SetLoops(spool.Loops);
+                    var synergy = _game.HasSlotSynergy(i);
+                    view.View.SetLoomState(spool, _game.IsForeign(spool), synergy);
+                    if (synergy)
+                    {
+                        ToastOnce("synergy", L.T("Клубки одного цвета рядом вяжут быстрее"));
+                    }
                     view.View.SetWaiting(!_game.IsForeign(spool) && !_game.HasWork(spool));
                 }
 
@@ -255,11 +263,34 @@ namespace KnittedPicture.Game
                     var tap = view.Tap;
                     tap.ClickSound = false;
 
-                    // Ход на нажатии: клубок откликается сразу, не дожидаясь, пока палец поднимется.
-                    tap.FireOnPress = true;
+                    // Передний клубок: пресс сразу, короткий тап на отпускании, удержание показывает цели.
+                    tap.FireOnPress = _scissors || d > 0;
                     var columnIndex = c;
                     var depth = d;
-                    tap.OnClick(() => OnSpoolTap(columnIndex, depth));
+                    var spoolId = spool.Id;
+                    var gestureEpoch = -1;
+                    if (!tap.FireOnPress)
+                    {
+                        tap.Pressed += () =>
+                        {
+                            BeginPreview(columnIndex, spoolId);
+                            gestureEpoch = _previewSpool == spoolId ? _inputEpoch : -1;
+                        };
+                        tap.Released += () => EndPreview(spoolId);
+                    }
+                    tap.OnClick(() =>
+                    {
+                        if (!tap.FireOnPress && gestureEpoch != _inputEpoch)
+                        {
+                            return;
+                        }
+                        // Пока палец удерживал клубок, поле могло измениться от вязки или второго касания.
+                        var current = _game.Column(columnIndex);
+                        if (depth < current.Count && current[depth].Id == spoolId)
+                        {
+                            OnSpoolTap(columnIndex, depth);
+                        }
+                    });
                     _field.Add(new FieldSpool(view, spool.Id, c, d));
 
                     // Передний клубок, которому сразу есть работа, слегка «дышит».
@@ -394,6 +425,12 @@ namespace KnittedPicture.Game
                 if (f.Depth < other.Count && other[f.Depth].Id == f.SpoolId && other[f.Depth].Id != spool.Id && other[f.Depth].Link == spool.Link)
                 {
                     Tweens.Punch(f.View.Root, 0.25f, 0.35f);
+                    Highlight(f.View.Root, Palette.LinkPair(spool.Link));
+                    var source = FindFieldView(spool.Id);
+                    if (source != null)
+                    {
+                        Highlight(source.Root, Palette.LinkPair(spool.Link));
+                    }
                     Fx.Sparkle(_fx, Ui.WorldCenter(f.View.Root), Palette.LinkPair(spool.Link), 8, 30f);
                     return;
                 }
@@ -469,7 +506,7 @@ namespace KnittedPicture.Game
             // Сердцебиение: на каждой новой секунде короткий толчок, к концу сильнее.
             var countdown = near && left <= CountdownFrom;
             var sinceTick = 1f - (left - Mathf.Floor(left));
-            var pulse = near ? Mathf.Exp(-sinceTick * 6f) : 0f;
+            var pulse = near && !Tweens.Calm ? Mathf.Exp(-sinceTick * 6f) : 0f;
             _timerText.rectTransform.localScale = Vector3.one * (1f + (countdown ? 0.35f : 0.18f) * pulse);
             _timerText.color = near ? Palette.Danger : Palette.Ink;
             fill.color = near ? Color.Lerp(Palette.Danger, Palette.WithAlpha(Palette.Danger, 0.6f), pulse)
@@ -482,7 +519,7 @@ namespace KnittedPicture.Game
 
             if (_mothEdge != null)
             {
-                var edge = countdown ? 0.3f + 0.4f * pulse : near ? 0.14f * pulse : 0f;
+                var edge = countdown ? 0.3f + 0.4f * pulse : near ? (Tweens.Calm ? 0.14f : 0.14f * pulse) : 0f;
                 _mothEdge.color = Palette.WithAlpha(Palette.Danger, edge);
             }
 

@@ -31,7 +31,9 @@ namespace KnittedPicture.Game
         private readonly RectTransform _double;
         private readonly RectTransform _surplus;
         private readonly RectTransform _foreign;
+        private readonly RectTransform _synergy;
         private readonly CanvasGroup _group;
+        public int ShownIce { get; private set; }
 
         private SpoolView(RectTransform root, float size)
         {
@@ -109,7 +111,11 @@ namespace KnittedPicture.Game
 
             _foreign = Ui.Place(Ui.Node(root, "Foreign"), -badgeH * 0.2f, size - badgeH * 0.8f, badgeH, badgeH);
             Ui.Stretch(Ui.Image(_foreign, "Back", Art.Circle, Palette.Danger).rectTransform);
-            Ui.IconImage(_foreign, Icon.Close, Color.white, badgeH / 2f, badgeH / 2f, badgeH * 0.62f);
+            Ui.IconImage(_foreign, Icon.Clock, Color.white, badgeH / 2f, badgeH / 2f, badgeH * 0.62f);
+            _synergy = Ui.Place(Ui.Node(root, "Synergy"), -badgeH * 0.3f, -badgeH * 0.3f, badgeH * 1.25f, badgeH);
+            Ui.Stretch(Ui.Box(_synergy, "Back", badgeH / 2f, Palette.Primary).rectTransform);
+            Ui.Label(_synergy, "+1", badgeH * 0.55f, Color.white);
+            _synergy.gameObject.SetActive(false);
         }
 
         public RectTransform Root { get; }
@@ -186,11 +192,22 @@ namespace KnittedPicture.Game
         /// <summary>Лёд с числом петель до оттаивания; 0 — льда нет.</summary>
         public void SetIce(int ice)
         {
+            var cracked = ice > 0 && ShownIce > ice;
+            ShownIce = ice;
             _ice.gameObject.SetActive(ice > 0);
             _iceText.text = ice.ToString();
+            if (cracked)
+            {
+                Tweens.Kill(_ice, 33);
+                Tweens.Run(_ice, 0.15f, t =>
+                {
+                    _ice.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (0.95f + 0.05f * Ease.OutCubic(t));
+                    _iceText.color = Color.Lerp(Color.white, Palette.Hex("#1F5F96"), t);
+                }, done: () => _ice.localScale = Vector3.one, channel: 33);
+            }
         }
 
-        /// <summary>Чужая пряжа на поле: клубок намотан тесьмой цвета ткани (сам крестик — только на станке).</summary>
+        /// <summary>Чужая пряжа на поле: тесьма цвета ткани; значок часов появляется только на станке.</summary>
         public void SetFabric(bool fabric)
         {
             _ball.sprite = fabric ? Art2.CanvasBall(_tint) : _plain?.Invoke() ?? _ball.sprite;
@@ -211,6 +228,13 @@ namespace KnittedPicture.Game
         public void SetLoops(int loops)
         {
             _badgeText.text = loops.ToString();
+        }
+
+        /// <summary>На станке: обратный отсчёт распускания или дополнительная петля за соседство.</summary>
+        public void SetLoomState(Spool spool, bool foreign, bool synergy)
+        {
+            _badgeText.text = (foreign ? LoomGame.ForeignLifetime - spool.UnravelSteps : spool.Loops).ToString();
+            _synergy.gameObject.SetActive(synergy);
         }
 
         /// <summary>
