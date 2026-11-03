@@ -100,6 +100,9 @@ namespace KnittedPicture.Game
                 app.SetGround(Palette.GroundOfLevel(level.id));
             }
 
+            var ground = Ui.Box(Root, "WinGround", 0f, Color.Lerp(Palette.GroundOfLevel(level.id), Color.white, 0.65f));
+            Ui.Stretch(ground.rectTransform);
+
             _shownCoins = app.Progress.Coins - reward.Total;
             Ui.RoundButton(Root, Icon.Home, 16, 8).OnClick(app.ShowHome);
 
@@ -140,7 +143,7 @@ namespace KnittedPicture.Game
             var cardEstimate = 52f + (parts.Count > 3 ? 2 : 1) * 34f + 12f + TileGap + TileH;
             var nextTop = H - 24f - 44f - 6f - 70f;
             var room = nextTop - 12f - hoopY - 10f - 48f - 40f - 30f - cardEstimate;
-            var hoop = Mathf.Clamp(room, 110f, compact ? 168f : 220f);
+            var hoop = Mathf.Clamp(room, 110f, compact ? 196f : 240f);
             var hoopRoot = Ui.PlaceCenter(Ui.Node(Root, "Hoop"), W / 2f, hoopY + hoop / 2f, hoop, hoop);
             // Пяльцы: кремовая ткань, на ней вязаная миниатюра петлями, сверху деревянный обруч с латунным винтом.
             var cloth = Ui.Image(hoopRoot, "Cloth", Art.Circle, Palette.Hex("#FBF5EA"));
@@ -148,7 +151,11 @@ namespace KnittedPicture.Game
 
             // Картинка проявляется так же, как вязалась (змейкой по рядам); тап по ней (во время показа домотать до конца,
             // потом показать снова) и кнопка «смотреть» показывают снова. Ткань тап не ловит: её зона закрывала бы кнопку ▶.
-            var replay = KnitReplay.Create(hoopRoot, level, hoop / 2f, hoop / 2f, hoop * 0.66f);
+            var aspect = (float)level.width / Mathf.Max(1, level.height);
+            var shortSide = Mathf.Min(aspect, 1f / aspect);
+            // Внутренняя кромка растра — примерно 0,90 диаметра пялец; оставляем запас по диагонали.
+            var imageSize = (hoop * 0.86f) / Mathf.Sqrt(1f + shortSide * shortSide);
+            var replay = KnitReplay.Create(hoopRoot, level, hoop / 2f, hoop / 2f, imageSize);
             replay.Celebrate = false;
             void ReplayAgain()
             {

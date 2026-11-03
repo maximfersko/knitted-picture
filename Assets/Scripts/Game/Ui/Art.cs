@@ -234,7 +234,7 @@ namespace KnittedPicture.Game
             return texture;
         }
 
-        public static Texture2D PictureTexture(LevelData level, bool done = true)
+        public static Texture2D PictureTexture(LevelData level, bool done = true, int maxSize = 128)
         {
             // 2.0: картинка — вязаная миниатюра из петель-«галочек», как полотно на уровне.
             var colors = new Rgba?[level.width * level.height];
@@ -266,7 +266,11 @@ namespace KnittedPicture.Game
                 }
             }
 
-            return Art2.Texture(MetaRaster.Mini(level.width, level.height, colors, canvas));
+            // Эскиз загадки не должен выдавать скрытые цвета разной фактурой.
+            var variants = !done && level.mystery ? new int[level.width * level.height] :
+                KnitRaster.TextileVariants(level.width, level.height,
+                    (x, y) => level.picture[y][x] - '0', (x, y) => canvas[y * level.width + x], level.mystery);
+            return Art2.Texture(MetaRaster.Mini(level.width, level.height, colors, canvas, maxSize, variants), 0f);
         }
 
         private static Sprite Cached(string key, System.Func<Sprite> build)

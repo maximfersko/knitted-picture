@@ -99,7 +99,7 @@ namespace KnittedPicture.Game
             _fronts = new Image[game.Width];
             for (var x = 0; x < game.Width; x++)
             {
-                var mark = Ui.Image(Root, "Next", Art.RoundRectOutline(Mathf.Max(3f, cell * 0.22f), 1.6f), Color.white);
+                var mark = Ui.Image(Root, "Next", Art.RoundRectOutline(Mathf.Max(3f, cell * 0.22f), 0.8f), Color.white);
                 mark.type = Image.Type.Sliced;
                 mark.pixelsPerUnitMultiplier = Art.Density;
                 Ui.Place(mark.rectTransform, x * _step + 2f, 0f, cell - 4f, cell - 4f);
@@ -185,7 +185,7 @@ namespace KnittedPicture.Game
                 mark.rectTransform.anchoredPosition = new Vector2(x * _step + 2f, -(front * _step + 2f));
 
                 // На светлой клетке белая рамка не видна — тогда тёмная.
-                mark.color = Luminance(frontColor) > 0.78f ? Palette.WithAlpha(Palette.Ink, 0.45f) : Palette.WithAlpha(Color.white, 0.9f);
+                mark.color = Luminance(frontColor) > 0.78f ? Palette.WithAlpha(Palette.Ink, 0.4f) : Palette.WithAlpha(Color.white, 0.7f);
                 if (!active)
                 {
                     mark.color = Palette.Danger;
@@ -689,59 +689,9 @@ namespace KnittedPicture.Game
             gloss.enabled = true;
         }
 
-        /// <summary>Один материал на связную область исходного цвета; загадка не раскрывает скрытую форму.</summary>
-        private int[] BuildTextileVariants()
-        {
-            var variants = new int[_game.Width * _game.Height];
-            var visited = new bool[variants.Length];
-            var queue = new Queue<int>();
-            var component = new List<int>();
-            for (var y = 0; y < _game.Height; y++)
-            {
-                for (var x = 0; x < _game.Width; x++)
-                {
-                    var start = Key(x, y);
-                    if (visited[start] || _game.IsFabric(x, y)) { continue; }
-                    var color = _game.ColorAt(x, y);
-                    var minX = x;
-                    var maxX = x;
-                    var minY = y;
-                    var maxY = y;
-                    component.Clear();
-                    queue.Enqueue(start);
-                    visited[start] = true;
-                    while (queue.Count > 0)
-                    {
-                        var key = queue.Dequeue();
-                        var px = key % _game.Width;
-                        var py = key / _game.Width;
-                        component.Add(key);
-                        minX = Math.Min(minX, px);
-                        maxX = Math.Max(maxX, px);
-                        minY = Math.Min(minY, py);
-                        maxY = Math.Max(maxY, py);
-                        Visit(px - 1, py);
-                        Visit(px + 1, py);
-                        Visit(px, py - 1);
-                        Visit(px, py + 1);
-                    }
-                    var w = maxX - minX + 1;
-                    var h = maxY - minY + 1;
-                    var variant = _game.Mystery ? color % 3 : w > h * 1.5f ? 2 : h > w * 1.5f ? 1 : 0;
-                    foreach (var key in component) { variants[key] = variant; }
-
-                    void Visit(int px, int py)
-                    {
-                        if (px < 0 || py < 0 || px >= _game.Width || py >= _game.Height) { return; }
-                        var key = Key(px, py);
-                        if (visited[key] || _game.IsFabric(px, py) || _game.ColorAt(px, py) != color) { return; }
-                        visited[key] = true;
-                        queue.Enqueue(key);
-                    }
-                }
-            }
-            return variants;
-        }
+        /// <summary>Материалы областей исходной картинки остаются стабильными при отмене.</summary>
+        private int[] BuildTextileVariants() => KnitRaster.TextileVariants(_game.Width, _game.Height,
+            (x, y) => _game.ColorAt(x, y), (x, y) => _game.IsFabric(x, y), _game.Mystery);
 
         private static void Gloss(Image cell, bool on)
         {

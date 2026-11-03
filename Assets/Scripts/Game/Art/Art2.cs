@@ -310,13 +310,13 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Растр в текстуру без кэша (картинки уровней кэширует MiniPicture).</summary>
-        public static Texture2D Texture(Raster raster)
+        public static Texture2D Texture(Raster raster, float mipBias = SharpBias)
         {
             var texture = new Texture2D(raster.Width, raster.Height, TextureFormat.RGBA32, true)
             {
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Trilinear,
-                mipMapBias = SharpBias,
+                mipMapBias = mipBias,
             };
             texture.SetPixelData(raster.ToBytes(), 0);
             texture.Apply(true, true);

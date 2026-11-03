@@ -18,21 +18,54 @@ namespace KnittedPicture.Game
     public static class MiniPicture
     {
         private static readonly Dictionary<string, Texture2D> Textures = new Dictionary<string, Texture2D>();
+        private static readonly List<string> HeroOrder = new List<string>();
+
+        /// <summary>Ключ содержит сам рисунок, маску, палитру и режим загадки, а не только номер уровня.</summary>
+        private static string ContentKey(LevelData level) => level.width + ":" + level.height + ":" + level.mystery + ":" +
+            string.Join(",", level.colors) + ":" + string.Join("/", level.picture) + ":" + string.Join("/", level.canvas ?? System.Array.Empty<string>());
 
         /// <summary>
-        /// Текстура миниатюры уровня (готовая или бледный эскиз) из общего кэша. У «узора дня» номер один на все дни,
-        /// поэтому ключ включает и название картинки, чтобы не показать вчерашнюю.
+        /// Текстура миниатюры уровня из кэша по содержимому, виду и классу размера.
         /// </summary>
-        internal static Texture2D TextureOf(LevelData level, bool faded)
+        internal static Texture2D TextureOf(LevelData level, bool faded, bool hero = false)
         {
-            var key = level.id + ":" + level.name + (faded ? "f" : "");
+            var key = ContentKey(level) + (faded ? ":f" : ":d") + (hero ? ":hero" : ":small");
             if (!Textures.TryGetValue(key, out var texture) || texture == null)
             {
-                texture = Art.PictureTexture(level, done: !faded);
+                if (hero) { TrimHero(); }
+                texture = Art.PictureTexture(level, done: !faded, maxSize: hero ? 512 : 128);
                 Textures[key] = texture;
             }
 
+            if (hero)
+            {
+                HeroOrder.Remove(key);
+                HeroOrder.Add(key);
+            }
+
             return texture;
+        }
+
+        /// <summary>Удалять только неиспользуемые крупные текстуры, оставляя место для новой пары.</summary>
+        private static void TrimHero()
+        {
+            var used = new HashSet<Texture>();
+            foreach (var image in Object.FindObjectsByType<RawImage>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (image.texture != null) { used.Add(image.texture); }
+            }
+            for (var i = 0; i < HeroOrder.Count && HeroOrder.Count >= 4;)
+            {
+                var key = HeroOrder[i];
+                if (Textures.TryGetValue(key, out var texture) && texture != null && used.Contains(texture))
+                {
+                    i++;
+                    continue;
+                }
+                if (texture != null) { Object.Destroy(texture); }
+                Textures.Remove(key);
+                HeroOrder.RemoveAt(i);
+            }
         }
 
         public static RawImage Create(RectTransform parent, LevelData level, float cx, float cy, float size, bool faded = false)
@@ -43,8 +76,8 @@ namespace KnittedPicture.Game
             var raw = rt.gameObject.AddComponent<RawImage>();
             raw.texture = texture;
             raw.raycastTarget = false;
-            // Клетка вязаной миниатюры шире, чем выше (как петля): пропорции по ней, у силуэта тоже.
-            var aspect = (float)level.width * MetaRaster.MiniCellW / (level.height * MetaRaster.MiniCellH);
+            // Клетки квадратные, пропорции совпадают с полем и силуэтом.
+            var aspect = (float)level.width / level.height;
             var w = aspect >= 1 ? size : size * aspect;
             var h = aspect >= 1 ? size / aspect : size;
             Ui.PlaceCenter(rt, cx, cy, w, h);
@@ -54,7 +87,7 @@ namespace KnittedPicture.Game
         /// <summary>Силуэт закрытой картинки цветом color: видно, что там будет, но не что именно.</summary>
         public static RawImage Silhouette(RectTransform parent, LevelData level, float cx, float cy, float size, Color color)
         {
-            var key = level.id + ":" + level.name + "s";
+            var key = ContentKey(level) + ":silhouette";
             if (!Textures.TryGetValue(key, out var texture) || texture == null)
             {
                 texture = Art.SilhouetteTexture(level);
@@ -66,8 +99,8 @@ namespace KnittedPicture.Game
             raw.texture = texture;
             raw.color = color;
             raw.raycastTarget = false;
-            // Клетка вязаной миниатюры шире, чем выше (как петля): пропорции по ней, у силуэта тоже.
-            var aspect = (float)level.width * MetaRaster.MiniCellW / (level.height * MetaRaster.MiniCellH);
+            // Клетки квадратные, как на поле.
+            var aspect = (float)level.width / level.height;
             Ui.PlaceCenter(rt, cx, cy, aspect >= 1 ? size : size * aspect, aspect >= 1 ? size / aspect : size);
             return raw;
         }

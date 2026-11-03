@@ -100,12 +100,10 @@ namespace KnittedPicture.Game
             return Color.HSVToRGB(h, Mathf.Clamp01(s * 1.15f), Mathf.Clamp01(v * 1.04f + 0.01f));
         }
 
-        /// <summary>Ткань ярче: насыщенность ×1,3 и едва заметно светлее — живой цвет, а не выцветший.</summary>
+        /// <summary>Нейтральная светлая канва: цвет исходной клетки не окрашивает ткань основы.</summary>
         public static Color Fabric(Color color)
         {
-            Color.RGBToHSV(color, out var h, out var s, out var v);
-            var vivid = Color.HSVToRGB(h, Mathf.Clamp01(s * 1.3f), v);
-            return Color.Lerp(vivid, Color.white, 0.03f);
+            return Hex("#EAE4D9");
         }
 
         public static Color WithAlpha(Color color, float alpha)

@@ -105,6 +105,7 @@ namespace KnittedPicture.Game
             public Action? Done;
             public bool Loop;
             public int Channel;
+            public bool Cancelled;
         }
 
         private static Tweens? _instance;
@@ -116,6 +117,7 @@ namespace KnittedPicture.Game
         public static bool Calm { get; set; }
         private readonly List<Tween> _active = new List<Tween>();
         private readonly List<Tween> _adding = new List<Tween>();
+        private bool _updating;
         private static readonly Dictionary<Transform, Func<bool>> PauseRoots = new Dictionary<Transform, Func<bool>>();
 
         /// <summary>Привязать локальную паузу к анимациям внутри корня экрана.</summary>
@@ -227,6 +229,7 @@ namespace KnittedPicture.Game
             tween.Done = done;
             tween.Loop = loop;
             tween.Channel = channel;
+            tween.Cancelled = false;
             _instance._adding.Add(tween);
         }
 
@@ -243,13 +246,20 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            bool Match(Tween tween) => tween.Owner == owner && (channel == 0 ? !tween.Loop : tween.Channel == channel);
+            bool Match(Tween tween) => !tween.Cancelled && tween.Owner == owner && (channel == 0 ? !tween.Loop : tween.Channel == channel);
             for (var i = _instance._active.Count - 1; i >= 0; i--)
             {
                 if (Match(_instance._active[i]))
                 {
                     Rollback(_instance._active[i]);
-                    _instance.RemoveAt(i);
+                    if (_instance._updating)
+                    {
+                        _instance._active[i].Cancelled = true;
+                    }
+                    else
+                    {
+                        _instance.RemoveAt(i);
+                    }
                 }
             }
 
@@ -258,7 +268,15 @@ namespace KnittedPicture.Game
                 if (Match(_instance._adding[i]))
                 {
                     Rollback(_instance._adding[i]);
-                    _instance._adding.RemoveAt(i);
+                    if (_instance._updating)
+                    {
+                        _instance._adding[i].Cancelled = true;
+                    }
+                    else
+                    {
+                        _instance.Recycle(_instance._adding[i]);
+                        _instance._adding.RemoveAt(i);
+                    }
                 }
             }
         }
@@ -528,45 +546,70 @@ namespace KnittedPicture.Game
             }
 
             // Партия идёт с тем же ограничением кадра, что её модель; остальные экраны сохраняют 1/30 с.
-            for (var i = _active.Count - 1; i >= 0; i--)
+            _updating = true;
+            try
             {
-                var tween = _active[i];
-                if (tween.Owner == null)
+                for (var i = _active.Count - 1; i >= 0; i--)
                 {
-                    RemoveAt(i);
-                    continue;
-                }
+                    var tween = _active[i];
+                    if (tween.Cancelled || tween.Owner == null)
+                    {
+                        tween.Cancelled = true;
+                        continue;
+                    }
 
-                var pause = PauseFor(tween.Owner);
-                if (pause != null && pause())
+                    var pause = PauseFor(tween.Owner);
+                    if (pause != null && pause())
+                    {
+                        continue;
+                    }
+                    var dt = Mathf.Min(UnityEngine.Time.unscaledDeltaTime, pause != null ? 0.1f : 1f / 30f);
+
+                    if (tween.Delay > 0)
+                    {
+                        tween.Delay -= dt;
+                        continue;
+                    }
+
+                    tween.Time += dt;
+                    var t = Mathf.Clamp01(tween.Time / tween.Duration);
+                    tween.Step?.Invoke(tween.Ease(t));
+                    if (tween.Cancelled || tween.Owner == null)
+                    {
+                        tween.Cancelled = true;
+                        continue;
+                    }
+                    if (t < 1f)
+                    {
+                        continue;
+                    }
+
+                    if (tween.Loop)
+                    {
+                        tween.Time = 0;
+                        continue;
+                    }
+
+                    var done = tween.Done;
+                    tween.Cancelled = true;
+                    done?.Invoke();
+                }
+            }
+            finally
+            {
+                _updating = false;
+                for (var i = _active.Count - 1; i >= 0; i--)
                 {
-                    continue;
+                    if (_active[i].Cancelled) { RemoveAt(i); }
                 }
-                var dt = Mathf.Min(UnityEngine.Time.unscaledDeltaTime, pause != null ? 0.1f : 1f / 30f);
-
-                if (tween.Delay > 0)
+                for (var i = _adding.Count - 1; i >= 0; i--)
                 {
-                    tween.Delay -= dt;
-                    continue;
+                    if (_adding[i].Cancelled)
+                    {
+                        Recycle(_adding[i]);
+                        _adding.RemoveAt(i);
+                    }
                 }
-
-                tween.Time += dt;
-                var t = Mathf.Clamp01(tween.Time / tween.Duration);
-                tween.Step?.Invoke(tween.Ease(t));
-                if (t < 1f)
-                {
-                    continue;
-                }
-
-                if (tween.Loop)
-                {
-                    tween.Time = 0;
-                    continue;
-                }
-
-                var done = tween.Done;
-                RemoveAt(i);
-                done?.Invoke();
             }
         }
 
@@ -575,6 +618,11 @@ namespace KnittedPicture.Game
         {
             var tween = _active[i];
             _active.RemoveAt(i);
+            Recycle(tween);
+        }
+
+        private void Recycle(Tween tween)
+        {
             tween.Owner = null;
             tween.Step = null;
             tween.Done = null;

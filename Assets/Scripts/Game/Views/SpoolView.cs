@@ -237,7 +237,7 @@ namespace KnittedPicture.Game
         /// <summary>Чужая пряжа на поле: тесьма цвета ткани; значок часов появляется только на станке.</summary>
         public void SetFabric(bool fabric)
         {
-            _ball.sprite = fabric ? Art2.CanvasBall(_tint) : _plain?.Invoke() ?? _ball.sprite;
+            _ball.sprite = fabric ? Art2.CanvasBall(Palette.Fabric(_tint)) : _plain?.Invoke() ?? _ball.sprite;
         }
 
         /// <summary>Метку «×2» на станке не показываем: там толстый клубок и так стоит на двух местах.</summary>

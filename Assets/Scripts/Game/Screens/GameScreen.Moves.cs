@@ -143,6 +143,7 @@ namespace KnittedPicture.Game
                 var spool = placed.Spool;
                 var flyer = SpoolView.Create(_fx, _spoolSize);
                 flyer.Bind(spool, _colors[spool.Color], true);
+                flyer.SetFabric(_game.IsForeign(spool));
                 var target = SlotTarget(placed.Slot);
                 var scale = SpoolSizeAt(placed.Slot) / _spoolSize;
 

@@ -43,8 +43,8 @@ namespace KnittedPicture.Game
             _size = size;
             _rows = Mathf.Max(1, level.height);
 
-            // Пропорции как у MiniPicture.Create: клетка миниатюры шире, чем выше.
-            var aspect = (float)level.width * MetaRaster.MiniCellW / (level.height * MetaRaster.MiniCellH);
+            // Пропорции как у поля и MiniPicture.Create: клетки квадратные.
+            var aspect = (float)level.width / level.height;
             _width = aspect >= 1 ? size : size * aspect;
             _height = aspect >= 1 ? size / aspect : size;
 
@@ -52,7 +52,7 @@ namespace KnittedPicture.Game
 
             // 1. Бледный эскиз на весь размер: он же ловит тапы.
             var sketch = Root.gameObject.AddComponent<RawImage>();
-            sketch.texture = MiniPicture.TextureOf(level, faded: true);
+            sketch.texture = MiniPicture.TextureOf(level, faded: true, hero: true);
             sketch.raycastTarget = true;
 
             // 2. Готовые ряды: маска от низа картинки, внутри готовая текстура во весь размер.
@@ -111,7 +111,7 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Высота низа ряда k в точках вида: ряд 0 снизу, у k == высота картинки это вся картинка.</summary>
-        private float RowTop(int k) => k >= _rows ? _height : _height * k * MetaRaster.MiniCellH / (_rows * MetaRaster.MiniCellH + 6f);
+        private float RowTop(int k) => k >= _rows ? _height : _height * k / _rows;
 
         /// <summary>Запустить с пустого полотна: seconds на всю картинку, через delay секунд; done — когда довязано.</summary>
         public void Play(float seconds, float delay = 0f, Action? done = null)
@@ -220,7 +220,7 @@ namespace KnittedPicture.Game
         private static void AddPicture(RectTransform rt, LevelData level)
         {
             var raw = rt.gameObject.AddComponent<RawImage>();
-            raw.texture = MiniPicture.TextureOf(level, faded: false);
+            raw.texture = MiniPicture.TextureOf(level, faded: false, hero: true);
             raw.raycastTarget = false;
         }
     }

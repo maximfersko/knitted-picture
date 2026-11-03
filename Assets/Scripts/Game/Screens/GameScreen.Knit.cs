@@ -177,7 +177,7 @@ namespace KnittedPicture.Game
                         // Лишняя пряжа: цвет довязан, клубок уходит недовязанным.
                         if (done.Unraveled)
                         {
-                            Fx.LooseThreads(_fx, at, slot.Color >= 0 ? _colors[slot.Color] : Palette.Ink3, _slotSpool, true);
+                            Fx.LooseThreads(_fx, at, Palette.Fabric(slot.Color >= 0 ? _colors[slot.Color] : Palette.Ink3), _slotSpool, true);
                         }
                         else
                         {

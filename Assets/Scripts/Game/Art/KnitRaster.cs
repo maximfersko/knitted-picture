@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 
 namespace KnittedPicture.Game
 {
@@ -451,42 +452,101 @@ namespace KnittedPicture.Game
             });
         }
 
-        /// <summary>Две переплетённые изогнутые нити с круглым сечением и тенью в местах пересечения.</summary>
+        /// <summary>Один материал на связную область исходного цвета; загадка не раскрывает скрытую форму.</summary>
+        public static int[] TextileVariants(int width, int height, Func<int, int, int> colorAt, Func<int, int, bool> isFabric, bool mystery)
+        {
+            var variants = new int[width * height];
+            var visited = new bool[variants.Length];
+            var queue = new Queue<int>();
+            var component = new List<int>();
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var start = (y * width + x);
+                    if (visited[start] || isFabric(x, y)) { continue; }
+                    var color = colorAt(x, y);
+                    var minX = x;
+                    var maxX = x;
+                    var minY = y;
+                    var maxY = y;
+                    component.Clear();
+                    queue.Enqueue(start);
+                    visited[start] = true;
+                    while (queue.Count > 0)
+                    {
+                        var key = queue.Dequeue();
+                        var px = key % width;
+                        var py = key / width;
+                        component.Add(key);
+                        minX = Math.Min(minX, px);
+                        maxX = Math.Max(maxX, px);
+                        minY = Math.Min(minY, py);
+                        maxY = Math.Max(maxY, py);
+                        Visit(px - 1, py);
+                        Visit(px + 1, py);
+                        Visit(px, py - 1);
+                        Visit(px, py + 1);
+                    }
+                    var w = maxX - minX + 1;
+                    var h = maxY - minY + 1;
+                    var variant = mystery ? color % 3 : w > h * 1.5f ? 2 : h > w * 1.5f ? 1 : 0;
+                    foreach (var key in component) { variants[key] = variant; }
+
+                    void Visit(int px, int py)
+                    {
+                        if (px < 0 || py < 0 || px >= width || py >= height) { return; }
+                        var key = (py * width + px);
+                        if (visited[key] || isFabric(px, py) || colorAt(px, py) != color) { return; }
+                        visited[key] = true;
+                        queue.Enqueue(key);
+                    }
+                }
+            }
+            return variants;
+        }
+
+        /// <summary>Плотные вытянутые петли, перекрывающие следующий ряд, на сплошной подложке пряжи.</summary>
         private static void SampleTextile(float x, float y, int variant, bool coarse, out float body, out float gloss)
         {
             const float period = 32f;
-            var row = MathF.Floor(y / period);
-            var v = y / period - row;
-            var angle = v * 2f * MathF.PI;
-            var width = variant == 0 ? 5.5f : variant == 1 ? 4.8f : 5.1f;
-            var sweep = variant == 2 ? 10f : variant == 1 ? 8f : 7f;
-            var offset = variant == 2 ? 2.4f * MathF.Sin(angle) : 0f;
-            var center = 16f + offset;
-            var branch = sweep * MathF.Sin(angle);
-            var localX = x - MathF.Floor(x / period) * period;
-            var a = localX - (center + branch);
-            var b = localX - (center - branch + 16f);
-            a -= period * MathF.Floor((a + period / 2f) / period);
-            b -= period * MathF.Floor((b + period / 2f) / period);
-            var da = MathF.Abs(a) / width;
-            var db = MathF.Abs(b) / width;
-            var ca = Draw.Clamp01((1f - da) * 3f + 0.5f);
-            var cb = Draw.Clamp01((1f - db) * 3f + 0.5f);
-            SampleYarn(a / width, angle, variant, coarse, out var valueA, out var shineA);
-            SampleYarn(b / width, angle, variant, coarse, out var valueB, out var shineB);
-
-            // Порядок значим только при перекрытии: вне него каждая нить сохраняет собственное освещение.
-            // Переход периодичен и проходит в промежутке между пересечениями, где покрытия не пересекаются.
-            var order = Draw.SmoothStep(-0.6f, 0.6f, MathF.Sin(angle));
-            var overlap = ca * cb;
-            var onlyA = ca * (1f - cb);
-            var onlyB = cb * (1f - ca);
-            var weightA = onlyA + overlap * order;
-            var weightB = onlyB + overlap * (1f - order);
-            var contactA = onlyA * cb * (1f - order) * 0.12f;
-            var contactB = onlyB * ca * order * 0.12f;
-            body = Draw.Clamp01(0.62f * (1f - ca) * (1f - cb) + valueA * (weightA - contactA) + valueB * (weightB - contactB));
-            gloss = Draw.Clamp01(shineA * weightA + shineB * weightB);
+            var px = x - MathF.Floor(x / period) * period;
+            var py = y - MathF.Floor(y / period) * period;
+            var best = float.MaxValue;
+            var second = float.MaxValue;
+            var across = 0f;
+            var along = 0f;
+            var radius = variant == 1 ? 5.4f : 6.2f;
+            var lean = variant == 2 ? 2f : 0f;
+            for (var row = -1; row <= 1; row++)
+            {
+                for (var column = -1; column <= 1; column++)
+                {
+                    var cx = 16f + column * period;
+                    var cy = row * period;
+                    for (var side = -1; side <= 1; side += 2)
+                    {
+                        var d = Draw.Capsule(px, py, cx + side * 1.5f + lean, cy - 3f,
+                            cx + side * 10f - lean, cy + 30f, radius, radius + 0.6f, out var t, out var cross);
+                        if (d < best)
+                        {
+                            second = best;
+                            best = d;
+                            across = cross;
+                            along = t;
+                        }
+                        else
+                        {
+                            second = MathF.Min(second, d);
+                        }
+                    }
+                }
+            }
+            var cover = Draw.Clamp01(0.5f - best);
+            SampleYarn(across, along * 2f * MathF.PI, variant, coarse, out var value, out var shine);
+            var contact = Draw.Clamp01(1f - MathF.Abs(second - best) / 2f) * cover * 0.06f;
+            body = Draw.Clamp01(Draw.Lerp(0.82f, value, cover) - contact);
+            gloss = shine * cover * 0.65f;
         }
 
         /// <summary>Собственное матовое освещение нити не меняется от её порядка в переплетении.</summary>

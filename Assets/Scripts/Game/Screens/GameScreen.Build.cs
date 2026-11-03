@@ -16,9 +16,11 @@ namespace KnittedPicture.Game
         /// <summary>Мелкая канва связывает фон и полотно, оставляя насыщенный цвет клубкам.</summary>
         private void BuildTextileBackdrop()
         {
+            var ground = Ui.Box(Root, "Ground", 0f, Color.Lerp(Palette.GroundOfLevel(_level.id), Color.white, 0.65f));
+            Ui.Stretch(ground.rectTransform);
             var texture = Ui.Node(Root, "TextileGround").gameObject.AddComponent<RawImage>();
             texture.texture = Art2.Linen;
-            texture.color = Color.Lerp(Palette.GroundOfLevel(_level.id), Color.white, 0.62f);
+            texture.color = Palette.WithAlpha(Color.white, 0.07f);
             texture.raycastTarget = false;
             texture.uvRect = new Rect(0f, 0f, W / 24f, H / 24f);
             Ui.Stretch(texture.rectTransform);

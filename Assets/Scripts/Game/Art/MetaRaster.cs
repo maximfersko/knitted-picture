@@ -11,112 +11,98 @@ namespace KnittedPicture.Game
     /// </summary>
     public static class MetaRaster
     {
-        /// <summary>Ширина и высота клетки миниатюры в пикселях: петля шире, чем выше, как в полотне.</summary>
+        /// <summary>Квадратные клетки миниатюры, как на игровом поле.</summary>
         public const int MiniCellW = 16;
+        public const int MiniCellH = 16;
 
-        public const int MiniCellH = 13;
+        // Форма нитей считается один раз на материал, затем красится для любой картинки.
+        private static readonly Lazy<Raster>[,,] MiniTiles = BuildTiles();
+        private static readonly Lazy<Raster> MiniCanvas = new Lazy<Raster>(KnitRaster.CanvasTile);
 
-        /// <summary>
-        /// Вязаная миниатюра w×h клеток. colors — цвет клетки (строка 0 — верхняя), null — пусто;
-        /// canvas — клетка ткани-основы (гладкая, без петли). Петли нижних рядов рисуются первыми:
-        /// верхние дольки заходят на ряд выше, как у настоящего полотна.
-        /// </summary>
-        public static Raster Mini(int w, int h, Rgba?[] colors, bool[] canvas)
+        private static Lazy<Raster>[,,] BuildTiles()
         {
-            var r = new Raster(w * MiniCellW, h * MiniCellH + 6);
-            for (var row = 0; row < h; row++)
+            var result = new Lazy<Raster>[3, 2, 2];
+            for (var variant = 0; variant < 3; variant++)
+            for (var detail = 0; detail < 2; detail++)
+            for (var gloss = 0; gloss < 2; gloss++)
             {
-                // Нижний ряд картинки (row = h - 1) рисуем первым.
-                var y = h - 1 - row;
+                var v = variant;
+                var coarse = detail != 0;
+                var shine = gloss != 0;
+                result[variant, detail, gloss] = new Lazy<Raster>(() => KnitRaster.TextileTile(v, coarse, shine));
+            }
+            return result;
+        }
+
+        /// <summary>Миниатюра с общей фактурой поля и ограниченной длинной стороной.</summary>
+        public static Raster Mini(int w, int h, Rgba?[] colors, bool[] canvas, int maxSize = 128, int[]? variants = null)
+        {
+            var cell = Math.Max(1, maxSize / Math.Max(w, h));
+            var result = new Raster(w * cell, h * cell);
+            var bodyMaps = new float[]?[3];
+            var glossMaps = new float[]?[3];
+            float[]? fabricMap = null;
+            var detail = cell < 18 ? 1 : 0;
+            for (var y = 0; y < h; y++)
+            {
                 for (var x = 0; x < w; x++)
                 {
-                    var c = colors[y * w + x];
-                    if (c == null)
+                    var index = y * w + x;
+                    var color = colors[index];
+                    if (color == null) { continue; }
+                    var variant = variants != null ? variants[index] : 0;
+                    if (canvas[index])
                     {
-                        continue;
+                        fabricMap ??= FilterTile(MiniCanvas.Value, cell, false);
                     }
-
-                    var bx = x * MiniCellW;
-                    var by = row * MiniCellH;
-                    if (canvas[y * w + x])
+                    else if (bodyMaps[variant] == null)
                     {
-                        Square(r, bx, by, c.Value);
+                        bodyMaps[variant] = FilterTile(MiniTiles[variant, detail, 0].Value, cell, false);
+                        glossMaps[variant] = FilterTile(MiniTiles[variant, detail, 1].Value, cell, true);
                     }
-                    else
+                    for (var py = 0; py < cell; py++)
                     {
-                        MiniStitch(r, bx, by, c.Value);
-                    }
-                }
-            }
-
-            return r;
-        }
-
-        private static void Square(Raster r, int bx, int by, Rgba color)
-        {
-            for (var py = by; py < by + MiniCellH; py++)
-            {
-                for (var px = bx; px < bx + MiniCellW; px++)
-                {
-                    var weave = (px + py) % 2 == 0 ? 0.97f : 1f;
-                    r.Blend(px, py, color.Scale(weave));
-                }
-            }
-        }
-
-        /// <summary>
-        /// Петля миниатюры одна на все клетки: форма (покрытие и светотень) считается один раз, дальше —
-        /// только умножение на цвет. Альбом из полусотни картинок собирается в разы быстрее.
-        /// </summary>
-        private static readonly Lazy<(float Cover, float Value)[]> MiniTemplate = new Lazy<(float, float)[]>(BuildMiniTemplate);
-
-        private const int TemplateW = MiniCellW + 2;
-        private const int TemplateH = MiniCellH + 6;
-
-        private static (float Cover, float Value)[] BuildMiniTemplate()
-        {
-            var template = new (float, float)[TemplateW * TemplateH];
-            var cx = MiniCellW / 2f + 1f;
-            for (var py = 0; py < TemplateH; py++)
-            {
-                for (var tx = 0; tx < TemplateW; tx++)
-                {
-                    var x = tx + 0.5f;
-                    var y = py + 0.5f;
-                    var best = float.MaxValue;
-                    var value = 0f;
-                    for (var side = -1; side <= 1; side += 2)
-                    {
-                        var d = Draw.Capsule(x, y, cx + side * 0.7f, 2f, cx + side * 4f, MiniCellH + 1.5f, 2.2f, 4.2f, out var t, out var across);
-                        if (d < best)
+                        for (var px = 0; px < cell; px++)
                         {
-                            best = d;
-                            var profile = MathF.Sqrt(Draw.Clamp01(1f - across * across));
-                            value = (0.72f + 0.28f * profile) * (0.9f + 0.1f * t) * (0.9f + 0.12f * Draw.Clamp01(0.5f - 0.5f * across));
+                            var sampleIndex = py * cell + px;
+                            var baseSample = canvas[index] ? fabricMap![sampleIndex] : bodyMaps[variant]![sampleIndex];
+                            var shade = color.Value.Scale(baseSample);
+                            result[x * cell + px, (h - 1 - y) * cell + py] = canvas[index]
+                                ? shade : Rgba.Lerp(shade, Rgba.White, glossMaps[variant]![sampleIndex]);
                         }
                     }
-
-                    template[py * TemplateW + tx] = (Draw.Cover(best), value);
                 }
             }
-
-            return template;
+            return result;
         }
 
-        private static void MiniStitch(Raster r, int bx, int by, Rgba color)
+        /// <summary>Усреднить точную площадь исходных пикселей для каждого пикселя клетки.</summary>
+        private static float[] FilterTile(Raster source, int size, bool alpha)
         {
-            var template = MiniTemplate.Value;
-            for (var py = 0; py < TemplateH; py++)
+            var result = new float[size * size];
+            for (var y = 0; y < size; y++)
             {
-                for (var tx = 0; tx < TemplateW; tx++)
+                var y0 = (float)y * source.Height / size;
+                var y1 = (float)(y + 1) * source.Height / size;
+                for (var x = 0; x < size; x++)
                 {
-                    var (cover, value) = template[py * TemplateW + tx];
-                    if (cover > 0f)
+                    var x0 = (float)x * source.Width / size;
+                    var x1 = (float)(x + 1) * source.Width / size;
+                    var sum = 0f;
+                    for (var sy = (int)Math.Floor(y0); sy < Math.Ceiling(y1); sy++)
                     {
-                        r.Blend(bx - 1 + tx, by + py, color.Scale(value).WithAlpha(cover));
+                        var wy = Math.Min(y1, sy + 1f) - Math.Max(y0, sy);
+                        for (var sx = (int)Math.Floor(x0); sx < Math.Ceiling(x1); sx++)
+                        {
+                            var wx = Math.Min(x1, sx + 1f) - Math.Max(x0, sx);
+                            var sample = source[sx, sy];
+                            sum += (alpha ? sample.A : sample.R) * wx * wy;
+                        }
                     }
+                    result[y * size + x] = sum / ((x1 - x0) * (y1 - y0));
                 }
             }
+            return result;
         }
 
         /// <summary>
