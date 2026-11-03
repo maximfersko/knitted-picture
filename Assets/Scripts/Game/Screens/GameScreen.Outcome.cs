@@ -71,13 +71,23 @@ namespace KnittedPicture.Game
 
         private void OnWon()
         {
+            if (_ended) { return; }
             _ended = true;
             HideHint();
             HideTip();
             SetScissors(false);
             MothLeave();
-            Tweens.Delay(Root, BeadFlight + 0.1f, () =>
+            if (_pendingFlights == 0) { BeginWonPresentation(); }
+        }
+
+        private void BeginWonPresentation()
+        {
+            var epoch = _presentationEpoch;
+            if (_presentationDisposed || _wonPresentationStarted) { return; }
+            _wonPresentationStarted = true;
+            Tweens.Delay(Root, 0.01f, () =>
             {
+                if (_presentationDisposed || epoch != _presentationEpoch) { return; }
                 // Последняя петля села: короткая заморозка кадра перед «открытием» картинки.
                 Tweens.HitStop(0.08f);
                 _picture.Refresh();
@@ -86,6 +96,7 @@ namespace KnittedPicture.Game
                 Haptics.Play(Haptic.Success);
                 _picture.Wave(() =>
                 {
+                    if (_presentationDisposed || epoch != _presentationEpoch) { return; }
                     var position = _pictureCard.anchoredPosition;
                     Tweens.Run(_pictureCard, 0.5f, t =>
                     {
@@ -106,6 +117,7 @@ namespace KnittedPicture.Game
                         _tempo.Best, _boostersUsed > 0 || _rescues > 0, _game.TotalStitches, _tempo.RushCount);
                     _picture.Reveal(() =>
                     {
+                        if (_presentationDisposed || epoch != _presentationEpoch) { return; }
                         if (_run.Pattern)
                         {
                             App.OnPatternWon(_level, stars, stats);
@@ -118,6 +130,8 @@ namespace KnittedPicture.Game
                 });
             });
         }
+
+        private bool _wonPresentationStarted;
 
         private void OnJam()
         {

@@ -15,6 +15,7 @@ namespace KnittedPicture.Game
     {
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
         private static readonly Dictionary<string, Texture2D> Textures = new Dictionary<string, Texture2D>();
+        private static readonly Sprite?[,,] TextileSprites = new Sprite?[3, 2, 2];
 
         /// <summary>Текстуры клубков по порядку последнего обращения (в конце — свежие): их выгружает Trim.</summary>
         private static readonly List<string> Balls = new List<string>();
@@ -24,6 +25,22 @@ namespace KnittedPicture.Game
 
         public static Sprite Get(string key, System.Func<Raster> draw, Vector2? pivot = null, Vector4? border = null) =>
             Sub(key, key, () => Texture(key, draw, TextureWrapMode.Clamp, border == null), null, pivot, border);
+
+        /// <summary>Нейтральные материалы полотна: три формы и два уровня деталей, без резкого mip-сдвига.</summary>
+        public static Sprite Textile(int variant, bool coarse, bool gloss)
+        {
+            var detailIndex = coarse ? 1 : 0;
+            var glossIndex = gloss ? 1 : 0;
+            var cached = TextileSprites[variant, detailIndex, glossIndex];
+            if (cached != null)
+            {
+                return cached;
+            }
+            var key = $"textile-{variant}-{coarse}-{gloss}";
+            var sprite = Sub(key, key, () => Texture(key, () => KnitRaster.TextileTile(variant, coarse, gloss), TextureWrapMode.Clamp, true, 0f), null);
+            TextileSprites[variant, detailIndex, glossIndex] = sprite;
+            return sprite;
+        }
 
         /// <summary>
         /// Сдвиг выбора mip-уровня к более детальному: при уменьшении спрайт берёт чёткий уровень, а не размытый
@@ -263,7 +280,7 @@ namespace KnittedPicture.Game
             }
         }
 
-        private static Texture2D Texture(string key, System.Func<Raster> draw, TextureWrapMode wrap, bool mips = true)
+        private static Texture2D Texture(string key, System.Func<Raster> draw, TextureWrapMode wrap, bool mips = true, float? mipBias = null)
         {
             if (Textures.TryGetValue(key, out var texture) && texture != null)
             {
@@ -284,7 +301,7 @@ namespace KnittedPicture.Game
             {
                 wrapMode = wrap,
                 filterMode = mips ? FilterMode.Trilinear : FilterMode.Bilinear,
-                mipMapBias = mips ? SharpBias : 0f,
+                mipMapBias = mips ? mipBias ?? SharpBias : 0f,
             };
             texture.SetPixelData(raster.ToBytes(), 0);
             texture.Apply(mips, true);

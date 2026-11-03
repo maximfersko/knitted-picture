@@ -439,6 +439,72 @@ namespace KnittedPicture.Game
         /// и утка по очереди сверху и снизу: верхняя — круглая трубочка, нижняя у пересечения в тени.
         /// Тон каждой нити чуть свой и плавно гуляет вдоль неё (утолщения пряжи), без пиксельного шума.
         /// </summary>
+        /// <summary>Нейтральное полотно: одна периодическая модель формы для цвета и отдельного блика.</summary>
+        public static Raster TextileTile(int variant, bool coarse, bool gloss)
+        {
+            // Render возвращает размер макета, умноженный на quality: итог именно 128×128.
+            const int size = 64;
+            return Raster.Render(size, size, 2, (x, y) =>
+            {
+                SampleTextile(x * 2f, y * 2f, variant, coarse, out var body, out var shine);
+                return gloss ? Rgba.White.WithAlpha(shine) : new Rgba(body, body, body, 1f);
+            });
+        }
+
+        /// <summary>Две переплетённые изогнутые нити с круглым сечением и тенью в местах пересечения.</summary>
+        private static void SampleTextile(float x, float y, int variant, bool coarse, out float body, out float gloss)
+        {
+            const float period = 32f;
+            var row = MathF.Floor(y / period);
+            var v = y / period - row;
+            var angle = v * 2f * MathF.PI;
+            var width = variant == 0 ? 5.5f : variant == 1 ? 4.8f : 5.1f;
+            var sweep = variant == 2 ? 10f : variant == 1 ? 8f : 7f;
+            var offset = variant == 2 ? 2.4f * MathF.Sin(angle) : 0f;
+            var center = 16f + offset;
+            var branch = sweep * MathF.Sin(angle);
+            var localX = x - MathF.Floor(x / period) * period;
+            var a = localX - (center + branch);
+            var b = localX - (center - branch + 16f);
+            a -= period * MathF.Floor((a + period / 2f) / period);
+            b -= period * MathF.Floor((b + period / 2f) / period);
+            var da = MathF.Abs(a) / width;
+            var db = MathF.Abs(b) / width;
+            var ca = Draw.Clamp01((1f - da) * 3f + 0.5f);
+            var cb = Draw.Clamp01((1f - db) * 3f + 0.5f);
+            SampleYarn(a / width, angle, variant, coarse, out var valueA, out var shineA);
+            SampleYarn(b / width, angle, variant, coarse, out var valueB, out var shineB);
+
+            // Порядок значим только при перекрытии: вне него каждая нить сохраняет собственное освещение.
+            // Переход периодичен и проходит в промежутке между пересечениями, где покрытия не пересекаются.
+            var order = Draw.SmoothStep(-0.6f, 0.6f, MathF.Sin(angle));
+            var overlap = ca * cb;
+            var onlyA = ca * (1f - cb);
+            var onlyB = cb * (1f - ca);
+            var weightA = onlyA + overlap * order;
+            var weightB = onlyB + overlap * (1f - order);
+            var contactA = onlyA * cb * (1f - order) * 0.12f;
+            var contactB = onlyB * ca * order * 0.12f;
+            body = Draw.Clamp01(0.62f * (1f - ca) * (1f - cb) + valueA * (weightA - contactA) + valueB * (weightB - contactB));
+            gloss = Draw.Clamp01(shineA * weightA + shineB * weightB);
+        }
+
+        /// <summary>Собственное матовое освещение нити не меняется от её порядка в переплетении.</summary>
+        private static void SampleYarn(float across, float angle, int variant, bool coarse, out float value, out float gloss)
+        {
+            var profile = MathF.Sqrt(Draw.Clamp01(1f - across * across));
+            var fibre = 0f;
+            if (!coarse)
+            {
+                var twist = variant == 1 ? 5f : 4f;
+                fibre = 0.025f * MathF.Sin(angle * twist + across * 3.5f) * profile;
+                fibre += 0.012f * MathF.Sin(angle * 7f + across * 11f) * profile;
+            }
+            var light = Draw.Clamp01(0.55f - across * 0.35f + 0.12f * MathF.Cos(angle));
+            value = 0.72f + 0.21f * profile + 0.07f * light + fibre;
+            gloss = profile * light * 0.16f;
+        }
+
         public static Raster CanvasTile()
         {
             const int s = 96;

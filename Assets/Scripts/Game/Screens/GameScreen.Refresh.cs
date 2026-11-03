@@ -17,10 +17,29 @@ namespace KnittedPicture.Game
 
         private void RefreshAll()
         {
+            ReconcilePendingGold();
+            _presentationEpoch++;
+            _celebrationEpoch++;
+            _pendingFlights = 0;
+            _afterLandings.Clear();
+            _completedFlights.Clear();
+            _issuedFlights = 0;
+            _completedThrough = 0;
+            _flightCompletions.Clear();
+            if (_fx != null)
+            {
+                _fx.gameObject.SetActive(false);
+                Object.Destroy(_fx.gameObject);
+                _fx = Ui.Layer(Ui.Stretch(Ui.Node(Root, "Fx")), false);
+            }
             CancelResponsiveInput();
             _mysteryPeekLeft = 0f;
             _picture.SetMysteryPeek(false);
             _picture.Refresh();
+            foreach (var key in _goldDone.Keys)
+            {
+                _picture.ForgetGold(key % _game.Width, key / _game.Width);
+            }
             RefreshGoals();
             if (_slotFrames.Length != _game.Slots.Count)
             {
@@ -33,6 +52,23 @@ namespace KnittedPicture.Game
             RefreshBoosters();
             RefreshProgress();
             _coins.text = App.Progress.Coins.ToString();
+        }
+
+        /// <summary>Сохранить результат связанных золотых петель, чьи нитки ещё не долетели.</summary>
+        private void ReconcilePendingGold()
+        {
+            foreach (var pair in _pendingGold)
+            {
+                var x = pair.Key % _game.Width;
+                var y = pair.Key / _game.Width;
+                if (_game.IsKnitted(x, y) && !_goldDone.ContainsKey(pair.Key))
+                {
+                    _goldDone[pair.Key] = pair.Value;
+                }
+            }
+            _pendingGold.Clear();
+            _goldCaught = _goldDone.Values.Count(caught => caught);
+            _goldCoins = _goldCaught * _goldPerLoop;
         }
 
         private void RefreshProgress()

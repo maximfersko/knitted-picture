@@ -116,6 +116,30 @@ namespace KnittedPicture.Game
         public static bool Calm { get; set; }
         private readonly List<Tween> _active = new List<Tween>();
         private readonly List<Tween> _adding = new List<Tween>();
+        private static readonly Dictionary<Transform, Func<bool>> PauseRoots = new Dictionary<Transform, Func<bool>>();
+
+        /// <summary>Привязать локальную паузу к анимациям внутри корня экрана.</summary>
+        public static void RegisterPauseRoot(Transform root, Func<bool> paused) => PauseRoots[root] = paused;
+        /// <summary>Удалить привязку при закрытии экрана.</summary>
+        public static void UnregisterPauseRoot(Transform root) => PauseRoots.Remove(root);
+
+        /// <summary>Найти локальную паузу для владельца твина, если она зарегистрирована.</summary>
+        private static Func<bool>? PauseFor(UnityEngine.Object owner)
+        {
+            var transform = owner is Component component ? component.transform : owner is GameObject obj ? obj.transform : null;
+            if (transform == null)
+            {
+                return null;
+            }
+            foreach (var pair in PauseRoots)
+            {
+                if (pair.Key != null && transform.IsChildOf(pair.Key))
+                {
+                    return pair.Value;
+                }
+            }
+            return null;
+        }
 
         /// <summary>Отработавшие твины: на поле сотни нитей в секунду, без пула каждая — мусор для сборщика.</summary>
         private readonly Stack<Tween> _pool = new Stack<Tween>();
@@ -503,9 +527,7 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            // Шаг не больше 1/30 с: после долгого кадра (экран строился) анимация продолжается с того же места,
-            // а не перескакивает вперёд — переход не теряет начало и не дёргается.
-            var dt = Mathf.Min(UnityEngine.Time.unscaledDeltaTime, 1f / 30f);
+            // Партия идёт с тем же ограничением кадра, что её модель; остальные экраны сохраняют 1/30 с.
             for (var i = _active.Count - 1; i >= 0; i--)
             {
                 var tween = _active[i];
@@ -514,6 +536,13 @@ namespace KnittedPicture.Game
                     RemoveAt(i);
                     continue;
                 }
+
+                var pause = PauseFor(tween.Owner);
+                if (pause != null && pause())
+                {
+                    continue;
+                }
+                var dt = Mathf.Min(UnityEngine.Time.unscaledDeltaTime, pause != null ? 0.1f : 1f / 30f);
 
                 if (tween.Delay > 0)
                 {

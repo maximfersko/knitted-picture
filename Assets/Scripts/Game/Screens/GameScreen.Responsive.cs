@@ -58,6 +58,10 @@ namespace KnittedPicture.Game
 
         public override void Dispose()
         {
+            ReconcilePendingGold();
+            _presentationDisposed = true;
+            _presentationEpoch++;
+            Tweens.UnregisterPauseRoot(Root);
             CancelResponsiveInput();
             base.Dispose();
         }

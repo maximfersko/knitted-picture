@@ -135,7 +135,8 @@ namespace KnittedPicture.Game
 
             // Полёт длится ровно столько, сколько станок «разогревает» клубок: в «Разгоне» шаги вдвое короче,
             // и раньше клубок начинал вязать из пустого слота, ещё не долетев.
-            var flight = LoomGame.WarmupSteps * (_tempo.Rush ? StepInterval / RushSpeed : StepInterval);
+            var interval = (_tempo.Rush ? StepInterval / RushSpeed : StepInterval) / _finishSpeed;
+            var flight = Mathf.Max(0.01f, LoomGame.WarmupSteps * interval - _stepClock);
             RectTransform? firstPartner = null;
             foreach (var (placed, from) in flights)
             {
@@ -163,6 +164,16 @@ namespace KnittedPicture.Game
                     }
                 }
                 rt.position = from;
+                var epoch = _presentationEpoch;
+                void Arrive()
+                {
+                    if (_presentationDisposed || epoch != _presentationEpoch || !_flightCompletions.Remove(spool.Id)) { return; }
+                    Tweens.Kill(rt);
+                    Object.Destroy(flyer.Root.gameObject);
+                    _arriving.Remove(spool.Id);
+                    SyncLoom();
+                }
+                _flightCompletions[spool.Id] = Arrive;
                 Tweens.Run(rt, flight, t =>
                 {
                     var e = Ease.OutCubic(t);
@@ -174,9 +185,8 @@ namespace KnittedPicture.Game
                     rt.localRotation = Tweens.Calm ? Quaternion.identity : Quaternion.Euler(0f, 0f, spin * Ease.Bump(t));
                 }, null, () =>
                 {
-                    Object.Destroy(flyer.Root.gameObject);
-                    _arriving.Remove(spool.Id);
-                    SyncLoom();
+                    if (_presentationDisposed || epoch != _presentationEpoch || !_flightCompletions.ContainsKey(spool.Id)) { return; }
+                    Arrive();
                     var slot = _slotViews[placed.Slot];
                     if (slot != null && slot.SpoolId == spool.Id)
                     {
@@ -199,6 +209,16 @@ namespace KnittedPicture.Game
             }
 
             SyncLoom();
+        }
+
+        private readonly Dictionary<int, System.Action> _flightCompletions = new Dictionary<int, System.Action>();
+
+        private void CompleteReadyFlights()
+        {
+            foreach (var spool in _game.Slots)
+            {
+                if (spool != null && spool.Warmup == 0 && _flightCompletions.TryGetValue(spool.Id, out var arrive)) { arrive(); }
+            }
         }
 
         /// <summary>Тап по слоту станка: с ножницами — срезать клубок, без них — подсказка про чужую пряжу.</summary>

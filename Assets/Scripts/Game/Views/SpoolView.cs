@@ -72,6 +72,7 @@ namespace KnittedPicture.Game
             Ui.IconImage(_lock, Icon.Lock, Color.white, size * 0.31f, size * 0.31f, size * 0.38f);
 
             _ice = Ui.PlaceCenter(Ui.Node(root, "Ice"), size / 2f, size / 2f, size * 1.04f, size * 1.04f);
+            _ice.gameObject.SetActive(false);
             Ui.Stretch(Ui.Box(_ice, "Block", size * 0.24f, new Color(0.78f, 0.92f, 1f, 0.82f)).rectTransform);
             var frost = Ui.Image(_ice, "Frost", Art.RoundRectOutline(size * 0.24f, 2), Color.white);
             frost.type = Image.Type.Sliced;
@@ -179,6 +180,7 @@ namespace KnittedPicture.Game
             _thickRing.color = visible && !spool.Rainbow ? Color.Lerp(color, Palette.Ink, 0.25f) : Palette.Ink3;
 
             SetIce(spool.Ice);
+            _ice.gameObject.SetActive(spool.Ice > 0);
             _iceDot.color = visible ? color : Palette.Hidden;
             _surplus.gameObject.SetActive(surplus && visible);
             _foreign.gameObject.SetActive(foreign);
@@ -202,7 +204,14 @@ namespace KnittedPicture.Game
         /// <summary>Лёд с числом петель до оттаивания; 0 — льда нет.</summary>
         public void SetIce(int ice)
         {
+            if (ice == ShownIce)
+            {
+                return;
+            }
             var cracked = ice > 0 && ShownIce > ice;
+            Tweens.Kill(_ice, 33);
+            _ice.localScale = Vector3.one;
+            _iceText.color = Palette.Hex("#1F5F96");
             if (ice > ShownIce)
             {
                 _iceStart = Mathf.Max(_iceStart, ice);
@@ -214,7 +223,6 @@ namespace KnittedPicture.Game
             _iceText.text = ice.ToString();
             if (cracked)
             {
-                Tweens.Kill(_ice, 33);
                 Tweens.Run(_ice, 0.15f, t =>
                 {
                     _ice.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (0.95f + 0.05f * Ease.OutCubic(t));
@@ -266,7 +274,7 @@ namespace KnittedPicture.Game
                 return;
             }
             _rainbowLive = enabled;
-            Tweens.Kill(_rainbowSheen);
+            Tweens.Kill(_rainbowSheen, 34);
             _rainbowSheen.color = Color.clear;
             if (!enabled)
             {
@@ -278,7 +286,7 @@ namespace KnittedPicture.Game
                 _rainbowSheen.rectTransform.anchoredPosition = new Vector2(Size * Mathf.Lerp(0.2f, 0.8f, sweep), -Size * 0.35f);
                 _rainbowSheen.color = Palette.WithAlpha(Color.Lerp(Palette.Coin, Palette.Link, sweep),
                     Tweens.Calm ? 0f : Mathf.Sin(sweep * Mathf.PI) * 0.55f);
-            }, loop: true);
+            }, loop: true, channel: 34);
         }
 
         /// <summary>

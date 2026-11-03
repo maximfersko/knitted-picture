@@ -17,6 +17,48 @@ namespace KnittedPicture.Game
         private int _lowestRow = -1;
         /// <summary>Отмена хода делает отложенные праздники прежнего полотна неактуальными.</summary>
         private int _celebrationEpoch;
+        private int _presentationEpoch;
+        private bool _presentationDisposed;
+        private readonly Dictionary<int, bool> _pendingGold = new Dictionary<int, bool>();
+        private int _pendingFlights;
+        private readonly List<(int Barrier, System.Action Action)> _afterLandings = new List<(int, System.Action)>();
+        private readonly HashSet<int> _completedFlights = new HashSet<int>();
+        private int _issuedFlights;
+        private int _completedThrough;
+
+        /// <summary>Запустить действие после посадки всех нитей, выпущенных к этому моменту.</summary>
+        private void AfterLandings(System.Action action)
+        {
+            if (_completedThrough >= _issuedFlights)
+            {
+                action();
+            }
+            else
+            {
+                _afterLandings.Add((_issuedFlights, action));
+            }
+        }
+
+        /// <summary>Отметить посадку с учётом возможного завершения полётов не по порядку.</summary>
+        private void CompleteLanding(int serial)
+        {
+            _completedFlights.Add(serial);
+            while (_completedFlights.Remove(_completedThrough + 1))
+            {
+                _completedThrough++;
+            }
+            for (var i = 0; i < _afterLandings.Count;)
+            {
+                if (_afterLandings[i].Barrier > _completedThrough)
+                {
+                    i++;
+                    continue;
+                }
+                var action = _afterLandings[i].Action;
+                _afterLandings.RemoveAt(i);
+                action();
+            }
+        }
         private float _nextPerfectBurstAt;
 
         /// <summary>Ряд закрыт целиком — когда долетят нитки, по нему слева направо пробегает светлая волна.</summary>
@@ -29,7 +71,7 @@ namespace KnittedPicture.Game
                 {
                     var row = y;
                     var epoch = _celebrationEpoch;
-                    Tweens.Delay(_fx, BeadFlight, () =>
+                    AfterLandings(() =>
                     {
                         if (epoch == _celebrationEpoch && !_ended && !_failShown)
                         {
@@ -73,24 +115,42 @@ namespace KnittedPicture.Game
                 // Золото засчитывается, если петля связана во время комбо.
                 var gold = _game.IsGold(x, y);
                 var caught = gold && _tempo.Active;
+                var epoch = _presentationEpoch;
+                var key = y * _game.Width + x;
+                if (gold)
+                {
+                    _pendingGold[key] = caught;
+                }
+                _pendingFlights++;
+                var serial = ++_issuedFlights;
 
                 // Нитка-клубочек летит от клубка к петле по дуге с хвостом; в «Разгоне» светится и крупнее.
                 var beadColor = rush ? Color.Lerp(color, Color.white, 0.12f) : color;
                 var beadSize = Mathf.Max(10f, _slotSpool * 0.28f) * (rush ? 1.25f : 1f);
                 Fx.Bead(_fx, from, to, beadColor, beadSize, BeadFlight, () =>
                 {
+                    if (_presentationDisposed || epoch != _presentationEpoch)
+                    {
+                        return;
+                    }
+                    _pendingFlights--;
                     if (_picture.Land(x, y))
                     {
                         Fx.Sparkle(_fx, to, rush ? RushColor : color, rush ? 2 : 1, rush ? 18f : 12f);
                         Sfx.Play(Sound.Stitch, 0.5f);
-                    }
-
-                    if (gold)
-                    {
-                        OnGold(x, y, caught);
+                        if (gold)
+                        {
+                            _pendingGold.Remove(key);
+                            OnGold(x, y, caught);
+                        }
                     }
 
                     RefreshProgress();
+                    CompleteLanding(serial);
+                    if (_ended && _game.Status == GameStatus.Won && _pendingFlights == 0)
+                    {
+                        BeginWonPresentation();
+                    }
                 });
 
                 if (_tempo.OnStitch())
@@ -254,7 +314,7 @@ namespace KnittedPicture.Game
             }
             _nextColorCelebrationAt = Time.unscaledTime + delay + 1.1f;
             var epoch = _celebrationEpoch;
-            Tweens.Delay(Root, BeadFlight + 0.05f + delay, () =>
+            AfterLandings(() => Tweens.Delay(Root, delay + 0.05f, () =>
             {
                 if (_ended || _failShown || epoch != _celebrationEpoch || _game.LeftOf(color) > 0)
                 {
@@ -271,7 +331,7 @@ namespace KnittedPicture.Game
                 Fx.LooseThreads(_fx, at.Value, _colors[color], 55f);
                 Sfx.Play(Sound.Star, 0.55f);
                 Haptics.Play(Haptic.Medium);
-            });
+            }));
         }
 
         /// <summary>Числа на льду тают вместе с петлями — без перестройки поля.</summary>

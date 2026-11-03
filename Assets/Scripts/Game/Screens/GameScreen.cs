@@ -270,6 +270,7 @@ namespace KnittedPicture.Game
             }
 
             _fx = Ui.Layer(Ui.Stretch(Ui.Node(Root, "Fx")), false);
+            Tweens.RegisterPauseRoot(Root, () => App.HasPopups);
             _built = true;
             RefreshAll();
             if (_moth != null)
@@ -352,6 +353,7 @@ namespace KnittedPicture.Game
                 while (_stepClock >= interval && guard++ < 6)
                 {
                     _stepClock -= interval;
+                    CompleteReadyFlights();
                     var step = _game.Step();
                     Present(step);
                     if (!_finishing && !_scissors && !App.HasPopups)

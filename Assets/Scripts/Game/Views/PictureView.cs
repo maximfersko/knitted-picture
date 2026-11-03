@@ -28,10 +28,15 @@ namespace KnittedPicture.Game
         private readonly LoomGame _game;
         private readonly Color[] _colors;
         private readonly Image[] _cells;
+        private readonly Image[] _glosses;
+        private readonly bool _coarseTextile;
+        private readonly int[] _textileVariants;
 
         /// <summary>Рамка на клетке, которая свяжется следующей в столбике (по одной на столбик).</summary>
         private readonly Image[] _fronts;
         private readonly HashSet<int> _pending = new HashSet<int>();
+        private readonly HashSet<int> _animating = new HashSet<int>();
+        private const int CellChannel = 32;
         private readonly Dictionary<int, Image> _gold = new Dictionary<int, Image>();
         private readonly List<(int X, int Y, Image Hole)> _holes = new List<(int X, int Y, Image Hole)>();
 
@@ -67,8 +72,12 @@ namespace KnittedPicture.Game
             _step = cell + gap;
             Root = Ui.Node(parent, "Picture");
             Root.sizeDelta = new Vector2(Width, Height);
+            // Масштаб макета фиксируется при создании вида, до победного подъёма карточки.
+            _coarseTextile = cell * Mathf.Abs(Root.lossyScale.x) < 18f;
 
             _cells = new Image[game.Width * game.Height];
+            _glosses = new Image[_cells.Length];
+            _textileVariants = BuildTextileVariants();
             for (var y = 0; y < game.Height; y++)
             {
                 for (var x = 0; x < game.Width; x++)
@@ -79,7 +88,8 @@ namespace KnittedPicture.Game
                     _cells[y * game.Width + x] = image;
 
                     // Блики петли — отдельным слоем поверх окрашенной клетки: краска не гасит блеск.
-                    var gloss = Ui.Image(image.rectTransform, "Gloss", Art.StitchGloss, Color.white);
+                    var gloss = Ui.Image(image.rectTransform, "Gloss", null, Color.white);
+                    _glosses[y * game.Width + x] = gloss;
                     Ui.Stretch(gloss.rectTransform);
                     gloss.enabled = false;
                 }
@@ -134,11 +144,12 @@ namespace KnittedPicture.Game
         public void Refresh()
         {
             _pending.Clear();
+            _animating.Clear();
             // Полная перерисовка (в том числе после отмены) прекращает старые вспышки клеток.
             // Иначе отложенный твин снова окрашивает уже распущенную петлю как связанную.
             foreach (var cell in _cells)
             {
-                Tweens.Kill(cell.rectTransform);
+                Tweens.Kill(cell.rectTransform, CellChannel);
                 cell.rectTransform.localScale = Vector3.one;
                 cell.rectTransform.localRotation = Quaternion.identity;
             }
@@ -186,7 +197,6 @@ namespace KnittedPicture.Game
                 var image = _cells[y * _game.Width + x];
                 var color = _colors[_game.ColorAt(x, y)];
                 var pending = _pending.Contains(Key(x, y));
-                image.rectTransform.localScale = Vector3.one;
                 if (_gold.TryGetValue(Key(x, y), out var gold))
                 {
                     gold.enabled = !_game.IsKnitted(x, y) || pending;
@@ -202,9 +212,8 @@ namespace KnittedPicture.Game
 
                 if (_game.IsKnitted(x, y) && !pending)
                 {
-                    image.sprite = Art.StitchCell;
-                    Gloss(image, true);
-                    image.color = color;
+                    SetTextile(image, x, y);
+                    if (!_animating.Contains(Key(x, y))) { image.color = color; }
                     continue;
                 }
 
@@ -337,11 +346,24 @@ namespace KnittedPicture.Game
 
             _gold.Remove(Key(x, y));
             var rt = ring.rectTransform;
+            Tweens.Kill(rt, 35);
             Tweens.Run(rt, 0.35f, t =>
             {
                 rt.localScale = Vector3.one * (caught ? 1f + 0.9f * t : 1f - 0.6f * t);
                 ring.color = Palette.WithAlpha(caught ? Palette.Coin : Palette.Ink3, 1f - t);
             }, null, () => Object.Destroy(rt.gameObject));
+        }
+
+        /// <summary>Убрать уже засчитанное кольцо при восстановлении представления без повторного эффекта.</summary>
+        public void ForgetGold(int x, int y)
+        {
+            var key = Key(x, y);
+            if (_gold.TryGetValue(key, out var ring))
+            {
+                _gold.Remove(key);
+                Tweens.Kill(ring.rectTransform, 35);
+                Object.Destroy(ring.gameObject);
+            }
         }
 
         /// <summary>Отмена хода развязала золотую петлю: кольцо возвращается.</summary>
@@ -358,7 +380,7 @@ namespace KnittedPicture.Game
             var ring = Ui.Image(Root, "Gold", Art.Ring, GoldColor(_goldLive));
             Ui.PlaceCenter(ring.rectTransform, x * _step + _cell / 2f, y * _step + _cell / 2f, _cell * 0.9f, _cell * 0.9f);
             var rt = ring.rectTransform;
-            Tweens.Run(rt, 1.2f, t => rt.localScale = Vector3.one * (_goldLive ? 1f + 0.14f * Ease.Bump(t) : 0.92f), null, null, (x + y) * 0.07f, true);
+            Tweens.Run(rt, 1.2f, t => rt.localScale = Vector3.one * (_goldLive ? 1f + 0.14f * Ease.Bump(t) : 0.92f), null, null, (x + y) * 0.07f, true, 35);
             _gold[Key(x, y)] = ring;
         }
 
@@ -401,25 +423,26 @@ namespace KnittedPicture.Game
             }
 
             var image = _cells[y * _game.Width + x];
-            image.sprite = Art.StitchCell;
-            Gloss(image, true);
+            SetTextile(image, x, y);
             image.color = _colors[_game.ColorAt(x, y)];
             // Петля «впрыгивает»: из маленькой с перелётом, с поворотом-покачиванием и вспышкой цвета.
             var color = _colors[_game.ColorAt(x, y)];
             var rt = image.rectTransform;
             var tilt = (x + y) % 2 == 0 ? 2.5f : -2.5f;
-            Tweens.Kill(rt, 32);
+            Tweens.Kill(rt, CellChannel);
+            _animating.Add(Key(x, y));
             Tweens.Run(rt, 0.26f, t =>
             {
                 rt.localScale = Tweens.Calm ? Vector3.one : Vector3.one * Mathf.Lerp(0.88f, 1f, Ease.OutCubic(t));
                 rt.localRotation = Tweens.Calm ? Quaternion.identity : Quaternion.Euler(0f, 0f, tilt * (1f - t) * Mathf.Cos(t * Mathf.PI * 2f));
-                image.color = Color.Lerp(Color.Lerp(color, Color.white, 0.55f), color, t);
+                image.color = Color.Lerp(Color.Lerp(color, Color.white, 0.18f), color, t);
             }, null, () =>
             {
                 rt.localScale = Vector3.one;
                 rt.localRotation = Quaternion.identity;
                 image.color = color;
-            }, channel: 32);
+                _animating.Remove(Key(x, y));
+            }, channel: CellChannel);
 
             // Столбик довязан до верха и ни одна его нитка не в пути: снизу вверх пробегает блик, как застёжка.
             if (_game.FrontY(x) < 0 && _game.Status != GameStatus.Won && !ColumnPending(x))
@@ -450,6 +473,8 @@ namespace KnittedPicture.Game
             {
                 var image = _cells[y * _game.Width + x];
                 var rt = image.rectTransform;
+                var key = Key(x, y);
+                if (!_animating.Add(key)) { continue; }
 
                 // После «впрыгивания» последней петли (0,26 с), чтобы не спорить с ней за цвет и размер.
                 var delay = 0.3f + (_game.Height - 1 - y) * 0.022f;
@@ -464,7 +489,8 @@ namespace KnittedPicture.Game
                 {
                     image.color = baseColor;
                     rt.localScale = Vector3.one;
-                }, delay);
+                    _animating.Remove(key);
+                }, delay, channel: CellChannel);
             }
         }
 
@@ -485,7 +511,9 @@ namespace KnittedPicture.Game
                 }
 
                 var rt = image.rectTransform;
-                var baseColor = image.color;
+                var key = Key(x, y);
+                if (!_animating.Add(key)) { continue; }
+                var baseColor = _colors[_game.ColorAt(x, y)];
                 Tweens.Run(rt, 0.28f, t =>
                 {
                     var bump = Ease.Bump(t);
@@ -495,7 +523,8 @@ namespace KnittedPicture.Game
                 {
                     image.color = baseColor;
                     rt.localScale = Vector3.one;
-                }, x * 0.03f);
+                    _animating.Remove(key);
+                }, x * 0.03f, channel: CellChannel);
             }
         }
 
@@ -538,7 +567,13 @@ namespace KnittedPicture.Game
                 }, Ease.InOutCubic, () =>
                 {
                     Object.Destroy(hole.gameObject);
+                    if (_game.IsKnitted(x, y))
+                    {
+                        SetTextile(cell, x, y);
+                    }
                     Fx.Sparkle(fx, Ui.WorldCenter(cell.rectTransform), color, 5, _cell);
+                    var key = Key(x, y);
+                    if (!_animating.Add(key)) { return; }
                     Tweens.Run(cell.rectTransform, 0.3f, t =>
                     {
                         var bump = Ease.Bump(t);
@@ -548,7 +583,8 @@ namespace KnittedPicture.Game
                     {
                         cell.color = color;
                         cell.rectTransform.localScale = Vector3.one;
-                    });
+                        _animating.Remove(key);
+                    }, channel: CellChannel);
                 }, delay);
             }
 
@@ -574,6 +610,8 @@ namespace KnittedPicture.Game
                     }
 
                     var image = _cells[y * _game.Width + x];
+                    var key = Key(x, y);
+                    if (_pending.Contains(key) || !_animating.Add(key)) { continue; }
                     var baseColor = _colors[color];
                     var delay = (_game.Height - 1 - y) * perRow;
                     Tweens.Run(image.rectTransform, 0.3f, t =>
@@ -585,7 +623,8 @@ namespace KnittedPicture.Game
                     {
                         image.color = baseColor;
                         image.rectTransform.localScale = Vector3.one;
-                    }, delay);
+                        _animating.Remove(key);
+                    }, delay, channel: CellChannel);
                     sum += Ui.WorldCenter(image.rectTransform);
                     count++;
                 }
@@ -613,6 +652,7 @@ namespace KnittedPicture.Game
         /// <summary>Победная волна: ряды снизу вверх вспыхивают белым и возвращаются.</summary>
         public void Wave(Action done)
         {
+            Refresh();
             const float perRow = 0.045f;
             for (var y = _game.Height - 1; y >= 0; y--)
             {
@@ -621,15 +661,14 @@ namespace KnittedPicture.Game
                 {
                     var image = _cells[y * _game.Width + x];
                     var color = _colors[_game.ColorAt(x, y)];
-                    image.sprite = Art.StitchCell;
-                    Gloss(image, true);
+                    SetTextile(image, x, y);
                     image.rectTransform.localScale = Vector3.one;
                     Tweens.Run(image.rectTransform, 0.32f, t =>
                     {
                         var bump = Ease.Bump(t);
-                        image.color = Color.Lerp(color, Color.white, 0.75f * bump);
+                        image.color = Color.Lerp(color, Color.white, 0.22f * bump);
                         image.rectTransform.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (1f + 0.06f * bump);
-                    }, null, () => image.color = color, row * perRow);
+                    }, null, () => { image.color = color; image.rectTransform.localScale = Vector3.one; image.rectTransform.localRotation = Quaternion.identity; }, row * perRow, channel: CellChannel);
                 }
             }
 
@@ -637,6 +676,72 @@ namespace KnittedPicture.Game
         }
 
         private int Key(int x, int y) => y * _game.Width + x;
+
+        /// <summary>Назначить согласованные основу и блик по материалу области и размеру клетки на экране.</summary>
+        private void SetTextile(Image image, int x, int y)
+        {
+            // Screen Space Overlay уже включает масштаб Canvas в lossyScale.
+            var key = Key(x, y);
+            var variant = _textileVariants[key];
+            image.sprite = Art2.Textile(variant, _coarseTextile, false);
+            var gloss = _glosses[key];
+            gloss.sprite = Art2.Textile(variant, _coarseTextile, true);
+            gloss.enabled = true;
+        }
+
+        /// <summary>Один материал на связную область исходного цвета; загадка не раскрывает скрытую форму.</summary>
+        private int[] BuildTextileVariants()
+        {
+            var variants = new int[_game.Width * _game.Height];
+            var visited = new bool[variants.Length];
+            var queue = new Queue<int>();
+            var component = new List<int>();
+            for (var y = 0; y < _game.Height; y++)
+            {
+                for (var x = 0; x < _game.Width; x++)
+                {
+                    var start = Key(x, y);
+                    if (visited[start] || _game.IsFabric(x, y)) { continue; }
+                    var color = _game.ColorAt(x, y);
+                    var minX = x;
+                    var maxX = x;
+                    var minY = y;
+                    var maxY = y;
+                    component.Clear();
+                    queue.Enqueue(start);
+                    visited[start] = true;
+                    while (queue.Count > 0)
+                    {
+                        var key = queue.Dequeue();
+                        var px = key % _game.Width;
+                        var py = key / _game.Width;
+                        component.Add(key);
+                        minX = Math.Min(minX, px);
+                        maxX = Math.Max(maxX, px);
+                        minY = Math.Min(minY, py);
+                        maxY = Math.Max(maxY, py);
+                        Visit(px - 1, py);
+                        Visit(px + 1, py);
+                        Visit(px, py - 1);
+                        Visit(px, py + 1);
+                    }
+                    var w = maxX - minX + 1;
+                    var h = maxY - minY + 1;
+                    var variant = _game.Mystery ? color % 3 : w > h * 1.5f ? 2 : h > w * 1.5f ? 1 : 0;
+                    foreach (var key in component) { variants[key] = variant; }
+
+                    void Visit(int px, int py)
+                    {
+                        if (px < 0 || py < 0 || px >= _game.Width || py >= _game.Height) { return; }
+                        var key = Key(px, py);
+                        if (visited[key] || _game.IsFabric(px, py) || _game.ColorAt(px, py) != color) { return; }
+                        visited[key] = true;
+                        queue.Enqueue(key);
+                    }
+                }
+            }
+            return variants;
+        }
 
         private static void Gloss(Image cell, bool on)
         {
