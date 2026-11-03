@@ -688,8 +688,14 @@ namespace KnittedPicture.Game
                         Sync = () => SyncSlots(views, game, frames, colors),
                         Idle = () =>
                         {
-                            Fx.FloatText(_fx, Ui.WorldCenter(frames[0]) + new Vector3(0, 46f * _fx.lossyScale.y, 0), L.T("Место занято"), Palette.Danger, 18f);
                             Loop(scene, 1.8f);
+                        },
+                        Done = done =>
+                        {
+                            if (done.Unraveled)
+                            {
+                                Fx.FloatText(_fx, Ui.WorldCenter(frames[done.Slot]), L.T("Пряжа распустилась"), Palette.Primary, 18f);
+                            }
                         },
                         Won = () => Loop(scene, 1.8f),
                     };

@@ -12,6 +12,8 @@
 Нужен Python 3 с Pillow: pip install pillow
 """
 import sys
+import argparse
+import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -19,17 +21,20 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 ROOT = Path(__file__).resolve().parents[2]
 FONT = ROOT / "Assets/Resources/Fonts/Main.ttf"
 W, H = 1080, 1920
-TOP = (255, 226, 238)
-BOTTOM = (205, 188, 255)
-INK = (43, 35, 80)
+THEMES = {
+    "tactile": ((255, 249, 237), (255, 207, 154), (112, 43, 31), (238, 87, 72)),
+    "transformation": ((22, 48, 99), (43, 102, 192), (255, 255, 255), (255, 194, 60)),
+    "collection": ((255, 250, 236), (184, 224, 204), (20, 77, 59), (23, 148, 95)),
+}
 
 
-def background():
+def background(theme):
+    top, bottom, _, _ = THEMES[theme]
     img = Image.new("RGB", (W, H))
     px = img.load()
     for y in range(H):
         t = y / H
-        c = tuple(int(TOP[i] * (1 - t) + BOTTOM[i] * t) for i in range(3))
+        c = tuple(int(top[i] * (1 - t) + bottom[i] * t) for i in range(3))
         for x in range(W):
             px[x, y] = c
     return img.convert("RGBA")
@@ -48,14 +53,24 @@ def wrap(draw, text, font, width):
     return lines
 
 
-def compose(shot_path, caption):
-    img = background()
+def compose(shot_path, caption, theme="tactile"):
+    img = background(theme)
     draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype(str(FONT), 72)
-    y = 110
-    for line in wrap(draw, caption, font, W - 140):
-        draw.text((W / 2, y), line, font=font, fill=INK, anchor="ma")
-        y += 88
+    _, _, ink, accent = THEMES[theme]
+    brand = ImageFont.truetype(str(FONT), 28)
+    draw.text((W / 2, 58), "ВЯЗАНАЯ КАРТИНКА", font=brand, fill=ink, anchor="ma")
+    font_size = 72
+    while True:
+        font = ImageFont.truetype(str(FONT), font_size)
+        lines = wrap(draw, caption, font, W - 140)
+        if len(lines) <= 3 or font_size <= 42:
+            break
+        font_size -= 2
+    y = 126
+    for line in lines:
+        draw.text((W / 2, y), line, font=font, fill=ink, anchor="ma")
+        y += font_size + 16
+    draw.rounded_rectangle((W // 2 - 50, y + 12, W // 2 + 50, y + 20), 4, fill=accent)
 
     shot = Image.open(shot_path).convert("RGBA")
     top = y + 50
@@ -78,18 +93,28 @@ def compose(shot_path, caption):
 
 
 def main():
-    if len(sys.argv) != 4:
-        print(__doc__)
-        sys.exit(1)
-    raw, captions_file, out = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
-    shots = sorted([p for p in raw.iterdir() if p.suffix.lower() in (".png", ".jpg", ".jpeg")], key=lambda p: p.stem)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("raw", type=Path)
+    parser.add_argument("captions", type=Path)
+    parser.add_argument("out", type=Path)
+    parser.add_argument("--theme", choices=[*THEMES, "all"], default="tactile")
+    args = parser.parse_args()
+    raw, captions_file, out = args.raw, args.captions, args.out
+    shots = sorted([p for p in raw.iterdir() if p.suffix.lower() in (".png", ".jpg", ".jpeg")],
+                   key=lambda p: [int(s) if s.isdigit() else s for s in re.split(r"(\d+)", p.name)])
+    if not shots:
+        sys.exit("Нет исходных снимков игры: сначала сохрани реальный Game View в папку raw.")
     captions = [c.strip() for c in captions_file.read_text(encoding="utf-8").splitlines() if c.strip()]
     if len(captions) < len(shots):
         sys.exit(f"Подписей {len(captions)}, а скриншотов {len(shots)}: нужно по подписи на каждый.")
     out.mkdir(parents=True, exist_ok=True)
-    for i, (shot, caption) in enumerate(zip(shots, captions), 1):
-        compose(shot, caption).save(out / f"screenshot-{i}.png")
-        print(f"screenshot-{i}.png  ←  {shot.name}: {caption}")
+    themes = list(THEMES) if args.theme == "all" else [args.theme]
+    for theme in themes:
+        target = out / theme if args.theme == "all" else out
+        target.mkdir(parents=True, exist_ok=True)
+        for i, (shot, caption) in enumerate(zip(shots, captions), 1):
+            compose(shot, caption, theme).save(target / f"screenshot-{i}.png")
+            print(f"{theme}/screenshot-{i}.png  ←  {shot.name}: {caption}")
 
 
 if __name__ == "__main__":

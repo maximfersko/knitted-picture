@@ -69,6 +69,9 @@ namespace KnittedPicture.Game
                         App.Save();
                         TrackBooster(BoosterType.Undo, free: false);
                         _game.Undo();
+                        _celebrationEpoch++;
+                        _nextColorCelebrationAt = 0f;
+                        _lowestRow = _game.LowestFront;
                         _tempo.Break();
                         _finishedColors.Clear();
                         RestoreUndoneGold();

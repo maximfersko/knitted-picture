@@ -24,7 +24,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 M = {
 16: dict(links=1, tip="Новая коллекция «Вкусняшки»: картинки крупнее, чужой пряжи больше"),
 17: dict(rainbow=1),
-18: dict(mystery=True, knots=2),
+18: dict(mystery=True, knots=2, maxEarlyJam=0.3, minFollower=0.5, seed=7181),
 19: dict(ice=1, locks=2),
 20: dict(hard=True, thick=1, hidden=3),
 21: dict(hidden=3, knots=2),
@@ -33,8 +33,8 @@ M = {
 24: dict(locks=2, gold=4),
 25: dict(hard=True, moth=True, hidden=2, knots=2, links=1),
 26: dict(rainbow=2, links=1),
-27: dict(mystery=True, knots=3),
-28: dict(thick=2, ice=1),
+27: dict(mystery=True, knots=3, maxEarlyJam=0.3, minFollower=0.45),
+28: dict(thick=2, ice=1, maxEarlyJam=0.3),
 29: dict(locks=3, hidden=3),
 30: dict(hard=True, moth=True, ice=2, knots=2),
 31: dict(knots=3, ice=2),
@@ -46,15 +46,17 @@ M = {
 37: dict(thick=2, rainbow=2, junk=0, swaps=2),
 38: dict(knots=3, hidden=3),
 39: dict(mystery=True, locks=2),
-40: dict(hard=True, moth=True, ice=2, thick=1, knots=2),
+40: dict(hard=True, moth=True, ice=2, thick=1, knots=2,
+         maxFollower=0.4, minSkilled=0.2, maxSkilled=0.6, maxEarlyJam=0.3),
 41: dict(ice=3, links=1),
 42: dict(thick=2, knots=2),
 43: dict(mystery=True, rainbow=2),
 44: dict(locks=3, hidden=3),
 45: dict(hard=True, moth=True, ice=1, knots=2),
-46: dict(knots=3, ice=2, links=1),
+46: dict(knots=3, ice=2, links=1, minSkilled=0.9,
+         minWin=0.65, maxWin=0.85, maxRandom=0.3, minDanger=0.02),
 47: dict(thick=2, locks=2, hidden=2),
-48: dict(rainbow=2, ice=2),
+48: dict(rainbow=2, ice=2, minSkilled=0.9),
 49: dict(mystery=True, knots=2, links=1, hidden=2),
 50: dict(hard=True, moth=True, ice=3, thick=1, rainbow=1, knots=2, links=1, hidden=2,
          tip="Финал: всё, чему ты научилась. Удачи!"),
@@ -74,14 +76,14 @@ def slots_for(colors):
 def tier(i):
     # Требования к уровню растут с коллекцией: меньше шансов у тапа наугад.
     c = (i - 16) // 5  # 0..6
-    # Чужая пряжа — по одной: каждая взятая навсегда отнимает слот, и уже две-три превращают уровень
-    # в лотерею (проверено ботами: доля побед падала до 0%). Сложность дают слои цветов и натяжение.
+    # Чужая пряжа — по одной: после шести шагов слот освободится, но несколько
+    # таких клубков одновременно всё ещё создают ранние заторы.
     return dict(maxRandom=round(0.2 - 0.02 * c, 2), junk=1, extra=2 if c < 4 else 3,
                 gold=3 if c < 3 else 4, swaps=4 + c // 2)
 
 order = ["id","name","tip","hard","timeLimit","palette","picture","fabric","band","mystery","gold","slots","columns","spools","swaps",
          "hidden","knots","links","locks","rainbow","thick","ice","extra","junk","parSlack","minWin","maxWin","maxRandom",
-         "maxForced","minDanger","maxDanger","seed"]
+         "maxForced","minDanger","maxDanger","minFollower","maxFollower","minSkilled","maxSkilled","maxEarlyJam","seed"]
 
 only = {int(a) for a in sys.argv[1:]}
 for i, (name, pal, rows) in sorted(P.items()):
@@ -105,7 +107,7 @@ for i, (name, pal, rows) in sorted(P.items()):
              maxRandom=0.05 if hard else t["maxRandom"],
              maxForced=0.55, minDanger=0.05, maxDanger=0.35, seed=i * 10 + 1)
     d.update(m)
-    d = {k: d[k] for k in order}
+    d = {k: d[k] for k in order if k in d}
     with open(os.path.join(ROOT, "levels-src", f"level_{i:03d}.json"), "w", encoding="utf-8") as f:
         f.write(json.dumps(d, ensure_ascii=False, indent=2) + "\n")
 print("записано:", len(only) if only else len(P))

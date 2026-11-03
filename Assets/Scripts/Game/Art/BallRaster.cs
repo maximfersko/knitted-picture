@@ -355,7 +355,7 @@ namespace KnittedPicture.Game
                         hue = index * 0.09f + top * 0.31f;
                         hue -= MathF.Floor(hue);
                         // Бороздки между нитками глубже: нитки читаются по отдельности и на маленьком клубке.
-                        var value = 0.45f + 0.55f * MathF.Pow(tube, 0.85f);
+                        var value = 0.4f + 0.6f * MathF.Pow(tube, 0.78f);
                         value *= 1f + 0.05f * twist + 0.05f * streak;
                         if (_kind == Kind.Canvas)
                         {
@@ -375,7 +375,8 @@ namespace KnittedPicture.Game
                         var spec = MathF.Pow(Draw.Clamp01(mx * _halfway.X + my * _halfway.Y + mz * _halfway.Z), 26f);
                         var broad = MathF.Pow(Draw.Clamp01(nx * _halfway.X + ny * _halfway.Y + nz * _halfway.Z), 10f);
                         var sheen = MathF.Pow(Draw.Clamp01(lambert), 4f);
-                        white = (spec * 0.5f + broad * 0.12f) * (0.35f + 0.65f * tube) * occlusion + sheen * 0.06f;
+                        // Узкий блик подчёркивает волокна, широкий остаётся цветным: пряжа не белеет целиком.
+                        white = (spec * 0.34f + broad * 0.04f) * (0.35f + 0.65f * tube) * occlusion + sheen * 0.025f;
 
                         // Рефлекс по теневому краю и лёгкое затемнение у самого контура.
                         fresnelMix = MathF.Pow(1f - nz, 3f) * Draw.Clamp01(0.3f - lambert) * 0.7f;

@@ -147,25 +147,51 @@ namespace KnittedPicture.Game
             return bites;
         }
 
-        /// <summary>Рамка станка: оранжевая, когда осталось одно место, красная — когда мест нет.</summary>
+        private float _loomAdviceClock;
+        private int _loomAdviceVersion = -1;
+        private bool _loomDanger;
+        private bool _slotAdvice;
+        private bool _scissorsAdvice;
+
+        /// <summary>Риск затора: расчёт советов при изменении станка, пульсация рамки каждый кадр.</summary>
         private void UpdateLoomAlert(float dt)
         {
             _alertClock += dt;
             var free = _game.FreeSlots;
-            var danger = !_finishing && free <= 1 && !_game.IsBusy &&
-                !Enumerable.Range(0, _game.ColumnCount).Any(c => _game.CanTap(c) &&
-                    _game.Column(c).Count > 0 && _game.HasWork(_game.Column(c)[0]));
+            _loomAdviceClock -= dt;
+            if (_loomAdviceClock <= 0f || _loomAdviceVersion != _game.Version)
+            {
+                _loomAdviceClock = 0.15f;
+                _loomAdviceVersion = _game.Version;
+                _loomDanger = !_finishing && free <= 1 && !_game.IsBusy;
+                if (_loomDanger)
+                {
+                    for (var c = 0; c < _game.ColumnCount; c++)
+                    {
+                        var column = _game.Column(c);
+                        if (column.Count > 0 && _game.CanTap(c) && _game.HasWork(column[0]))
+                        {
+                            _loomDanger = false;
+                            break;
+                        }
+                    }
+                }
+                _slotAdvice = _loomDanger && _game.SlotWouldHelp;
+                _scissorsAdvice = _loomDanger && _game.ScissorsWouldHelp;
+            }
+            var danger = _loomDanger && !_finishing;
             foreach (var booster in _boosters)
             {
-                booster.Value.Suggest(danger && (booster.Key == BoosterType.Slot ? _game.SlotWouldHelp :
-                    booster.Key == BoosterType.Scissors && _game.ScissorsWouldHelp));
+                booster.Value.Suggest(danger && (booster.Key == BoosterType.Slot ? _slotAdvice :
+                    booster.Key == BoosterType.Scissors && _scissorsAdvice));
             }
 
             for (var i = 0; i < _slotOutlines.Length; i++)
             {
                 _slotOutlines[i].color = danger && _game.Slots[i] == null ? TimerWarm : Palette.SlotEmpty;
             }
-            if (free >= 2 || _slotFrames.Length <= 1)
+            // Полный станок, который продолжает вязать, не означает угрозу затора.
+            if (!danger || _slotFrames.Length <= 1)
             {
                 _loomAlert.color = Color.clear;
                 return;

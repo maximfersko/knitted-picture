@@ -368,9 +368,8 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Клетка связанной картинки (старый дизайн, детальнее): скруглённый квадрат, в нём лицевая петля —
-        /// две пухлые кручёные дольки «галочкой», шов между ними, складка у кончика, тёмная кромка.
-        /// Серая — красится цветом пряжи (вспышки и волны работают через цвет), блики — отдельный слой.
+        /// Бесшовный участок тонкой вязки: девять петель внутри игровой клетки без фаски по её периметру.
+        /// Серая основа красится цветом пряжи, узкие мягкие блики лежат отдельным слоем.
         /// </summary>
         public static Raster StitchTile(bool gloss)
         {
@@ -378,12 +377,11 @@ namespace KnittedPicture.Game
             const float cx = s / 2f;
             return Raster.Render(s, s, 2, (x, y) =>
             {
-                var box = Draw.RoundBox(x, y, cx, cx, cx - 1f, cx - 1f, 20f);
-                var cover = Draw.Cover(box);
-                if (cover <= 0f)
-                {
-                    return Rgba.Clear;
-                }
+                // Цветная область состоит из тонкой вязки, а не одной выпуклой плитки.
+                // Три повторения по каждой оси дают непрерывную фактуру на соседних клетках.
+                x = (x % 32f) * 3f;
+                y = (y % 32f) * 3f;
+                const float cover = 1f;
 
                 var best = float.MaxValue;
                 var other = float.MaxValue;
@@ -402,7 +400,8 @@ namespace KnittedPicture.Game
                             var ply = MathF.Pow(MathF.Abs(MathF.Sin((t * 6f - across * 0.7f * side) * MathF.PI)), 0.45f);
                             var lit = Draw.Clamp01(0.5f - 0.5f * across);
                             // Контраст долек и кручения выше: петля читается и в маленькой клетке.
-                            value = (0.72f + 0.28f * profile) * (0.8f + 0.2f * ply) * (0.88f + 0.14f * lit);
+                            var fibre = MathF.Sin((t * 29f + across * 2.1f * side) * MathF.PI) * 0.018f * profile;
+                            value = (0.68f + 0.32f * profile) * (0.8f + 0.2f * ply) * (0.88f + 0.14f * lit) + fibre;
                             value *= 1f - 0.2f * Draw.Clamp01(1f - t * 3.5f) * (1f - profile * 0.5f);
                             shine = Draw.Clamp01(profile * ply - 0.55f) * 1.4f * lit * (0.4f + 0.6f * t);
                         }
@@ -421,15 +420,12 @@ namespace KnittedPicture.Game
                 else
                 {
                     // Шов между дольками — глубокая чёткая бороздка.
-                    value *= 1f - 0.38f * Draw.Clamp01(1f - MathF.Abs(best - other) / 3f);
+                    value *= 1f - 0.42f * Draw.Clamp01(1f - MathF.Abs(best - other) / 3f);
                 }
 
-                // Кромка клетки: мягкая тень к краю и узкая резкая линия — клетки не сливаются в пятно.
-                value *= 1f - 0.1f * Draw.SmoothStep(-7f, 0f, box);
-                value *= 1f - 0.2f * (1f - Draw.SmoothStep(1.2f, 3f, -box));
                 if (gloss)
                 {
-                    return Rgba.White.WithAlpha(shine * 0.6f * cover);
+                    return Rgba.White.WithAlpha(shine * 0.28f * cover);
                 }
 
                 // Средняя яркость — как была: цвет петли должен совпадать с цветом клубка, по нему их сравнивают.
@@ -439,7 +435,7 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Клетка ткани-основы: канва полотняного переплетения, серая (красится), скруглённая. Нити основы
+        /// Клетка ткани-основы: непрерывная канва полотняного переплетения, серая (красится). Нити основы
         /// и утка по очереди сверху и снизу: верхняя — круглая трубочка, нижняя у пересечения в тени.
         /// Тон каждой нити чуть свой и плавно гуляет вдоль неё (утолщения пряжи), без пиксельного шума.
         /// </summary>
@@ -449,12 +445,7 @@ namespace KnittedPicture.Game
             const float period = 12f;
             return Raster.Render(s, s, 2, (x, y) =>
             {
-                var box = Draw.RoundBox(x, y, s / 2f, s / 2f, s / 2f - 1f, s / 2f - 1f, 20f);
-                var cover = Draw.Cover(box);
-                if (cover <= 0f)
-                {
-                    return Rgba.Clear;
-                }
+                const float cover = 1f;
 
                 var u = x / period;
                 var w = y / period;
@@ -492,10 +483,7 @@ namespace KnittedPicture.Game
                 // Щели между нитями — глубже.
                 v -= 0.09f * (1f - Draw.SmoothStep(0f, 0.35f, MathF.Max(topProfile, underProfile)));
 
-                // Кромка клетки: снизу справа чуть темнее, сверху слева светлый кант.
-                v *= 1f - 0.12f * Draw.SmoothStep(-7f, 0f, box);
-                v += 0.05f * Draw.SmoothStep(-4f, -1.5f, box) * Draw.Clamp01((y - x) / s + 0.5f);
-                v *= 1f - 0.14f * (1f - Draw.SmoothStep(1.2f, 3f, -box));
+                // Без фаски по границе игровой клетки: соседние области выглядят общей тканью.
                 v = Draw.Clamp01(v * 1.05f);
                 return new Rgba(v, v, v, cover);
             });

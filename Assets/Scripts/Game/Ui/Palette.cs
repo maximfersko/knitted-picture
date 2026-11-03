@@ -41,6 +41,8 @@ namespace KnittedPicture.Game
 
         public static Color GroundOf(int collection) => Grounds[(collection % Grounds.Length + Grounds.Length) % Grounds.Length];
         public static readonly Color Card = Color.white;
+        /// <summary>Тёплая бумага мастерской: спокойная основа для насыщенных цветов пряжи.</summary>
+        public static readonly Color WorkshopPaper = Hex("#FFF9ED");
         public static readonly Color CardShadow = Hex("#CDD3DB");
         /// <summary>Мягкая размытая тень белых карточек: холодная графитовая и прозрачная.</summary>
         public static readonly Color SoftShadow = new Color(0.16f, 0.22f, 0.3f, 0.18f);

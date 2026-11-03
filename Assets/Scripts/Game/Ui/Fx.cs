@@ -32,6 +32,20 @@ namespace KnittedPicture.Game
         /// </summary>
         public static void Bead(RectTransform layer, Vector3 from, Vector3 to, Color color, float size, float duration, Action? arrived)
         {
+            if (Tweens.Calm)
+            {
+                // Тот же момент посадки, одна спокойная метка вместо полёта с хвостом.
+                var mark = Dot(layer, Palette.WithAlpha(color, 0.25f), size, Art.Ring);
+                mark.rectTransform.position = to;
+                Tweens.Run(mark, duration, t => mark.color = Palette.WithAlpha(color, 0.25f + 0.35f * t),
+                    null, () =>
+                    {
+                        Release(mark);
+                        arrived?.Invoke();
+                    });
+                return;
+            }
+
             var unit = Unit(layer);
             _side = -_side;
             var swing = _side * (26f + UnityEngine.Random.value * 34f) * unit;
@@ -117,13 +131,24 @@ namespace KnittedPicture.Game
         /// <summary>Искры: несколько точек разлетаются и гаснут.</summary>
         public static void Sparkle(RectTransform layer, Vector3 at, Color color, int count = 3, float radius = 18f)
         {
+            if (Tweens.Calm)
+            {
+                if (count > 0)
+                {
+                    var mark = Dot(layer, color, 10f, Art2.Sparkle);
+                    mark.rectTransform.position = at;
+                    Tweens.Run(mark, 0.3f, t => mark.color = Palette.WithAlpha(color, 1f - t), null, () => Release(mark));
+                }
+                return;
+            }
+
             var unit = Unit(layer);
             for (var i = 0; i < count; i++)
             {
                 var angle = (i / (float)count + UnityEngine.Random.value * 0.3f) * Mathf.PI * 2f;
                 var dir = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0);
                 // Искра-звёздочка: вспыхивает, разлетается с поворотом и гаснет.
-                var dot = Dot(layer, Color.Lerp(color, Color.white, 0.45f), 10f, Art2.Sparkle);
+                var dot = Dot(layer, Color.Lerp(color, Color.white, 0.2f), 10f, Art2.Sparkle);
                 var reach = radius * (0.7f + UnityEngine.Random.value * 0.6f) * unit;
                 var spin = (UnityEngine.Random.value < 0.5f ? -1f : 1f) * (60f + UnityEngine.Random.value * 60f);
                 var tint = dot.color;
@@ -137,6 +162,139 @@ namespace KnittedPicture.Game
             }
         }
 
+        /// <summary>
+        /// Яркий хлопок пряжи: два цветных кольца, звёзды и закрученные волокна.
+        /// Все элементы из общего пула; спокойный режим оставляет одну гаснущую звезду.
+        /// </summary>
+        public static void YarnBurst(RectTransform layer, Vector3 at, Color primary, Color accent, float radius)
+        {
+            if (Tweens.Calm)
+            {
+                Sparkle(layer, at, primary, 1);
+                return;
+            }
+
+            var unit = Unit(layer);
+            for (var ringIndex = 0; ringIndex < 2; ringIndex++)
+            {
+                var tint = ringIndex == 0 ? primary : accent;
+                var ring = Dot(layer, tint, radius * 1.5f, Art.Ring);
+                ring.rectTransform.position = at;
+                ring.color = Palette.WithAlpha(tint, 0f);
+                Tweens.Run(ring, 0.46f, t =>
+                {
+                    ring.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.2f, 1.5f, Ease.OutCubic(t));
+                    ring.color = Palette.WithAlpha(tint, 0.55f * (1f - t) * (1f - t));
+                }, null, () => Release(ring), ringIndex * 0.07f);
+            }
+
+            const int count = 10;
+            for (var i = 0; i < count; i++)
+            {
+                var star = i % 5 == 0;
+                var tint = i % 2 == 0 ? primary : accent;
+                var angle = (i + UnityEngine.Random.value * 0.35f) / count * Mathf.PI * 2f;
+                var direction = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
+                var tangent = new Vector3(-direction.y, direction.x, 0f);
+                var reach = radius * (0.65f + UnityEngine.Random.value * 0.5f) * unit;
+                var curl = (i % 2 == 0 ? 1f : -1f) * radius * 0.22f * unit;
+                var size = star ? 14f : 6f;
+                var particle = Dot(layer, tint, size, star ? Art2.Sparkle : Art.Circle);
+                particle.rectTransform.position = at;
+                Tweens.Run(particle, 0.6f, t =>
+                {
+                    var travel = Ease.OutCubic(t);
+                    particle.rectTransform.position = at + direction * reach * travel +
+                        tangent * curl * Mathf.Sin(t * Mathf.PI) + new Vector3(0f, -radius * unit * 0.3f * t * t, 0f);
+                    particle.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle * Mathf.Rad2Deg + t * 140f);
+                    var scale = (0.5f + 0.75f * Ease.Bump(t)) * (1f - 0.65f * t);
+                    particle.rectTransform.localScale = new Vector3(star ? scale : scale * 2.6f, scale, 1f);
+                    particle.color = Palette.WithAlpha(tint, Mathf.Clamp01((1f - t) * 2f));
+                }, null, () => Release(particle));
+            }
+        }
+
+        /// <summary>Развязанные кончики или распускающийся клубок: нити расходятся дугами и утончаются.</summary>
+        public static void LooseThreads(RectTransform layer, Vector3 at, Color color, float size, bool unravel = false)
+        {
+            if (Tweens.Calm)
+            {
+                Sparkle(layer, at, color, 1);
+                return;
+            }
+            var unit = Unit(layer);
+            var count = unravel ? 6 : 2;
+            for (var i = 0; i < count; i++)
+            {
+                var side = i % 2 == 0 ? -1f : 1f;
+                var reach = size * unit * (0.45f + i * 0.08f);
+                var thread = Dot(layer, color, size * 0.22f);
+                thread.rectTransform.position = at;
+                Tweens.Run(thread, 0.48f, t =>
+                {
+                    thread.rectTransform.position = at + new Vector3(side * reach * Ease.OutCubic(t),
+                        reach * (Mathf.Sin(t * Mathf.PI) * 0.5f - (unravel ? t * t : 0f)), 0f);
+                    thread.rectTransform.localRotation = Quaternion.Euler(0f, 0f, side * (30f + 150f * t));
+                    thread.rectTransform.localScale = new Vector3(2.8f * (1f - t * 0.6f), 0.22f * (1f - t), 1f);
+                    thread.color = Palette.WithAlpha(color, 1f - t);
+                }, null, () => Release(thread));
+            }
+        }
+
+        /// <summary>Ледяная оболочка раскалывается на отдельные грани, оставляя клубок видимым.</summary>
+        public static void IceShatter(RectTransform layer, Vector3 at, Color color, float size)
+        {
+            if (Tweens.Calm)
+            {
+                Sparkle(layer, at, color, 1);
+                return;
+            }
+            var unit = Unit(layer);
+            for (var i = 0; i < 8; i++)
+            {
+                var angle = i * Mathf.PI / 4f;
+                var direction = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
+                var shard = Dot(layer, i % 2 == 0 ? color : Color.white, size * 0.16f, Art.PlainCell);
+                var tint = shard.color;
+                shard.rectTransform.position = at + direction * size * 0.3f * unit;
+                var start = shard.rectTransform.position;
+                Tweens.Run(shard, 0.42f, t =>
+                {
+                    shard.rectTransform.position = start + direction * size * 0.55f * unit * Ease.OutCubic(t) -
+                        new Vector3(0f, size * unit * t * t * 0.6f, 0f);
+                    shard.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle * Mathf.Rad2Deg + 100f * t);
+                    shard.rectTransform.localScale = new Vector3(0.6f, 1.3f, 1f) * (1f - t * 0.65f);
+                    shard.color = Palette.WithAlpha(tint, 1f - t);
+                }, null, () => Release(shard));
+            }
+        }
+
+        /// <summary>Нить между летящими партнёрами следует за обоими клубками, не перехватывая касания.</summary>
+        public static void LinkedFlight(RectTransform layer, RectTransform first, RectTransform second, Color color, float duration)
+        {
+            if (Tweens.Calm)
+            {
+                return;
+            }
+            var thread = Dot(layer, color, 1f);
+            thread.color = Color.clear;
+            Tweens.Run(thread, duration, t =>
+            {
+                if (first == null || second == null)
+                {
+                    thread.color = Color.clear;
+                    return;
+                }
+                var a = Ui.WorldCenter(first);
+                var b = Ui.WorldCenter(second);
+                var delta = b - a;
+                thread.rectTransform.position = (a + b) * 0.5f;
+                thread.rectTransform.sizeDelta = new Vector2(delta.magnitude / Mathf.Max(0.0001f, Unit(layer)), 2.5f);
+                thread.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+                thread.color = Palette.WithAlpha(color, 0.75f * Mathf.Sin(t * Mathf.PI));
+            }, null, () => Release(thread));
+        }
+
         /// <summary>Пустой клубок: расходящееся кольцо и пух.</summary>
         public static void Poof(RectTransform layer, Vector3 at, Color color, float size)
         {
@@ -146,10 +304,13 @@ namespace KnittedPicture.Game
             rt.position = at;
             Tweens.Run(image, 0.35f, t =>
             {
-                rt.localScale = Vector3.one * (0.6f + 0.9f * t);
+                rt.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (0.6f + 0.9f * t);
                 image.color = Palette.WithAlpha(color, 1f - t);
             }, Ease.OutCubic, () => Release(image));
-            Sparkle(layer, at, color, 7, size * 0.9f);
+            if (!Tweens.Calm)
+            {
+                Sparkle(layer, at, color, 7, size * 0.9f);
+            }
         }
 
         /// <summary>
@@ -227,14 +388,17 @@ namespace KnittedPicture.Game
         {
             public RectTransform Root = null!;
             public CanvasGroup Group = null!;
+            public Text Label = null!;
+            public Text Shadow = null!;
         }
 
         /// <summary>
-        /// Пул надписей по (текст, размер, цвет): такие же надписи выглядят одинаково (тиснение зависит от цвета), поэтому
-        /// их можно брать заново без пересборки. «+1» за каждую петлю летит много раз в секунду, без пула это мусор.
+        /// Пул по размеру и цвету: числа и тексты обновляются на готовой паре надписей.
+        /// Цвет остаётся частью ключа, поскольку от него зависит тиснение, создаваемое Ui.Label.
         /// </summary>
-        private static readonly Dictionary<(string Text, float Size, Color Color), Stack<Floater>> FloatPool =
-            new Dictionary<(string Text, float Size, Color Color), Stack<Floater>>();
+        private static readonly Dictionary<(float Size, Color Color), Stack<Floater>> FloatPool =
+            new Dictionary<(float Size, Color Color), Stack<Floater>>();
+        private const int FloatPoolStyles = 32;
 
         /// <summary>Сколько одинаковых надписей держим про запас.</summary>
         private const int FloatPoolDepth = 12;
@@ -242,7 +406,7 @@ namespace KnittedPicture.Game
         /// <summary>Всплывающая надпись: подпрыгивает и уплывает вверх. Берётся из пула и возвращается в него.</summary>
         public static void FloatText(RectTransform layer, Vector3 at, string text, Color color, float size = 22f)
         {
-            var key = (text, size, color);
+            var key = (size, color);
             Floater? floater = null;
             if (FloatPool.TryGetValue(key, out var spare))
             {
@@ -267,7 +431,7 @@ namespace KnittedPicture.Game
                 Ui.Place(label.rectTransform, 0, 0, 240, 40);
                 var madeGroup = made.gameObject.AddComponent<CanvasGroup>();
                 madeGroup.blocksRaycasts = false;
-                floater = new Floater { Root = made, Group = madeGroup };
+                floater = new Floater { Root = made, Group = madeGroup, Label = label, Shadow = shadow };
             }
             else
             {
@@ -278,13 +442,16 @@ namespace KnittedPicture.Game
 
             var root = floater.Root;
             var group = floater.Group;
+            floater.Label.text = text;
+            floater.Shadow.text = text;
             root.position = at;
+            root.localScale = Vector3.one;
             group.alpha = 1f;
             var unit = Unit(layer);
             Tweens.Run(root, 0.9f, t =>
             {
-                root.position = at + new Vector3(0, 46f * unit * Ease.OutCubic(t), 0);
-                root.localScale = Vector3.one * (t < 0.2f ? Mathf.Lerp(0.5f, 1.15f, t / 0.2f) : Mathf.Lerp(1.15f, 1f, (t - 0.2f) / 0.8f));
+                root.position = Tweens.Calm ? at : at + new Vector3(0, 46f * unit * Ease.OutCubic(t), 0);
+                root.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (t < 0.2f ? Mathf.Lerp(0.5f, 1.15f, t / 0.2f) : Mathf.Lerp(1.15f, 1f, (t - 0.2f) / 0.8f));
                 group.alpha = t < 0.6f ? 1f : 1f - (t - 0.6f) / 0.4f;
             }, null, () =>
             {
@@ -296,6 +463,11 @@ namespace KnittedPicture.Game
                 root.gameObject.SetActive(false);
                 if (!FloatPool.TryGetValue(key, out var stack))
                 {
+                    if (FloatPool.Count >= FloatPoolStyles)
+                    {
+                        UnityEngine.Object.Destroy(root.gameObject);
+                        return;
+                    }
                     stack = new Stack<Floater>();
                     FloatPool[key] = stack;
                 }

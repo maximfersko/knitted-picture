@@ -52,6 +52,7 @@ namespace KnittedPicture.Game
                 if (!_scissors && _responsive.Buffer(_game, column, result.Reason, Time.unscaledTime,
                     Mathf.Max(0f, interval - _stepClock), interval))
                 {
+                    ShowBufferFeedback(column);
                     Haptics.Play(Haptic.Soft);
                     return;
                 }
@@ -90,7 +91,7 @@ namespace KnittedPicture.Game
                 if (view != null)
                 {
                     Tweens.Punch(view.Root, 0.05f, 0.2f);
-                    Fx.Sparkle(_fx, Ui.WorldCenter(view.Root), Palette.Danger, 6, 26f);
+                    Fx.LooseThreads(_fx, Ui.WorldCenter(view.Root), Palette.Danger, view.Size);
                 }
 
                 return;
@@ -135,6 +136,7 @@ namespace KnittedPicture.Game
             // Полёт длится ровно столько, сколько станок «разогревает» клубок: в «Разгоне» шаги вдвое короче,
             // и раньше клубок начинал вязать из пустого слота, ещё не долетев.
             var flight = LoomGame.WarmupSteps * (_tempo.Rush ? StepInterval / RushSpeed : StepInterval);
+            RectTransform? firstPartner = null;
             foreach (var (placed, from) in flights)
             {
                 var spool = placed.Spool;
@@ -149,16 +151,27 @@ namespace KnittedPicture.Game
                 var control = (from + target) / 2f + new Vector3(0f, lift, 0f);
                 var spin = (target.x > from.x ? -1f : 1f) * 14f;
                 var rt = flyer.Root;
+                if (spool.Link != 0)
+                {
+                    if (firstPartner == null)
+                    {
+                        firstPartner = rt;
+                    }
+                    else
+                    {
+                        Fx.LinkedFlight(_fx, firstPartner, rt, Palette.LinkPair(spool.Link), flight);
+                    }
+                }
                 rt.position = from;
                 Tweens.Run(rt, flight, t =>
                 {
                     var e = Ease.OutCubic(t);
                     var u = 1f - e;
-                    rt.position = u * u * from + 2f * u * e * control + e * e * target;
-                    var size = Mathf.Lerp(1f, scale, t) * (1f + 0.12f * Ease.Bump(t));
-                    var stretch = t < 0.22f ? 0.18f * Ease.Bump(t / 0.22f) : 0f;
+                    rt.position = Tweens.Calm ? Vector3.Lerp(from, target, e) : u * u * from + 2f * u * e * control + e * e * target;
+                    var size = Mathf.Lerp(1f, scale, t) * (Tweens.Calm ? 1f : 1f + 0.12f * Ease.Bump(t));
+                    var stretch = !Tweens.Calm && t < 0.22f ? 0.18f * Ease.Bump(t / 0.22f) : 0f;
                     rt.localScale = new Vector3(size * (1f - stretch * 0.6f), size * (1f + stretch), 1f);
-                    rt.localRotation = Quaternion.Euler(0f, 0f, spin * Ease.Bump(t));
+                    rt.localRotation = Tweens.Calm ? Quaternion.identity : Quaternion.Euler(0f, 0f, spin * Ease.Bump(t));
                 }, null, () =>
                 {
                     Object.Destroy(flyer.Root.gameObject);
@@ -168,11 +181,14 @@ namespace KnittedPicture.Game
                     if (slot != null && slot.SpoolId == spool.Id)
                     {
                         var landed = slot.View.Root;
+                        // Посадка и вязка используют один канал: новый толчок продолжает текущую позу.
+                        Tweens.Kill(landed, 31);
+                        var landedScale = landed.localScale;
                         Tweens.Run(landed, 0.34f, t =>
                         {
-                            var j = Ease.Jolt(t);
-                            landed.localScale = new Vector3(1f + 0.22f * j, 1f - 0.18f * j, 1f);
-                        }, null, () => landed.localScale = Vector3.one);
+                            var j = Tweens.Calm ? 0f : Ease.Jolt(t);
+                            landed.localScale = Vector3.Lerp(landedScale, Vector3.one, t) + new Vector3(0.22f * j, -0.18f * j, 0f);
+                        }, null, () => landed.localScale = Vector3.one, channel: 31);
                         Fx.Dust(_fx, target + new Vector3(0f, -SpoolSizeAt(placed.Slot) * 0.42f * _fx.lossyScale.x, 0f), _colors[spool.Color]);
                         Haptics.Play(Haptic.Tap);
 
@@ -251,15 +267,35 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>
-        /// Пояснение показываем один раз за уровень на каждый случай: дальше отказ — просто встряска
-        /// клубка и звук. Иначе за уровень набегал десяток одинаковых подсказок внизу экрана.
+        /// Пояснение показываем один раз за сессию на каждый случай: дальше отказ — просто встряска
+        /// клубка и звук. Редкие сообщения идут по очереди, чтобы каждое успели прочитать.
         /// </summary>
         private void ToastOnce(string key, string text)
         {
-            if (_told.Add(key))
+            if (!_told.Contains(key) && _queuedGameplayKeys.Add(key))
             {
-                App.Toast(text);
+                _gameplayToasts.Enqueue((key, text));
+                ShowNextGameplayToast();
             }
+        }
+
+        /// <summary>Редкие игровые советы идут по одному, чтобы новый не заменял ещё непрочитанный.</summary>
+        private readonly Queue<(string Key, string Text)> _gameplayToasts = new Queue<(string Key, string Text)>();
+        private readonly HashSet<string> _queuedGameplayKeys = new HashSet<string>();
+        private float _nextGameplayToastAt;
+
+        private void ShowNextGameplayToast()
+        {
+            if (_gameplayToasts.Count == 0 || Time.unscaledTime < _nextGameplayToastAt || App.HasPopups || _ended || _failShown)
+            {
+                return;
+            }
+
+            var tip = _gameplayToasts.Dequeue();
+            _queuedGameplayKeys.Remove(tip.Key);
+            _told.Add(tip.Key);
+            App.Toast(tip.Text);
+            _nextGameplayToastAt = Time.unscaledTime + Mathf.Clamp(1.2f + tip.Text.Length * 0.025f, 1.9f, 3.6f) + 0.15f;
         }
 
         private void Deny(int column, int depth, RejectReason reason)
@@ -275,12 +311,21 @@ namespace KnittedPicture.Game
             switch (reason)
             {
                 case RejectReason.Locked:
+                    var deepKey = DeepKeyColumn();
+                    if (deepKey >= 0)
+                    {
+                        ToastOnce("locked", L.F("Ключ в колонке {0}: освободи клубки перед ним", deepKey + 1));
+                    }
+                    else
+                    {
+                        ToastOnce("locked", L.T("Под замком: сначала поставь на станок клубок с ключом"));
+                    }
                     HighlightKey(column, depth);
-                    ToastOnce("locked", L.T("Под замком: сначала поставь на станок клубок с ключом"));
                     break;
                 case RejectReason.LinkNotReady:
                     ToastOnce("link", LinkPartnerText(column, depth));
                     PunchLinkPartner(column, depth);
+                    HighlightHiddenPartner(column, depth);
                     break;
                 case RejectReason.Frozen:
                     HighlightIce(column);

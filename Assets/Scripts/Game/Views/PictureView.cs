@@ -73,7 +73,7 @@ namespace KnittedPicture.Game
             {
                 for (var x = 0; x < game.Width; x++)
                 {
-                    var image = Ui.Image(Root, "Cell", Art.PlainCell, Color.white);
+                    var image = Ui.Image(Root, "Cell", Art.FabricCell, Color.white);
                     // Опора в центре клетки: петля впрыгивает и качается вокруг своей середины.
                     Ui.PlaceCenter(image.rectTransform, x * _step + cell / 2f, y * _step + cell / 2f, cell, cell);
                     _cells[y * game.Width + x] = image;
@@ -134,6 +134,14 @@ namespace KnittedPicture.Game
         public void Refresh()
         {
             _pending.Clear();
+            // Полная перерисовка (в том числе после отмены) прекращает старые вспышки клеток.
+            // Иначе отложенный твин снова окрашивает уже распущенную петлю как связанную.
+            foreach (var cell in _cells)
+            {
+                Tweens.Kill(cell.rectTransform);
+                cell.rectTransform.localScale = Vector3.one;
+                cell.rectTransform.localRotation = Quaternion.identity;
+            }
             for (var x = 0; x < _game.Width; x++)
             {
                 RefreshColumn(x);
@@ -200,7 +208,7 @@ namespace KnittedPicture.Game
                     continue;
                 }
 
-                image.sprite = Art.PlainCell;
+                image.sprite = Art.FabricCell;
                 Gloss(image, false);
                 if (pending || (y == front && active))
                 {
@@ -399,11 +407,11 @@ namespace KnittedPicture.Game
             // Петля «впрыгивает»: из маленькой с перелётом, с поворотом-покачиванием и вспышкой цвета.
             var color = _colors[_game.ColorAt(x, y)];
             var rt = image.rectTransform;
-            var tilt = (x + y) % 2 == 0 ? 10f : -10f;
+            var tilt = (x + y) % 2 == 0 ? 2.5f : -2.5f;
             Tweens.Kill(rt, 32);
             Tweens.Run(rt, 0.26f, t =>
             {
-                rt.localScale = Tweens.Calm ? Vector3.one : Vector3.one * Mathf.LerpUnclamped(0.4f, 1f, Ease.OutBack(t));
+                rt.localScale = Tweens.Calm ? Vector3.one : Vector3.one * Mathf.Lerp(0.88f, 1f, Ease.OutCubic(t));
                 rt.localRotation = Tweens.Calm ? Quaternion.identity : Quaternion.Euler(0f, 0f, tilt * (1f - t) * Mathf.Cos(t * Mathf.PI * 2f));
                 image.color = Color.Lerp(Color.Lerp(color, Color.white, 0.55f), color, t);
             }, null, () =>
@@ -451,7 +459,7 @@ namespace KnittedPicture.Game
                 {
                     var bump = Ease.Bump(t);
                     image.color = Color.Lerp(baseColor, Color.white, 0.5f * bump);
-                    rt.localScale = Vector3.one * (1f + 0.08f * bump);
+                    rt.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (1f + 0.025f * bump);
                 }, null, () =>
                 {
                     image.color = baseColor;
@@ -482,7 +490,7 @@ namespace KnittedPicture.Game
                 {
                     var bump = Ease.Bump(t);
                     image.color = Color.Lerp(baseColor, Color.white, 0.45f * bump);
-                    rt.localScale = Vector3.one * (1f + 0.1f * bump);
+                    rt.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (1f + 0.025f * bump);
                 }, null, () =>
                 {
                     image.color = baseColor;
@@ -572,7 +580,7 @@ namespace KnittedPicture.Game
                     {
                         var bump = Ease.Bump(t);
                         image.color = Color.Lerp(baseColor, Color.white, 0.6f * bump);
-                        image.rectTransform.localScale = Vector3.one * (1f + 0.18f * bump);
+                        image.rectTransform.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (1f + 0.035f * bump);
                     }, null, () =>
                     {
                         image.color = baseColor;
@@ -584,6 +592,22 @@ namespace KnittedPicture.Game
             }
 
             return count > 0 ? sum / count : (Vector3?)null;
+        }
+
+        /// <summary>Готовая работа ловит свет: мягкий блик проходит по фактуре, затем вызывается продолжение.</summary>
+        public void Reveal(Action done)
+        {
+            var sheen = Ui.Image(Root, "FinishedSheen", Art.Glow, Color.clear);
+            Ui.PlaceCenter(sheen.rectTransform, Width * 0.1f, Height * 0.5f, Width * 0.32f, Height);
+            Tweens.Run(sheen, 0.5f, t =>
+            {
+                sheen.rectTransform.anchoredPosition = new Vector2(Width * Mathf.Lerp(0.1f, 0.9f, t), -Height * 0.5f);
+                sheen.color = Palette.WithAlpha(Color.white, Mathf.Sin(t * Mathf.PI) * (Tweens.Calm ? 0.12f : 0.42f));
+            }, null, () =>
+            {
+                Object.Destroy(sheen.gameObject);
+                done();
+            });
         }
 
         /// <summary>Победная волна: ряды снизу вверх вспыхивают белым и возвращаются.</summary>
@@ -604,7 +628,7 @@ namespace KnittedPicture.Game
                     {
                         var bump = Ease.Bump(t);
                         image.color = Color.Lerp(color, Color.white, 0.75f * bump);
-                        image.rectTransform.localScale = Vector3.one * (1f + 0.22f * bump);
+                        image.rectTransform.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (1f + 0.06f * bump);
                     }, null, () => image.color = color, row * perRow);
                 }
             }

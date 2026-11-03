@@ -12,7 +12,9 @@ namespace KnittedPicture.Game
     public sealed partial class GameScreen
     {
         private readonly ResponsiveInput _responsive = new ResponsiveInput();
-        private readonly List<RectTransform> _previewMarks = new List<RectTransform>();
+        private readonly Dictionary<RectTransform, RectTransform> _previewMarks = new Dictionary<RectTransform, RectTransform>();
+        private readonly HashSet<RectTransform> _previewTargets = new HashSet<RectTransform>();
+        private readonly List<RectTransform> _oldPreviewTargets = new List<RectTransform>();
         private int _previewColumn = -1;
         private int _previewSpool = -1;
         private float _previewAt;
@@ -20,13 +22,38 @@ namespace KnittedPicture.Game
         private float _mysteryPeekLeft;
         private int _knotTone;
         private int _inputEpoch;
+        private RectTransform? _bufferFeedback;
+        private float _bufferFeedbackUntil;
 
         /// <summary>Пауза и другие действия отменяют намерение, чтобы оно не исполнилось после возврата.</summary>
         public void CancelResponsiveInput()
         {
             _inputEpoch++;
             _responsive.Clear();
+            ClearBufferFeedback();
             EndPreview(_previewSpool);
+        }
+
+        /// <summary>Короткая рамка подтверждает, что касание принято в очередь.</summary>
+        private void ShowBufferFeedback(int column)
+        {
+            ClearBufferFeedback();
+            var field = _field.FirstOrDefault(f => f.Column == column && f.Depth == 0);
+            if (field != null)
+            {
+                _bufferFeedback = Outline(field.View.Root, Palette.Primary);
+                _bufferFeedbackUntil = Time.unscaledTime + ResponsiveInput.BufferWindow;
+            }
+        }
+
+        private void ClearBufferFeedback()
+        {
+            if (_bufferFeedback != null)
+            {
+                _bufferFeedback.gameObject.SetActive(false);
+                Object.Destroy(_bufferFeedback.gameObject);
+                _bufferFeedback = null;
+            }
         }
 
         public override void Dispose()
@@ -63,7 +90,7 @@ namespace KnittedPicture.Game
 
         private void ClearPreviewMarks()
         {
-            foreach (var mark in _previewMarks)
+            foreach (var mark in _previewMarks.Values)
             {
                 if (mark != null)
                 {
@@ -72,10 +99,16 @@ namespace KnittedPicture.Game
             }
 
             _previewMarks.Clear();
+            _previewTargets.Clear();
+            _oldPreviewTargets.Clear();
         }
 
         private void UpdateResponsiveInput(float dt)
         {
+            if (!_responsive.Pending || Time.unscaledTime >= _bufferFeedbackUntil)
+            {
+                ClearBufferFeedback();
+            }
             if (_ended || _failShown || _finishing)
             {
                 CancelResponsiveInput();
@@ -110,16 +143,49 @@ namespace KnittedPicture.Game
             }
 
             _previewRefresh = 0.1f;
-            ClearPreviewMarks();
+            _previewTargets.Clear();
             var preview = ResponsiveInput.Preview(_game, _previewColumn);
             foreach (var stitch in preview.Stitches)
             {
-                _previewMarks.Add(Outline(_picture.CellRect(stitch.X, stitch.Y), Palette.Primary));
+                _previewTargets.Add(_picture.CellRect(stitch.X, stitch.Y));
             }
 
             foreach (var slot in preview.Slots)
             {
-                _previewMarks.Add(Outline(_slotFrames[slot], Palette.Primary));
+                _previewTargets.Add(_slotFrames[slot]);
+            }
+
+            RefreshPreviewMarks();
+        }
+
+        /// <summary>Сохраняет рамки неизменных целей: удержание не создаёт заново UI каждые 100 мс.</summary>
+        private void RefreshPreviewMarks()
+        {
+            _oldPreviewTargets.Clear();
+            foreach (var pair in _previewMarks)
+            {
+                if (pair.Key == null || !_previewTargets.Contains(pair.Key))
+                {
+                    if (pair.Value != null)
+                    {
+                        pair.Value.gameObject.SetActive(false);
+                        Object.Destroy(pair.Value.gameObject);
+                    }
+                    _oldPreviewTargets.Add(pair.Key);
+                }
+            }
+            foreach (var target in _oldPreviewTargets)
+            {
+                _previewMarks.Remove(target);
+            }
+            foreach (var target in _previewTargets)
+            {
+                if (!_previewMarks.TryGetValue(target, out var mark) || mark == null)
+                {
+                    var edge = Outline(target, Palette.Primary);
+                    edge.name = "PreviewFeedback";
+                    _previewMarks[target] = edge;
+                }
             }
         }
 
@@ -159,6 +225,46 @@ namespace KnittedPicture.Game
                             Palette.Coin, 9f, 0.3f, () => { });
                     }
                 }
+            }
+
+            // Ключ может лежать за тремя видимыми рядами: указываем вход в нужную колонку.
+            var deepKey = DeepKeyColumn();
+            if (deepKey >= 0)
+            {
+                var front = _field.FirstOrDefault(f => f.Column == deepKey && f.Depth == 0);
+                if (front != null)
+                {
+                    Highlight(front.View.Root, Palette.CoinShadow);
+                }
+            }
+        }
+
+        private int DeepKeyColumn()
+        {
+            for (var c = 0; c < _game.ColumnCount; c++)
+            {
+                if (_game.Column(c).Skip(VisibleRows).Any(s => s.IsKey))
+                {
+                    return c;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>Пара за пределами экрана: подсвечиваем колонку, которую нужно разобрать.</summary>
+        private void HighlightHiddenPartner(int column, int depth)
+        {
+            var partner = FindLinkPartner(column, depth);
+            if (partner.Column < 0 || partner.Depth < VisibleRows)
+            {
+                return;
+            }
+
+            var front = _field.FirstOrDefault(f => f.Column == partner.Column && f.Depth == 0);
+            if (front != null)
+            {
+                Highlight(front.View.Root, Palette.Link);
             }
         }
 

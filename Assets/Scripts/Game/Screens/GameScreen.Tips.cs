@@ -241,7 +241,9 @@ namespace KnittedPicture.Game
                 return;
             }
 
-            ShowTip(_level.tip, null, false);
+            ShowTip(_level.id == 1
+                ? L.T("Тапни клубок. Удерживай его, чтобы увидеть первые петли")
+                : _level.tip, null, false);
         }
 
         /// <summary>

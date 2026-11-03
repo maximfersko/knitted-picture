@@ -35,6 +35,7 @@ namespace KnittedPicture.Game
         private float _fraction = float.NaN;
 
         private bool _celebrate = true;
+        private Action? _onDone;
 
         private KnitReplay(RectTransform parent, LevelData level, float cx, float cy, float size)
         {
@@ -118,10 +119,11 @@ namespace KnittedPicture.Game
             Tweens.Kill(Root, Channel);
             Clear();
             Playing = true;
+            _onDone = done;
             var celebrate = _celebrate;
             _celebrate = true;
             var calm = Tweens.Calm;
-            Tweens.Run(Root, calm ? 1f : Mathf.Max(0.1f, seconds), t => Apply(t * _rows), calm ? null : (Func<float, float>)Ease.InOutCubic, () =>
+            Tweens.Run(Root, calm ? 1f : Mathf.Max(0.1f, seconds), t => Apply(t * _rows), calm ? null : (Func<float, float>)RevealPace, () =>
             {
                 Complete();
                 if (celebrate && !Tweens.Calm)
@@ -130,7 +132,7 @@ namespace KnittedPicture.Game
                     Fx.Sparkle(_fxLayer, Ui.WorldCenter(Root), Palette.Coin, 8, _size * 0.5f);
                 }
 
-                done?.Invoke();
+                NotifyDone();
             }, delay, false, Channel);
         }
 
@@ -140,6 +142,19 @@ namespace KnittedPicture.Game
             Tweens.Kill(Root, Channel);
             _celebrate = true;
             Complete();
+            NotifyDone();
+        }
+
+        /// <summary>Большая часть полотна вяжется быстро, последние петли получают отдельный медленный акцент.</summary>
+        private static float RevealPace(float t) => t < 0.78f ? t / 0.78f * 0.9f :
+            0.9f + 0.1f * Ease.OutCubic((t - 0.78f) / 0.22f);
+
+        /// <summary>Тап, доматывающий картинку, завершает постановку так же, как естественный финиш.</summary>
+        private void NotifyDone()
+        {
+            var done = _onDone;
+            _onDone = null;
+            done?.Invoke();
         }
 
         private void Complete()

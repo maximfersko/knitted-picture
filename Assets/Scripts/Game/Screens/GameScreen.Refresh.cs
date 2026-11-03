@@ -11,6 +11,8 @@ namespace KnittedPicture.Game
     /// <summary>Обновление вида по модели: станок, поле, связки, бустеры, таймер.</summary>
     public sealed partial class GameScreen
     {
+        /// <summary>Запас льда до первых трещин сохраняется при перестройке клубков поля.</summary>
+        private readonly Dictionary<int, int> _iceOrigins = new Dictionary<int, int>();
         // ---------- Обновление ----------
 
         private void RefreshAll()
@@ -43,6 +45,7 @@ namespace KnittedPicture.Game
         /// <summary>Привести клубки на станке к модели: новые появляются, ушедшие исчезают, числа обновляются.</summary>
         private void SyncLoom(bool rebuild = false)
         {
+            _loomAdviceClock = 0f;
             var used = 0;
             for (var i = 0; i < _slotFrames.Length; i++)
             {
@@ -249,6 +252,12 @@ namespace KnittedPicture.Game
                 {
                     var spool = column[d];
                     var view = SpoolView.Create(_fieldContent, _spoolSize);
+                    if (!_iceOrigins.TryGetValue(spool.Id, out var origin) || spool.Ice > origin)
+                    {
+                        origin = spool.Ice;
+                        _iceOrigins[spool.Id] = origin;
+                    }
+                    view.SetIceOrigin(origin);
                     var (x, y) = FieldPosition(c, d);
                     Ui.PlaceCenter(view.Root, x, y, _spoolSize, _spoolSize);
                     view.Bind(spool, _colors[spool.Color], d == 0 || _scissors, _game.IsSurplus(spool));
@@ -297,7 +306,7 @@ namespace KnittedPicture.Game
                     if (d == 0 && spool.IsColorVisible && _game.HasWork(spool) && !spool.Locked && !spool.Frozen)
                     {
                         var root = view.Root;
-                        Tweens.Run(root, 1.4f, t => root.localScale = Vector3.one * (1f + 0.04f * Ease.Bump(t)), null, null, c * 0.12f, true);
+                        Tweens.Run(root, 2f, t => root.localScale = Vector3.one * (1f + 0.012f * Ease.Bump(t)), null, null, c * 0.12f, true);
                     }
                 }
 

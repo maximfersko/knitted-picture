@@ -411,6 +411,8 @@ namespace KnittedPicture.Game
         public static Sprite WoodFrame => Get("woodFrame", KnitRaster.WoodFrame, null, new Vector4(96, 96, 96, 96));
 
         public static Texture2D Paper => Tile("paper", KnitRaster.PaperTile);
+        /// <summary>Непрерывная канва для спокойного тканевого фона партии.</summary>
+        public static Texture2D Linen => Tile("linen", KnitRaster.CanvasTile);
 
         public static Texture2D Rope => Tile("rope", KnitRaster.RopeTile);
 

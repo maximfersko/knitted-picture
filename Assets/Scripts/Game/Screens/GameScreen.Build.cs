@@ -13,6 +13,17 @@ namespace KnittedPicture.Game
     {
         // ---------- Построение ----------
 
+        /// <summary>Мелкая канва связывает фон и полотно, оставляя насыщенный цвет клубкам.</summary>
+        private void BuildTextileBackdrop()
+        {
+            var texture = Ui.Node(Root, "TextileGround").gameObject.AddComponent<RawImage>();
+            texture.texture = Art2.Linen;
+            texture.color = Color.Lerp(Palette.GroundOfLevel(_level.id), Color.white, 0.62f);
+            texture.raycastTarget = false;
+            texture.uvRect = new Rect(0f, 0f, W / 24f, H / 24f);
+            Ui.Stretch(texture.rectTransform);
+        }
+
         private void BuildHud()
         {
             Ui.RoundButton(Root, Icon.Pause, Pad, 8).OnClick(() =>
@@ -171,8 +182,8 @@ namespace KnittedPicture.Game
         private void BuildPicture()
         {
             var availH = _loomY - 10f - _top;
-            var step = Mathf.Min((W - 2 * Pad - 24f) / _game.Width, (availH - 24f - 26f) / _game.Height, App.Tablet ? 36f : 30f);
-            var gap = Mathf.Max(1f, Mathf.Round(step * 0.1f));
+            var step = Mathf.Min((W - 2 * Pad - 24f) / _game.Width, (availH - 24f - 26f) / _game.Height, App.Tablet ? 38f : 34f);
+            var gap = Mathf.Max(0.35f, step * 0.025f);
             var cell = step - gap;
             var gridW = _game.Width * step - gap;
             var gridH = _game.Height * step - gap;
@@ -180,7 +191,7 @@ namespace KnittedPicture.Game
             var cardH = gridH + 24f + 26f;
             var y = _top + Mathf.Max(0f, (availH - cardH) / 2f);
 
-            _pictureCard = Ui.Layer(Ui.Card(Root, "PictureCard", (W - cardW) / 2f, y, cardW, cardH, 22, Palette.Card, Palette.CardShadow), true);
+            _pictureCard = Ui.Layer(Ui.Card(Root, "PictureCard", (W - cardW) / 2f, y, cardW, cardH, 14, Palette.WorkshopPaper, Palette.CardShadow, 1f), true);
             _picture = new PictureView(_pictureCard, _game, _colors, cell, gap);
             Ui.Place(_picture.Root, 12, 12, gridW, gridH);
 
@@ -274,7 +285,7 @@ namespace KnittedPicture.Game
 
         private void BuildField()
         {
-            var card = Ui.Layer(Ui.Card(Root, "Field", Pad, _fieldY, W - 2 * Pad, _fieldH, 24, Palette.Card, Palette.CardShadow), true);
+            var card = Ui.Layer(Ui.Card(Root, "Field", Pad, _fieldY, W - 2 * Pad, _fieldH, 16, Palette.WorkshopPaper, Palette.CardShadow, 1f), true);
             _fieldContent = Ui.Stretch(Ui.Node(card, "Content"));
         }
 

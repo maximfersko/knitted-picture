@@ -15,6 +15,9 @@ namespace KnittedPicture.Game
 
         /// <summary>Самый нижний недовязанный ряд на прошлом шаге (−1 — ещё не считали).</summary>
         private int _lowestRow = -1;
+        /// <summary>Отмена хода делает отложенные праздники прежнего полотна неактуальными.</summary>
+        private int _celebrationEpoch;
+        private float _nextPerfectBurstAt;
 
         /// <summary>Ряд закрыт целиком — когда долетят нитки, по нему слева направо пробегает светлая волна.</summary>
         private void ShimmerClosedRows()
@@ -25,7 +28,14 @@ namespace KnittedPicture.Game
                 for (var y = _lowestRow; y > lowest && y >= 0; y--)
                 {
                     var row = y;
-                    Tweens.Delay(_fx, BeadFlight, () => _picture.Shimmer(row));
+                    var epoch = _celebrationEpoch;
+                    Tweens.Delay(_fx, BeadFlight, () =>
+                    {
+                        if (epoch == _celebrationEpoch && !_ended && !_failShown)
+                        {
+                            _picture.Shimmer(row);
+                        }
+                    });
                 }
             }
 
@@ -34,14 +44,17 @@ namespace KnittedPicture.Game
 
         /// <summary>Столбцы, изменённые шагом вязки: один набор на все шаги (их ~15 в секунду), без мусора.</summary>
         private readonly HashSet<int> _changed = new HashSet<int>();
+        /// <summary>Один толчок клубка за шаг, даже если толщина и соседство дали несколько петель.</summary>
+        private readonly HashSet<int> _wobbled = new HashSet<int>();
 
         private void Present(StepResult step)
         {
             var changed = _changed;
             changed.Clear();
+            _wobbled.Clear();
             var rush = _tempo.Rush;
             // Один короткий импульс на рабочий шаг, не на каждую петлю; Haptics ограничивает частоту.
-            if (step.Stitches.Count > 0)
+            if (step.Stitches.Count > 0 || step.Completed.Count > 0)
             {
                 Haptics.Play(Haptic.Tap);
             }
@@ -62,13 +75,13 @@ namespace KnittedPicture.Game
                 var caught = gold && _tempo.Active;
 
                 // Нитка-клубочек летит от клубка к петле по дуге с хвостом; в «Разгоне» светится и крупнее.
-                var beadColor = rush ? Color.Lerp(color, Color.white, 0.3f) : color;
+                var beadColor = rush ? Color.Lerp(color, Color.white, 0.12f) : color;
                 var beadSize = Mathf.Max(10f, _slotSpool * 0.28f) * (rush ? 1.25f : 1f);
                 Fx.Bead(_fx, from, to, beadColor, beadSize, BeadFlight, () =>
                 {
                     if (_picture.Land(x, y))
                     {
-                        Fx.Sparkle(_fx, to, rush ? RushColor : color, rush ? 5 : 3, rush ? 24f : 16f);
+                        Fx.Sparkle(_fx, to, rush ? RushColor : color, rush ? 2 : 1, rush ? 18f : 12f);
                         Sfx.Play(Sound.Stitch, 0.5f);
                     }
 
@@ -82,15 +95,16 @@ namespace KnittedPicture.Game
 
                 if (_tempo.OnStitch())
                 {
-                    Fx.FloatText(_fx, from, "+1", Palette.CoinShadow, 16f);
-                    Sfx.Play(Sound.Coin, 0.25f);
+                    _rushCoinsPending++;
                 }
 
-                if (slot != null)
+                if (slot != null && _wobbled.Add(stitch.SpoolId))
                 {
                     Wobble(slot.View.Root);
                 }
             }
+
+            ShowRushCoins(step.Status != GameStatus.Playing);
 
             foreach (var done in step.Completed)
             {
@@ -101,17 +115,32 @@ namespace KnittedPicture.Game
                     if (done.Leftover > 0)
                     {
                         // Лишняя пряжа: цвет довязан, клубок уходит недовязанным.
-                        Fx.Poof(_fx, at, Palette.Ink3, _slotSpool);
+                        if (done.Unraveled)
+                        {
+                            Fx.LooseThreads(_fx, at, slot.Color >= 0 ? _colors[slot.Color] : Palette.Ink3, _slotSpool, true);
+                        }
+                        else
+                        {
+                            Fx.Poof(_fx, at, Palette.Ink3, _slotSpool);
+                        }
                         Fx.FloatText(_fx, at, done.Unraveled ? L.T("Пряжа распустилась") : L.T("лишняя пряжа"), Palette.Ink2, 14f);
                     }
                     else
                     {
-                        Fx.Poof(_fx, at, slot.Color >= 0 ? _colors[slot.Color] : Palette.Coin, _slotSpool * 1.3f);
+                        var spoolColor = slot.Color >= 0 ? _colors[slot.Color] : Palette.Coin;
+                        if (done.Perfect && Time.unscaledTime >= _nextPerfectBurstAt)
+                        {
+                            _nextPerfectBurstAt = Time.unscaledTime + 0.28f;
+                            Fx.YarnBurst(_fx, at, Palette.Coin, spoolColor, _slotSpool * 1.15f);
+                        }
+                        else
+                        {
+                            Fx.Poof(_fx, at, spoolColor, _slotSpool * 1.3f);
+                        }
                     }
                 }
 
                 Sfx.Play(Sound.SpoolDone, done.Leftover > 0 ? 0.35f : 0.7f);
-                Haptics.Play(Haptic.Tap);
                 if (done.Perfect)
                 {
                     Highlight(_slotFrames[done.Slot], Palette.CoinShadow);
@@ -119,7 +148,11 @@ namespace KnittedPicture.Game
                     {
                         _mysteryPeekLeft = 2f;
                         _picture.SetMysteryPeek(true);
-                        ToastOnce("perfect-peek", L.T("Идеально! Следующий ряд виден на 2 секунды"));
+                        if (_told.Add("perfect-peek"))
+                        {
+                            Fx.FloatText(_fx, Ui.WorldCenter(_picture.Root), L.T("Идеально: виден следующий ряд"),
+                                Palette.Primary, 17f);
+                        }
                     }
                 }
             }
@@ -167,12 +200,19 @@ namespace KnittedPicture.Game
 
             // Цвет довязан — клубки этого цвета на поле стали лишними: показать это.
             var finished = false;
+            var celebrated = false;
+            var majorFeedback = step.Completed.Any(done => done.Perfect) ||
+                step.Stitches.Any(stitch => _game.IsGold(stitch.X, stitch.Y));
             foreach (var stitch in step.Stitches)
             {
                 if (_game.LeftOf(stitch.Color) == 0 && _finishedColors.Add(stitch.Color))
                 {
                     finished = true;
-                    CelebrateColor(stitch.Color);
+                    if (!celebrated)
+                    {
+                        celebrated = true;
+                        CelebrateColor(stitch.Color, majorFeedback);
+                    }
                 }
             }
 
@@ -187,7 +227,7 @@ namespace KnittedPicture.Game
                 if (view != null)
                 {
                     Tweens.Punch(view.Root, 0.25f, 0.3f);
-                    Fx.Sparkle(_fx, Ui.WorldCenter(view.Root), IceBlue, 8, 30f);
+                    Fx.IceShatter(_fx, Ui.WorldCenter(view.Root), IceBlue, view.Size);
                 }
 
                 Sfx.Play(Sound.Unlock, 0.7f);
@@ -198,16 +238,25 @@ namespace KnittedPicture.Game
         /// Цвет довязан: когда долетят последние нитки, его клетки пробегает волна, над ними — «Цвет готов!»,
         /// звук и ощутимый отклик. Последний цвет не празднуем отдельно — там сразу победная волна.
         /// </summary>
-        private void CelebrateColor(int color)
+        private float _nextColorCelebrationAt;
+
+        private void CelebrateColor(int color, bool afterGoldOrPerfect)
         {
             if (_game.Status == GameStatus.Won)
             {
                 return;
             }
 
-            Tweens.Delay(Root, BeadFlight + 0.05f, () =>
+            var delay = Mathf.Max(0f, _nextColorCelebrationAt - Time.unscaledTime);
+            if (afterGoldOrPerfect)
             {
-                if (_ended)
+                delay = Mathf.Max(delay, 0.9f);
+            }
+            _nextColorCelebrationAt = Time.unscaledTime + delay + 1.1f;
+            var epoch = _celebrationEpoch;
+            Tweens.Delay(Root, BeadFlight + 0.05f + delay, () =>
+            {
+                if (_ended || _failShown || epoch != _celebrationEpoch || _game.LeftOf(color) > 0)
                 {
                     return;
                 }
@@ -219,8 +268,7 @@ namespace KnittedPicture.Game
                 }
 
                 Fx.FloatText(_fx, at.Value, L.T("Цвет готов!"), Color.Lerp(_colors[color], Palette.Ink, 0.45f), 22f);
-                Fx.Sparkle(_fx, at.Value, _colors[color], 10, 50f);
-                Fx.Poof(_fx, at.Value, Color.Lerp(_colors[color], Color.white, 0.3f), 110f);
+                Fx.LooseThreads(_fx, at.Value, _colors[color], 55f);
                 Sfx.Play(Sound.Star, 0.55f);
                 Haptics.Play(Haptic.Medium);
             });
@@ -309,7 +357,7 @@ namespace KnittedPicture.Game
                 Sfx.Play(Sound.Combo, 0.9f);
                 Haptics.Play(Haptic.Medium);
                 Tweens.Punch(_loomBg, 0.06f, 0.3f);
-                Fx.Sparkle(_fx, Ui.WorldCenter(_loomBg), RushColor, 12, 140f);
+                Fx.LooseThreads(_fx, Ui.WorldCenter(_loomBg), RushColor, 100f);
             }
             else
             {
@@ -332,6 +380,7 @@ namespace KnittedPicture.Game
         /// <summary>Плашка комбо, жар «Разгона» и подсветка станка — каждый кадр.</summary>
         private void UpdateCombo(float dt)
         {
+            ShowRushCoins(false);
             var active = _tempo.Active;
             var targetAlpha = active ? 1f : 0f;
 
@@ -376,6 +425,24 @@ namespace KnittedPicture.Game
                 _rushGlow.color = Color.clear;
                 _loomBgImage.color = Palette.LoomBg;
             }
+        }
+
+        private int _rushCoinsPending;
+        private float _nextRushCoinsAt;
+
+        /// <summary>Монеты серии собираются в одну подпись примерно за секунду; при исходе партии показываем остаток сразу.</summary>
+        private void ShowRushCoins(bool flush)
+        {
+            if (_rushCoinsPending == 0 || (!flush && Time.unscaledTime < _nextRushCoinsAt))
+            {
+                return;
+            }
+
+            Fx.FloatText(_fx, Ui.WorldCenter(_comboChip) + new Vector3(0f, -28f * _fx.lossyScale.y, 0f),
+                "+" + _rushCoinsPending, Palette.CoinShadow, 16f);
+            Sfx.Play(Sound.Coin, 0.25f);
+            _rushCoinsPending = 0;
+            _nextRushCoinsAt = Time.unscaledTime + 0.9f;
         }
 
         private void Wobble(RectTransform root)

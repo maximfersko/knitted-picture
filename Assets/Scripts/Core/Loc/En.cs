@@ -13,9 +13,11 @@ namespace KnittedPicture
     {
         public static readonly Dictionary<string, string> Table = new Dictionary<string, string>
         {
+            ["Тапни клубок. Удерживай его, чтобы увидеть первые петли"] = "Tap a ball. Hold it to preview the first stitches",
+            ["Идеально: виден следующий ряд"] = "Perfect: the next row is visible",
+            ["Ключ в колонке {0}: освободи клубки перед ним"] = "The key is in column {0}: clear the balls in front of it",
             ["Клубки одного цвета рядом вяжут быстрее"] = "Matching spools next to each other knit faster",
             ["Пряжа распустилась"] = "Yarn unraveled",
-            ["Идеально! Следующий ряд виден на 2 секунды"] = "Perfect! See the next row for 2 seconds",
             ["+{0:0.#} с"] = "+{0:0.#} s",
             ["Эта пряжа распустится сама за 6 шагов. Ножницы освободят место сразу"] = "This yarn unravels in 6 steps. Scissors free its slot immediately",
             ["Уровень {0}"] = "Level {0}",

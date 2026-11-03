@@ -241,6 +241,7 @@ namespace KnittedPicture.Game
                 app.SetGround(Palette.GroundOfLevel(level.id));
             }
 
+            BuildTextileBackdrop();
             BuildHud();
             if (_game.TimeLimit > 0)
             {
@@ -323,6 +324,8 @@ namespace KnittedPicture.Game
             {
                 return;
             }
+
+            ShowNextGameplayToast();
 
             if (Tweens.Frozen)
             {

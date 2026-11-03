@@ -14,6 +14,8 @@ namespace KnittedPicture.Game
     public sealed class SpoolView
     {
         private readonly Image _ball;
+        private readonly Image _rainbowSheen;
+        private bool _rainbowLive;
         private readonly Text _question;
         private readonly RectTransform _badge;
         private readonly Text _badgeText;
@@ -25,6 +27,8 @@ namespace KnittedPicture.Game
         private readonly Image _thickRing;
         private readonly RectTransform _ice;
         private readonly Text _iceText;
+        private readonly Image _iceCracks;
+        private int _iceStart;
         private readonly Image _iceDot;
         private System.Func<Sprite>? _plain;
         private Color _tint;
@@ -58,6 +62,8 @@ namespace KnittedPicture.Game
             _ball = Ui.Image(root, "Ball", Art2.Ball(Color.white), Color.white, true);
             Ui.PlaceCenter(_ball.rectTransform, size / 2f - (BallRaster.Cx - BallRaster.Size / 2f) * shift,
                 size / 2f + (BallRaster.Cy - BallRaster.Size / 2f) * shift, art, art);
+            _rainbowSheen = Ui.Image(root, "RainbowSheen", Art.Glow, Color.clear);
+            Ui.PlaceCenter(_rainbowSheen.rectTransform, size * 0.3f, size * 0.35f, size * 0.34f, size * 0.5f);
 
             _question = Ui.Label(root, "?", size * 0.5f, Palette.Ink, 0, 0, size, size);
 
@@ -71,6 +77,8 @@ namespace KnittedPicture.Game
             frost.type = Image.Type.Sliced;
             frost.pixelsPerUnitMultiplier = Art.Density;
             Ui.Stretch(frost.rectTransform);
+            _iceCracks = Ui.Image(_ice, "Cracks", Art2.Ice(0), Color.white);
+            Ui.Stretch(_iceCracks.rectTransform);
             Ui.IconImage(_ice, Icon.Snowflake, Palette.Hex("#3D8FD1"), size * 0.52f, size * 0.36f, size * 0.42f);
             _iceText = Ui.Label(_ice, "", size * 0.3f, Palette.Hex("#1F5F96"), 0, size * 0.56f, size * 1.04f, size * 0.4f);
 
@@ -162,7 +170,9 @@ namespace KnittedPicture.Game
             _plain = () => !visible ? Art2.Ball(Palette.Hidden) : rainbow ? Art2.RainbowBall : Art2.Ball(color, false, thick);
             _ball.sprite = _plain();
             _ball.color = Color.white;
+            _ball.rectTransform.localScale = Vector3.one;
             _tint = color;
+            SetRainbowSheen(visible && rainbow && front);
             _question.gameObject.SetActive(!visible);
 
             _thickRing.gameObject.SetActive(spool.Thick);
@@ -193,7 +203,13 @@ namespace KnittedPicture.Game
         public void SetIce(int ice)
         {
             var cracked = ice > 0 && ShownIce > ice;
+            if (ice > ShownIce)
+            {
+                _iceStart = Mathf.Max(_iceStart, ice);
+            }
             ShownIce = ice;
+            var stage = _iceStart > 0 ? Mathf.Clamp(Mathf.FloorToInt(3f * (_iceStart - ice) / _iceStart), 0, 3) : 0;
+            _iceCracks.sprite = Art2.Ice(stage);
             _ice.gameObject.SetActive(ice > 0);
             _iceText.text = ice.ToString();
             if (cracked)
@@ -206,6 +222,9 @@ namespace KnittedPicture.Game
                 }, done: () => _ice.localScale = Vector3.one, channel: 33);
             }
         }
+
+        /// <summary>Сохраняет начальный запас льда при пересоздании вида, чтобы стадии трещин не сбрасывались.</summary>
+        public void SetIceOrigin(int ice) => _iceStart = Mathf.Max(_iceStart, ice);
 
         /// <summary>Чужая пряжа на поле: тесьма цвета ткани; значок часов появляется только на станке.</summary>
         public void SetFabric(bool fabric)
@@ -235,6 +254,31 @@ namespace KnittedPicture.Game
         {
             _badgeText.text = (foreign ? LoomGame.ForeignLifetime - spool.UnravelSteps : spool.Loops).ToString();
             _synergy.gameObject.SetActive(synergy);
+            _ball.rectTransform.localScale = Vector3.one * (foreign ? Mathf.Lerp(1f, 0.42f,
+                Mathf.Clamp01((float)spool.UnravelSteps / LoomGame.ForeignLifetime)) : 1f);
+        }
+
+        /// <summary>Редкий цветной блик на радуге проходит по волокнам; остальные клубки остаются неподвижны.</summary>
+        private void SetRainbowSheen(bool enabled)
+        {
+            if (_rainbowLive == enabled)
+            {
+                return;
+            }
+            _rainbowLive = enabled;
+            Tweens.Kill(_rainbowSheen);
+            _rainbowSheen.color = Color.clear;
+            if (!enabled)
+            {
+                return;
+            }
+            Tweens.Run(_rainbowSheen, 3.4f, t =>
+            {
+                var sweep = Mathf.Clamp01(t / 0.28f);
+                _rainbowSheen.rectTransform.anchoredPosition = new Vector2(Size * Mathf.Lerp(0.2f, 0.8f, sweep), -Size * 0.35f);
+                _rainbowSheen.color = Palette.WithAlpha(Color.Lerp(Palette.Coin, Palette.Link, sweep),
+                    Tweens.Calm ? 0f : Mathf.Sin(sweep * Mathf.PI) * 0.55f);
+            }, loop: true);
         }
 
         /// <summary>

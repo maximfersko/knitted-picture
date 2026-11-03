@@ -150,7 +150,6 @@ namespace KnittedPicture.Game
             // потом показать снова) и кнопка «смотреть» показывают снова. Ткань тап не ловит: её зона закрывала бы кнопку ▶.
             var replay = KnitReplay.Create(hoopRoot, level, hoop / 2f, hoop / 2f, hoop * 0.66f);
             replay.Celebrate = false;
-            replay.Play(1f, 0.4f);
             void ReplayAgain()
             {
                 replay.Play(3.5f);
@@ -173,11 +172,11 @@ namespace KnittedPicture.Game
 
             // Картинка довязалась — ткань «натягивается»: пяльцы коротко пружинят, искры по кругу.
             var ringRt = ring.rectTransform;
-            Tweens.Delay(hoopRoot, 1.45f, () =>
+            replay.Play(1.35f, 0.25f, () =>
             {
                 Tweens.Punch(hoopRoot, 0.06f, 0.3f);
                 Tweens.Punch(ringRt, 0.05f, 0.3f);
-                Fx.Sparkle(Root, Ui.WorldCenter(hoopRoot), Palette.Coin, 12, hoop * 0.55f);
+                Fx.Sparkle(Root, Ui.WorldCenter(hoopRoot), Palette.Coin, 6, hoop * 0.42f);
                 Haptics.Play(Haptic.Success);
             });
 

@@ -86,15 +86,25 @@ namespace KnittedPicture.Game
                 Haptics.Play(Haptic.Success);
                 _picture.Wave(() =>
                 {
-                    Tweens.Punch(_pictureCard, 0.06f, 0.4f);
-                    Fx.Poof(_fx, Ui.WorldCenter(_pictureCard), Palette.Coin, _pictureCard.sizeDelta.x * 0.9f);
+                    var position = _pictureCard.anchoredPosition;
+                    Tweens.Run(_pictureCard, 0.5f, t =>
+                    {
+                        var lift = Tweens.Calm ? 0f : Mathf.Sin(t * Mathf.PI);
+                        _pictureCard.anchoredPosition = position + new Vector2(0f, 6f * lift);
+                        _pictureCard.localScale = Vector3.one * (1f + 0.025f * lift);
+                    }, done: () =>
+                    {
+                        _pictureCard.anchoredPosition = position;
+                        _pictureCard.localScale = Vector3.one;
+                    });
+                    Fx.Sparkle(_fx, Ui.WorldCenter(_pictureCard), Palette.Coin, 6, _pictureCard.sizeDelta.x * 0.35f);
                     var stars = Economy.Stars(_boostersUsed, _rescues);
                     Analytics.Event(_run.Pattern ? "pattern_win" : "level_win", LevelParams(
                         ("stars", stars), ("boosters", _boostersUsed), ("rescues", _rescues),
                         ("best_combo", _tempo.Best), ("rushes", _tempo.RushCount), ("gold", _goldCaught), ("auto_finish", _finishing)));
                     var stats = new LevelStats(_tempo.RushCoins, _goldCoins, _goldCaught, _level.gold.Length, _game.Taps,
                         _tempo.Best, _boostersUsed > 0 || _rescues > 0, _game.TotalStitches, _tempo.RushCount);
-                    Tweens.Delay(Root, 0.45f, () =>
+                    _picture.Reveal(() =>
                     {
                         if (_run.Pattern)
                         {
@@ -391,6 +401,7 @@ namespace KnittedPicture.Game
             SetScissors(false);
             HideHint();
             HideTip();
+            ShowRushCoins(true);
             _tempo.Break();
             if (_mothEdge != null)
             {
