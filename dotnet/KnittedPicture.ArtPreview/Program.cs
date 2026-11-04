@@ -12,6 +12,11 @@ namespace KnittedPicture.ArtPreview
     {
         public static void Main(string[] args)
         {
+            if (args.Length == 2 && args[0] == "--level-backgrounds")
+            {
+                LevelBackgrounds(args[1]);
+                return;
+            }
             if (args.Length == 2 && args[0] == "--ice-spools")
             {
                 IceSpools(args[1]);
@@ -48,6 +53,32 @@ namespace KnittedPicture.ArtPreview
             Frames(dir);
             MagicFrames(dir);
             Chests(dir);
+        }
+
+        /// <summary>Фон реальных уровней тем же дескриптором и растром, что используются игрой.</summary>
+        private static void LevelBackgrounds(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            var paletteSource = File.ReadAllText("Assets/Scripts/Game/Ui/Palette.cs");
+            var groundsSection = paletteSource.Substring(paletteSource.IndexOf("private static readonly Color[] Grounds", StringComparison.Ordinal));
+            groundsSection = groundsSection.Substring(0, groundsSection.IndexOf("};", StringComparison.Ordinal));
+            var grounds = System.Text.RegularExpressions.Regex.Matches(groundsSection, "#[0-9A-Fa-f]{6}").Select(m => Rgba.Hex(m.Value)).ToArray();
+            foreach (int id in new[] { 1, 25, 26, 27, 31, 34, 61 })
+            {
+                using var json = JsonDocument.Parse(File.ReadAllText($"Assets/Resources/Levels/level_{id:000}.json"));
+                var root = json.RootElement;
+                string[] Read(string key) => root.TryGetProperty(key, out var a) ? a.EnumerateArray().Select(e => e.GetString()!).ToArray() : Array.Empty<string>();
+                var style = new BackdropStyle(id, (id - 1) / 5, grounds[(id - 1) / 5], Read("colors"), Read("picture"), Read("canvas"));
+                var tile = BackdropRaster.Tile(style.Family);
+                var result = new Raster(390, 844);
+                result.Paint((x, y) =>
+                {
+                    int tx = (int)(((x / style.TileSize + style.PhaseX) % 1f) * tile.Width);
+                    int ty = (int)(((y / style.TileSize + style.PhaseY) % 1f) * tile.Height);
+                    return Rgba.Over(style.Ink.WithAlpha(tile[tx, ty].A), style.Ground);
+                });
+                Png.Save(result, Path.Combine(dir, $"level-{id:000}.png"));
+            }
         }
 
         /// <summary>Растровое приближение игрового расположения льда и клубка.</summary>

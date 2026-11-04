@@ -236,12 +236,8 @@ namespace KnittedPicture.Game
             // Пряжа «в работе» меняет только награды, не правила: уровень остаётся честным.
             _goldPerLoop = Economy.GoldCoins + YarnCatalog.GoldBonus(app.Progress.PerkPower(YarnPerk.Gold));
             _colors = level.colors.Select(c => Palette.Vivid(Palette.Hex(c))).ToArray();
-            if (!run.Pattern)
-            {
-                app.SetGround(Palette.GroundOfLevel(level.id));
-            }
+            app.SetLevelBackdrop(level);
 
-            BuildTextileBackdrop();
             BuildHud();
             if (_game.TimeLimit > 0)
             {
@@ -485,43 +481,48 @@ namespace KnittedPicture.Game
             public int Depth { get; }
         }
 
-        /// <summary>Кнопка бустера: иконка, подпись и бейдж — запас, цена или «ур. N».</summary>
+        /// <summary>Компактная кнопка бустера с названием и запасом, ценой или подарком.</summary>
         private sealed class BoosterButton
         {
             private readonly Image _face;
             private readonly CanvasGroup _group;
-            private readonly Image _badgeBack;
-            private readonly Text _badgeText;
+            private readonly Image _icon;
+            private readonly Text _label;
+            private readonly Text _status;
+            private readonly Image _coin;
+            private readonly Image _selected;
             private readonly Image _suggestion;
+            private readonly float _width;
 
             public BoosterButton(RectTransform parent, BoosterType type, float x, float y, float w)
             {
-                var root = Ui.Card(parent, "Booster" + type, x, y, w, 60, 18, Palette.Card, Palette.CardShadow, 3f, true);
-                _face = root.Find("Face").GetComponent<Image>();
+                _width = w;
+                var root = Ui.Place(Ui.Node(parent, "Booster" + type), x, y, w, 60f);
+                _face = Ui.Box(root, "BoosterFace", 12f, Palette.Surface, true);
+                Ui.Stretch(_face.rectTransform);
                 _group = root.gameObject.AddComponent<CanvasGroup>();
-                var label = Ui.Label(root, type == BoosterType.Slot ? L.T("Место") : BoosterInfo.Name(type), 14, Palette.Ink);
-                var textW = label.preferredWidth;
-                var well = Mathf.Min(44f, w * 0.38f);
-                var total = well + 6f + textW;
-                var left = Mathf.Max(6f, w / 2f - total / 2f);
 
-                // Цветной детальный значок в мягкой лунке: латунные ножницы, стрелка из нити, лунка с плюсом.
-                var bowl = Ui.Image(root, "Well", Art2.IconWell, Color.white);
-                Ui.PlaceCenter(bowl.rectTransform, left + well / 2f, 30, well, well);
-                var art = Ui.Image(root, "Icon", Art2.Booster(type), Color.white);
-                Ui.PlaceCenter(art.rectTransform, left + well / 2f, 30, well * 0.8f, well * 0.8f);
-                Ui.Place(label.rectTransform, left + well + 6f, 0, Mathf.Min(textW + 4f, w - left - well - 8f), 60);
-                label.alignment = TextAnchor.MiddleLeft;
+                _icon = Ui.Image(root, "Icon", Art2.Booster(type), Color.white);
+                Ui.PlaceCenter(_icon.rectTransform, w / 2f, 15f, 28f, 28f);
+                _label = Ui.Label(root, type == BoosterType.Slot ? L.T("Место") : BoosterInfo.Name(type), 13, Palette.Ink);
+                _label.resizeTextForBestFit = false;
+                if (_label.preferredWidth > w - 6f)
+                {
+                    _label.fontSize = Mathf.Max(9, Mathf.FloorToInt(_label.fontSize * (w - 6f) / _label.preferredWidth));
+                }
+                _label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                Ui.Place(_label.rectTransform, 3f, 29f, w - 6f, 14f);
 
-                // Запас или цена — на бирке, как число петель у клубков.
-                var badge = Ui.Place(Ui.Node(root, "Badge"), w - 44f, -8f, 47, 26);
-                _badgeBack = Ui.Image(badge, "Back", Art2.Tag, Palette.Ink);
-                Ui.Stretch(_badgeBack.rectTransform);
-                _badgeText = Ui.Fit(Ui.Label(badge, "", 11, Color.white), 8);
-                Ui.Place(_badgeText.rectTransform, 47f * Art2.TagTextFrom, 0, 47f * (0.97f - Art2.TagTextFrom), 26);
-                Tap = root.gameObject.AddComponent<Tap>();
-                _suggestion = Outline(root, Palette.CoinShadow).GetComponent<Image>();
+                _status = Ui.Fit(Ui.Label(root, "", 11, Palette.Ink2), 9);
+                _status.horizontalOverflow = HorizontalWrapMode.Overflow;
+                Ui.Place(_status.rectTransform, 4f, 44f, w - 8f, 14f);
+                _coin = Ui.Image(root, "Coin", Art2.Coin, Color.white);
+                Ui.PlaceCenter(_coin.rectTransform, w / 2f - 19f, 51f, 11f, 11f);
+                _suggestion = Ui.Outline(root, 12f, Palette.CoinShadow, 2f);
                 _suggestion.enabled = false;
+                _selected = Ui.Outline(root, 12f, Palette.Primary, 2f);
+                _selected.enabled = false;
+                Tap = root.gameObject.AddComponent<Tap>();
             }
 
             public Tap Tap { get; }
@@ -534,45 +535,23 @@ namespace KnittedPicture.Game
 
             public void Refresh(bool unlocked, int stock, int price, int unlockLevel, bool available, bool active, int free = 0)
             {
-                _face.color = active ? Palette.PrimarySoft : Palette.Card;
+                _face.color = active ? Palette.PrimarySoft : Palette.Surface;
+                _selected.enabled = active;
                 _group.blocksRaycasts = !Dimmed;
-                if (Dimmed)
-                {
-                    _group.alpha = 0.4f;
-                    return;
-                }
-
-                if (!unlocked)
-                {
-                    _group.alpha = 0.55f;
-                    _badgeBack.color = Palette.Track;
-                    _badgeText.color = Palette.Ink2;
-                    _badgeText.text = L.T("ур. ") + unlockLevel;
-                    return;
-                }
-
-                _group.alpha = available ? 1f : 0.55f;
-                if (free > 0)
-                {
-                    // Подарок «тёплой серии»: зелёная плашка, бесплатно.
-                    _badgeBack.color = Palette.Primary;
-                    _badgeText.color = Color.white;
-                    _badgeText.text = L.T("даром");
-                }
-                else if (stock > 0)
-                {
-                    _badgeBack.color = Palette.Ink;
-                    _badgeText.color = Color.white;
-                    _badgeText.text = stock.ToString();
-                }
-                else
-                {
-                    _badgeBack.color = Palette.Coin;
-                    _badgeText.color = Palette.Ink;
-                    _badgeText.text = price.ToString();
-                }
+                _group.alpha = Dimmed ? 0.4f : 1f;
+                var bright = unlocked && (available || active);
+                _icon.color = Palette.WithAlpha(Color.white, bright ? 1f : 0.55f);
+                _label.color = bright ? Palette.Ink : Palette.Ink3;
+                _coin.gameObject.SetActive(unlocked && free <= 0 && stock <= 0);
+                Ui.Place(_status.rectTransform, _coin.gameObject.activeSelf ? _width / 2f - 10f : 4f, 44f,
+                    _coin.gameObject.activeSelf ? 40f : _width - 8f, 14f);
+                _status.color = free > 0 && unlocked ? Palette.PrimaryShadow : Palette.Ink2;
+                _status.text = !unlocked ? L.T("ур. ") + unlockLevel
+                    : free > 0 ? L.T("даром") : stock > 0 ? stock.ToString() : price.ToString();
             }
+
         }
+
     }
 
     /// <summary>

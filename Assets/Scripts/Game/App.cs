@@ -1128,12 +1128,51 @@ namespace KnittedPicture.Game
             StartFirstRun();
         }
 
-        /// <summary>
-        /// Оттенок фона: экран задаёт свой (главная и уровень — по коллекции), остальные — общий светло-серый.
-        /// Смена плавная, чтобы при переходе не мигало.
-        /// </summary>
+        private float _backdropPhaseX, _backdropPhaseY, _backdropTileSize = 40f;
+
+        /// <summary>Фон уровня один для всей площади экрана и сохраняется на экране победы.</summary>
+        public void SetLevelBackdrop(LevelData level)
+        {
+            if (_background == null || _pattern == null) { return; }
+            int themeLevel = level.id;
+            if (level.id == DailyPattern.LevelId && Levels.Count > 0)
+            {
+                int day = ReferenceEquals(level, _todayPattern) ? _patternDay : Today;
+                themeLevel = DailyPattern.PictureIndex(day, Levels.Count) + 1;
+            }
+            int collection = System.Array.IndexOf(Collections.All, Collections.Of(themeLevel));
+            var ground = Palette.GroundOf(collection);
+            var style = new BackdropStyle(level.id, collection, new Rgba(ground.r, ground.g, ground.b, ground.a), level.colors, level.picture, level.canvas);
+            ++_groundVersion;
+            _ground = new Color(style.Ground.R, style.Ground.G, style.Ground.B);
+            _background.color = _ground;
+            _pattern.texture = Art2.Tile("backdrop-" + style.Family, () => BackdropRaster.Tile(style.Family));
+            _pattern.color = new Color(style.Ink.R, style.Ink.G, style.Ink.B, 1f);
+            _backdropPhaseX = style.PhaseX;
+            _backdropPhaseY = style.PhaseY;
+            _backdropTileSize = style.TileSize;
+            ApplyBackdropLayout();
+        }
+
+        private void ApplyBackdropLayout()
+        {
+            if (_pattern != null && _scaler != null)
+            {
+                _pattern.uvRect = new Rect(_backdropPhaseX, _backdropPhaseY, CanvasWidth / _backdropTileSize, Screen.height / _scaler.scaleFactor / _backdropTileSize);
+            }
+        }
+
+        /// <summary>Возвращает общий узор и меняет оттенок фона с плавным переходом.</summary>
         public void SetGround(Color color, bool instant = false)
         {
+            if (_pattern != null)
+            {
+                _pattern.texture = Art.KnitPattern;
+                _pattern.color = Color.white;
+                _backdropPhaseX = _backdropPhaseY = 0f;
+                _backdropTileSize = 40f;
+                ApplyBackdropLayout();
+            }
             if (_background == null || color == _ground)
             {
                 return;
@@ -1363,10 +1402,7 @@ namespace KnittedPicture.Game
             frame.anchoredPosition = new Vector2(left + (safeWidth - Width) / 2f, bottom);
             frame.sizeDelta = new Vector2(Width, Height);
 
-            if (_pattern != null)
-            {
-                _pattern.uvRect = new Rect(0, 0, CanvasWidth / 40f, Screen.height / scale / 40f);
-            }
+            ApplyBackdropLayout();
         }
 
         private static bool IsTablet()

@@ -6,8 +6,7 @@
 
 ## Общение и git
 - Отвечать по-русски. Честно говорить, что Unity в этом окружении не запускается: визуальное проверяется сборкой и расчётом.
-- Ветка `claude/focused-thompson-u3i4v7` и `main`. Перед push: `git pull -q --no-rebase origin main`, затем
-  `git push -q origin HEAD:claude/focused-thompson-u3i4v7 HEAD:main`. Pull request без просьбы не создавать.
+- Коммит, push и pull request выполнять только по явной просьбе пользователя.
 - В коммитах, документах и коде не упоминать названия и идентификаторы моделей.
 
 ## Правила кода и текстов
@@ -32,12 +31,8 @@ dotnet run -c Release --project dotnet/KnittedPicture.ArtPreview -- <папка>
 dotnet run -c Release --project dotnet/KnittedPicture.LevelTool -- --only N-N           # пересборка уровня из levels-src
 ```
 
-## Порядок работы (роли в `.claude/agents/`)
-1. `architect` (Opus) — анализ и план: файлы, решения, риски, критерии готовности. План показывается пользователю.
-2. После подтверждения пользователя `implementer` (Sonnet) реализует и гоняет проверки, не коммитит.
-3. `reviewer` (Opus) ревьюит дифф: вердикт и замечания по важности.
-4. `implementer` исправляет, `reviewer` проверяет повторно.
-5. Главная сессия коммитит и пушит, коротко отчитывается пользователю.
+## Порядок работы
+Канонический порядок ролей и согласования — в `AGENTS.md`.
 
 ## Полировка интерфейса: скилл `make-interfaces-feel-better`
 Скилл лежит в `.claude/skills/make-interfaces-feel-better/` (MIT, источник github.com/jakubkrehel/make-interfaces-feel-better,

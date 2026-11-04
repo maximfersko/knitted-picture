@@ -1,0 +1,14 @@
+[agents]
+max_concurrent_threads_per_session = 3
+
+[agents.architect]
+description = "Анализ и план изменений"
+config_file = "agents/architect.toml"
+
+[agents.developer]
+description = "Реализация утверждённого плана"
+config_file = "agents/developer.toml"
+
+[agents.reviewer]
+description = "Независимое ревью изменений"
+config_file = "agents/reviewer.toml"

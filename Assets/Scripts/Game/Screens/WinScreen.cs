@@ -95,13 +95,7 @@ namespace KnittedPicture.Game
             : base(app, "Win")
         {
             Sfx.Play(Sound.Win);
-            if (app.Levels.Has(level.id) && app.Levels.Get(level.id) == level)
-            {
-                app.SetGround(Palette.GroundOfLevel(level.id));
-            }
-
-            var ground = Ui.Box(Root, "WinGround", 0f, Color.Lerp(Palette.GroundOfLevel(level.id), Color.white, 0.65f));
-            Ui.Stretch(ground.rectTransform);
+            app.SetLevelBackdrop(level);
 
             _shownCoins = app.Progress.Coins - reward.Total;
             Ui.RoundButton(Root, Icon.Home, 16, 8).OnClick(app.ShowHome);
