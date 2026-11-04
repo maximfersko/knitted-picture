@@ -14,6 +14,8 @@ namespace KnittedPicture.Game
     public sealed class SpoolView
     {
         private readonly Image _ball;
+        private readonly Image _iceMaskImage;
+        private readonly Mask _iceMask;
         private readonly Image _rainbowSheen;
         private bool _rainbowLive;
         private readonly Text _question;
@@ -59,9 +61,16 @@ namespace KnittedPicture.Game
             // Детальный клубок: спрайт шире шара (ворс, завиток), шар — по центру клетки.
             var art = size / Art2.BallFill;
             var shift = art / BallRaster.Size;
-            _ball = Ui.Image(root, "Ball", Art2.Ball(Color.white), Color.white, true);
-            Ui.PlaceCenter(_ball.rectTransform, size / 2f - (BallRaster.Cx - BallRaster.Size / 2f) * shift,
-                size / 2f + (BallRaster.Cy - BallRaster.Size / 2f) * shift, art, art);
+            _iceMaskImage = Ui.Image(root, "IceMask", Art2.IceMask, Color.white);
+            Ui.PlaceCenter(_iceMaskImage.rectTransform, size / 2f, size / 2f, size * 1.04f, size * 1.04f);
+            _iceMaskImage.raycastTarget = false;
+            _iceMask = _iceMaskImage.gameObject.AddComponent<Mask>();
+            _iceMask.showMaskGraphic = false;
+            _iceMask.enabled = false;
+            _iceMaskImage.enabled = false;
+            _ball = Ui.Image(_iceMaskImage.rectTransform, "Ball", Art2.Ball(Color.white), Color.white, true);
+            Ui.PlaceCenter(_ball.rectTransform, size * 0.52f - (BallRaster.Cx - BallRaster.Size / 2f) * shift,
+                size * 0.52f + (BallRaster.Cy - BallRaster.Size / 2f) * shift, art, art);
             _rainbowSheen = Ui.Image(root, "RainbowSheen", Art.Glow, Color.clear);
             Ui.PlaceCenter(_rainbowSheen.rectTransform, size * 0.3f, size * 0.35f, size * 0.34f, size * 0.5f);
 
@@ -73,11 +82,6 @@ namespace KnittedPicture.Game
 
             _ice = Ui.PlaceCenter(Ui.Node(root, "Ice"), size / 2f, size / 2f, size * 1.04f, size * 1.04f);
             _ice.gameObject.SetActive(false);
-            Ui.Stretch(Ui.Box(_ice, "Block", size * 0.24f, new Color(0.78f, 0.92f, 1f, 0.82f)).rectTransform);
-            var frost = Ui.Image(_ice, "Frost", Art.RoundRectOutline(size * 0.24f, 2), Color.white);
-            frost.type = Image.Type.Sliced;
-            frost.pixelsPerUnitMultiplier = Art.Density;
-            Ui.Stretch(frost.rectTransform);
             _iceCracks = Ui.Image(_ice, "Cracks", Art2.Ice(0), Color.white);
             Ui.Stretch(_iceCracks.rectTransform);
             Ui.IconImage(_ice, Icon.Snowflake, Palette.Hex("#3D8FD1"), size * 0.52f, size * 0.36f, size * 0.42f);
@@ -204,6 +208,8 @@ namespace KnittedPicture.Game
         /// <summary>Лёд с числом петель до оттаивания; 0 — льда нет.</summary>
         public void SetIce(int ice)
         {
+            _iceMaskImage.enabled = ice > 0;
+            _iceMask.enabled = ice > 0;
             if (ice == ShownIce)
             {
                 return;
@@ -211,6 +217,7 @@ namespace KnittedPicture.Game
             var cracked = ice > 0 && ShownIce > ice;
             Tweens.Kill(_ice, 33);
             _ice.localScale = Vector3.one;
+            _iceMaskImage.rectTransform.localScale = Vector3.one;
             _iceText.color = Palette.Hex("#1F5F96");
             if (ice > ShownIce)
             {
@@ -226,8 +233,9 @@ namespace KnittedPicture.Game
                 Tweens.Run(_ice, 0.15f, t =>
                 {
                     _ice.localScale = Tweens.Calm ? Vector3.one : Vector3.one * (0.95f + 0.05f * Ease.OutCubic(t));
+                    _iceMaskImage.rectTransform.localScale = _ice.localScale;
                     _iceText.color = Color.Lerp(Color.white, Palette.Hex("#1F5F96"), t);
-                }, done: () => _ice.localScale = Vector3.one, channel: 33);
+                }, done: () => { _ice.localScale = Vector3.one; _iceMaskImage.rectTransform.localScale = Vector3.one; }, channel: 33);
             }
         }
 
@@ -308,7 +316,13 @@ namespace KnittedPicture.Game
             _lock.gameObject.SetActive(false);
             _key.gameObject.SetActive(false);
             _linkRing.gameObject.SetActive(false);
+            Tweens.Kill(_ice, 33);
             _ice.gameObject.SetActive(false);
+            _ice.localScale = Vector3.one;
+            _iceText.color = Palette.Hex("#1F5F96");
+            _iceMask.enabled = false;
+            _iceMaskImage.enabled = false;
+            _iceMaskImage.rectTransform.localScale = Vector3.one;
             _surplus.gameObject.SetActive(false);
             _foreign.gameObject.SetActive(false);
             _double.gameObject.SetActive(false);

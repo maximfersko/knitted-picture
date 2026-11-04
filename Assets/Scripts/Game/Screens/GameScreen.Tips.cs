@@ -253,13 +253,24 @@ namespace KnittedPicture.Game
         private void MaybeTensionTip()
         {
             var line = _picture.TensionLine;
-            if (line == null || _ended || _tip != null || App.HasPopups || !App.Progress.TakeTensionIntro())
+            if (line == null || _ended || _finishing || _tip != null || App.HasPopups || !App.Progress.TakeTensionIntro())
             {
                 return;
             }
 
             App.Save();
-            ShowTip(L.T("Столбики выше линии натяжения ждут, пока довяжется ряд внизу"), line, false);
+            ShowTensionTip(line);
+        }
+
+        /// <summary>Объяснение натяжения доступно повторно по кнопке под картинкой.</summary>
+        private void ShowTensionTip(RectTransform target)
+        {
+            if (!_picture.TensionHolding || _ended || _finishing || _tip != null || App.HasPopups)
+            {
+                return;
+            }
+
+            ShowTip(L.T("Нити отмечают столбики, которые ждут. Довяжи выделенные клетки внизу, чтобы они продолжили вязаться"), target, false);
             _tipKeep = true;
         }
 

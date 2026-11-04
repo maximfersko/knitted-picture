@@ -213,6 +213,7 @@ namespace KnittedPicture
             ["Пара с таким же кольцом {0} пока {1}"] = "The partner with the same ring {0} is {1} for now",
             ["Моль близко!"] = "The moth is close!",
             ["клубок|клубков"] = "ball|balls",
+            ["Нити отмечают столбики, которые ждут. Довяжи выделенные клетки внизу, чтобы они продолжили вязаться"] = "The threads mark columns that are waiting. Finish the highlighted stitches below so they can keep knitting",
             ["Столбики выше линии натяжения ждут, пока довяжется ряд внизу"] = "Columns above the tension line wait until the row below is finished",
             ["Место"] = "Slot",
             ["ур. "] = "lv. ",

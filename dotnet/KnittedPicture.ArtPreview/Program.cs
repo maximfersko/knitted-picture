@@ -12,6 +12,16 @@ namespace KnittedPicture.ArtPreview
     {
         public static void Main(string[] args)
         {
+            if (args.Length == 2 && args[0] == "--ice-spools")
+            {
+                IceSpools(args[1]);
+                return;
+            }
+            if (args.Length == 3 && args[0] == "--tension")
+            {
+                TensionComparison(args[1], args[2]);
+                return;
+            }
             if (args.Length == 2 && args[0] == "--textile-material")
             {
                 TextileMaterial(args[1]);
@@ -38,6 +48,169 @@ namespace KnittedPicture.ArtPreview
             Frames(dir);
             MagicFrames(dir);
             Chests(dir);
+        }
+
+        /// <summary>Растровое приближение игрового расположения льда и клубка.</summary>
+        private static void IceSpools(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            bool old = typeof(BallRaster).GetMethod("IceMask") == null;
+            foreach (int size in new[] { 40, 52, 60 })
+            foreach (var color in new[] { ("yellow", "#FFD23F"), ("dark", "#3D4FC4"), ("white", "#F4EEE4") })
+            foreach (int stage in new[] { 0, 1, 2, 3 })
+            {
+                const int scale = 4;
+                var canvas = new Raster(size * scale, size * scale);
+                var ballLayer = new Raster(size * scale, size * scale);
+                float art = size / 0.775f * scale, shift = art / 160f;
+                float cx = size * scale / 2f - 4f * shift;
+                float cy = size * scale / 2f - 6f * shift;
+                Png.Put(ballLayer, BallRaster.Ball(Rgba.Hex(color.Item2)), cx - art / 2f, cy - art / 2f, art, art);
+                float ice = size * 1.04f * scale, origin = (size * scale - ice) / 2f;
+                if (!old)
+                {
+                    for (int y = 0; y < canvas.Height; y++)
+                    for (int x = 0; x < canvas.Width; x++)
+                    {
+                        float dx = (x + 0.5f - size * scale / 2f) * 160f / ice;
+                        float dy = (y + 0.5f - size * scale / 2f) * 160f / ice;
+                        var pixel = ballLayer[x, y];
+                        ballLayer[x, y] = pixel.WithAlpha(pixel.A * Draw.Cover(Draw.Circle(dx, dy, 0, 0, 78)));
+                    }
+                }
+                Png.Fill(canvas, Rgba.Hex("#F7F1EA"));
+                Png.Put(canvas, ballLayer, 0, 0, canvas.Width, canvas.Height);
+                if (old)
+                {
+                    var block = new Raster(size * scale, size * scale);
+                    block.Paint((x, y) => new Rgba(0.78f, 0.92f, 1f, 0.82f).WithAlpha(0.82f * Draw.Cover(Draw.RoundBox(x, y, size * scale / 2f, size * scale / 2f, ice / 2f, ice / 2f, size * 0.24f * scale))));
+                    Png.Put(canvas, block, 0, 0, canvas.Width, canvas.Height);
+                }
+                if (old)
+                {
+                    var frost = new Raster(canvas.Width, canvas.Height);
+                    frost.Paint((x, y) =>
+                    {
+                        float cx0 = size * scale / 2f, cy0 = cx0;
+                        float outer = Draw.Cover(Draw.RoundBox(x, y, cx0, cy0, ice / 2f, ice / 2f, size * 0.24f * scale));
+                        float inner = Draw.Cover(Draw.RoundBox(x, y, cx0, cy0, ice / 2f - 2f * scale, ice / 2f - 2f * scale, MathF.Max(0, size * 0.24f * scale - 2f * scale)));
+                        return Rgba.White.WithAlpha(MathF.Max(0, outer - inner));
+                    });
+                    Png.Put(canvas, frost, 0, 0, canvas.Width, canvas.Height);
+                }
+                Png.Put(canvas, BallRaster.Ice(stage), origin, origin, ice, ice);
+                // Геометрическое приближение значка; шрифт Unity в растровом экспорте недоступен.
+                float sx = origin + size * 0.52f * scale;
+                float sy = origin + ice - size * 0.36f * scale;
+                float radius = size * 0.19f * scale;
+                for (int arm = 0; arm < 3; arm++)
+                {
+                    float angle = arm * MathF.PI / 3f;
+                    for (float t = -radius; t <= radius; t += 0.4f)
+                    {
+                        Disc(canvas, (int)(sx + MathF.Cos(angle) * t), (int)(sy + MathF.Sin(angle) * t), scale * 0.5f, Rgba.Hex("#3D8FD1"));
+                    }
+                }
+                float dotX = origin + size * 0.86f * scale;
+                float dotY = origin + ice - size * 0.18f * scale;
+                Disc(canvas, (int)dotX, (int)dotY, (size * 0.3f + 4f) * scale / 2f, Rgba.White);
+                Disc(canvas, (int)dotX, (int)dotY, size * 0.3f * scale / 2f, Rgba.Hex(color.Item2));
+                Png.Save(canvas, Path.Combine(dir, $"{size}-{color.Item1}-{stage}.png"));
+            }
+        }
+
+        /// <summary>Сравнение линии натяжения на двух раскладках с игровым растром шнура.</summary>
+        private static void TensionComparison(string beforeDir, string afterDir)
+        {
+            Directory.CreateDirectory(beforeDir);
+            Directory.CreateDirectory(afterDir);
+            var rope = KnitRaster.RopeTile();
+            var vertical = new Raster(rope.Height, rope.Width);
+            for (var y = 0; y < rope.Height; y++)
+            for (var x = 0; x < rope.Width; x++)
+            {
+                vertical[y, rope.Width - 1 - x] = rope[x, y];
+            }
+            foreach (var dense in new[] { false, true })
+            foreach (var after in new[] { false, true })
+            {
+                const int cell = 40, cols = 8, rows = 7, left = 20, bottom = 20;
+                const int line = bottom + 3 * cell;
+                var image = new Raster(360, 320);
+                Png.Fill(image, Rgba.Hex("#FFF9ED"));
+                var colors = new[] { "#EFB8A6", "#DF6673", "#F5D798", "#ADC8A1" };
+                for (var y = 0; y < rows; y++)
+                for (var x = 0; x < cols; x++)
+                {
+                    var color = Rgba.Hex(colors[(x + y) % colors.Length]);
+                    var tile = KnitRaster.TextileTile((x + y) % 3, false, false);
+                    Png.Put(image, tile, left + x * cell, bottom + y * cell, cell, cell, color, y < 2 ? 0.9f : 0.4f);
+                }
+                var held = dense ? new[] { 0, 1, 2, 4, 5, 6 } : new[] { 1, 5 };
+                foreach (var x in held)
+                {
+                    var cx = left + x * cell + cell / 2;
+                    if (after)
+                    {
+                        for (var y = line; y < line + cell; y += 16)
+                        {
+                            Png.Put(image, vertical, cx - 2, y, 4, Math.Min(16, line + cell - y), Rgba.Hex("#986D50"));
+                        }
+                        Disc(image, cx, line, 2.5f, Rgba.Hex("#986D50"));
+                    }
+                    else
+                    {
+                        Rect(image, cx - 1, bottom + cell, 2, 3 * cell, Rgba.Hex("#B64A50"));
+                    }
+                }
+                for (var x = 0; x < cols; x += dense ? 3 : 7)
+                {
+                    var bx = left + x * cell;
+                    var c = Rgba.Hex(after ? "#0F6E46" : "#1E2732");
+                    Rect(image, bx - 2, bottom + 2 * cell - 2, cell + 4, 2, c);
+                    Rect(image, bx - 2, bottom + 3 * cell, cell + 4, 2, c);
+                    Rect(image, bx - 2, bottom + 2 * cell, 2, cell, c);
+                    Rect(image, bx + cell, bottom + 2 * cell, 2, cell, c);
+                }
+                if (after)
+                {
+                    Rect(image, left, line - 3, cols * cell, 3, new Rgba(0.12f, 0.15f, 0.19f, 0.14f));
+                    for (var x = left; x < left + cols * cell; x += 16)
+                    {
+                        Png.Put(image, rope, x, line - 2, 16, 4, Rgba.Hex("#986D50"));
+                    }
+                }
+                else
+                {
+                    Rect(image, left, line - 1, cols * cell, 2, Rgba.Hex("#1E2732"));
+                }
+                Disc(image, left, line, after ? 3 : 4, Rgba.Hex(after ? "#D9955A" : "#1E2732"));
+                Disc(image, left + cols * cell, line, after ? 3 : 4, Rgba.Hex(after ? "#D9955A" : "#1E2732"));
+                Png.Save(image, Path.Combine(after ? afterDir : beforeDir, dense ? "dense.png" : "sparse.png"));
+            }
+        }
+
+        /// <summary>Прямоугольник для сравнительного листа.</summary>
+        private static void Rect(Raster image, int x, int y, int w, int h, Rgba color)
+        {
+            for (var py = y; py < y + h; py++)
+            for (var px = x; px < x + w; px++)
+            {
+                image.Blend(px, py, color);
+            }
+        }
+
+        /// <summary>Небольшое круглое крепление для сравнительного листа.</summary>
+        private static void Disc(Raster image, int x, int y, float radius, Rgba color)
+        {
+            for (var py = (int)(y - radius); py <= y + radius; py++)
+            for (var px = (int)(x - radius); px <= x + radius; px++)
+            {
+                if ((px - x) * (px - x) + (py - y) * (py - y) <= radius * radius)
+                {
+                    image.Blend(px, py, color);
+                }
+            }
         }
 
         /// <summary>Прицельное сравнение общего материала и реальных картинок без Unity.</summary>

@@ -862,6 +862,14 @@ namespace KnittedPicture.Game
             return r;
         }
 
+        /// <summary>Маска совпадает с контуром ледяной оболочки.</summary>
+        public static Raster IceMask()
+        {
+            var r = new Raster(Size, Size);
+            r.Paint((x, y) => Rgba.White.WithAlpha(Draw.Cover(Draw.Circle(x, y, Size / 2f, Size / 2f, 78f))));
+            return r;
+        }
+
         /// <summary>
         /// Ледяной пузырь: прозрачная голубая сфера чуть больше клубка, светлый обод, блик и трещины —
         /// чем меньше льда осталось (stage 0..3), тем больше трещин.
@@ -883,7 +891,7 @@ namespace KnittedPicture.Game
             var shown = Math.Min(cracks.Count, stage * 2);
             r.Paint((x, y) =>
             {
-                var d = Draw.Circle(x, y, Cx, Cy, Radius + 6f);
+                var d = Draw.Circle(x, y, Size / 2f, Size / 2f, 78f);
                 var cover = Draw.Cover(d);
                 if (cover <= 0f)
                 {
@@ -891,7 +899,14 @@ namespace KnittedPicture.Game
                 }
 
                 var edge = Draw.SmoothStep(-10f, 0f, d);
-                var c = Rgba.Lerp(fill.WithAlpha(0.32f), rim.WithAlpha(0.9f), edge * edge);
+                var c = Rgba.Lerp(fill.WithAlpha(0.22f), rim.WithAlpha(0.72f), edge * edge);
+                // Тонкие грани остаются внутри общего контура и не скрывают цвет пряжи.
+                var facet = MathF.Min(Draw.Segment(x, y, 21f, 102f, 37f, 130f),
+                    Draw.Segment(x, y, 118f, 27f, 139f, 52f));
+                if (facet < 1.5f)
+                {
+                    c = Rgba.Over(Rgba.White.WithAlpha(0.26f * (1f - facet / 1.5f)), c);
+                }
                 var shine = Draw.Ellipse(x, y, Cx - 26f, Cy + 32f, 16f, 8f, -35f);
                 if (shine < 0f)
                 {

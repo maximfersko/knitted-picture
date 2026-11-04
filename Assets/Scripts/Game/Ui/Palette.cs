@@ -82,6 +82,8 @@ namespace KnittedPicture.Game
         public static Color LinkPair(int link) => LinkPairs[(System.Math.Max(1, link) - 1) % LinkPairs.Length];
         public static readonly Color Hidden = Hex("#C8CFD8");
         public static readonly Color Wood = Hex("#F2C48D");
+        /// <summary>Тёплый оттенок шнура натяжения и его узлов.</summary>
+        public static readonly Color TensionCord = Hex("#986D50");
         public static readonly Color WoodDark = Hex("#D9955A");
         public static readonly Color Dim = new Color(0.08f, 0.11f, 0.15f, 0.62f);
 

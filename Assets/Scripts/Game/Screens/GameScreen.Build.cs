@@ -184,25 +184,35 @@ namespace KnittedPicture.Game
         private void BuildPicture()
         {
             var availH = _loomY - 10f - _top;
-            var step = Mathf.Min((W - 2 * Pad - 16f) / _game.Width, (availH - 16f - 26f) / _game.Height, App.Tablet ? 46f : 42f);
+            var footer = _game.Band > 0 ? 48f : 26f;
+            var step = Mathf.Min((W - 2 * Pad - 16f) / _game.Width, (availH - 16f - footer) / _game.Height, App.Tablet ? 46f : 42f);
             const float gap = 0f;
             var cell = step - gap;
             var gridW = _game.Width * step - gap;
             var gridH = _game.Height * step - gap;
             var cardW = gridW + 16f;
-            var cardH = gridH + 16f + 26f;
+            var cardH = gridH + 16f + footer;
             var y = _top + Mathf.Max(0f, (availH - cardH) / 2f);
 
             _pictureCard = Ui.Layer(Ui.Card(Root, "PictureCard", (W - cardW) / 2f, y, cardW, cardH, 14, Palette.WorkshopPaper, Palette.CardShadow, 0.5f), true);
             _picture = new PictureView(_pictureCard, _game, _colors, cell, gap);
             Ui.Place(_picture.Root, 8, 8, gridW, gridH);
 
-            _progressWidth = cardW - 16f;
+            _progressWidth = cardW - 16f - (_game.Band > 0 ? 52f : 0f);
             var bar = Ui.Box(_pictureCard, "ProgressTrack", 4, Palette.Track);
-            Ui.Place(bar.rectTransform, 8, 8 + gridH + 13, _progressWidth, 8);
+            Ui.Place(bar.rectTransform, 8, 8 + gridH + (footer - 8f) / 2f, _progressWidth, 8);
             _progressFill = Ui.Box(bar.rectTransform, "Fill", 4, Palette.Primary).rectTransform;
             Ui.Place(_progressFill, 0, 0, 8, 8);
-            _progressText = Ui.Label(_pictureCard, "0%", 13, Palette.Ink2, cardW - 8 - 44, 8 + gridH + 5, 44, 24, true, TextAnchor.MiddleRight);
+            _progressText = Ui.Label(_pictureCard, "0%", 13, Palette.Ink2, 8, 8 + gridH + 5, 44, 24, true, TextAnchor.MiddleRight);
+            if (_game.Band > 0)
+            {
+                var help = Ui.Box(_pictureCard, "TensionHelp", 22f, Palette.ButtonFill);
+                Ui.Place(help.rectTransform, cardW - 48f, gridH + 8f, 44f, 44f);
+                help.raycastTarget = true;
+                Ui.Label(help.rectTransform, "?", 20, Palette.Ink2, 0, 0, 44, 44, true, TextAnchor.MiddleCenter);
+                help.gameObject.AddComponent<Tap>().OnClick(() => ShowTensionTip(help.rectTransform));
+                _picture.SetTensionHelp(help.gameObject);
+            }
         }
 
         private void BuildLoom()

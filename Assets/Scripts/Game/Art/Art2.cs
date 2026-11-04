@@ -655,6 +655,9 @@ namespace KnittedPicture.Game
 
         public static Sprite Knots(int count) => Get("knots" + Mathf.Clamp(count, 1, 3), () => BallRaster.Knots(Mathf.Clamp(count, 1, 3)));
 
+        /// <summary>Общая маска ледяной оболочки для всех клубков.</summary>
+        public static Sprite IceMask => Get("iceMask", BallRaster.IceMask);
+
         public static Sprite Ice(int stage) => Get("ice" + Mathf.Clamp(stage, 0, 3), () => BallRaster.Ice(Mathf.Clamp(stage, 0, 3)));
 
         public static Sprite Badge => Get("badge", BallRaster.Badge);

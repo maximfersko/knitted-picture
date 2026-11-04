@@ -64,6 +64,8 @@ namespace KnittedPicture.Game
         private RectTransform? _lagLayer;
         private Image[]? _lagRings;
         private Image[]? _heldThreads;
+        private Image[]? _heldKnots;
+        private GameObject? _tensionHelp;
 
         public PictureView(RectTransform parent, LoomGame game, Color[] colors, float cell, float gap)
         {
@@ -139,6 +141,13 @@ namespace KnittedPicture.Game
 
         /// <summary>Видимая линия натяжения: к ней привязывается подсказка.</summary>
         public RectTransform? TensionLine => TensionHolding ? _tension : null;
+
+        /// <summary>Кнопка объяснения видна только пока натяжение удерживает столбик.</summary>
+        public void SetTensionHelp(GameObject help)
+        {
+            _tensionHelp = help;
+            help.SetActive(TensionHolding);
+        }
 
         public float Width => _game.Width * _step - (_step - _cell);
 
@@ -256,7 +265,7 @@ namespace KnittedPicture.Game
         /// <summary>
         /// Натяжение полотна видно глазами: когда столбик упирается в предел, поперёк картинки
         /// появляется линия натяжения (выше неё не вяжется), а клетки самого нижнего ряда, которые держат
-        /// остальных, мягко пульсируют рамкой. Когда никто не ждёт, ничего не показывается.
+        /// остальных, отмечены спокойной рамкой. Когда никто не ждёт, ничего не показывается.
         /// </summary>
         private void BuildTension()
         {
@@ -266,33 +275,41 @@ namespace KnittedPicture.Game
             var radius = Mathf.Max(3f, _cell * 0.24f);
             _lagRings = new Image[_game.Width];
             _heldThreads = new Image[_game.Width];
+            _heldKnots = new Image[_game.Width];
+            var cord = Art2.Get("tension-cord", KnitRaster.RopeTile);
             for (var x = 0; x < _game.Width; x++)
             {
-                _heldThreads[x] = Ui.Box(_lagLayer, "HeldThread", 1f, Palette.WithAlpha(Palette.Danger, 0.7f));
+                _heldThreads[x] = Ui.Image(_lagLayer, "HeldThread", cord, Palette.TensionCord);
+                _heldThreads[x].type = Image.Type.Tiled;
+                _heldThreads[x].pixelsPerUnitMultiplier = 4f;
+                _heldKnots[x] = Ui.Image(_lagLayer, "Knot", Art.Circle, Palette.TensionCord);
+                _heldKnots[x].enabled = false;
                 _heldThreads[x].enabled = false;
-                var ring = Ui.Image(_lagLayer, "Lag", Art.RoundRectOutline(radius, 2), Palette.Ink);
+                var ring = Ui.Image(_lagLayer, "Lag", Art.RoundRectOutline(radius, 2), Palette.PrimaryShadow);
                 ring.type = Image.Type.Sliced;
                 ring.pixelsPerUnitMultiplier = Art.Density;
                 ring.enabled = false;
                 _lagRings[x] = ring;
             }
 
-            // «Меньше движения»: рамки не мигают, а горят ровно.
-            lagGroup.alpha = 0.85f;
-            Tweens.Run(_lagLayer, 1.2f, t => lagGroup.alpha = Tweens.Calm ? 0.85f : 0.3f + 0.7f * Ease.Bump(t), null, null, 0f, true);
+            // Рамки остаются видимыми без постоянного движения.
+            lagGroup.alpha = 0.75f;
 
-            // Линия натяжения — «натянутая нить» с булавками по краям.
+            // Тонкий крученый шнур и небольшие деревянные крепления.
             var width = Width + 8f;
             _tension = Ui.Node(Root, "Tension");
             Ui.Place(_tension, -4f, 0f, width, 8f);
-            var threadColor = Palette.WithAlpha(Palette.Ink, 0.6f);
-            var thread = Ui.Box(_tension, "Thread", 1.25f, threadColor);
-            Ui.Place(thread.rectTransform, 4f, 2.75f, width - 8f, 2.5f);
+            var shadow = Ui.Box(_tension, "ContactShadow", 2f, Palette.WithAlpha(Palette.Ink, 0.14f));
+            Ui.Place(shadow.rectTransform, 4f, 4f, width - 8f, 3f);
+            var thread = Ui.Image(_tension, "Thread", cord, Palette.TensionCord);
+            thread.type = Image.Type.Tiled;
+            thread.pixelsPerUnitMultiplier = 4f;
+            Ui.Place(thread.rectTransform, 4f, 2f, width - 8f, 4f);
 
             foreach (var px in new[] { 0f, width })
             {
-                var pin = Ui.Image(_tension, "Pin", Art.Circle, Palette.Ink);
-                Ui.PlaceCenter(pin.rectTransform, px, 4f, 8f, 8f);
+                var pin = Ui.Image(_tension, "Pin", Art.Circle, Palette.WoodDark);
+                Ui.PlaceCenter(pin.rectTransform, px, 4f, 6f, 6f);
             }
 
             _tension.gameObject.SetActive(false);
@@ -313,6 +330,10 @@ namespace KnittedPicture.Game
             }
 
             TensionHolding = held;
+            if (_tensionHelp != null)
+            {
+                _tensionHelp.SetActive(held);
+            }
             _tension.gameObject.SetActive(held);
             _lagLayer.gameObject.SetActive(held);
             if (!held)
@@ -330,10 +351,15 @@ namespace KnittedPicture.Game
                 var ring = _lagRings[x];
                 var thread = _heldThreads![x];
                 thread.enabled = _game.IsHeld(x);
+                _heldKnots![x].enabled = thread.enabled;
                 if (thread.enabled)
                 {
                     var top = _game.FrontY(x) * _step + _cell;
-                    Ui.Place(thread.rectTransform, x * _step + _cell / 2f - 1f, top, 2f, lowest * _step + _cell / 2f - top);
+                    var end = limit * _step - gap / 2f;
+                    var length = Mathf.Max(0f, end - top);
+                    Ui.PlaceCenter(thread.rectTransform, x * _step + _cell / 2f, top + length / 2f, length, 4f);
+                    thread.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                    Ui.PlaceCenter(_heldKnots[x].rectTransform, x * _step + _cell / 2f, end, 5f, 5f);
                 }
                 ring.enabled = _game.FrontY(x) == lowest;
                 if (ring.enabled)
