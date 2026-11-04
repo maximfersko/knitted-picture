@@ -1,6 +1,9 @@
+#nullable enable
+
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using KnittedPicture.Game;
 
 namespace KnittedPicture.ArtPreview
@@ -9,6 +12,11 @@ namespace KnittedPicture.ArtPreview
     {
         public static void Main(string[] args)
         {
+            if (args.Length == 2 && args[0] == "--textile-material")
+            {
+                TextileMaterial(args[1]);
+                return;
+            }
             if (args.Length > 0 && args[0] == "--bench")
             {
                 Bench();
@@ -30,6 +38,78 @@ namespace KnittedPicture.ArtPreview
             Frames(dir);
             MagicFrames(dir);
             Chests(dir);
+        }
+
+        /// <summary>Прицельное сравнение общего материала и реальных картинок без Unity.</summary>
+        private static void TextileMaterial(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            var sheet = new Raster(576, 768);
+            var comparisonColors = new[] { "#FF6FB7", "#E8333A", "#FFFFFF", "#F5C542" };
+            for (var variant = 0; variant < 3; variant++)
+            {
+                foreach (var coarse in new[] { false, true })
+                {
+                    var label = coarse ? "coarse" : "fine";
+                    var body = KnitRaster.TextileTile(variant, coarse, false);
+                    var gloss = KnitRaster.TextileTile(variant, coarse, true);
+                    Png.Save(body, Path.Combine(dir, $"body-{variant}-{label}.png"));
+                    Png.Save(gloss, Path.Combine(dir, $"gloss-{variant}-{label}.png"));
+                    if (!coarse)
+                    {
+                        for (var row = 0; row < comparisonColors.Length; row++)
+                        for (var py = 0; py < 3; py++)
+                        for (var px = 0; px < 3; px++)
+                        {
+                            var sx = variant * 192 + px * 64;
+                            var sy = (3 - row) * 192 + py * 64;
+                            Png.Put(sheet, body, sx, sy, 64, 64, Rgba.Hex(comparisonColors[row]));
+                            Png.Put(sheet, gloss, sx, sy, 64, 64);
+                        }
+                    }
+                    if (variant != 0 || coarse) { continue; }
+                    foreach (var color in new[] { ("pink", "#FF6FB7"), ("red", "#E8333A") })
+                    {
+                        var swatch = new Raster(720, 720);
+                        for (var y = 0; y < 6; y++)
+                        for (var x = 0; x < 6; x++)
+                        {
+                            Png.Put(swatch, body, x * 120, y * 120, 120, 120, Rgba.Hex(color.Item2));
+                            Png.Put(swatch, gloss, x * 120, y * 120, 120, 120);
+                        }
+                        Png.Save(swatch, Path.Combine(dir, $"swatch-{color.Item1}.png"));
+                    }
+                }
+            }
+            Png.Save(sheet, Path.Combine(dir, "variant-sheet.png"));
+            foreach (var id in new[] { 1, 24 })
+            {
+                using var json = JsonDocument.Parse(File.ReadAllText($"Assets/Resources/Levels/level_{id:000}.json"));
+                var root = json.RootElement;
+                var rows = root.GetProperty("picture").EnumerateArray().Select(e => e.GetString()!).ToArray();
+                var masks = root.GetProperty("canvas").EnumerateArray().Select(e => e.GetString()!).ToArray();
+                var palette = root.GetProperty("colors").EnumerateArray().Select(e => Rgba.Hex(e.GetString()!)).ToArray();
+                var w = root.GetProperty("width").GetInt32();
+                var h = root.GetProperty("height").GetInt32();
+                var colors = new Rgba?[w * h];
+                var canvas = new bool[w * h];
+                for (var y = 0; y < h; y++)
+                for (var x = 0; x < w; x++)
+                {
+                    var i = y * w + x;
+                    canvas[i] = masks[y][x] == '1';
+                    colors[i] = canvas[i] ? Rgba.Hex("#EAE4D9") : palette[rows[y][x] - '0'];
+                }
+                var variants = KnitRaster.TextileVariants(w, h, (x, y) => rows[y][x] - '0', (x, y) => canvas[y * w + x], false);
+                Png.Save(MetaRaster.Mini(w, h, colors, canvas, 512, variants), Path.Combine(dir, $"level-{id:000}-hero.png"));
+                Png.Save(MetaRaster.Mini(w, h, colors, canvas, 660, variants), Path.Combine(dir, $"level-{id:000}-field-660.png"));
+                Png.Save(MetaRaster.Mini(w, h, colors, canvas, 128, variants), Path.Combine(dir, $"level-{id:000}-small.png"));
+                for (var i = 0; i < colors.Length; i++)
+                {
+                    if (!canvas[i]) { colors[i] = Rgba.Hex("#E2E6EB"); }
+                }
+                Png.Save(MetaRaster.Mini(w, h, colors, canvas, 512, new int[w * h], false), Path.Combine(dir, $"level-{id:000}-mystery-sketch.png"));
+            }
         }
 
         /// <summary>Сундуки пяти редкостей в ряд: от обычного до легендарного.</summary>

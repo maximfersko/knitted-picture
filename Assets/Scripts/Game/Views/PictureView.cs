@@ -29,6 +29,7 @@ namespace KnittedPicture.Game
         private readonly Color[] _colors;
         private readonly Image[] _cells;
         private readonly Image[] _glosses;
+        private readonly TextileRelief _relief;
         private readonly bool _coarseTextile;
         private readonly int[] _textileVariants;
 
@@ -95,6 +96,11 @@ namespace KnittedPicture.Game
                 }
             }
 
+            var reliefNode = Ui.Place(Ui.Node(Root, "TextileRelief"), 0f, 0f, Width, Height);
+            _relief = reliefNode.gameObject.AddComponent<TextileRelief>();
+            _relief.Configure(game.Width, game.Height, _step, _cell,
+                (x, y) => _game.IsKnitted(x, y) && !_game.IsFabric(x, y) && !_pending.Contains(Key(x, y)));
+
             // Рамки следующих петель: видно, что столбик вяжется снизу вверх и куда ляжет петля.
             _fronts = new Image[game.Width];
             for (var x = 0; x < game.Width; x++)
@@ -144,6 +150,7 @@ namespace KnittedPicture.Game
         public void Refresh()
         {
             _pending.Clear();
+            _relief.SetVerticesDirty();
             _animating.Clear();
             // Полная перерисовка (в том числе после отмены) прекращает старые вспышки клеток.
             // Иначе отложенный твин снова окрашивает уже распущенную петлю как связанную.
@@ -405,6 +412,7 @@ namespace KnittedPicture.Game
         public void MarkPending(int x, int y)
         {
             _pending.Add(Key(x, y));
+            _relief.SetVerticesDirty();
             RefreshColumn(x);
         }
 
@@ -415,6 +423,8 @@ namespace KnittedPicture.Game
             {
                 return false;
             }
+
+            _relief.SetVerticesDirty();
 
             if (!_game.IsKnitted(x, y))
             {
@@ -699,6 +709,62 @@ namespace KnittedPicture.Game
             {
                 cell.transform.GetChild(0).GetComponent<Image>().enabled = on;
             }
+        }
+    }
+
+    /// <summary>Один меш мягкой тени по внешним границам уже показанной вязки.</summary>
+    public sealed class TextileRelief : MaskableGraphic
+    {
+        private int _width;
+        private int _height;
+        private float _step;
+        private float _cell;
+        private Func<int, int, bool>? _shown;
+
+        public void Configure(int width, int height, float step, float cell, Func<int, int, bool> shown)
+        {
+            _width = width;
+            _height = height;
+            _step = step;
+            _cell = cell;
+            _shown = shown;
+            raycastTarget = false;
+            SetVerticesDirty();
+        }
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            if (_shown == null) { return; }
+            var thickness = 0.85f / Mathf.Max(0.001f, Mathf.Abs(rectTransform.lossyScale.x));
+            for (var y = 0; y < _height; y++)
+            for (var x = 0; x < _width; x++)
+            {
+                if (!_shown(x, y)) { continue; }
+                var left = x * _step;
+                var top = -y * _step;
+                if (x + 1 < _width && !_shown(x + 1, y))
+                {
+                    Quad(vh, left + _cell, top, left + _cell + thickness, top - _cell, true);
+                }
+                if (y + 1 < _height && !_shown(x, y + 1))
+                {
+                    Quad(vh, left, top - _cell, left + _cell, top - _cell - thickness, false);
+                }
+            }
+        }
+
+        private static void Quad(VertexHelper vh, float left, float top, float right, float bottom, bool vertical)
+        {
+            var index = vh.currentVertCount;
+            Color32 shade = Palette.WithAlpha(Palette.Ink, KnitRaster.ReliefAlpha);
+            Color32 clear = Palette.WithAlpha(Palette.Ink, 0f);
+            vh.AddVert(new Vector3(left, top), shade, Vector4.zero);
+            vh.AddVert(new Vector3(right, top), vertical ? clear : shade, Vector4.zero);
+            vh.AddVert(new Vector3(right, bottom), clear, Vector4.zero);
+            vh.AddVert(new Vector3(left, bottom), vertical ? shade : clear, Vector4.zero);
+            vh.AddTriangle(index, index + 1, index + 2);
+            vh.AddTriangle(index, index + 2, index + 3);
         }
     }
 }

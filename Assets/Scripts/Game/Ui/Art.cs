@@ -270,7 +270,8 @@ namespace KnittedPicture.Game
             var variants = !done && level.mystery ? new int[level.width * level.height] :
                 KnitRaster.TextileVariants(level.width, level.height,
                     (x, y) => level.picture[y][x] - '0', (x, y) => canvas[y * level.width + x], level.mystery);
-            return Art2.Texture(MetaRaster.Mini(level.width, level.height, colors, canvas, maxSize, variants), 0f);
+            return Art2.Texture(MetaRaster.Mini(level.width, level.height, colors, canvas, maxSize, variants,
+                done, Art2.ToRgba(Palette.Ink)), 0f);
         }
 
         private static Sprite Cached(string key, System.Func<Sprite> build)

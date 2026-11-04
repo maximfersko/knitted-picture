@@ -35,7 +35,8 @@ namespace KnittedPicture.Game
         }
 
         /// <summary>Миниатюра с общей фактурой поля и ограниченной длинной стороной.</summary>
-        public static Raster Mini(int w, int h, Rgba?[] colors, bool[] canvas, int maxSize = 128, int[]? variants = null)
+        public static Raster Mini(int w, int h, Rgba?[] colors, bool[] canvas, int maxSize = 128, int[]? variants = null,
+            bool relief = true, Rgba? reliefColor = null)
         {
             var cell = Math.Max(1, maxSize / Math.Max(w, h));
             var result = new Raster(w * cell, h * cell);
@@ -69,6 +70,30 @@ namespace KnittedPicture.Game
                             var shade = color.Value.Scale(baseSample);
                             result[x * cell + px, (h - 1 - y) * cell + py] = canvas[index]
                                 ? shade : Rgba.Lerp(shade, Rgba.White, glossMaps[variant]![sampleIndex]);
+                        }
+                    }
+                }
+            }
+            if (relief)
+            {
+                var shadow = (reliefColor ?? Rgba.Hex("#1E2732")).WithAlpha(KnitRaster.ReliefAlpha * 0.5f);
+                for (var y = 0; y < h; y++)
+                for (var x = 0; x < w; x++)
+                {
+                    var index = y * w + x;
+                    if (canvas[index] || colors[index] == null) { continue; }
+                    if (x + 1 < w && canvas[index + 1])
+                    {
+                        for (var py = 0; py < cell; py++)
+                        {
+                            result.Blend((x + 1) * cell, (h - 1 - y) * cell + py, shadow);
+                        }
+                    }
+                    if (y + 1 < h && canvas[index + w])
+                    {
+                        for (var px = 0; px < cell; px++)
+                        {
+                            result.Blend(x * cell + px, (h - 1 - y) * cell - 1, shadow);
                         }
                     }
                 }

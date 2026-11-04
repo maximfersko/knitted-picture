@@ -12,6 +12,8 @@ namespace KnittedPicture.Game
     /// </summary>
     public static class KnitRaster
     {
+        /// <summary>Непрозрачность контактной тени на границе готовой пряжи и канвы.</summary>
+        public const float ReliefAlpha = 0.16f;
         /// <summary>Размер петли в пикселях. Петля выше клетки: верхние дольки заходят в ряд выше, как у настоящего полотна.</summary>
         public const int StitchW = 96;
 
@@ -443,13 +445,29 @@ namespace KnittedPicture.Game
         /// <summary>Нейтральное полотно: одна периодическая модель формы для цвета и отдельного блика.</summary>
         public static Raster TextileTile(int variant, bool coarse, bool gloss)
         {
-            // Render возвращает размер макета, умноженный на quality: итог именно 128×128.
-            const int size = 64;
-            return Raster.Render(size, size, 2, (x, y) =>
+            if (variant == 2)
+            {
+                // Одна крупная ёлочка на карту: 64 единицы модели при разрешении 128 пикселей.
+                return Raster.Render(64, 64, 2, (x, y) =>
+                {
+                    SampleTextile(x, y, variant, coarse, out var body, out var shine);
+                    return gloss ? Rgba.White.WithAlpha(shine) : new Rgba(body, body, body, 1f);
+                });
+            }
+            // Продольные нити: вычисляем один период, затем собираем карту 128×128.
+            const int period = 32;
+            var tile = Raster.Render(period / 2, period / 2, 2, (x, y) =>
             {
                 SampleTextile(x * 2f, y * 2f, variant, coarse, out var body, out var shine);
                 return gloss ? Rgba.White.WithAlpha(shine) : new Rgba(body, body, body, 1f);
             });
+            var result = new Raster(128, 128);
+            for (var y = 0; y < result.Height; y++)
+            for (var x = 0; x < result.Width; x++)
+            {
+                result[x, y] = tile[x % period, y % period];
+            }
+            return result;
         }
 
         /// <summary>Один материал на связную область исходного цвета; загадка не раскрывает скрытую форму.</summary>
@@ -490,7 +508,7 @@ namespace KnittedPicture.Game
                     }
                     var w = maxX - minX + 1;
                     var h = maxY - minY + 1;
-                    var variant = mystery ? color % 3 : w > h * 1.5f ? 2 : h > w * 1.5f ? 1 : 0;
+                    var variant = mystery ? color % 3 : w > h * 1.5f ? 2 : h > w * 1.5f ? 0 : 1;
                     foreach (var key in component) { variants[key] = variant; }
 
                     void Visit(int px, int py)
@@ -506,63 +524,127 @@ namespace KnittedPicture.Game
             return variants;
         }
 
-        /// <summary>Плотные вытянутые петли, перекрывающие следующий ряд, на сплошной подложке пряжи.</summary>
+        /// <summary>Направленные волокна с круглым сечением и единым светом в координатах полотна.</summary>
         private static void SampleTextile(float x, float y, int variant, bool coarse, out float body, out float gloss)
         {
-            const float period = 32f;
-            var px = x - MathF.Floor(x / period) * period;
-            var py = y - MathF.Floor(y / period) * period;
-            var best = float.MaxValue;
-            var second = float.MaxValue;
-            var across = 0f;
-            var along = 0f;
-            var radius = variant == 1 ? 5.4f : 6.2f;
-            var lean = variant == 2 ? 2f : 0f;
-            for (var row = -1; row <= 1; row++)
+            if (variant == 2)
             {
-                for (var column = -1; column <= 1; column++)
-                {
-                    var cx = 16f + column * period;
-                    var cy = row * period;
-                    for (var side = -1; side <= 1; side += 2)
-                    {
-                        var d = Draw.Capsule(px, py, cx + side * 1.5f + lean, cy - 3f,
-                            cx + side * 10f - lean, cy + 30f, radius, radius + 0.6f, out var t, out var cross);
-                        if (d < best)
-                        {
-                            second = best;
-                            best = d;
-                            across = cross;
-                            along = t;
-                        }
-                        else
-                        {
-                            second = MathF.Min(second, d);
-                        }
-                    }
-                }
+                SampleHerringbone(x, y, coarse, out body, out gloss);
+                return;
             }
-            var cover = Draw.Clamp01(0.5f - best);
-            SampleYarn(across, along * 2f * MathF.PI, variant, coarse, out var value, out var shine);
-            var contact = Draw.Clamp01(1f - MathF.Abs(second - best) / 2f) * cover * 0.06f;
-            body = Draw.Clamp01(Draw.Lerp(0.82f, value, cover) - contact);
-            gloss = shine * cover * 0.65f;
-        }
+            const float pitch = 32f;
+            float coordinate;
+            float along;
+            float nxAxis;
+            float nyAxis;
+            if (variant == 0)
+            {
+                // Четыре длинные вертикальные нити на клетку.
+                coordinate = x;
+                along = y;
+                nxAxis = 1f;
+                nyAxis = 0f;
+            }
+            else
+            {
+                coordinate = x + y;
+                along = y - x;
+                nxAxis = 0.7071068f;
+                nyAxis = 0.7071068f;
+            }
 
-        /// <summary>Собственное матовое освещение нити не меняется от её порядка в переплетении.</summary>
-        private static void SampleYarn(float across, float angle, int variant, bool coarse, out float value, out float gloss)
-        {
+            var ripple = MathF.Sin(y * (2f * MathF.PI / 32f)) * 0.35f;
+            var phase = (coordinate + ripple) / pitch;
+            var across = 2f * (phase - MathF.Floor(phase)) - 1f;
+            var magnitude = MathF.Abs(across);
             var profile = MathF.Sqrt(Draw.Clamp01(1f - across * across));
-            var fibre = 0f;
+            var normalAcross = across;
+            var turn = along * (2f * MathF.PI / 32f);
+            normalAcross = Draw.Clamp(across + (coarse ? 0.07f : 0.13f) * MathF.Sin(across * 9f + turn) * profile, -1f, 1f);
+            // Узкая контактная тень между нитями не оставляет прозрачных прорезей.
+            var groove = Draw.SmoothStep(0.84f, 1f, magnitude);
+            var micro = 0f;
             if (!coarse)
             {
-                var twist = variant == 1 ? 5f : 4f;
-                fibre = 0.025f * MathF.Sin(angle * twist + across * 3.5f) * profile;
-                fibre += 0.012f * MathF.Sin(angle * 7f + across * 11f) * profile;
+                // Косая скрутка и тонкие волокна внутри сечения, с целым числом периодов на карту.
+                var twist = turn;
+                micro = 0.055f * MathF.Sin(across * 7f + twist) * profile;
+                micro += 0.012f * MathF.Sin(across * 14f - twist * 2f) * profile;
             }
-            var light = Draw.Clamp01(0.55f - across * 0.35f + 0.12f * MathF.Cos(angle));
-            value = 0.72f + 0.21f * profile + 0.07f * light + fibre;
-            gloss = profile * light * 0.16f;
+            var normalZ = MathF.Sqrt(Draw.Clamp01(1f - normalAcross * normalAcross));
+            var light = Draw.Clamp01(-0.38f * nxAxis * normalAcross + 0.48f * nyAxis * normalAcross + 0.79f * normalZ);
+            body = Draw.Clamp01(0.65f + 0.18f * profile + 0.10f * light - 0.06f * groove + micro);
+            gloss = Draw.Clamp01(profile * light * 0.055f);
+        }
+
+        /// <summary>Отдельные округлые стежки ёлочки перекрываются у соседних рядов.</summary>
+        private static void SampleHerringbone(float x, float y, bool coarse, out float body, out float gloss)
+        {
+            var px = x - MathF.Floor(x / 64f) * 64f;
+            var py = y - MathF.Floor(y / 64f) * 64f;
+            void Layer(float shift, out float value, out float shine, out float opacity)
+            {
+                var best = -1f;
+                var nx = 0f;
+                var ny = 0f;
+                var along = 0f;
+                var tangentX = 0f;
+                var tangentY = 1f;
+                opacity = 0f;
+                for (var row = -2; row <= 2; row++)
+                for (var col = -1; col <= 1; col++)
+                for (var side = -1; side <= 1; side += 2)
+                {
+                    var offset = (row & 1) == 0 ? 0f : 32f;
+                    var ax = 32f + col * 64f + offset + shift + side * 2f;
+                    var ay = row * 32f - 2f + shift + (side > 0 ? 2f : 0f);
+                    var bx = 32f + col * 64f + offset + shift + side * 24f;
+                    var by = row * 32f + 58f + shift + (side > 0 ? 2f : 0f);
+                    const float radius = 9.5f;
+                    const float extent = radius + 0.5f;
+                    if (px < MathF.Min(ax, bx) - extent || px > MathF.Max(ax, bx) + extent ||
+                        py < MathF.Min(ay, by) - extent || py > MathF.Max(ay, by) + extent)
+                    {
+                        continue;
+                    }
+                    var distance = Draw.Capsule(px, py, ax, ay, bx, by, radius, radius, out var t, out _);
+                    var cover = Draw.Clamp01(0.5f - distance);
+                    if (cover <= 0f) { continue; }
+                    var dx = (px - (ax + (bx - ax) * t)) / radius;
+                    var dy = (py - (ay + (by - ay) * t)) / radius;
+                    var height = (0.2f + 0.8f * MathF.Sqrt(Draw.Clamp01(1f - dx * dx - dy * dy)) + (side > 0 ? 0.03f : 0f)) * cover;
+                    if (height > best)
+                    {
+                        var length = MathF.Sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
+                        best = height; nx = dx; ny = dy; along = t; opacity = cover;
+                        tangentX = (bx - ax) / length;
+                        tangentY = (by - ay) / length;
+                    }
+                }
+                if (best < 0f) { value = 0.78f; shine = 0f; return; }
+                var z = MathF.Sqrt(Draw.Clamp01(1f - nx * nx - ny * ny));
+                {
+                    var across = -tangentY * nx + tangentX * ny;
+                    var helix = along * 8f * MathF.PI + across * 7f;
+                    var shiftNormal = (coarse ? 0.07f : 0.14f) * MathF.Sin(helix) * z;
+                    nx -= tangentY * shiftNormal;
+                    ny += tangentX * shiftNormal;
+                    var length = MathF.Sqrt(nx * nx + ny * ny + z * z);
+                    nx /= length;
+                    ny /= length;
+                    z /= length;
+                }
+                var light = Draw.Clamp01(-0.38f * nx + 0.48f * ny + 0.79f * z);
+                var twist = coarse ? 0f : 0.035f * MathF.Sin(along * 8f * MathF.PI + nx * 7f) * z;
+                value = 0.64f + 0.21f * z + 0.1f * light + twist;
+                shine = z * light * 0.055f;
+            }
+
+            Layer(16f, out var lower, out var lowerShine, out var lowerCover);
+            Layer(0f, out var upper, out var upperShine, out var upperCover);
+            var under = Draw.Lerp(0.78f, lower * 0.96f, lowerCover);
+            body = Draw.Clamp01(Draw.Lerp(under, upper, upperCover));
+            gloss = Draw.Lerp(lowerShine * lowerCover * 0.7f, upperShine, upperCover);
         }
 
         public static Raster CanvasTile()

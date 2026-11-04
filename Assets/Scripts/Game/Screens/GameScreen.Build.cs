@@ -184,7 +184,7 @@ namespace KnittedPicture.Game
         private void BuildPicture()
         {
             var availH = _loomY - 10f - _top;
-            var step = Mathf.Min((W - 2 * Pad - 16f) / _game.Width, (availH - 16f - 26f) / _game.Height, App.Tablet ? 38f : 34f);
+            var step = Mathf.Min((W - 2 * Pad - 16f) / _game.Width, (availH - 16f - 26f) / _game.Height, App.Tablet ? 46f : 42f);
             const float gap = 0f;
             var cell = step - gap;
             var gridW = _game.Width * step - gap;
