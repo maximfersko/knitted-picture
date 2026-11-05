@@ -134,8 +134,8 @@ namespace KnittedPicture.Game
             var hoopY = compact ? 52f : 64f;
 
             // Всё под пяльцами должно уместиться над «Дальше»: на коротких экранах уменьшаются пяльцы.
-            var cardHeight = CoinsCard(parts, 0f, out var rewardCard);
-            var hoop = WinLayoutRaster.Hoop(W, H, cardHeight, compact);
+            var cardHeight = CoinsCard(parts, reward, 0f, out var rewardCard);
+            var hoop = WinLayoutRaster.Hoop(W, H, cardHeight, compact, 0f);
             var hoopRoot = Ui.PlaceCenter(Ui.Node(Root, "Hoop"), W / 2f, hoopY + hoop / 2f, hoop, hoop);
             // Пяльцы: кремовая ткань, на ней вязаная миниатюра петлями, сверху деревянный обруч с латунным винтом.
             var cloth = Ui.Image(hoopRoot, "Cloth", Art.Circle, Palette.Hex("#FBF5EA"));
@@ -185,13 +185,13 @@ namespace KnittedPicture.Game
 
             Ui.Label(Root, reward.NewRecord ? L.T("Новый рекорд!") : L.T("Готово!"), compact ? 32 : 36, Palette.Ink, 16, y, W - 32, 42);
             y += 40f;
-            var hintHeight = WinLayoutRaster.HintHeight(H, cardHeight, compact);
+            var hintHeight = WinLayoutRaster.HintHeight(H, cardHeight, compact, 0f);
             Ui.Fit(Ui.Label(Root, StarsHint(level, reward.Stars, stats, news.Replay), 15, Palette.Ink2, 16, y, W - 32, Mathf.Min(22f, hintHeight), false), 11);
             y += hintHeight;
 
             Ui.Place(rewardCard, 16f, y, W - 32f, cardHeight);
             y += cardHeight;
-            BuildTiles(reward, y + TileGap);
+
 
             FlyAll();
             BuildNext(app, level);
@@ -448,7 +448,7 @@ namespace KnittedPicture.Game
         /// Карточка монет: слева «Награда», справа крупная сумма; ниже — плашки «откуда» в строку с переносом.
         /// Монетки вылетают из своих плашек в счётчик. Возвращает низ карточки.
         /// </summary>
-        private float CoinsCard(List<(string name, int coins)> parts, float y, out RectTransform rewardCard)
+        private float CoinsCard(List<(string name, int coins)> parts, WinReward reward, float y, out RectTransform rewardCard)
         {
             var cardW = W - 32f;
             var total = 0;
@@ -471,42 +471,43 @@ namespace KnittedPicture.Game
             sum.text = "+0";
             Ui.RollTo(sum, total, 0.6f, "+{0}", 0.25f);
 
-            // Плашки источников: «за картинку +20», «разгон ×11 +4»… — переносятся на вторую строку, если не влезли.
-            const float chipH = 28f;
-            const float gap = 6f;
-            var x = 14f;
-            var rowY = 50f;
-            foreach (var (name, coins) in parts)
+            // Источники и дополнительные награды доступны по явному нажатию.
+            foreach (var (_, coins) in parts)
             {
-                var chip = Ui.Box(card, "Part", chipH / 2f, Palette.Surface).rectTransform;
-                var label = Ui.Label(chip, name, 13, Palette.Ink2, false);
-                label.horizontalOverflow = HorizontalWrapMode.Overflow;
-                var value = Ui.Label(chip, "+" + coins, 13, Palette.Ink, true);
-                value.horizontalOverflow = HorizontalWrapMode.Overflow;
-                var nameW = label.preferredWidth;
-                var valueW = value.preferredWidth;
-                var w = 10f + nameW + 6f + valueW + 4f + 16f + 8f;
-                if (x + w > cardW - 14f && x > 14f)
-                {
-                    x = 14f;
-                    rowY += chipH + gap;
-                }
-
-                Ui.Place(chip, x, rowY, w, chipH);
-                Ui.Place(label.rectTransform, 10, 0, nameW + 2f, chipH);
-                label.alignment = TextAnchor.MiddleLeft;
-                Ui.Place(value.rectTransform, 10 + nameW + 6f, 0, valueW + 2f, chipH);
-                value.alignment = TextAnchor.MiddleLeft;
-                var coin = Ui.Coin(chip, w - 8f - 8f, chipH / 2f, 16);
                 if (coins > 0)
                 {
-                    _flights.Add((coin, coins));
+                    _flights.Add((_sumFrom, coins));
                 }
-
-                x += w + gap;
             }
-
-            var cardH = rowY + chipH + 14f;
+            var details = Ui.TextButton(card, L.T("Подробнее"), 14f, 48f, cardW - 28f, 44f, Palette.Ink2, 13);
+            details.OnClick(() =>
+            {
+                var lines = new List<string>();
+                foreach (var (name, coins) in parts)
+                {
+                    lines.Add(name + ": +" + coins);
+                }
+                if (reward.Yarn >= 0)
+                {
+                    var yarn = YarnCatalog.All[reward.Yarn];
+                    var caption = reward.NewYarn ? L.T("Новый моток")
+                        : reward.YarnLevelUp ? L.F("Уровень {0}!", App.Progress.YarnLevel(yarn.Id))
+                        : reward.GoldStep >= YarnCatalog.GoldenAfter ? L.T("Золотой моток!")
+                        : reward.GoldStep > 0 ? L.F("Золото {0}/{1}", reward.GoldStep, YarnCatalog.GoldenAfter)
+                        : L.T("Повтор мотка");
+                    lines.Add(caption + ": " + yarn.Name);
+                }
+                else if (reward.NextYarnChance > 0)
+                {
+                    lines.Add(reward.NextYarnChance >= 100 ? L.T("Моток в следующий раз") + ": " + L.T("наверняка")
+                        : L.T("Моток не выпал") + ": " + L.F("дальше шанс {0}%", reward.NextYarnChance));
+                }
+                var progress = App.Progress;
+                lines.Add((progress.CanOpenChest ? L.T("Сундук готов!") : L.T("Сундук")) + ": " +
+                    Mathf.Min(progress.ChestProgress, ProgressService.ChestEvery) + "/" + ProgressService.ChestEvery + " ★");
+                App.ShowPopup(new InfoPopup(App, L.T("НАГРАДА"), string.Join("\n", lines)));
+            });
+            const float cardH = 96f;
             card.sizeDelta = new Vector2(cardW, cardH);
             foreach (Transform child in card)
             {

@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../KnittedPicture.Core/KnittedPicture.Core.csproj" />
+    <Compile Include="../../Assets/Scripts/Game/Art/HomeLayoutRaster.cs" Link="HomeLayoutRaster.cs" />
+    <Compile Include="../../Assets/Scripts/Game/Art/WinLayoutRaster.cs" Link="WinLayoutRaster.cs" />
   </ItemGroup>
 
 </Project>

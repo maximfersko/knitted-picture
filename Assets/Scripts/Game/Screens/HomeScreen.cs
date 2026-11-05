@@ -126,16 +126,7 @@ namespace KnittedPicture.Game
                 app.ShowPopup(new InfoPopup(app, title, text));
             });
 
-            // Вход на главную: значки событий по очереди «выпрыгивают», кнопка «Играть» мягко подрастает.
-            // Только при входе с другого экрана — после получения награды главная не прыгает заново.
-            // Переход между вкладками (перелистывание) без прыжков: блоки уже едут целиком, итоговое состояние сразу.
-            if (app.PreviousScreen != typeof(HomeScreen) && app.PendingSlide == 0)
-            {
-                for (var i = 0; i < _rails.Count; i++)
-                {
-                    Tweens.Scale(_rails[i], 0.4f, 1f, 0.4f, Ease.OutBack, null, 0.08f + i * 0.06f);
-                }
-            }
+
         }
 
         private const float SeasonH = 44f;
@@ -653,46 +644,28 @@ namespace KnittedPicture.Game
             }
 
             // Поровну по ширине, но не шире 96 на значок: при двух-трёх значках они не разбегаются к краям.
-            var step = Mathf.Min(96f, (W - 32f) / items.Count);
-            var x0 = W / 2f - step * (items.Count - 1) / 2f;
+            var step = HomeLayoutRaster.EventWidth(W, items.Count);
+
             for (var i = 0; i < items.Count; i++)
             {
                 var item = items[i];
-                Rail(x0 + i * step, top, railH, item.kind, item.tint, item.title, item.waiting, item.open, i);
+                Rail(HomeLayoutRaster.EventCenter(W, items.Count, i), top, railH, item.kind, item.tint, item.title, item.waiting, item.open, i, step);
             }
         }
 
         /// <summary>Один значок события: круг 56 и подпись — касание не меньше 48×48.</summary>
-        private readonly System.Collections.Generic.List<RectTransform> _rails = new System.Collections.Generic.List<RectTransform>();
 
-        private void Rail(float cx, float top, float h, EventKind kind, Color tint, string title, bool waiting, System.Action open, int index)
+        private void Rail(float cx, float top, float h, EventKind kind, Color tint, string title, bool waiting, System.Action open, int index, float width)
         {
-            var root = Ui.Place(Ui.Node(Root, "Rail" + title), cx - 40f, top, 80f, h);
-            _rails.Add(root);
+            var root = Ui.Place(Ui.Node(Root, "Rail" + title), cx - width / 2f, top, width, h);
             var hit = Ui.Image(root, "Hit", null, Color.clear, true);
             Ui.Stretch(hit.rectTransform);
             var circle = Ui.Image(root, "Back", Art.Circle, Palette.Card);
-            Ui.PlaceCenter(circle.rectTransform, 40f, 28f, 56f, 56f);
+            Ui.PlaceCenter(circle.rectTransform, width / 2f, 28f, 56f, 56f);
             var tintCircle = Ui.Image(root, "Tint", Art.Circle, Palette.WithAlpha(tint, 0.16f));
-            Ui.PlaceCenter(tintCircle.rectTransform, 40f, 28f, 44f, 44f);
-            var art = EventArt.Create(root, kind, 40f, 28f, 40f);
-            Ui.Fit(Ui.Label(root, title, 12, waiting ? Palette.Ink : Palette.Ink2, 0, 58f, 80f, 16f, waiting), 9);
-            if (waiting)
-            {
-                // Ждёт — мягкий цветной ореол «дышит» за значком, сама иллюстрация покачивается.
-                var halo = tintCircle.rectTransform;
-                // Без красной точки: ореол и покачивание и так говорят «здесь ждёт», точки остаются только на вкладках.
-                Tweens.Run(halo, 1.8f, t => halo.localScale = Vector3.one * (1f + 0.14f * Ease.Bump(t)), null, null, 0f, true);
-                // Значки качаются не в унисон: у каждого своя задержка (0.4 + 0.55 с на номер) и период 3.2 с:
-                // полторы секунды покачивания, потом пауза. Так ряд не «дёргается» разом, а оживает по очереди.
-                var rt = art;
-                Tweens.Run(rt, 3.2f, t =>
-                {
-                    var sway = t < 0.5f ? t * 2f : 1f;
-                    rt.localRotation = Quaternion.Euler(0, 0, sway < 1f ? Mathf.Sin(sway * Mathf.PI * 4f) * 10f * Ease.Bump(sway) : 0f);
-                }, null, null, 0.4f + index * 0.55f, true);
-            }
-
+            Ui.PlaceCenter(tintCircle.rectTransform, width / 2f, 28f, 44f, 44f);
+            EventArt.Create(root, kind, width / 2f, 28f, 40f);
+            Ui.Fit(Ui.Label(root, title, 12, waiting ? Palette.Ink : Palette.Ink2, 0, 58f, width, 16f, waiting), 9);
             root.gameObject.AddComponent<Tap>().OnClick(open);
         }
 
@@ -775,7 +748,7 @@ namespace KnittedPicture.Game
             }
 
             Ui.Fit(Ui.Label(face, L.T("Играть"), 28, Color.white, 76, 12, playW - 88, 36), 18);
-            Ui.Sheen(face, playW, 84f, 4f, 1.2f);
+
             var hard = App.Levels.Has(level) && App.Levels.Get(level).hard;
             // Тёплая серия — в подписи кнопки, а не отдельной плашкой: «Уровень 12 · серия ×3».
             var streak = App.Progress.WarmStartFor(level).Any ? L.F(" · серия ×{0}", App.Progress.Streak) : string.Empty;
@@ -791,7 +764,7 @@ namespace KnittedPicture.Game
 
                 App.StartLevel(level);
             });
-            Tweens.Run(play, 1.6f, t => play.transform.localScale = Vector3.one * (1f + 0.025f * Ease.Bump(t)), null, null, 0.6f, true);
+
         }
     }
 }

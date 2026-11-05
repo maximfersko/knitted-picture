@@ -419,6 +419,7 @@ namespace KnittedPicture
             ["Третья звезда: пройди без бустеров и спасений"] = "Third star: beat it without boosters or saves",
             ["Рекорд!"] = "Record!",
             ["НАГРАДА"] = "REWARD",
+            ["Подробнее"] = "Details",
             ["Моток в следующий раз"] = "Yarn next time",
             ["Моток не выпал"] = "No yarn this time",
             ["наверняка"] = "guaranteed",
