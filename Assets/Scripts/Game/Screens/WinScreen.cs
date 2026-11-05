@@ -134,10 +134,8 @@ namespace KnittedPicture.Game
             var hoopY = compact ? 52f : 64f;
 
             // Всё под пяльцами должно уместиться над «Дальше»: на коротких экранах уменьшаются пяльцы.
-            var cardEstimate = 52f + (parts.Count > 3 ? 2 : 1) * 34f + 12f + TileGap + TileH;
-            var nextTop = H - 24f - 44f - 6f - 70f;
-            var room = nextTop - 12f - hoopY - 10f - 48f - 40f - 30f - cardEstimate;
-            var hoop = Mathf.Clamp(room, 110f, compact ? 196f : 240f);
+            var cardHeight = CoinsCard(parts, 0f, out var rewardCard);
+            var hoop = WinLayoutRaster.Hoop(W, H, cardHeight, compact);
             var hoopRoot = Ui.PlaceCenter(Ui.Node(Root, "Hoop"), W / 2f, hoopY + hoop / 2f, hoop, hoop);
             // Пяльцы: кремовая ткань, на ней вязаная миниатюра петлями, сверху деревянный обруч с латунным винтом.
             var cloth = Ui.Image(hoopRoot, "Cloth", Art.Circle, Palette.Hex("#FBF5EA"));
@@ -181,16 +179,18 @@ namespace KnittedPicture.Game
                 Haptics.Play(Haptic.Success);
             });
 
-            var y = hoopY + hoop + 10f;
+            var y = WinLayoutRaster.StarsTop(hoopY, hoop);
             BuildStars(y, reward.Stars, news.Record);
             y += 48f;
 
             Ui.Label(Root, reward.NewRecord ? L.T("Новый рекорд!") : L.T("Готово!"), compact ? 32 : 36, Palette.Ink, 16, y, W - 32, 42);
             y += 40f;
-            Ui.Fit(Ui.Label(Root, StarsHint(level, reward.Stars, stats, news.Replay), 15, Palette.Ink2, 16, y, W - 32, 22, false), 11);
-            y += 30f;
+            var hintHeight = WinLayoutRaster.HintHeight(H, cardHeight, compact);
+            Ui.Fit(Ui.Label(Root, StarsHint(level, reward.Stars, stats, news.Replay), 15, Palette.Ink2, 16, y, W - 32, Mathf.Min(22f, hintHeight), false), 11);
+            y += hintHeight;
 
-            y = CoinsCard(parts, y);
+            Ui.Place(rewardCard, 16f, y, W - 32f, cardHeight);
+            y += cardHeight;
             BuildTiles(reward, y + TileGap);
 
             FlyAll();
@@ -384,7 +384,7 @@ namespace KnittedPicture.Game
                 Tweens.Delay(rt, 0.35f + i * 0.28f, () =>
                 {
                     var rest = rt.anchoredPosition;
-                    var drop = Tweens.Calm ? 0f : 46f;
+                    var drop = Tweens.Calm ? 0f : 2f;
                     var turn = index == 1 ? 0f : index == 0 ? -1f : 1f;
                     var landed = false;
                     Tweens.Run(rt, 0.5f, t =>
@@ -400,9 +400,9 @@ namespace KnittedPicture.Game
                         // Падает в гнездо, отскакивает и встаёт, на лету довернувшись.
                         var fall = t < 0.55f ? 1f - Ease.InCubic(t / 0.55f) : 0f;
                         var bounce = t >= 0.55f ? Ease.Jolt((t - 0.55f) / 0.45f) : 0f;
-                        rt.anchoredPosition = rest + new Vector2(0f, drop * fall + 8f * Mathf.Max(0f, bounce));
-                        rt.localScale = Vector3.one * Mathf.Min(1f, 0.4f + t * 2.2f) * (1f + 0.12f * Mathf.Abs(bounce));
-                        rt.localRotation = Quaternion.Euler(0f, 0f, 90f * turn * fall);
+                        rt.anchoredPosition = rest + new Vector2(0f, drop * fall + 2f * Mathf.Max(0f, bounce));
+                        rt.localScale = Vector3.one * Mathf.Min(1f, 0.4f + t * 2.2f);
+                        rt.localRotation = Quaternion.Euler(0f, 0f, 8f * turn * fall);
                     }, null, () =>
                     {
                         rt.anchoredPosition = rest;
@@ -448,7 +448,7 @@ namespace KnittedPicture.Game
         /// Карточка монет: слева «Награда», справа крупная сумма; ниже — плашки «откуда» в строку с переносом.
         /// Монетки вылетают из своих плашек в счётчик. Возвращает низ карточки.
         /// </summary>
-        private float CoinsCard(List<(string name, int coins)> parts, float y)
+        private float CoinsCard(List<(string name, int coins)> parts, float y, out RectTransform rewardCard)
         {
             var cardW = W - 32f;
             var total = 0;
@@ -458,6 +458,7 @@ namespace KnittedPicture.Game
             }
 
             var card = Ui.Card(Root, "Reward", 16, y, cardW, 100, 20, Palette.Card, Palette.CardShadow);
+            rewardCard = card;
             Ui.Label(card, L.T("НАГРАДА"), 12, Palette.Ink3, 18, 12, 120, 26, true, TextAnchor.MiddleLeft);
             var sum = Ui.Label(card, "+" + total, 26, Palette.Ink, cardW - 16 - 120, 6, 120, 38, true, TextAnchor.MiddleRight);
             // Монета стоит по ширине итоговой суммы (замер до набегания): текст выровнен вправо, и монета

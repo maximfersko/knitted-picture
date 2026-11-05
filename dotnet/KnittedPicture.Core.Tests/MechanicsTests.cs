@@ -212,6 +212,59 @@ namespace KnittedPicture.Core.Tests
             Assert.Equal(GameStatus.Won, game.Status);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void Linked_pair_dispatch_is_atomic_and_undo_restores_both(int column)
+        {
+            var game = new LoomGame(Strip(
+                new SpoolData { column = 0, color = 0, loops = 4, link = 1 },
+                new SpoolData { column = 1, color = 1, loops = 4, link = 1 }));
+            var firstId = game.Column(0)[0].Id;
+            var secondId = game.Column(1)[0].Id;
+            var free = game.FreeSlots;
+            var move = game.TapColumn(column);
+            Assert.Equal(2, move.Placed.Count);
+            Assert.Equal(free - 2, game.FreeSlots);
+            Assert.Empty(game.Column(0));
+            Assert.Empty(game.Column(1));
+            Assert.True(game.Undo());
+            Assert.Equal(firstId, game.Column(0)[0].Id);
+            Assert.Equal(secondId, game.Column(1)[0].Id);
+            Assert.Equal(1, game.Column(0)[0].Link);
+            Assert.Equal(1, game.Column(1)[0].Link);
+            Assert.Equal(free, game.FreeSlots);
+            Assert.All(game.Slots, slot => Assert.Null(slot));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void Linked_pair_rejects_one_free_slot_without_moving_either(int column)
+        {
+            var level = Strip(
+                new SpoolData { column = 0, color = 1, loops = 4 },
+                new SpoolData { column = 1, color = 0, loops = 2, link = 1 },
+                new SpoolData { column = 2, color = 0, loops = 2, link = 1 });
+            level.slots = 2;
+            var game = new LoomGame(level);
+            game.TapColumn(0);
+            var a = game.Column(1)[0].Id;
+            var b = game.Column(2)[0].Id;
+            var slotsBefore = game.Slots.Select(slot => slot?.Id).ToArray();
+            var tapsBefore = game.Taps;
+            var statusBefore = game.Status;
+            Assert.Equal(RejectReason.NoFreeSlot, game.TapColumn(column).Reason);
+            Assert.Equal(a, game.Column(1)[0].Id);
+            Assert.Equal(b, game.Column(2)[0].Id);
+            Assert.Equal(1, game.Column(1)[0].Link);
+            Assert.Equal(1, game.Column(2)[0].Link);
+            Assert.Equal(slotsBefore, game.Slots.Select(slot => slot?.Id).ToArray());
+            Assert.Equal(tapsBefore, game.Taps);
+            Assert.Equal(statusBefore, game.Status);
+            Assert.Equal(1, game.FreeSlots);
+        }
+
         [Fact]
         public void Linked_spool_waits_for_its_partner_to_reach_the_front()
         {

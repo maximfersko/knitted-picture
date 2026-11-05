@@ -200,9 +200,15 @@ namespace KnittedPicture.Game
             _lock.gameObject.SetActive(spool.Locked);
             _key.gameObject.SetActive(spool.IsKey);
             _linkRing.gameObject.SetActive(spool.Link != 0);
-            _linkRing.color = Palette.LinkPair(spool.Link);
+            _linkRing.color = Palette.WithAlpha(Palette.LinkPair(spool.Link), 0.48f);
 
             _group.alpha = front ? surplus ? 0.75f : 1f : 0.5f;
+        }
+
+        /// <summary>Оба партнёра и два свободных места определяют яркость кольца связки.</summary>
+        public void SetLinkReady(bool ready)
+        {
+            _linkRing.color = Palette.WithAlpha(_linkRing.color, ready ? 1f : 0.48f);
         }
 
         /// <summary>Лёд с числом петель до оттаивания; 0 — льда нет.</summary>

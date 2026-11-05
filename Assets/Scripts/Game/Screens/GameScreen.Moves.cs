@@ -45,6 +45,19 @@ namespace KnittedPicture.Game
                 return;
             }
 
+            var selectedColumn = _game.Column(column);
+            if (!_scissors && depth < selectedColumn.Count && selectedColumn[depth].Link != 0)
+            {
+                var marked = 0;
+                for (var i = 0; i < _game.Slots.Count && marked < 2; i++)
+                {
+                    if (_game.Slots[i] == null)
+                    {
+                        Highlight(_slotFrames[i], Palette.LinkPair(selectedColumn[depth].Link));
+                        marked++;
+                    }
+                }
+            }
             var result = _scissors ? _game.PullSpool(column, depth) : _game.TapColumn(column);
             if (!result.Accepted)
             {
@@ -360,6 +373,10 @@ namespace KnittedPicture.Game
                         : spool != null && spool.Thick
                             ? L.T("Толстому клубку нужно 2 свободных места")
                             : L.T("Нет места: подожди, пока клубок довяжет"));
+                    if (spool != null && spool.Link != 0 && !_scissors)
+                    {
+                        PunchLinkPartner(column, depth);
+                    }
                     Tweens.Shake(_loomBg, 5f, 0.25f);
                     break;
             }

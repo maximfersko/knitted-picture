@@ -22,6 +22,16 @@ namespace KnittedPicture.ArtPreview
                 IceSpools(args[1]);
                 return;
             }
+            if (args.Length == 2 && args[0] == "--cord-quality")
+            {
+                CordQuality(args[1]);
+                return;
+            }
+            if (args.Length == 2 && args[0] == "--linked-win")
+            {
+                LinkedWinPreview(args[1]);
+                return;
+            }
             if (args.Length == 3 && args[0] == "--tension")
             {
                 TensionComparison(args[1], args[2]);
@@ -147,6 +157,265 @@ namespace KnittedPicture.ArtPreview
                 Disc(canvas, (int)dotX, (int)dotY, (size * 0.3f + 4f) * scale / 2f, Rgba.White);
                 Disc(canvas, (int)dotX, (int)dotY, size * 0.3f * scale / 2f, Rgba.Hex(color.Item2));
                 Png.Save(canvas, Path.Combine(dir, $"{size}-{color.Item1}-{stage}.png"));
+            }
+        }
+
+        /// <summary>Расчёт ленты в физических пикселях: общая геометрия, bilinear и supersampling.</summary>
+        private static void CordQuality(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            var texture = LinkCordRaster.Tile();
+            var mips = CordMips(texture);
+            foreach (var scale in new[] { 1, 3 })
+            foreach (var kind in new[] { "ready", "blocked", "flight", "calm", "short", "diagonal", "dense" })
+            {
+                const int width = 320, height = 120, aa = 4;
+                var output = new Raster(width * scale, height * scale);
+                Png.Fill(output, Rgba.Hex("#FFF9ED"));
+                var offsets = kind == "dense" ? new[] { -18f, 0f, 18f } : new[] { 0f };
+                foreach (var offsetY in offsets)
+                {
+                var samples = new LinkCordRaster.Sample[LinkCordRaster.MaxSegments + 1];
+                var ax = kind == "short" ? 130f : 35f;
+                var bx = kind == "short" ? 190f : 285f;
+                var ay = (kind == "diagonal" ? 30f : 60f) + offsetY;
+                var by = (kind == "diagonal" ? 90f : 60f) + offsetY;
+                var sag = kind == "calm" ? 0f : kind == "flight" ? 10f * MathF.Pow(1f - 0.45f, 3f) : 12f;
+                var alpha = kind == "blocked" ? 0.48f : kind == "calm" ? 0.75f : kind == "flight" ? 0.85f : 0.95f;
+                var count = LinkCordRaster.Fill(samples, ax, ay, bx, by, sag, scale);
+                if (count < 8 || count > LinkCordRaster.MaxSegments || MathF.Abs(samples[0].X - ax) > 0.001f ||
+                    MathF.Abs(samples[count].X - bx) > 0.001f || MathF.Abs(samples[count].Y - by) > 0.001f)
+                {
+                    throw new InvalidOperationException("Неверные границы геометрии шнура");
+                }
+                for (var i = 0; i <= count; i++)
+                {
+                    var normal = samples[i].Nx * samples[i].Nx + samples[i].Ny * samples[i].Ny;
+                    if (MathF.Abs(normal - 1f) > 0.001f || (i > 0 && samples[i].U < samples[i - 1].U))
+                    {
+                        throw new InvalidOperationException("Неверные нормали или UV шнура");
+                    }
+                }
+                var tint = Rgba.Hex("#2F6FDE");
+                var lod = Math.Clamp(MathF.Log2(MathF.Max(texture.Width / LinkCordRaster.Period, texture.Height / 8f) / scale) - 0.5f, 0f, mips.Length - 1f);
+                var low = (int)MathF.Floor(lod);
+                var high = Math.Min(low + 1, mips.Length - 1);
+                var minX = Math.Max(0, (int)((MathF.Min(ax, bx) - 6f) * scale));
+                var maxX = Math.Min(output.Width, (int)MathF.Ceiling((MathF.Max(ax, bx) + 6f) * scale));
+                var minY = Math.Max(0, (int)((height - MathF.Max(ay, by) - MathF.Abs(sag) - 6f) * scale));
+                var maxY = Math.Min(output.Height, (int)MathF.Ceiling((height - MathF.Min(ay, by) + 6f) * scale));
+                for (var py = minY; py < maxY; py++)
+                for (var px = minX; px < maxX; px++)
+                {
+                    float r = 0, g = 0, b = 0, a = 0;
+                    for (var sy = 0; sy < aa; sy++)
+                    for (var sx = 0; sx < aa; sx++)
+                    {
+                        var x = (px + (sx + 0.5f) / aa) / scale;
+                        var y = height - (py + (sy + 0.5f) / aa) / scale;
+                        if (!CordUV(samples, count, x, y, out var u, out var v)) { continue; }
+                        var color = Rgba.Lerp(CordSample(mips[low], u, v), CordSample(mips[high], u, v), lod - low);
+                        r += color.R * color.A; g += color.G * color.A; b += color.B * color.A; a += color.A;
+                    }
+                    if (a > 0f)
+                    {
+                        output.Blend(px, py, new Rgba(r / a * tint.R, g / a * tint.G, b / a * tint.B, a / (aa * aa) * alpha));
+                    }
+                }
+                var dx = bx - ax; var dy = by - ay;
+                var length = MathF.Sqrt(dx * dx + dy * dy); var inset = MathF.Min(22f, length * 0.45f);
+                var knotA = LinkCordRaster.Point(ax, ay, bx, by, sag, inset / length);
+                var knotB = LinkCordRaster.Point(ax, ay, bx, by, sag, 1f - inset / length);
+                Png.Put(output, LinkCordRaster.Knot(), (knotA.X - 5.5f) * scale, (height - knotA.Y - 5.5f) * scale, 11f * scale, 11f * scale, tint, alpha);
+                Png.Put(output, LinkCordRaster.Knot(), (knotB.X - 5.5f) * scale, (height - knotB.Y - 5.5f) * scale, 11f * scale, 11f * scale, tint, alpha);
+                if (kind == "flight")
+                {
+                    var p = LinkCordRaster.Point(ax, ay, bx, by, sag, 0.45f);
+                    Disc(output, (int)(p.X * scale), (int)((height - p.Y) * scale), 2f * scale, Rgba.Lerp(tint, Rgba.White, 0.7f).WithAlpha(alpha * 0.8f));
+                }
+                }
+                Png.Save(output, Path.Combine(dir, $"after-{kind}-{scale}x.png"));
+                CordBefore(dir, kind, scale);
+            }
+        }
+
+        /// <summary>Старый расчёт отрисован заново на той же физической сетке, включая прежние ошибки выборки.</summary>
+        private static void CordBefore(string dir, string kind, int scale)
+        {
+            const int width = 320, height = 120;
+            var output = new Raster(width * scale, height * scale);
+            Png.Fill(output, Rgba.Hex("#FFF9ED"));
+            var tint = Rgba.Hex("#2F6FDE");
+            var offsets = kind == "dense" ? new[] { -18f, 0f, 18f } : new[] { 0f };
+            foreach (var offsetY in offsets)
+            {
+            var ax = kind == "short" ? 130f : 35f;
+            var bx = kind == "short" ? 190f : 285f;
+            var ay = (kind == "diagonal" ? 30f : 60f) + offsetY;
+            var by = (kind == "diagonal" ? 90f : 60f) + offsetY;
+            var sag = kind == "calm" ? 0f : kind == "flight" ? 10f * MathF.Pow(1f - 0.45f, 3f) : 12f;
+            var alpha = kind == "blocked" ? 0.48f : kind == "calm" ? 0.75f : kind == "flight" ? 0.85f : 0.95f;
+            var tile = new Raster(64, 24);
+            tile.Paint((x, y) =>
+            {
+                var across = (y - 12f) / 10f;
+                var cover = Draw.Clamp01((1f - MathF.Abs(across)) * 5f);
+                var twist = MathF.Sin(x * 0.39f + across * 2.4f);
+                var shade = 0.5f + 0.25f * MathF.Sqrt(Draw.Clamp01(1f - across * across)) + 0.25f * Draw.Clamp01(twist);
+                return new Rgba(shade, shade, shade, cover);
+            });
+            var previous = LinkCordRaster.Point(ax, ay, bx, by, sag, 0f);
+            for (var i = 1; i <= 12; i++)
+            {
+                var next = LinkCordRaster.Point(ax, ay, bx, by, sag, i / 12f);
+                var dx = next.X - previous.X; var dy = next.Y - previous.Y;
+                var length = MathF.Sqrt(dx * dx + dy * dy);
+                var steps = (int)(length * 2f * scale);
+                for (var p = 0; p < steps; p++)
+                {
+                    var t = (float)p / steps;
+                    for (var q = -4 * scale; q <= 4 * scale; q++)
+                    {
+                        var sample = tile[(p / (2 * scale)) % tile.Width, Math.Clamp((q / scale + 4) * 2, 0, tile.Height - 1)];
+                        output.Blend((int)((previous.X + dx * t) * scale), output.Height - 1 - (int)((previous.Y + dy * t) * scale) + q,
+                            new Rgba(sample.R * tint.R, sample.G * tint.G, sample.B * tint.B, sample.A * alpha));
+                    }
+                }
+                previous = next;
+            }
+            var distance = MathF.Sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
+            var offset = MathF.Min(22f, distance * 0.45f);
+            var ox = (bx - ax) / distance * offset; var oy = (by - ay) / distance * offset;
+            Png.Put(output, LinkCordRaster.Knot(), (ax + ox - 5.5f) * scale, (height - ay - oy - 5.5f) * scale, 11f * scale, 11f * scale, tint, alpha);
+            Png.Put(output, LinkCordRaster.Knot(), (bx - ox - 5.5f) * scale, (height - by + oy - 5.5f) * scale, 11f * scale, 11f * scale, tint, alpha);
+            if (kind == "flight")
+            {
+                var p = LinkCordRaster.Point(ax, ay, bx, by, sag, 0.45f);
+                Disc(output, (int)(p.X * scale), (int)((height - p.Y) * scale), 2f * scale, Rgba.Lerp(tint, Rgba.White, 0.7f).WithAlpha(alpha * 0.8f));
+            }
+            }
+            Png.Save(output, Path.Combine(dir, $"before-{kind}-{scale}x.png"));
+        }
+
+        private static bool CordUV(LinkCordRaster.Sample[] points, int count, float x, float y, out float u, out float v)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var a = points[i]; var b = points[i + 1];
+                if (CordTriangle(x, y, a.X - 4 * a.Nx, a.Y - 4 * a.Ny, a.X + 4 * a.Nx, a.Y + 4 * a.Ny,
+                    b.X - 4 * b.Nx, b.Y - 4 * b.Ny, out var q, out var r))
+                { u = a.U + r * (b.U - a.U); v = q; return true; }
+                if (CordTriangle(x, y, b.X - 4 * b.Nx, b.Y - 4 * b.Ny, a.X + 4 * a.Nx, a.Y + 4 * a.Ny,
+                    b.X + 4 * b.Nx, b.Y + 4 * b.Ny, out q, out r))
+                { u = b.U + q * (a.U - b.U); v = q + r; return true; }
+            }
+            u = v = 0f; return false;
+        }
+
+        private static bool CordTriangle(float x, float y, float ax, float ay, float bx, float by, float cx, float cy, out float q, out float r)
+        {
+            var det = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+            if (MathF.Abs(det) < 0.00001f) { q = r = 0f; return false; }
+            q = ((x - ax) * (cy - ay) - (y - ay) * (cx - ax)) / det;
+            r = ((bx - ax) * (y - ay) - (by - ay) * (x - ax)) / det;
+            return q >= 0f && r >= 0f && q + r <= 1f;
+        }
+
+        /// <summary>Пирамида усреднённых уровней для приближения Trilinear с игровым bias −0,5.</summary>
+        private static Raster[] CordMips(Raster texture)
+        {
+            var levels = new System.Collections.Generic.List<Raster> { texture };
+            while (texture.Width > 1 || texture.Height > 1)
+            {
+                var next = new Raster(Math.Max(1, texture.Width / 2), Math.Max(1, texture.Height / 2));
+                for (var y = 0; y < next.Height; y++)
+                for (var x = 0; x < next.Width; x++)
+                {
+                    var a = texture[Math.Min(texture.Width - 1, x * 2), Math.Min(texture.Height - 1, y * 2)];
+                    var b = texture[Math.Min(texture.Width - 1, x * 2 + 1), Math.Min(texture.Height - 1, y * 2)];
+                    var c = texture[Math.Min(texture.Width - 1, x * 2), Math.Min(texture.Height - 1, y * 2 + 1)];
+                    var d = texture[Math.Min(texture.Width - 1, x * 2 + 1), Math.Min(texture.Height - 1, y * 2 + 1)];
+                    next[x, y] = Rgba.Lerp(Rgba.Lerp(a, b, 0.5f), Rgba.Lerp(c, d, 0.5f), 0.5f);
+                }
+                levels.Add(next);
+                texture = next;
+            }
+            return levels.ToArray();
+        }
+
+        private static Rgba CordSample(Raster tile, float u, float v)
+        {
+            var x = (u - MathF.Floor(u)) * tile.Width - 0.5f;
+            var y = Math.Clamp(v * tile.Height - 0.5f, 0f, tile.Height - 1f);
+            var ix = (int)MathF.Floor(x); var iy = (int)MathF.Floor(y);
+            var x0 = (ix % tile.Width + tile.Width) % tile.Width; var x1 = (x0 + 1) % tile.Width;
+            var y1 = Math.Min(iy + 1, tile.Height - 1);
+            var a = Rgba.Lerp(tile[x0, iy], tile[x1, iy], x - ix);
+            var b = Rgba.Lerp(tile[x0, y1], tile[x1, y1], x - ix);
+            return Rgba.Lerp(a, b, y - iy);
+        }
+
+        /// <summary>Расчётная композиция общих геометрий и игровых растров; не кадр Unity.</summary>
+        private static void LinkedWinPreview(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            foreach (var (width, height) in new[] { (320, 640), (390, 844), (768, 1024) })
+            {
+                var canvas = new Raster(width, height);
+                Png.Fill(canvas, Rgba.Hex("#FFF9ED"));
+                var compact = height < 760;
+                var top = compact ? 52f : 64f;
+                var hoop = WinLayoutRaster.Hoop(width, height, 126f, compact);
+                var ringW = hoop * 1.12f;
+                var ringH = ringW * 400f / 384f;
+                Png.Put(canvas, MetaRaster.Hoop(), width / 2f - ringW / 2f,
+                    height - (top + hoop * 0.465f + ringH / 2f), ringW, ringH);
+                var y = WinLayoutRaster.StarsTop(top, hoop);
+                for (var i = 0; i < 3; i++)
+                {
+                    var size = i == 1 ? 50.4f : 42f;
+                    var x = width / 2f + (i - 1) * 54f;
+                    var cy = y + 21f - (i == 1 ? 6f : 0f);
+                    Png.Put(canvas, IconRaster.RewardStar(true), x - size / 2f, height - cy - size / 2f, size, size);
+                }
+                Png.Save(canvas, Path.Combine(dir, $"win-{width}x{height}.png"));
+            }
+            foreach (var phase in new[] { "ready", "blocked", "flight-start", "flight-end", "calm" })
+            {
+                const int w = 320, h = 120;
+                var canvas = new Raster(w, h);
+                Png.Fill(canvas, Rgba.Hex("#FFF9ED"));
+                var tint = Rgba.Hex("#2F6FDE");
+                var flight = phase == "flight-start" || phase == "flight-end";
+                var time = phase == "flight-start" ? 0.15f : 0.95f;
+                var sag = phase == "calm" ? 0f : flight ? 10f * MathF.Pow(1f - time, 3f) : 12f;
+                var opacity = phase == "blocked" ? 0.48f : phase == "calm" ? 0.75f : flight ? 0.85f * MathF.Min(1f, (1f - time) * 5f) : 0.95f;
+                var texture = LinkCordRaster.Tile();
+                var prev = LinkCordRaster.Point(35, 60, 285, 60, sag, 0);
+                for (var i = 1; i <= 12; i++)
+                {
+                    var next = LinkCordRaster.Point(35, 60, 285, 60, sag, i / 12f);
+                    var dx = next.X - prev.X; var dy = next.Y - prev.Y;
+                    var length = MathF.Sqrt(dx * dx + dy * dy);
+                    for (int p = 0; p < (int)(length * 2); p++)
+                    {
+                        var t = p / (length * 2); var x = prev.X + dx * t; var y = prev.Y + dy * t;
+                        for (int q = -4; q <= 4; q++)
+                        {
+                            var sample = texture[(p / 2) % texture.Width, Math.Clamp((q + 4) * 2, 0, texture.Height - 1)];
+                            canvas.Blend((int)x, h - 1 - (int)y + q, new Rgba(sample.R * tint.R, sample.G * tint.G, sample.B * tint.B, sample.A * opacity));
+                        }
+                    }
+                    prev = next;
+                }
+                Png.Put(canvas, LinkCordRaster.Knot(), 51.5f, 54.5f, 11f, 11f, tint, opacity);
+                Png.Put(canvas, LinkCordRaster.Knot(), 257.5f, 54.5f, 11f, 11f, tint, opacity);
+                if (flight)
+                {
+                    var glint = LinkCordRaster.Point(35, 60, 285, 60, sag, time);
+                    Disc(canvas, (int)glint.X, h - 1 - (int)glint.Y, 2f, Rgba.Lerp(tint, Rgba.White, 0.7f).WithAlpha(opacity * 0.8f));
+                }
+                Png.Save(canvas, Path.Combine(dir, "cord-" + phase + ".png"));
             }
         }
 

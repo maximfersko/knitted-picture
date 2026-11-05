@@ -272,27 +272,21 @@ namespace KnittedPicture.Game
         /// <summary>Нить между летящими партнёрами следует за обоими клубками, не перехватывая касания.</summary>
         public static void LinkedFlight(RectTransform layer, RectTransform first, RectTransform second, Color color, float duration)
         {
-            if (Tweens.Calm)
-            {
-                return;
-            }
-            var thread = Dot(layer, color, 1f);
-            thread.color = Color.clear;
-            Tweens.Run(thread, duration, t =>
+            var cord = new LinkedCordGraphic(layer, color);
+            cord.Root.SetAsFirstSibling();
+            Tweens.Run(cord.Root, duration, t =>
             {
                 if (first == null || second == null)
                 {
-                    thread.color = Color.clear;
+                    cord.Root.gameObject.SetActive(false);
                     return;
                 }
-                var a = Ui.WorldCenter(first);
-                var b = Ui.WorldCenter(second);
-                var delta = b - a;
-                thread.rectTransform.position = (a + b) * 0.5f;
-                thread.rectTransform.sizeDelta = new Vector2(delta.magnitude / Mathf.Max(0.0001f, Unit(layer)), 2.5f);
-                thread.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
-                thread.color = Palette.WithAlpha(color, 0.75f * Mathf.Sin(t * Mathf.PI));
-            }, null, () => Release(thread));
+                var a = cord.FromWorld(Ui.WorldCenter(first));
+                var b = cord.FromWorld(Ui.WorldCenter(second));
+                var sag = Tweens.Calm ? 0f : 10f * (1f - Ease.OutCubic(t));
+                var alpha = Tweens.Calm ? 0.75f : 0.85f * Mathf.Min(1f, (1f - t) * 5f);
+                cord.Set(a, b, sag, alpha, Tweens.Calm ? -1f : t, Mathf.Min(first.rect.width, second.rect.width) * 0.55f);
+            }, null, () => UnityEngine.Object.Destroy(cord.Root.gameObject));
         }
 
         /// <summary>Пустой клубок: расходящееся кольцо и пух.</summary>

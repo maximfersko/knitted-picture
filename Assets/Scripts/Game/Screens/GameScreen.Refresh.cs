@@ -13,6 +13,17 @@ namespace KnittedPicture.Game
     {
         /// <summary>Запас льда до первых трещин сохраняется при перестройке клубков поля.</summary>
         private readonly Dictionary<int, int> _iceOrigins = new Dictionary<int, int>();
+        private sealed class LinkVisual
+        {
+            public LinkedCordGraphic Cord = null!;
+            public FieldSpool First = null!;
+            public FieldSpool Second = null!;
+            public Vector2 A;
+            public Vector2 B;
+            public float Sag;
+            public bool? Ready;
+        }
+        private readonly List<LinkVisual> _linkVisuals = new List<LinkVisual>();
         // ---------- Обновление ----------
 
         private void RefreshAll()
@@ -174,6 +185,7 @@ namespace KnittedPicture.Game
             }
 
             var free = _game.FreeSlots;
+            UpdateLinkReadiness();
             _loomLabel.text = free == 1 && _slotFrames.Length > 1 ? L.T("Осталось 1 место!") : free == 0 ? L.T("Мест нет") : string.Empty;
             _loomLabel.color = free <= 1 ? Palette.Danger : Palette.Ink2;
         }
@@ -278,6 +290,7 @@ namespace KnittedPicture.Game
             ClearHintExtras();
             Ui.Clear(_fieldContent);
             _field.Clear();
+            _linkVisuals.Clear();
             _hint = null;
             _hintHand = null;
             for (var c = 0; c < _game.ColumnCount; c++)
@@ -358,6 +371,7 @@ namespace KnittedPicture.Game
             }
 
             DrawLinkThreads();
+            UpdateLinkReadiness();
         }
 
         /// <summary>
@@ -394,16 +408,37 @@ namespace KnittedPicture.Game
 
                 var (ax, ay) = FieldPosition(list[0].Column, list[0].Depth);
                 var (bx, by) = FieldPosition(list[1].Column, list[1].Depth);
-                var dx = bx - ax;
-                var dy = by - ay;
-                var length = Mathf.Sqrt(dx * dx + dy * dy);
                 var link = _game.Column(list[0].Column)[list[0].Depth].Link;
-                var thread = Ui.Box(_fieldContent, "LinkThread", 1.5f, Palette.WithAlpha(Palette.LinkPair(link), 0.6f)).rectTransform;
-                Ui.PlaceCenter(thread, (ax + bx) / 2f, (ay + by) / 2f, length, 3f);
+                var thread = new LinkedCordGraphic(_fieldContent, Palette.LinkPair(link));
+                _linkVisuals.Add(new LinkVisual
+                {
+                    Cord = thread, First = list[0], Second = list[1], A = new Vector2(ax, ay), B = new Vector2(bx, by),
+                    Sag = Mathf.Min(14f, Mathf.Abs(bx - ax) * 0.09f),
+                });
+                thread.Root.SetAsFirstSibling();
+            }
+        }
 
-                // Координаты поля идут сверху вниз, поэтому угол со знаком минус.
-                thread.localRotation = Quaternion.Euler(0f, 0f, -Mathf.Atan2(dy, dx) * Mathf.Rad2Deg);
-                thread.SetAsFirstSibling();
+        /// <summary>При изменении числа мест оба конца связки обновляются вместе.</summary>
+        private void UpdateLinkReadiness()
+        {
+            foreach (var visual in _linkVisuals)
+            {
+                var first = _game.Column(visual.First.Column);
+                var second = _game.Column(visual.Second.Column);
+                var ready = visual.First.Depth == 0 && visual.Second.Depth == 0 && _game.FreeSlots >= 2
+                    && first.Count > 0 && second.Count > 0
+                    && first[0].Id == visual.First.SpoolId && second[0].Id == visual.Second.SpoolId
+                    && !first[0].Frozen && !second[0].Frozen && !first[0].Locked && !second[0].Locked
+                    && first[0].Knots == 0 && second[0].Knots == 0;
+                if (visual.Ready == ready)
+                {
+                    continue;
+                }
+                visual.Ready = ready;
+                visual.Cord.Set(visual.A, visual.B, visual.Sag, ready ? 0.95f : 0.48f, inset: _spoolSize * 0.55f);
+                visual.First.View.SetLinkReady(ready);
+                visual.Second.View.SetLinkReady(ready);
             }
         }
 
