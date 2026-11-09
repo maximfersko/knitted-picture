@@ -313,10 +313,8 @@ namespace KnittedPicture.Game
 
         private void ShowIntro()
         {
-            if (!string.IsNullOrEmpty(_level.tip))
-            {
-                Tweens.Delay(Root, 0.6f, ShowTip);
-            }
+            _introTipPending = !string.IsNullOrEmpty(_level.tip);
+            _introTipDelay = 0.6f;
 
             // Один баннер на старте — самое важное: сложный уровень, иначе загадка, иначе подарок серии.
             var bannerY = _top + 40f;
@@ -326,10 +324,6 @@ namespace KnittedPicture.Game
                 Banner(ScissorsOpen() ? L.T("Не сдаёмся: ножницы в подарок на эту попытку") : L.T("Не сдаёмся: подсказка хода включена"),
                     Palette.CoinShadow, bannerY, 0.3f, 3.2f);
             }
-            else if (_level.hard)
-            {
-                Banner(L.T("Сложный уровень"), Palette.Danger, bannerY);
-            }
             else if (_level.mystery)
             {
                 Banner(L.T("Загадка: что получится?"), Palette.Link, bannerY);
@@ -337,6 +331,10 @@ namespace KnittedPicture.Game
             else if (_run.Warm.Any)
             {
                 Banner(L.F("Серия ×{0}: {1}", _run.WarmStreak, WarmGifts(_run.Warm)), Palette.CoinShadow, bannerY, 0.3f);
+            }
+            else if (_level.hard)
+            {
+                Banner(L.T("Сложный уровень"), Palette.Danger, bannerY);
             }
         }
 
@@ -376,8 +374,10 @@ namespace KnittedPicture.Game
 
         private void Banner(string text, Color color, float y, float delay = 0f, float hold = 1.6f)
         {
+            _introBannerBusy = true;
             var width = Mathf.Min(W - 2 * Pad, 320f);
             var banner = Ui.Card(Root, "Banner", W / 2f - width / 2f, y, width, 56, 28, color, color, 0f);
+            _introBanner = banner;
             Ui.Fit(Ui.Label(banner, text, 20, Color.white, 14, 0, width - 28, 56), 13);
             var group = banner.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
@@ -388,9 +388,16 @@ namespace KnittedPicture.Game
             banner.localScale = Vector3.zero;
             Tweens.Delay(banner, delay, () =>
             {
+                if (App.CurrentScreen != this || _ended || _finishing || _failShown || _scissors || _game.Status != GameStatus.Playing)
+                {
+                    _introBannerBusy = false;
+                    _introBanner = null;
+                    Object.Destroy(banner.gameObject);
+                    return;
+                }
                 group.alpha = 1f;
                 Tweens.Scale(banner, 0.6f, 1f, 0.3f, Ease.OutBack);
-                Tweens.Fade(group, 1f, 0f, 0.4f, () => Object.Destroy(banner.gameObject), hold);
+                Tweens.Fade(group, 1f, 0f, 0.4f, () => { _introBannerBusy = false; _introBanner = null; Object.Destroy(banner.gameObject); }, hold);
             });
         }
     }

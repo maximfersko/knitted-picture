@@ -18,61 +18,20 @@ namespace KnittedPicture.Game
             const float gap = 8f;
             var justAdded = App.JustAdded;
 
-            // Рамки для картинок: выбранная рамка образцом и кнопка — главный «сток» монет без давления.
+            void BuildActions()
             {
-                const float stripH = 64f;
-                var strip = Ui.Card(content, "FramesStrip", 16, y, cardW, stripH, 20, Palette.Card, Palette.CardShadow, 3f, true);
-                var frame = progress.SelectedFrame;
-                var sample = Ui.Place(Ui.Node(strip, "Sample"), 10, 8, 48, 48);
-                MiniPicture.Framed(sample, frame.Id, 48, App.Levels.Get(1), lite: true);
-                // Заголовок в одну строку (ужимается, если не влезает), название рамки — под ним.
-                var title = Ui.Fit(Ui.Label(strip, L.T("Рамки для картинок"), 16, Palette.Ink, 68, 9, cardW - 192, 24, true, TextAnchor.MiddleLeft), 11);
-                title.horizontalOverflow = HorizontalWrapMode.Overflow;
-                title.resizeTextForBestFit = false;
-                if (title.preferredWidth > cardW - 192)
+                const float height = 48f;
+                var count = progress.ExhibitionOpen ? 2 : 1;
+                var width = (cardW - (count - 1) * 8f) / count;
+                var frames = Ui.TextButton(content, L.T("Рамки"), 16f, y, width, height, Palette.Ink, 15);
+                frames.OnClick(() => App.ShowPopup(new FramesPopup(App)));
+                if (progress.ExhibitionOpen)
                 {
-                    title.fontSize = Mathf.Max(11, Mathf.FloorToInt(title.fontSize * (cardW - 192) / title.preferredWidth));
+                    var label = progress.ExhibitionDone(App.Today) ? L.T("Выставка") + " ✓" : L.T("Выставка");
+                    var exhibition = Ui.TextButton(content, label, 16f + width + 8f, y, width, height, Palette.Ink, 15);
+                    exhibition.OnClick(() => App.ShowPopup(new ExhibitionPopup(App, App.RefreshScreen)));
                 }
-
-                Ui.Fit(Ui.Label(strip, frame.Name, 13, RarityStyle.Ink(frame.Rarity), 68, 34, cardW - 192, 20, false, TextAnchor.MiddleLeft), 10);
-                var open = Ui.Button(strip, L.T("Выбрать"), cardW - 112, 14, 100, 36, Palette.Primary, Palette.PrimaryShadow, Color.white, 15);
-                open.OnClick(() => App.ShowPopup(new FramesPopup(App)));
-                strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new FramesPopup(App)));
-                y += stripH + 12f;
-            }
-
-            // Выставка недели: тема, медаль или приглашение выставить картинки.
-            if (progress.ExhibitionOpen)
-            {
-                const float stripH = 64f;
-                var today = App.Today;
-                var theme = Exhibition.ThemeOf(WeeklyMarathon.WeekOf(today));
-                var done = progress.ExhibitionDone(today);
-                var medal = progress.ExhibitionMedal(today);
-                var strip = Ui.Card(content, "Exhibition", 16, y, cardW, stripH, 20, done ? Palette.Card : Palette.CoinSoft, Palette.CardShadow, 3f, true);
-                var cup = Ui.Image(strip, "Trophy", Art2.Trophy(!done || medal >= 3), Palette.WithAlpha(Color.white, done && medal == 0 ? 0.5f : 1f));
-                Ui.PlaceCenter(cup.rectTransform, 34, stripH / 2f, 44, 44);
-                Ui.Fit(Ui.Label(strip, L.T("Выставка недели"), 16, Palette.Ink, 68, 9, cardW - 192, 24, true, TextAnchor.MiddleLeft), 11);
-                Ui.Fit(Ui.Label(strip, done ? L.F("«{0}»: {1}, {2} очк.", theme.Name, Exhibition.MedalName(medal), progress.ExhibitionScore(today))
-                    : L.F("Тема «{0}»", theme.Name), 13, done ? ExhibitionPopup.MedalColor(medal) : Palette.CoinInk, 68, 34, cardW - 192, 20, false,
-                    TextAnchor.MiddleLeft), 9);
-                if (done)
-                {
-                    Ui.Label(strip, L.T("Смотреть"), 14, Palette.Link, cardW - 112, 14, 100, 36, true, TextAnchor.MiddleRight);
-                }
-                else
-                {
-                    var go = Ui.Button(strip, L.T("Выставить"), cardW - 112, 14, 100, 36, Palette.Coin, Palette.CoinShadow, Palette.CoinInk, 14);
-                    go.OnClick(() => App.ShowPopup(new ExhibitionPopup(App, App.RefreshScreen)));
-                    Ui.Sheen((RectTransform)go.transform, 100f, 36f, 3.2f, 0.7f);
-                }
-
-                strip.gameObject.AddComponent<Tap>().OnClick(() => App.ShowPopup(new ExhibitionPopup(App, App.RefreshScreen)));
-                y += stripH + 16f;
-            }
-            else
-            {
-                y += 4f;
+                y += height + 16f;
             }
 
             for (var c = 0; c < Collections.All.Length; c++)
@@ -142,6 +101,14 @@ namespace KnittedPicture.Game
                 }
 
                 y += cardH + 16f;
+                if (c == 0)
+                {
+                    BuildActions();
+                }
+            }
+            if (Collections.All.Length == 0)
+            {
+                BuildActions();
             }
 
             // Подсветка новой картинки — один раз.

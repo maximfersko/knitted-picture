@@ -310,6 +310,10 @@ namespace KnittedPicture.Game
 
         public override void Tick(float dt)
         {
+            if (_introBannerBusy && (_scissors || _ended || _finishing || _failShown || _game.Status != GameStatus.Playing))
+            {
+                CancelIntroBanner();
+            }
             if (App.HasPopups)
             {
                 CancelResponsiveInput();
@@ -402,6 +406,7 @@ namespace KnittedPicture.Game
             }
 
             UpdateLoomAlert(dt);
+            UpdateIntroTips(dt);
             MaybeLoomFullTip();
             UpdateCombo(dt);
             _picture.SetGoldLive(_tempo.Active);

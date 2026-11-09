@@ -418,6 +418,7 @@ namespace KnittedPicture
             ["«{0}» теперь в альбоме"] = "\"{0}\" is now in the album",
             ["Третья звезда: пройди без бустеров и спасений"] = "Third star: beat it without boosters or saves",
             ["Рекорд!"] = "Record!",
+            ["Выставка"] = "Exhibition",
             ["НАГРАДА"] = "REWARD",
             ["Подробнее"] = "Details",
             ["Моток в следующий раз"] = "Yarn next time",

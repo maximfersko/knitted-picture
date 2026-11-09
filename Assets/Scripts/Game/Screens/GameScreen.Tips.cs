@@ -234,6 +234,50 @@ namespace KnittedPicture.Game
         /// Вернуть её можно тапом по плашке уровня.
         /// </summary>
         /// <summary>Подсказка уровня — в начале, пока не сделан первый тап.</summary>
+        private bool _introTipPending;
+        private bool _introBannerBusy;
+        private RectTransform? _introBanner;
+        private bool _tipFading;
+        private RectTransform? _fadingTip;
+        private bool _tensionTipPending;
+        private bool _manualTensionPending;
+        private float _introTipDelay;
+        private bool IntroSlotBusy => _introBannerBusy || _tip != null || _tipFading;
+
+        /// <summary>Отложенные советы ждут свободного места и подходящего состояния партии.</summary>
+        private void UpdateIntroTips(float dt)
+        {
+            if (App.CurrentScreen != this || _ended || _finishing || _failShown || App.HasPopups || _game.Status != GameStatus.Playing)
+            {
+                return;
+            }
+            if (_game.Taps > 0) { _introTipPending = false; }
+            if (_introTipPending)
+            {
+                _introTipDelay -= dt;
+                if (_introTipDelay <= 0f && !IntroSlotBusy && !_scissors)
+                {
+                    _introTipPending = false;
+                    ShowTip();
+                }
+            }
+            if (_manualTensionPending)
+            {
+                if (!_picture.TensionHolding) { _manualTensionPending = false; }
+                else if (!IntroSlotBusy && !_introTipPending && !_scissors)
+                {
+                    _manualTensionPending = false;
+                    var target = _picture.TensionLine;
+                    if (target != null) { ShowTensionTip(target); }
+                }
+            }
+            if (_tensionTipPending)
+            {
+                if (!_picture.TensionHolding) { _tensionTipPending = false; }
+                else if (!IntroSlotBusy && !_introTipPending && !_scissors) { TryTensionTip(); }
+            }
+        }
+
         private void ShowTip()
         {
             if (_game.Taps > 0)
@@ -250,10 +294,17 @@ namespace KnittedPicture.Game
         /// Натяжение впервые остановило столбик: объяснить правило у линии натяжения. Один раз за игру;
         /// подсказка не гаснет от следующего тапа, чтобы её успели прочитать.
         /// </summary>
-        private void MaybeTensionTip()
+        private void MaybeTensionTip() => _tensionTipPending = true;
+
+        private void TryTensionTip()
         {
             var line = _picture.TensionLine;
-            if (line == null || _ended || _finishing || _tip != null || App.HasPopups || !App.Progress.TakeTensionIntro())
+            if (line == null || !_picture.TensionHolding || _ended || _finishing || _failShown || _scissors || IntroSlotBusy || _introTipPending || App.HasPopups || _game.Status != GameStatus.Playing)
+            {
+                return;
+            }
+            _tensionTipPending = false;
+            if (!App.Progress.TakeTensionIntro())
             {
                 return;
             }
@@ -265,12 +316,22 @@ namespace KnittedPicture.Game
         /// <summary>Объяснение натяжения доступно повторно по кнопке под картинкой.</summary>
         private void ShowTensionTip(RectTransform target)
         {
-            if (!_picture.TensionHolding || _ended || _finishing || _tip != null || App.HasPopups)
+            if (!_picture.TensionHolding || _ended || _finishing || _failShown || App.HasPopups)
             {
+                return;
+            }
+            if (IntroSlotBusy || _introTipPending || _scissors)
+            {
+                _manualTensionPending = true;
                 return;
             }
 
             ShowTip(L.T("Нити отмечают столбики, которые ждут. Довяжи выделенные клетки внизу, чтобы они продолжили вязаться"), target, false);
+            if (_tensionTipPending)
+            {
+                _tensionTipPending = false;
+                if (App.Progress.TakeTensionIntro()) { App.Save(); }
+            }
             _tipKeep = true;
         }
 
@@ -281,7 +342,7 @@ namespace KnittedPicture.Game
         /// </summary>
         private void MaybeLoomFullTip()
         {
-            if (_loomTipDone || _level.id > LoomFullTipMaxLevel || _run.Pattern || _ended || _finishing || _failShown || _tip != null ||
+            if (_loomTipDone || _level.id > LoomFullTipMaxLevel || _run.Pattern || _ended || _finishing || _failShown || _scissors || IntroSlotBusy || _introTipPending ||
                 App.HasPopups || _game.Status != GameStatus.Playing || _game.FreeSlots != 0)
             {
                 return;
@@ -305,6 +366,19 @@ namespace KnittedPicture.Game
         /// <summary>До какого уровня включительно показывается совет о заторе.</summary>
         private const int LoomFullTipMaxLevel = 4;
 
+        /// <summary>Отмена вводного баннера перед более важной подсказкой или режимом ножниц.</summary>
+        private void CancelIntroBanner()
+        {
+            if (_introBanner == null) { _introBannerBusy = false; return; }
+            var banner = _introBanner;
+            _introBanner = null;
+            _introBannerBusy = false;
+            Tweens.Kill(banner);
+            var group = banner.GetComponent<CanvasGroup>();
+            if (group != null) { Tweens.Kill(group); }
+            Object.Destroy(banner.gameObject);
+        }
+
         private void ShowTip(string tipText, RectTransform? target, bool below)
         {
             if (_ended || _finishing || _tip != null || string.IsNullOrEmpty(tipText))
@@ -312,6 +386,15 @@ namespace KnittedPicture.Game
                 return;
             }
 
+            CancelIntroBanner();
+            if (_fadingTip != null)
+            {
+                var fadingGroup = _fadingTip.GetComponent<CanvasGroup>();
+                if (fadingGroup != null) { Tweens.Kill(fadingGroup); }
+                Object.Destroy(_fadingTip.gameObject);
+                _fadingTip = null;
+                _tipFading = false;
+            }
             _tipKeep = false;
             if (target == null)
             {
@@ -487,9 +570,11 @@ namespace KnittedPicture.Game
 
             var tip = _tip;
             _tip = null;
+            _tipFading = true;
+            _fadingTip = tip;
             _tipKeep = false;
             var group = tip.GetComponent<CanvasGroup>();
-            Tweens.Fade(group, group.alpha, 0f, 0.2f, () => Object.Destroy(tip.gameObject));
+            Tweens.Fade(group, group.alpha, 0f, 0.2f, () => { _tipFading = false; _fadingTip = null; Object.Destroy(tip.gameObject); });
         }
 
         private void PunchField(int spoolId)
